@@ -1,4 +1,4 @@
-# Mentat Trials – Code of the Desert
+# Arrakis Labs – Code of the Desert
 
 ## Enterprise Product Requirements Document (PRD)
 
