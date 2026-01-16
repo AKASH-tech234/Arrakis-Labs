@@ -48,7 +48,7 @@ export default function Footer() {
             className="text-[#78716C] text-xs tracking-[0.1em] uppercase"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
-            © {currentYear} Arrakis Labs · Intelligence born of desert silence
+            © {currentYear} Arrakis Labs · Silence of the desert forges the deadliest intelligence.
           </p>
         </div>
       </div>
