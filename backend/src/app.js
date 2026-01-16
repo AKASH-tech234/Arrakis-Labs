@@ -6,9 +6,14 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
+import path from "path";
+import { fileURLToPath } from "url";
+import authRoutes from "./routes/authRoutes.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 
 const app = express();
@@ -74,6 +79,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// ============================================
+// ROUTES
+// ============================================
+
+app.use("/api/auth", authRoutes);
+
+// ============================================
+// ERROR HANDLING MIDDLEWARE
+// ============================================
+
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({
     status: "error",
@@ -82,6 +98,7 @@ app.use((req, res) => {
   });
 });
 
+// Global error handler
 app.use((err, req, res, next) => {
   const status = err.status || 500;
   const message = err.message || "Internal Server Error";
