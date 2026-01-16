@@ -1,0 +1,125 @@
+# ============================================
+# Dependencies
+# ============================================
+node_modules/
+npm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# Environment Variables
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ============================================
+# IDE & Editor Files
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# ============================================
+# Build & Output
+# ============================================
+dist/
+build/
+out/
+*.tsbuildinfo
+.next
+.nuxt
+.cache
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# ============================================
+# Testing
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+.mocha_output
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+*.log
+
+# ============================================
+# OS Files
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ============================================
+# Project Specific
+# ============================================
+/node_modules
+/.pnp
+.pnp.js
+dist
+build
+
+# ============================================
+# Package Manager
+# ============================================
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+tmp/
+temp/
+.cache/
+
+# ============================================
+# Database
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+.mongodb/
+
+# ============================================
+# Miscellaneous
+# ============================================
+.prettierignore
+.eslintignore
+.env.example

@@ -1,23 +1,32 @@
 {
-  "name": "backend",
+  "name": "arrakis-labs-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js"},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "description": "Arrakis Labs - Competitive Programming Platform Backend",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js"
+  },
+  "keywords": [
+    "competitive-programming",
+    "ai",
+    "learning"
+  ],
+  "author": "Arrakis Labs",
+  "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^7.2.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.3",
+    "mongoose": "^7.5.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
