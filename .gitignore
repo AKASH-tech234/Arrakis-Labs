@@ -123,3 +123,4 @@ temp/
 .prettierignore
 .eslintignore
 .env.example
+.venv
