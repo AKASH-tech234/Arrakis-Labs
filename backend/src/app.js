@@ -9,23 +9,22 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
+import devRoutes from "./routes/devRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-
 const app = express();
 
 app.use(helmet());
 
-
 app.use(mongoSanitize());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 100, 
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: "Too many requests from this IP, please try again later.",
 });
 app.use("/api/", limiter);
@@ -43,12 +42,9 @@ app.use("/api/auth/signup", authLimiter);
 
 app.use(express.json({ limit: "10kb" }));
 
-
 app.use(express.urlencoded({ limit: "10kb", extended: true }));
 
-
 app.use(cookieParser());
-
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -71,7 +67,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
 
 const connectDB = async () => {
   try {
@@ -151,20 +146,25 @@ app.post("/api/execute", async (req, res) => {
     }
 
     // Call Piston API
-    const pistonResponse = await fetch("https://emkc.org/api/v2/piston/execute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        language: langConfig.language,
-        version: langConfig.version,
-        files: [{ name: langConfig.filename, content: code }],
-        stdin: stdin || "",
-      }),
-    });
+    const pistonResponse = await fetch(
+      "https://emkc.org/api/v2/piston/execute",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          language: langConfig.language,
+          version: langConfig.version,
+          files: [{ name: langConfig.filename, content: code }],
+          stdin: stdin || "",
+        }),
+      },
+    );
 
     if (!pistonResponse.ok) {
       const errorText = await pistonResponse.text();
-      console.error(`Piston API error: ${pistonResponse.status} - ${errorText}`);
+      console.error(
+        `Piston API error: ${pistonResponse.status} - ${errorText}`,
+      );
       return res.status(502).json({
         status: "error",
         message: "Code execution service unavailable",
@@ -195,6 +195,7 @@ app.post("/api/execute", async (req, res) => {
 // ============================================
 
 app.use("/api/auth", authRoutes);
+app.use("/api/dev", devRoutes);
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
@@ -223,19 +224,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    
     await connectDB();
 
     app.listen(PORT, () => {
       console.log(
         `✓ Server running on ${
           process.env.NODE_ENV || "development"
-        } mode at http://localhost:${PORT}`
+        } mode at http://localhost:${PORT}`,
       );
       console.log(`✓ API Base URL: http://localhost:${PORT}/api`);
     });
