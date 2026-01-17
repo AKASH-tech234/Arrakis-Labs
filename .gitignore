@@ -124,3 +124,10 @@ temp/
 .eslintignore
 .env.example
 .venv
+
+# env files
+.env
+backend/.env
+
+# node
+node_modules/

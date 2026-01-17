@@ -1,5 +1,5 @@
 // src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
@@ -7,6 +7,15 @@ import ProblemDescription from "../components/problem/ProblemDescription";
 import CodeEditor from "../components/editor/CodeEditor";
 import OutputPanel from "../components/editor/OutputPanel";
 import AIFeedbackPanel from "../components/feedback/AIFeedbackPanel";
+import { executeCode } from "../services/api";
+
+// Map UI language names to Piston runtime identifiers
+const languageMap = {
+  Python: "python",
+  JavaScript: "javascript",
+  Java: "java",
+  "C++": "cpp",
+};
 
 // Mock problem data with full details
 const mockProblems = {
@@ -102,37 +111,95 @@ export default function ProblemDetail() {
   const [status, setStatus] = useState("idle");
   const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const abortControllerRef = useRef(null);
 
   const problem = useMemo(() => {
     return mockProblems[id] || defaultProblem;
   }, [id]);
 
-  const handleRun = (code, language) => {
-    setStatus("running");
-    setOutput("");
+  /**
+   * Format execution result for display
+   */
+  const formatOutput = (result, headerText) => {
+    const lines = [headerText];
 
-    // Simulate running code
-    setTimeout(() => {
-      setOutput(
-        `Running ${language} code...\n\nTest case 1: Passed\nTest case 2: Passed\n\nAll test cases passed.`
-      );
-      setStatus("success");
-    }, 800);
+    if (result.stdout) {
+      lines.push("\n=== STDOUT ===");
+      lines.push(result.stdout);
+    }
+
+    if (result.stderr) {
+      lines.push("\n=== STDERR ===");
+      lines.push(result.stderr);
+    }
+
+    lines.push(`\nExit code: ${result.exitCode}`);
+    return lines.join("\n");
+  };
+
+  /**
+   * Execute code via Piston API
+   */
+  const runCode = async (code, language, isSubmit = false) => {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Validate input
+    if (!code || !code.trim()) {
+      setStatus("error");
+      setOutput("No code to run.");
+      return;
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setStatus("running");
+    setOutput(isSubmit ? "Submitting..." : "Running...");
+    setSubmitted(false);
+
+    try {
+      const result = await executeCode({
+        code,
+        language: languageMap[language] || language.toLowerCase(),
+        stdin: "",
+        signal: controller.signal,
+      });
+
+      const headerText = isSubmit
+        ? `Submitted ${language} solution`
+        : `Running ${language} code...`;
+
+      setOutput(formatOutput(result, headerText));
+      setStatus(result.exitCode === 0 ? "success" : "error");
+
+      if (isSubmit && result.exitCode === 0) {
+        setSubmitted(true);
+      }
+    } catch (err) {
+      if (err.name === "AbortError") {
+        // Request was cancelled, keep previous output or show cancelled
+        setOutput((prev) => prev || "Cancelled.");
+        setStatus("idle");
+      } else {
+        setOutput(`Error: ${err.message}`);
+        setStatus("error");
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+    }
+  };
+
+  const handleRun = (code, language) => {
+    runCode(code, language, false);
   };
 
   const handleSubmit = (code, language) => {
-    setStatus("running");
-    setOutput("");
-    setSubmitted(false);
-
-    // Simulate submission
-    setTimeout(() => {
-      setOutput(
-        `Submitting ${language} solution...\n\nJudging...\n\nAccepted\nRuntime: 45ms (beats 78%)\nMemory: 16.2MB (beats 65%)`
-      );
-      setStatus("success");
-      setSubmitted(true);
-    }, 1200);
+    runCode(code, language, true);
   };
 
   return (
