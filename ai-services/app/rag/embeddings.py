@@ -1,5 +1,6 @@
 from langchain_openai import OpenAIEmbeddings
 
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-large"
-)
+def get_embeddings():
+    return OpenAIEmbeddings(
+        model="text-embedding-3-large"
+    )
