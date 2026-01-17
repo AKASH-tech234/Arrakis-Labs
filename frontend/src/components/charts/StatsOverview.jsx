@@ -1,5 +1,6 @@
 // src/components/charts/StatsOverview.jsx
 // Stats cards showing problems solved, acceptance rate, and streak
+import { motion } from "framer-motion";
 
 const mockStats = {
   problemsSolved: 47,
@@ -12,137 +13,159 @@ const mockStats = {
   hardCount: 7,
 };
 
+const StatCard = ({ label, value, unit, accent, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    className={`group relative overflow-hidden rounded-lg bg-gradient-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm border border-[#D97706]/20 p-6 hover:border-[#D97706]/50 hover:shadow-lg hover:shadow-[#D97706]/15 transition-all duration-300`}
+  >
+    {/* Hover gradient background */}
+    <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+    {/* Top accent line */}
+    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+    <div className="relative z-10">
+      <p
+        className="text-[#78716C] group-hover:text-[#D97706] text-[10px] uppercase tracking-wider mb-3 transition-colors duration-300 font-medium"
+        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+      >
+        {label}
+      </p>
+      <motion.p
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.4, delay: delay + 0.1 }}
+        className={`text-3xl font-bold group-hover:text-[#FCD34D] transition-colors duration-300 ${accent}`}
+        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+      >
+        {value}
+        {unit && <span className="text-[#3D3D3D] group-hover:text-[#78716C] text-lg ml-1 transition-colors">{unit}</span>}
+      </motion.p>
+    </div>
+  </motion.div>
+);
+
 export default function StatsOverview() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {/* Problems Solved */}
-      <div className="border border-[#1A1814] p-4">
-        <p
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider mb-2"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          Solved
-        </p>
-        <p
-          className="text-[#E8E4D9] text-2xl font-light"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          {mockStats.problemsSolved}
-          <span className="text-[#3D3D3D] text-sm">
-            /{mockStats.totalProblems}
-          </span>
-        </p>
-      </div>
+      <StatCard
+        label="Solved"
+        value={mockStats.problemsSolved}
+        unit={`/${mockStats.totalProblems}`}
+        accent="text-[#E8E4D9]"
+        delay={0}
+      />
 
       {/* Acceptance Rate */}
-      <div className="border border-[#1A1814] p-4">
-        <p
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider mb-2"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          Acceptance
-        </p>
-        <p
-          className="text-[#E8E4D9] text-2xl font-light"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          {mockStats.acceptanceRate}
-          <span className="text-[#3D3D3D] text-sm">%</span>
-        </p>
-      </div>
+      <StatCard
+        label="Acceptance"
+        value={mockStats.acceptanceRate}
+        unit="%"
+        accent="text-[#E8E4D9]"
+        delay={0.1}
+      />
 
       {/* Current Streak */}
-      <div className="border border-[#1A1814] p-4">
-        <p
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider mb-2"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          Streak
-        </p>
-        <p
-          className="text-[#D97706] text-2xl font-light"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          {mockStats.currentStreak}
-          <span className="text-[#3D3D3D] text-sm"> days</span>
-        </p>
-      </div>
+      <StatCard
+        label="Current Streak"
+        value={mockStats.currentStreak}
+        unit="days"
+        accent="text-[#F59E0B]"
+        delay={0.2}
+      />
 
       {/* Max Streak */}
-      <div className="border border-[#1A1814] p-4">
-        <p
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider mb-2"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          Best Streak
-        </p>
-        <p
-          className="text-[#E8E4D9] text-2xl font-light"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          {mockStats.maxStreak}
-          <span className="text-[#3D3D3D] text-sm"> days</span>
-        </p>
-      </div>
+      <StatCard
+        label="Best Streak"
+        value={mockStats.maxStreak}
+        unit="days"
+        accent="text-[#D97706]"
+        delay={0.3}
+      />
 
       {/* Difficulty Breakdown - spans 2 columns on mobile, full row on desktop */}
-      <div className="col-span-2 md:col-span-4 border border-[#1A1814] p-4">
-        <p
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider mb-4"
-          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-        >
-          By Difficulty
-        </p>
-        <div className="flex items-center gap-8">
-          {/* Easy */}
-          <div className="flex items-center gap-3">
-            <span
-              className="text-[#78716C] text-xs uppercase tracking-wider"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-            >
-              Easy
-            </span>
-            <span
-              className="text-[#E8E4D9] text-lg"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-            >
-              {mockStats.easyCount}
-            </span>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="col-span-2 md:col-span-4 group relative overflow-hidden rounded-lg bg-gradient-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm border border-[#D97706]/20 p-6 hover:border-[#D97706]/50 hover:shadow-lg hover:shadow-[#D97706]/15 transition-all duration-300"
+      >
+        {/* Hover gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-          {/* Medium */}
-          <div className="flex items-center gap-3">
-            <span
-              className="text-[#D97706] text-xs uppercase tracking-wider"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-            >
-              Medium
-            </span>
-            <span
-              className="text-[#E8E4D9] text-lg"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-            >
-              {mockStats.mediumCount}
-            </span>
-          </div>
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-          {/* Hard */}
-          <div className="flex items-center gap-3">
-            <span
-              className="text-[#92400E] text-xs uppercase tracking-wider"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        <div className="relative z-10">
+          <p
+            className="text-[#78716C] group-hover:text-[#D97706] text-[10px] uppercase tracking-wider mb-5 transition-colors duration-300 font-medium"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Difficulty Breakdown
+          </p>
+          <div className="flex items-center gap-8 flex-wrap">
+            {/* Easy */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-3"
             >
-              Hard
-            </span>
-            <span
-              className="text-[#E8E4D9] text-lg"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              <span
+                className="text-[#78716C] group-hover:text-[#E8E4D9] text-xs uppercase tracking-wider transition-colors duration-300 font-medium"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Easy
+              </span>
+              <span
+                className="text-[#E8E4D9] group-hover:text-[#F59E0B] text-lg font-bold transition-colors duration-300"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {mockStats.easyCount}
+              </span>
+            </motion.div>
+
+            {/* Medium */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-3"
             >
-              {mockStats.hardCount}
-            </span>
+              <span
+                className="text-[#D97706] group-hover:text-[#FCD34D] text-xs uppercase tracking-wider transition-colors duration-300 font-medium"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Medium
+              </span>
+              <span
+                className="text-[#E8E4D9] group-hover:text-[#F59E0B] text-lg font-bold transition-colors duration-300"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {mockStats.mediumCount}
+              </span>
+            </motion.div>
+
+            {/* Hard */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-3"
+            >
+              <span
+                className="text-[#92400E] group-hover:text-[#F59E0B] text-xs uppercase tracking-wider transition-colors duration-300 font-medium"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Hard
+              </span>
+              <span
+                className="text-[#E8E4D9] group-hover:text-[#F59E0B] text-lg font-bold transition-colors duration-300"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {mockStats.hardCount}
+              </span>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
