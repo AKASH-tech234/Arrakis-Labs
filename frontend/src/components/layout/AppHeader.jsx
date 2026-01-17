@@ -1,18 +1,18 @@
 // src/components/layout/AppHeader.jsx
 // Persistent header for authenticated pages (Problems, Profile)
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Mock user data
-const mockUser = {
-  name: "Paul Atreides",
-  username: "muaddib",
-};
+import { useAuth } from "../../context/AuthContext";
 
 export default function AppHeader() {
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const username = user?.email ? user.email.split("@")[0] : "user";
+  const displayName = user?.name || "User";
 
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -60,14 +60,14 @@ export default function AppHeader() {
               className="text-xs tracking-[0.1em] uppercase"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {mockUser.username}
+              {username}
             </span>
             <div className="w-8 h-8 border border-[#1A1814] flex items-center justify-center">
               <span
                 className="text-[#78716C] text-xs uppercase"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                {mockUser.name.charAt(0)}
+                {displayName.charAt(0)}
               </span>
             </div>
           </button>
@@ -88,13 +88,13 @@ export default function AppHeader() {
                     className="text-[#E8E4D9] text-xs uppercase tracking-wider"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
-                    {mockUser.name}
+                    {displayName}
                   </p>
                   <p
                     className="text-[#78716C] text-[10px] uppercase tracking-wider mt-0.5"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
-                    @{mockUser.username}
+                    @{username}
                   </p>
                 </div>
                 <Link
@@ -105,14 +105,21 @@ export default function AppHeader() {
                 >
                   View Profile
                 </Link>
-                <Link
-                  to="/"
-                  onClick={() => setProfileOpen(false)}
-                  className="block px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30 transition-colors text-xs uppercase tracking-wider"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setProfileOpen(false);
+                    try {
+                      await logout();
+                    } finally {
+                      navigate("/", { replace: true });
+                    }
+                  }}
+                  className="block w-full text-left px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30 transition-colors text-xs uppercase tracking-wider"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Sign Out
-                </Link>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

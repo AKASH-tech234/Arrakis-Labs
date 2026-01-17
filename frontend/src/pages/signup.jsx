@@ -1,18 +1,40 @@
 // src/pages/Signup.jsx - Dune-Inspired
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import ArrakisLogo from "../components/ui/ArrakisLogo";
+import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // No backend logic - UI only
-    console.log("Signup submitted:", { name, email, password });
+    setError("");
+
+    if (password !== passwordConfirm) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      await register({ name, email, password, passwordConfirm });
+      navigate("/problems", { replace: true });
+    } catch (err) {
+      setError(err.message || "Signup failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -61,6 +83,14 @@ export default function Signup() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div
+                className="border border-[#92400E]/40 bg-[#92400E]/10 px-4 py-3 text-xs text-[#D97706]"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {error}
+              </div>
+            )}
             {/* Name */}
             <div>
               <label
@@ -127,14 +157,37 @@ export default function Signup() {
               />
             </div>
 
+            {/* Confirm Password */}
+            <div>
+              <label
+                htmlFor="passwordConfirm"
+                className="block text-[#78716C] text-xs mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Confirm Passkey
+              </label>
+              <input
+                type="password"
+                id="passwordConfirm"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className="w-full bg-[#0A0A08] border border-[#1A1814] text-[#E8E4D9] px-4 py-3 text-sm
+                         focus:outline-none focus:border-[#92400E]/50 transition-all duration-200
+                         placeholder:text-[#3D3D3D]"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                placeholder="••••••••"
+              />
+            </div>
+
             {/* Submit */}
             <button
               type="submit"
+              disabled={submitting}
               className="w-full bg-gradient-to-r from-[#92400E] to-[#D97706] text-[#0A0A08] py-3.5 font-semibold text-xs tracking-[0.15em] uppercase
                        hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              Initialize Trial
+              {submitting ? "Initializing..." : "Initialize Trial"}
             </button>
           </form>
 

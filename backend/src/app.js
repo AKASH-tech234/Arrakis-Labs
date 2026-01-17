@@ -30,6 +30,17 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
+// Stricter rate limit for auth endpoints (prevent brute force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message: "Too many authentication attempts, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/auth/signin", authLimiter);
+app.use("/api/auth/signup", authLimiter);
+
 app.use(express.json({ limit: "10kb" }));
 
 
@@ -39,8 +50,21 @@ app.use(express.urlencoded({ limit: "10kb", extended: true }));
 app.use(cookieParser());
 
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+].filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin, callback) => {
+    // Allow same-origin / non-browser clients (no Origin header)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -77,6 +101,93 @@ app.get("/api/health", (req, res) => {
     message: "Server is running",
     timestamp: new Date().toISOString(),
   });
+});
+
+// ============================================
+// CODE EXECUTION (Piston Proxy)
+// ============================================
+
+// Map frontend language identifiers to Piston runtime + file extension
+const pistonLanguageMap = {
+  python: { language: "python", version: "3", filename: "main.py" },
+  javascript: { language: "javascript", version: "*", filename: "main.js" },
+  java: { language: "java", version: "*", filename: "Main.java" },
+  cpp: { language: "cpp", version: "*", filename: "main.cpp" },
+};
+
+app.post("/api/execute", async (req, res) => {
+  try {
+    const { code, language, stdin = "" } = req.body;
+
+    // Validate required fields
+    if (!code || typeof code !== "string") {
+      return res.status(400).json({
+        status: "error",
+        message: "Missing or invalid 'code' field",
+      });
+    }
+
+    if (!language || typeof language !== "string") {
+      return res.status(400).json({
+        status: "error",
+        message: "Missing or invalid 'language' field",
+      });
+    }
+
+    // Validate code size (limit to 64KB)
+    if (code.length > 65536) {
+      return res.status(400).json({
+        status: "error",
+        message: "Code exceeds maximum size (64KB)",
+      });
+    }
+
+    const langConfig = pistonLanguageMap[language.toLowerCase()];
+    if (!langConfig) {
+      return res.status(400).json({
+        status: "error",
+        message: `Unsupported language: ${language}. Supported: ${Object.keys(pistonLanguageMap).join(", ")}`,
+      });
+    }
+
+    // Call Piston API
+    const pistonResponse = await fetch("https://emkc.org/api/v2/piston/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        language: langConfig.language,
+        version: langConfig.version,
+        files: [{ name: langConfig.filename, content: code }],
+        stdin: stdin || "",
+      }),
+    });
+
+    if (!pistonResponse.ok) {
+      const errorText = await pistonResponse.text();
+      console.error(`Piston API error: ${pistonResponse.status} - ${errorText}`);
+      return res.status(502).json({
+        status: "error",
+        message: "Code execution service unavailable",
+      });
+    }
+
+    const pistonData = await pistonResponse.json();
+
+    // Normalize response
+    const run = pistonData.run || {};
+    res.json({
+      stdout: run.stdout || "",
+      stderr: run.stderr || "",
+      output: run.output || "",
+      exitCode: run.code ?? -1,
+    });
+  } catch (error) {
+    console.error("Execute endpoint error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during code execution",
+    });
+  }
 });
 
 // ============================================

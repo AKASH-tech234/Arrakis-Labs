@@ -1,17 +1,34 @@
 // src/pages/Login.jsx - Dune-Inspired
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import ArrakisLogo from "../components/ui/ArrakisLogo";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from || "/problems";
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // No backend logic - UI only
-    console.log("Login submitted:", { email, password });
+    setError("");
+    setSubmitting(true);
+
+    try {
+      await login(email, password);
+      navigate(redirectTo, { replace: true });
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -60,6 +77,14 @@ export default function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div
+                className="border border-[#92400E]/40 bg-[#92400E]/10 px-4 py-3 text-xs text-[#D97706]"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {error}
+              </div>
+            )}
             {/* Email */}
             <div>
               <label
@@ -118,11 +143,12 @@ export default function Login() {
             {/* Submit */}
             <button
               type="submit"
+              disabled={submitting}
               className="w-full bg-gradient-to-r from-[#92400E] to-[#D97706] text-[#0A0A08] py-3.5 font-semibold text-xs tracking-[0.15em] uppercase
                        hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              Authenticate
+              {submitting ? "Authenticating..." : "Authenticate"}
             </button>
           </form>
 

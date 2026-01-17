@@ -302,7 +302,11 @@ export const githubAuth = async (req, res) => {
 // @access  Private
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token");
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
 
     res.status(200).json({
       success: true,
