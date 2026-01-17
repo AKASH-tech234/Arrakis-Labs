@@ -62,9 +62,10 @@ export default function CTA() {
               letterSpacing: "0.03em",
             }}
           >
-            Step into the silence. Let the AI observe your patterns, remember
-            your growth, and guide you toward mastery through deliberate
-            practice.
+           Enter the silence.
+Every action leaves a trace. Every pause reveals intent.
+The AI observes your patterns, remembers your evolution,
+and sharpens your path toward mastery—one deliberate step at a time.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

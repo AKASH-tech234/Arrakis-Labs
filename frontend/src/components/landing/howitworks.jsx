@@ -37,19 +37,36 @@ function StepCard({ step, index }) {
     <motion.div
       ref={ref}
       initial={{ opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.15, ease: "easeOut" }}
-      className="relative"
+
+      /* ⚡ Faster hover response */
+      whileHover={{
+        y: -6,
+        boxShadow: "0 0 60px rgba(245, 158, 11, 0.12)",
+      }}
+      whileTap={{ y: -4 }}
+      transition={{
+        type: "spring",
+        stiffness: 420,
+        damping: 30,
+      }}
+      className="relative group"
     >
       {/* Connector line */}
       {index < steps.length - 1 && (
-        <div className="hidden lg:block absolute top-6 left-[calc(100%+8px)] w-[calc(100%-16px)] h-px bg-gradient-to-r from-[#92400E]/40 to-transparent" />
+        <div className="hidden lg:block absolute top-6 left-[calc(100%+8px)] w-[calc(100%-16px)] h-px 
+                        bg-gradient-to-r from-[#92400E]/40 to-transparent 
+                        group-hover:from-[#D97706]/70 
+                        transition-colors duration-150" />
       )}
 
       <div className="relative">
-        {/* Step number - Angular, no rounded corners */}
+        {/* Step number */}
         <div
-          className="w-12 h-12 bg-gradient-to-br from-[#92400E] to-[#D97706] flex items-center justify-center mb-6"
+          className="w-12 h-12 bg-gradient-to-br from-[#92400E] to-[#D97706] 
+                     flex items-center justify-center mb-6 
+                     transition-all duration-150 group-hover:brightness-110"
           style={{
             clipPath: "polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%)",
           }}
@@ -65,7 +82,8 @@ function StepCard({ step, index }) {
         </div>
 
         <h3
-          className="text-lg font-medium text-[#E8E4D9] mb-3 tracking-wide uppercase"
+          className="text-lg font-medium text-[#E8E4D9] mb-3 tracking-wide uppercase 
+                     transition-colors duration-150 group-hover:text-[#F59E0B]"
           style={{
             fontFamily: "'Rajdhani', system-ui, sans-serif",
             letterSpacing: "0.1em",
@@ -73,8 +91,10 @@ function StepCard({ step, index }) {
         >
           {step.title}
         </h3>
+
         <p
-          className="text-[#78716C] leading-relaxed text-sm"
+          className="text-[#78716C] leading-relaxed text-sm 
+                     transition-colors duration-150 group-hover:text-[#9A8F82]"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
           {step.description}
@@ -99,7 +119,7 @@ export default function HowItWorks() {
         <motion.div
           ref={headerRef}
           initial={{ opacity: 0, y: 20 }}
-          animate={headerInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          animate={headerInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-center mb-16"
         >
@@ -109,6 +129,7 @@ export default function HowItWorks() {
           >
             The Process
           </span>
+
           <h2
             className="text-3xl md:text-4xl lg:text-5xl font-medium text-[#E8E4D9] mb-6"
             style={{
@@ -120,6 +141,7 @@ export default function HowItWorks() {
           >
             The Path to Mastery
           </h2>
+
           <p
             className="text-[#78716C] max-w-2xl mx-auto text-base"
             style={{
@@ -138,94 +160,6 @@ export default function HowItWorks() {
             <StepCard key={step.number} step={step} index={index} />
           ))}
         </div>
-
-        {/* Code Preview - Dune themed terminal */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-20"
-        >
-          <div
-            className="border border-[#1A1814] overflow-hidden"
-            style={{ backgroundColor: "#0D0D0B" }}
-          >
-            {/* Editor header - angular, minimal */}
-            <div className="px-5 py-3 border-b border-[#1A1814] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-[#92400E]" />
-                <div className="w-2 h-2 bg-[#D97706]" />
-                <div className="w-2 h-2 bg-[#F59E0B]" />
-              </div>
-              <span
-                className="text-[#78716C] text-xs tracking-[0.15em] uppercase"
-                style={{ fontFamily: "'Rajdhani', monospace" }}
-              >
-                solution.mentat
-              </span>
-            </div>
-
-            {/* Code content */}
-            <div className="p-6 font-mono text-sm leading-relaxed">
-              <div className="flex gap-6">
-                {/* Line numbers */}
-                <div
-                  className="text-[#3D3D3D] select-none text-right"
-                  style={{ minWidth: "24px" }}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                    <div key={n}>{n}</div>
-                  ))}
-                </div>
-                {/* Code */}
-                <div>
-                  <div>
-                    <span className="text-[#92400E]">def</span>{" "}
-                    <span className="text-[#F59E0B]">fibonacci</span>
-                    <span className="text-[#E8E4D9]">(n):</span>
-                  </div>
-                  <div>
-                    <span className="text-[#5C5C5C]">
-                      {" "}
-                      # MENTAT: Consider memoization for efficiency
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[#92400E]"> if</span>{" "}
-                    <span className="text-[#E8E4D9]">n &lt;= </span>
-                    <span className="text-[#D97706]">1</span>
-                    <span className="text-[#E8E4D9]">:</span>
-                  </div>
-                  <div>
-                    <span className="text-[#92400E]"> return</span>{" "}
-                    <span className="text-[#E8E4D9]">n</span>
-                  </div>
-                  <div>
-                    <span className="text-[#92400E]"> return</span>{" "}
-                    <span className="text-[#F59E0B]">fibonacci</span>
-                    <span className="text-[#E8E4D9]">(n-</span>
-                    <span className="text-[#D97706]">1</span>
-                    <span className="text-[#E8E4D9]">) + </span>
-                    <span className="text-[#F59E0B]">fibonacci</span>
-                    <span className="text-[#E8E4D9]">(n-</span>
-                    <span className="text-[#D97706]">2</span>
-                    <span className="text-[#E8E4D9]">)</span>
-                  </div>
-                  <div></div>
-                  <div>
-                    <span className="text-[#F59E0B]">output</span>
-                    <span className="text-[#E8E4D9]">(</span>
-                    <span className="text-[#F59E0B]">fibonacci</span>
-                    <span className="text-[#E8E4D9]">(</span>
-                    <span className="text-[#D97706]">10</span>
-                    <span className="text-[#E8E4D9]">))</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

@@ -1,133 +1,115 @@
-# ============================================
-# Dependencies
-# ============================================
+# ===============================
+# ENV / SECRETS
+# ===============================
+.env
+.env.*
+!.env.example
+
+# ===============================
+# NODE / FRONTEND
+# ===============================
 node_modules/
-npm-debug.log
+.pnp
+.pnp.js
+
+dist/
+build/
+out/
+
+.vite/
+.next/
+.nuxt/
+.parcel-cache/
+.cache/
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# ============================================
-# Environment Variables
-# ============================================
-.env
-.env.local
-.env.*.local
-.env.development.local
-.env.test.local
-.env.production.local
+# ===============================
+# BACKEND / PYTHON
+# ===============================
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+ENV/
+env/
 
-# ============================================
-# IDE & Editor Files
-# ============================================
+.pytest_cache/
+.coverage*
+htmlcov/
+.tox/
+
+# ===============================
+# DATABASES
+# ===============================
+*.sqlite
+*.sqlite3
+*.db
+*.psql
+*.dump
+.mongodb/
+
+# ===============================
+# DJANGO / FLASK
+# ===============================
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+instance/
+
+# ===============================
+# DOCKER
+# ===============================
+docker-compose.override.yml
+*.env.docker
+.docker/
+
+# ===============================
+# CLOUD / CREDS
+# ===============================
+.aws/
+.gcloud/
+.azure/
+*.pem
+*.key
+*.crt
+*.p12
+
+# ===============================
+# LOGS / RUNTIME
+# ===============================
+logs/
+*.log
+*.pid
+
+# ===============================
+# EDITORS / OS
+# ===============================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
-*.sublime-project
-*.sublime-workspace
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+Thumbs.db
+Desktop.ini
 
-# ============================================
-# Build & Output
-# ============================================
-dist/
-build/
-out/
-*.tsbuildinfo
-.next
-.nuxt
-.cache
-.vuepress/dist
-.serverless/
-.fusebox/
-.dynamodb/
-.tern-port
-
-# ============================================
-# Testing
-# ============================================
+# ===============================
+# TESTING
+# ===============================
 coverage/
 .nyc_output/
 *.lcov
 .mocha_output
 
-# ============================================
-# Logs
-# ============================================
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-*.log
-
-# ============================================
-# OS Files
-# ============================================
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Desktop.ini
-
-# ============================================
-# Project Specific
-# ============================================
-/node_modules
-/.pnp
-.pnp.js
-dist
-build
-
-# ============================================
-# Package Manager
-# ============================================
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# ============================================
-# Temporary Files
-# ============================================
-*.tmp
-*.temp
-tmp/
-temp/
-.cache/
-
-# ============================================
-# Database
-# ============================================
-*.db
-*.sqlite
-*.sqlite3
-.mongodb/
-
-# ============================================
-# Miscellaneous
-# ============================================
+# ===============================
+# MISC
+# ===============================
 .prettierignore
 .eslintignore
-.env.example
-.venv
-
-# env files
-.env
-backend/.env
-
-# node
-node_modules/
+.tern-port

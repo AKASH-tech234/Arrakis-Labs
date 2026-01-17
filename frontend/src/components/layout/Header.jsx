@@ -27,7 +27,6 @@ export default function Header() {
       }`}
     >
       <nav className="max-w-7xl mx-auto px-6 lg:px-12 py-4 flex items-center justify-between">
-        {/* Brand with New Arrakis Logo */}
         <Link to="/" className="flex items-center gap-3">
           <ArrakisLogo size="sm" showWordmark={false} animated={false} />
           <div className="flex flex-col">
