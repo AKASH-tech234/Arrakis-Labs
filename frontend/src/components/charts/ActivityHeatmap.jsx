@@ -16,7 +16,6 @@ const generateMockData = () => {
       const date = new Date(today);
       date.setDate(date.getDate() - (week * 7 + (6 - day)));
 
-      // Random activity level (0-4)
       const level = Math.random() > 0.6 ? Math.floor(Math.random() * 5) : 0;
 
       weekData.push({
@@ -29,13 +28,13 @@ const generateMockData = () => {
   return data;
 };
 
-// Sand-toned color scale with theme colors
+// Sand-toned color scale
 const levelColors = {
-  0: "#121210", // Empty - Obsidian
-  1: "#1A1814", // Low - Burnt Sand
-  2: "#92400E40", // Medium-Low - Ancient Bronze faded
-  3: "#92400E80", // Medium-High - Ancient Bronze
-  4: "#D97706", // High - Desert Gold
+  0: "#121210",
+  1: "#1A1814",
+  2: "#92400E40",
+  3: "#92400E80",
+  4: "#D97706",
 };
 
 const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
@@ -57,7 +56,7 @@ const monthLabels = [
 export default function ActivityHeatmap() {
   const activityData = generateMockData();
 
-  // Get month positions for labels - synced with heatmap grid
+  // Month label positioning
   const getMonthPositions = () => {
     const positions = [];
     let currentMonth = -1;
@@ -76,11 +75,21 @@ export default function ActivityHeatmap() {
   };
 
   const monthPositions = getMonthPositions();
-  const CELL_SIZE = 12; // 10px cell + 2px gap
+  const CELL_SIZE = 12;
+
+  // 🔥 NEW: detect month change for spacing (LeetCode-style)
+  const isNewMonth = (weekIndex) => {
+    if (weekIndex === 0) return false;
+
+    const prevDate = new Date(activityData[weekIndex - 1][0].date);
+    const currDate = new Date(activityData[weekIndex][0].date);
+
+    return prevDate.getMonth() !== currDate.getMonth();
+  };
 
   return (
     <div className="w-full overflow-x-auto">
-      {/* Month Labels - Fixed positioning to align with grid */}
+      {/* Month Labels */}
       <div className="flex gap-[2px] mb-3 ml-8 relative h-5">
         {monthPositions.map(({ month, weekIndex }, index) => {
           const nextWeekIndex = monthPositions[index + 1]?.weekIndex || WEEKS;
@@ -92,9 +101,7 @@ export default function ActivityHeatmap() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              style={{
-                width: monthWidth,
-              }}
+              style={{ width: monthWidth }}
               className="relative"
             >
               <span
@@ -122,28 +129,42 @@ export default function ActivityHeatmap() {
           ))}
         </div>
 
-        {/* Heatmap Grid with Month Separators */}
-        <div className="flex gap-[2px] relative">
-          {activityData.map((week, weekIndex) => (
+        {/* Heatmap Grid */}
+        <div className="flex relative">
+  {activityData.map((week, weekIndex) => {
+    const isMonthStart =
+      weekIndex !== 0 &&
+      new Date(activityData[weekIndex][0].date).getMonth() !==
+        new Date(activityData[weekIndex - 1][0].date).getMonth();
+
+    return (
+      <div key={weekIndex} className="flex">
+        {/* Month separator */}
+        {isMonthStart && <div className="w-[8px]" />}
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: weekIndex * 0.01 }}
+          className="flex flex-col gap-[2px]"
+        >
+          {week.map((day, dayIndex) => (
             <motion.div
-              key={weekIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: weekIndex * 0.01 }}
-              className="flex flex-col gap-[2px]"
-            >
-              {week.map((day, dayIndex) => (
-                <motion.div
-                  key={dayIndex}
-                  className="w-[10px] h-[10px] rounded-sm cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-[#F59E0B] hover:ring-offset-1 hover:ring-offset-[#0A0A08]"
-                  style={{ backgroundColor: levelColors[day.level] }}
-                  title={`${day.date}: ${day.level} submissions`}
-                  whileHover={{ scale: 1.3 }}
-                />
-              ))}
-            </motion.div>
+              key={dayIndex}
+              className="w-[10px] h-[10px] rounded-sm cursor-pointer transition-all duration-200
+                         hover:ring-2 hover:ring-[#F59E0B]
+                         hover:ring-offset-1 hover:ring-offset-[#0A0A08]"
+              style={{ backgroundColor: levelColors[day.level] }}
+              title={`${day.date}: ${day.level} submissions`}
+              whileHover={{ scale: 1.3 }}
+            />
           ))}
-        </div>
+        </motion.div>
+      </div>
+    );
+  })}
+</div>
+
       </div>
 
       {/* Legend */}
@@ -159,16 +180,18 @@ export default function ActivityHeatmap() {
         >
           Less
         </span>
+
         <div className="flex gap-[2px]">
           {Object.values(levelColors).map((color, index) => (
             <motion.div
               key={index}
-              className="w-[10px] h-[10px] rounded-sm hover:ring-2 hover:ring-[#F59E0B] transition-all"
+              className="w-[10px] h-[10px] rounded-sm hover:ring-2 hover:ring-[#F59E0B]"
               style={{ backgroundColor: color }}
               whileHover={{ scale: 1.2 }}
             />
           ))}
         </div>
+
         <span
           className="text-[#78716C] text-[10px] uppercase tracking-wider font-medium"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
