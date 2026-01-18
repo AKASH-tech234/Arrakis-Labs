@@ -4,26 +4,31 @@ import { useState } from "react";
 const languageOptions = ["Python", "JavaScript", "Java", "C++"];
 
 const defaultCode = {
-  Python: `def solution(nums, target):
-    # Write your solution here
-    pass`,
-  JavaScript: `function solution(nums, target) {
-    // Write your solution here
-    
-}`,
-  Java: `class Solution {
-    public int[] solution(int[] nums, int target) {
-        // Write your solution here
-        return new int[]{};
+  Python: `# cook your dish here`,
+  
+  JavaScript: `// cook your dish here`,
+  
+  Java: `/* package codechef; */
+
+import java.util.*;
+import java.lang.*;
+import java.io.*;
+
+class CodeChef
+{
+    public static void main (String[] args) throws java.lang.Exception
+    {
+        // your code goes here
     }
 }`,
-  "C++": `class Solution {
-public:
-    vector<int> solution(vector<int>& nums, int target) {
-        // Write your solution here
-        return {};
-    }
-};`,
+  
+  "C++": `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    // your code goes here
+    return 0;
+}`,
 };
 
 export default function CodeEditor({ onRun, onSubmit }) {
