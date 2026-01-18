@@ -9,22 +9,32 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
-import devRoutes from "./routes/devRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import {
+  runCode,
+  submitCode,
+  getSubmissions,
+  getPublicQuestions,
+  getPublicQuestion,
+} from "./controllers/judgeController.js";
+import { protect } from "./middleware/authMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
+
 const app = express();
 
 app.use(helmet());
 
+
 app.use(mongoSanitize());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
   message: "Too many requests from this IP, please try again later.",
 });
 app.use("/api/", limiter);
@@ -40,11 +50,40 @@ const authLimiter = rateLimit({
 app.use("/api/auth/signin", authLimiter);
 app.use("/api/auth/signup", authLimiter);
 
+// Stricter rate limit for admin login
+const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Only 5 attempts per window for admin
+  message: "Too many admin login attempts, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/admin/login", adminAuthLimiter);
+
+// Rate limiter for code execution (prevent abuse of Piston API)
+const codeLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 20, // Max 20 executions per minute
+  message: { 
+    status: "error", 
+    message: "Too many code executions. Please wait before trying again." 
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use user ID if authenticated, otherwise IP
+    return req.user?._id?.toString() || req.ip;
+  },
+});
+
 app.use(express.json({ limit: "10kb" }));
+
 
 app.use(express.urlencoded({ limit: "10kb", extended: true }));
 
+
 app.use(cookieParser());
+
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -67,6 +106,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
 
 const connectDB = async () => {
   try {
@@ -99,7 +139,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // ============================================
-// CODE EXECUTION (Piston Proxy)
+// CODE EXECUTION (Piston Proxy) - Direct editor testing
 // ============================================
 
 // Map frontend language identifiers to Piston runtime + file extension
@@ -110,7 +150,8 @@ const pistonLanguageMap = {
   cpp: { language: "cpp", version: "*", filename: "main.cpp" },
 };
 
-app.post("/api/execute", async (req, res) => {
+// Direct Piston proxy for editor (rate limited)
+app.post("/api/execute", codeLimiter, async (req, res) => {
   try {
     const { code, language, stdin = "" } = req.body;
 
@@ -145,10 +186,12 @@ app.post("/api/execute", async (req, res) => {
       });
     }
 
-    // Call Piston API
-    const pistonResponse = await fetch(
-      "https://emkc.org/api/v2/piston/execute",
-      {
+    // Call Piston API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+    try {
+      const pistonResponse = await fetch("https://emkc.org/api/v2/piston/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,31 +199,44 @@ app.post("/api/execute", async (req, res) => {
           version: langConfig.version,
           files: [{ name: langConfig.filename, content: code }],
           stdin: stdin || "",
+          run_timeout: 10000, // 10s execution limit
         }),
-      },
-    );
-
-    if (!pistonResponse.ok) {
-      const errorText = await pistonResponse.text();
-      console.error(
-        `Piston API error: ${pistonResponse.status} - ${errorText}`,
-      );
-      return res.status(502).json({
-        status: "error",
-        message: "Code execution service unavailable",
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!pistonResponse.ok) {
+        const errorText = await pistonResponse.text();
+        console.error(`Piston API error: ${pistonResponse.status} - ${errorText}`);
+        return res.status(502).json({
+          status: "error",
+          message: "Code execution service unavailable",
+        });
+      }
+
+      const pistonData = await pistonResponse.json();
+
+      // Normalize response
+      const run = pistonData.run || {};
+      res.json({
+        stdout: (run.stdout || "").slice(0, 100000), // Limit output to 100KB
+        stderr: (run.stderr || "").slice(0, 10000),
+        output: (run.output || "").slice(0, 100000),
+        exitCode: run.code ?? -1,
+        timedOut: run.signal === "SIGKILL",
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === "AbortError") {
+        return res.status(504).json({
+          status: "error",
+          message: "Code execution timed out",
+        });
+      }
+      throw fetchError;
     }
-
-    const pistonData = await pistonResponse.json();
-
-    // Normalize response
-    const run = pistonData.run || {};
-    res.json({
-      stdout: run.stdout || "",
-      stderr: run.stderr || "",
-      output: run.output || "",
-      exitCode: run.code ?? -1,
-    });
   } catch (error) {
     console.error("Execute endpoint error:", error);
     res.status(500).json({
@@ -194,8 +250,20 @@ app.post("/api/execute", async (req, res) => {
 // ROUTES
 // ============================================
 
+// Auth routes
 app.use("/api/auth", authRoutes);
-app.use("/api/dev", devRoutes);
+
+// Admin routes (separate admin panel)
+app.use("/api/admin", adminRoutes);
+
+// Public question routes (for users)
+app.get("/api/questions", getPublicQuestions);
+app.get("/api/questions/:id", getPublicQuestion);
+
+// Judge routes (run/submit code) - with rate limiting
+app.post("/api/run", codeLimiter, runCode); // Run with visible test cases only + rate limited
+app.post("/api/submit", protect, codeLimiter, submitCode); // Submit requires auth + rate limited
+app.get("/api/submissions", protect, getSubmissions); // User submissions
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
@@ -224,19 +292,33 @@ app.use((err, req, res, next) => {
   });
 });
 
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
+    
     await connectDB();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(
         `✓ Server running on ${
           process.env.NODE_ENV || "development"
-        } mode at http://localhost:${PORT}`,
+        } mode at http://localhost:${PORT}`
       );
       console.log(`✓ API Base URL: http://localhost:${PORT}/api`);
+    });
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(
+          `✗ Port ${PORT} is already in use. Stop the other process or set PORT in backend/.env (e.g. PORT=5001).`
+        );
+        process.exit(1);
+      }
+
+      console.error(`✗ Server listen error: ${err.message}`);
+      process.exit(1);
     });
   } catch (error) {
     console.error(`✗ Server startup failed: ${error.message}`);
