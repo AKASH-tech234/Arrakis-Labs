@@ -8,8 +8,11 @@ import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import contestRoutes from "./routes/contestRoutes.js";
+import adminContestRoutes from "./routes/adminContestRoutes.js";
 import {
   runCode,
   submitCode,
@@ -18,6 +21,9 @@ import {
   getPublicQuestion,
 } from "./controllers/judgeController.js";
 import { protect } from "./middleware/authMiddleware.js";
+import leaderboardService from "./services/leaderboardService.js";
+import wsServer from "./services/websocketServer.js";
+import contestScheduler from "./services/contestScheduler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,21 +97,37 @@ const allowedOrigins = [
   "http://localhost:5174",
 ].filter(Boolean);
 
+const normalizeOrigin = (origin) => {
+  if (!origin || typeof origin !== "string") return origin;
+  return origin.endsWith("/") ? origin.slice(0, -1) : origin;
+};
+
+const isLocalDevOrigin = (origin) => {
+  const normalized = normalizeOrigin(origin);
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalized);
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow same-origin / non-browser clients (no Origin header)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    const normalized = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalized) || isLocalDevOrigin(normalized)) {
+      return callback(null, true);
+    }
 
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
 app.use(cors(corsOptions));
+
+// Explicitly handle preflight requests
+app.options("*", cors(corsOptions));
 
 
 const connectDB = async () => {
@@ -256,6 +278,12 @@ app.use("/api/auth", authRoutes);
 // Admin routes (separate admin panel)
 app.use("/api/admin", adminRoutes);
 
+// Admin contest routes
+app.use("/api/admin/contests", adminContestRoutes);
+
+// Contest routes (public + protected)
+app.use("/api/contests", contestRoutes);
+
 // Public question routes (for users)
 app.get("/api/questions", getPublicQuestions);
 app.get("/api/questions/:id", getPublicQuestion);
@@ -300,15 +328,17 @@ const startServer = async () => {
     
     await connectDB();
 
-    const server = app.listen(PORT, () => {
-      console.log(
-        `✓ Server running on ${
-          process.env.NODE_ENV || "development"
-        } mode at http://localhost:${PORT}`
-      );
-      console.log(`✓ API Base URL: http://localhost:${PORT}/api`);
-    });
+    // Connect to Redis for leaderboard
+    const redisConnected = await leaderboardService.connect();
+    if (!redisConnected) {
+      console.warn("⚠ Redis not available - leaderboard will use fallback");
+    }
 
+    // Create HTTP server for WebSocket support
+    const server = createServer(app);
+
+    // Attach error handler BEFORE calling listen().
+    // If the port is already taken, listen() will emit 'error' very early.
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {
         console.error(
@@ -320,6 +350,49 @@ const startServer = async () => {
       console.error(`✗ Server listen error: ${err.message}`);
       process.exit(1);
     });
+
+    // Initialize WebSocket server
+    wsServer.initialize(server);
+
+    // Initialize contest scheduler
+    await contestScheduler.initialize();
+
+    server.listen(PORT, () => {
+      console.log(
+        `✓ Server running on ${
+          process.env.NODE_ENV || "development"
+        } mode at http://localhost:${PORT}`
+      );
+      console.log(`✓ API Base URL: http://localhost:${PORT}/api`);
+      console.log(`✓ WebSocket: ws://localhost:${PORT}/ws/contest`);
+    });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal) => {
+      console.log(`\n${signal} received. Shutting down gracefully...`);
+      
+      contestScheduler.shutdown();
+      wsServer.close();
+      await leaderboardService.disconnect();
+      
+      server.close(() => {
+        console.log("✓ HTTP server closed");
+        mongoose.connection.close(false, () => {
+          console.log("✓ MongoDB connection closed");
+          process.exit(0);
+        });
+      });
+
+      // Force close after 10 seconds
+      setTimeout(() => {
+        console.error("Could not close connections in time, forcefully shutting down");
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
   } catch (error) {
     console.error(`✗ Server startup failed: ${error.message}`);
     process.exit(1);
