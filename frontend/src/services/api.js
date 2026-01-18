@@ -56,6 +56,54 @@ async function request(path, { method = "GET", body, signal } = {}) {
   return response.json().catch(() => ({}));
 }
 
+export async function getPublicQuestions({ page = 1, limit = 1000, difficulty, search } = {}) {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (limit) params.set("limit", String(limit));
+  if (difficulty) params.set("difficulty", difficulty);
+  if (search) params.set("search", search);
+
+  const qs = params.toString();
+  const data = await request(`/questions${qs ? `?${qs}` : ""}`, { method: "GET" });
+  return {
+    questions: data.data || [],
+    pagination: data.pagination,
+  };
+}
+
+export async function getPublicQuestion(questionId) {
+  if (!questionId) throw new Error("questionId is required");
+  const data = await request(`/questions/${questionId}`, { method: "GET" });
+  return data.data;
+}
+
+export async function runQuestion({ questionId, code, language, signal }) {
+  const data = await request("/run", {
+    method: "POST",
+    body: { questionId, code, language },
+    signal,
+  });
+  return data.data;
+}
+
+export async function submitQuestion({ questionId, code, language, signal }) {
+  const data = await request("/submit", {
+    method: "POST",
+    body: { questionId, code, language },
+    signal,
+  });
+  return data.data;
+}
+
+export async function getMySubmissions({ questionId } = {}) {
+  const params = new URLSearchParams();
+  if (questionId) params.set("questionId", questionId);
+  const qs = params.toString();
+
+  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, { method: "GET" });
+  return data.data || [];
+}
+
 /**
  * Execute code via the backend Piston proxy
  * @param {Object} params

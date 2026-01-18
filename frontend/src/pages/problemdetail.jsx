@@ -1,5 +1,5 @@
 // src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
@@ -7,7 +7,7 @@ import ProblemDescription from "../components/problem/ProblemDescription";
 import CodeEditor from "../components/editor/CodeEditor";
 import OutputPanel from "../components/editor/OutputPanel";
 import AIFeedbackPanel from "../components/feedback/AIFeedbackPanel";
-import { executeCode } from "../services/api";
+import { getPublicQuestion, runQuestion, submitQuestion } from "../services/api";
 
 // Map UI language names to Piston runtime identifiers
 const languageMap = {
@@ -17,84 +17,6 @@ const languageMap = {
   "C++": "cpp",
 };
 
-// Mock problem data with full details
-const mockProblems = {
-  1: {
-    id: 1,
-    title: "Two Sum",
-    difficulty: "Easy",
-    category: "Arrays",
-    description:
-      "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order.",
-    constraints: [
-      "2 <= nums.length <= 10⁴",
-      "-10⁹ <= nums[i] <= 10⁹",
-      "-10⁹ <= target <= 10⁹",
-      "Only one valid answer exists.",
-    ],
-    examples: [
-      {
-        input: "nums = [2,7,11,15], target = 9",
-        output: "[0,1]",
-        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
-      },
-      {
-        input: "nums = [3,2,4], target = 6",
-        output: "[1,2]",
-      },
-      {
-        input: "nums = [3,3], target = 6",
-        output: "[0,1]",
-      },
-    ],
-  },
-  2: {
-    id: 2,
-    title: "Add Two Numbers",
-    difficulty: "Medium",
-    category: "Linked List",
-    description:
-      "You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.",
-    constraints: [
-      "The number of nodes in each linked list is in the range [1, 100].",
-      "0 <= Node.val <= 9",
-      "It is guaranteed that the list represents a number that does not have leading zeros.",
-    ],
-    examples: [
-      {
-        input: "l1 = [2,4,3], l2 = [5,6,4]",
-        output: "[7,0,8]",
-        explanation: "342 + 465 = 807.",
-      },
-    ],
-  },
-  3: {
-    id: 3,
-    title: "Longest Substring Without Repeating Characters",
-    difficulty: "Medium",
-    category: "Strings",
-    description:
-      "Given a string s, find the length of the longest substring without repeating characters.",
-    constraints: [
-      "0 <= s.length <= 5 * 10⁴",
-      "s consists of English letters, digits, symbols and spaces.",
-    ],
-    examples: [
-      {
-        input: 's = "abcabcbb"',
-        output: "3",
-        explanation: 'The answer is "abc", with the length of 3.',
-      },
-      {
-        input: 's = "bbbbb"',
-        output: "1",
-        explanation: 'The answer is "b", with the length of 1.',
-      },
-    ],
-  },
-};
-
-// Default problem for unknown IDs
 const defaultProblem = {
   id: 0,
   title: "Problem Not Found",
@@ -113,34 +35,95 @@ export default function ProblemDetail() {
   const [showFeedback, setShowFeedback] = useState(false);
   const abortControllerRef = useRef(null);
 
-  const problem = useMemo(() => {
-    return mockProblems[id] || defaultProblem;
+  const [loadingProblem, setLoadingProblem] = useState(true);
+  const [problemError, setProblemError] = useState("");
+  const [problemRaw, setProblemRaw] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
+    const load = async () => {
+      try {
+        setLoadingProblem(true);
+        setProblemError("");
+        const q = await getPublicQuestion(id);
+        if (mounted) setProblemRaw(q);
+      } catch (e) {
+        if (mounted) setProblemError(e?.message || "Failed to load problem");
+      } finally {
+        if (mounted) setLoadingProblem(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
   }, [id]);
+
+  const problem = useMemo(() => {
+    if (!problemRaw) return defaultProblem;
+
+    const category = Array.isArray(problemRaw.tags) && problemRaw.tags.length > 0 ? problemRaw.tags[0] : "General";
+    const constraints =
+      typeof problemRaw.constraints === "string"
+        ? problemRaw.constraints
+            .split(/\r?\n/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+
+    return {
+      id: problemRaw._id,
+      externalId: problemRaw.externalId,
+      title: problemRaw.title,
+      difficulty: problemRaw.difficulty,
+      category,
+      description: problemRaw.description,
+      constraints,
+      examples: Array.isArray(problemRaw.examples) ? problemRaw.examples : [],
+      testCases: Array.isArray(problemRaw.testCases) ? problemRaw.testCases : [],
+    };
+  }, [problemRaw]);
 
   /**
    * Format execution result for display
    */
-  const formatOutput = (result, headerText) => {
+  const formatJudgeOutput = ({ headerText, statusLabel, passedCount, totalCount, results }) => {
     const lines = [headerText];
 
-    if (result.stdout) {
-      lines.push("\n=== STDOUT ===");
-      lines.push(result.stdout);
+    if (statusLabel) lines.push(`Status: ${statusLabel}`);
+    if (typeof passedCount === "number" && typeof totalCount === "number") {
+      lines.push(`Passed: ${passedCount}/${totalCount}`);
     }
 
-    if (result.stderr) {
-      lines.push("\n=== STDERR ===");
-      lines.push(result.stderr);
-    }
+    lines.push("\n=== RESULTS ===");
+    (results || []).forEach((r, idx) => {
+      const label = r.label || `Test ${idx + 1}`;
+      const badge = r.passed ? "PASS" : "FAIL";
+      const hiddenSuffix = r.isHidden ? " (hidden)" : "";
 
-    lines.push(`\nExit code: ${result.exitCode}`);
+      lines.push(`\n[${badge}] ${label}${hiddenSuffix}`);
+      if (!r.isHidden) {
+        if (r.stdin !== undefined) lines.push(`stdin: ${String(r.stdin)}`);
+        if (r.expectedStdout !== undefined) lines.push(`expected: ${String(r.expectedStdout)}`);
+        if (r.actualStdout !== undefined) lines.push(`actual: ${String(r.actualStdout)}`);
+        if (r.stderr) lines.push(`stderr: ${String(r.stderr)}`);
+      }
+
+      if (r.compileError) lines.push("compile_error: true");
+      if (r.timedOut) lines.push("timed_out: true");
+    });
+
     return lines.join("\n");
   };
 
   /**
    * Execute code via Piston API
    */
-  const runCode = async (code, language, isSubmit = false) => {
+  const runOrSubmit = async (code, language, isSubmit = false) => {
     // Abort any in-flight request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -161,23 +144,36 @@ export default function ProblemDetail() {
     setSubmitted(false);
 
     try {
-      const result = await executeCode({
+      const payload = {
+        questionId: id,
         code,
-        language: languageMap[language] || language.toLowerCase(),
-        stdin: "",
+        language: (languageMap[language] || language).toLowerCase(),
         signal: controller.signal,
-      });
+      };
+
+      const data = isSubmit
+        ? await submitQuestion(payload)
+        : await runQuestion(payload);
 
       const headerText = isSubmit
         ? `Submitted ${language} solution`
-        : `Running ${language} code...`;
+        : `Running ${language} solution`;
 
-      setOutput(formatOutput(result, headerText));
-      setStatus(result.exitCode === 0 ? "success" : "error");
+      const statusLabel = isSubmit ? data.status : undefined;
+      setOutput(
+        formatJudgeOutput({
+          headerText,
+          statusLabel,
+          passedCount: data.passedCount,
+          totalCount: data.totalCount,
+          results: data.results,
+        })
+      );
 
-      if (isSubmit && result.exitCode === 0) {
-        setSubmitted(true);
-      }
+      const isAccepted = isSubmit ? data.status === "accepted" : !!data.allPassed;
+      setStatus(isAccepted ? "success" : "error");
+
+      if (isSubmit && isAccepted) setSubmitted(true);
     } catch (err) {
       if (err.name === "AbortError") {
         // Request was cancelled, keep previous output or show cancelled
@@ -195,11 +191,11 @@ export default function ProblemDetail() {
   };
 
   const handleRun = (code, language) => {
-    runCode(code, language, false);
+    runOrSubmit(code, language, false);
   };
 
   const handleSubmit = (code, language) => {
-    runCode(code, language, true);
+    runOrSubmit(code, language, true);
   };
 
   return (
@@ -222,7 +218,7 @@ export default function ProblemDetail() {
               className="text-[#E8E4D9] text-xs uppercase tracking-wider"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {problem.title}
+              {loadingProblem ? "Loading..." : problem.title}
             </span>
           </div>
         </div>
@@ -236,7 +232,27 @@ export default function ProblemDetail() {
             transition={{ duration: 0.3 }}
             className="w-1/2 border-r border-[#1A1814] overflow-auto"
           >
-            <ProblemDescription problem={problem} />
+            {loadingProblem ? (
+              <div className="p-6">
+                <p
+                  className="text-[#78716C] text-sm uppercase tracking-wider"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Loading problem...
+                </p>
+              </div>
+            ) : problemError ? (
+              <div className="p-6">
+                <p
+                  className="text-[#92400E] text-sm uppercase tracking-wider"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {problemError}
+                </p>
+              </div>
+            ) : (
+              <ProblemDescription problem={problem} />
+            )}
           </motion.div>
 
           {/* Right Panel - Editor + Output + Feedback */}

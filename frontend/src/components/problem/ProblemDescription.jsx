@@ -1,5 +1,14 @@
 // src/components/problem/ProblemDescription.jsx
 export default function ProblemDescription({ problem }) {
+  const displayId =
+    problem?.externalId ||
+    (typeof problem?.id === "string" && problem.id.length > 8
+      ? problem.id.slice(0, 6)
+      : problem?.id);
+
+  const constraints = Array.isArray(problem?.constraints) ? problem.constraints : [];
+  const examples = Array.isArray(problem?.examples) ? problem.examples : [];
+
   return (
     <div className="p-6 h-full overflow-auto">
       {/* Problem Title */}
@@ -8,7 +17,7 @@ export default function ProblemDescription({ problem }) {
           className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
-          Problem {problem.id}
+          Problem {displayId}
         </span>
         <h1
           className="text-[#E8E4D9] text-lg font-medium tracking-wide mt-1"
@@ -52,7 +61,7 @@ export default function ProblemDescription({ problem }) {
       </div>
 
       {/* Constraints */}
-      {problem.constraints && (
+      {constraints.length > 0 && (
         <>
           <div className="border-t border-[#1A1814] my-6" />
           <div>
@@ -63,7 +72,7 @@ export default function ProblemDescription({ problem }) {
               Constraints
             </h3>
             <ul className="space-y-1">
-              {problem.constraints.map((constraint, index) => (
+              {constraints.map((constraint, index) => (
                 <li
                   key={index}
                   className="text-[#E8E4D9] text-xs"
@@ -78,7 +87,7 @@ export default function ProblemDescription({ problem }) {
       )}
 
       {/* Examples */}
-      {problem.examples && (
+      {examples.length > 0 && (
         <>
           <div className="border-t border-[#1A1814] my-6" />
           <div className="space-y-4">
@@ -88,7 +97,7 @@ export default function ProblemDescription({ problem }) {
             >
               Examples
             </h3>
-            {problem.examples.map((example, index) => (
+            {examples.map((example, index) => (
               <div key={index} className="space-y-2">
                 <p
                   className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"

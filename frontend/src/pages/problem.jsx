@@ -1,162 +1,58 @@
 // src/pages/problem.jsx - Problem Library Page
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
 import ProblemList from "../components/problem/ProblemList";
 import ProblemFilters from "../components/problem/ProblemFilters";
-
-// Mock problem data
-const mockProblems = [
-  {
-    id: 1,
-    title: "Two Sum",
-    difficulty: "Easy",
-    category: "Arrays",
-    solved: true,
-  },
-  {
-    id: 2,
-    title: "Add Two Numbers",
-    difficulty: "Medium",
-    category: "Linked List",
-    solved: true,
-  },
-  {
-    id: 3,
-    title: "Longest Substring Without Repeating Characters",
-    difficulty: "Medium",
-    category: "Strings",
-    solved: false,
-  },
-  {
-    id: 4,
-    title: "Median of Two Sorted Arrays",
-    difficulty: "Hard",
-    category: "Arrays",
-    solved: false,
-  },
-  {
-    id: 5,
-    title: "Longest Palindromic Substring",
-    difficulty: "Medium",
-    category: "Strings",
-    solved: false,
-  },
-  {
-    id: 6,
-    title: "Reverse Integer",
-    difficulty: "Medium",
-    category: "Math",
-    solved: true,
-  },
-  {
-    id: 7,
-    title: "String to Integer (atoi)",
-    difficulty: "Medium",
-    category: "Strings",
-    solved: false,
-  },
-  {
-    id: 8,
-    title: "Palindrome Number",
-    difficulty: "Easy",
-    category: "Math",
-    solved: true,
-  },
-  {
-    id: 9,
-    title: "Regular Expression Matching",
-    difficulty: "Hard",
-    category: "Strings",
-    solved: false,
-  },
-  {
-    id: 10,
-    title: "Container With Most Water",
-    difficulty: "Medium",
-    category: "Arrays",
-    solved: false,
-  },
-  {
-    id: 11,
-    title: "Integer to Roman",
-    difficulty: "Medium",
-    category: "Math",
-    solved: false,
-  },
-  {
-    id: 12,
-    title: "Roman to Integer",
-    difficulty: "Easy",
-    category: "Math",
-    solved: true,
-  },
-  {
-    id: 13,
-    title: "Longest Common Prefix",
-    difficulty: "Easy",
-    category: "Strings",
-    solved: false,
-  },
-  {
-    id: 14,
-    title: "3Sum",
-    difficulty: "Medium",
-    category: "Arrays",
-    solved: false,
-  },
-  {
-    id: 15,
-    title: "Valid Parentheses",
-    difficulty: "Easy",
-    category: "Strings",
-    solved: true,
-  },
-  {
-    id: 16,
-    title: "Merge Two Sorted Lists",
-    difficulty: "Easy",
-    category: "Linked List",
-    solved: false,
-  },
-  {
-    id: 17,
-    title: "Generate Parentheses",
-    difficulty: "Medium",
-    category: "Recursion",
-    solved: false,
-  },
-  {
-    id: 18,
-    title: "Merge k Sorted Lists",
-    difficulty: "Hard",
-    category: "Linked List",
-    solved: false,
-  },
-  {
-    id: 19,
-    title: "Search in Rotated Sorted Array",
-    difficulty: "Medium",
-    category: "Binary Search",
-    solved: false,
-  },
-  {
-    id: 20,
-    title: "Valid Sudoku",
-    difficulty: "Medium",
-    category: "Arrays",
-    solved: false,
-  },
-];
-
-const categories = [...new Set(mockProblems.map((p) => p.category))];
+import { getPublicQuestions } from "../services/api";
 
 export default function ProblemLibrary() {
+  const [problems, setProblems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setLoadError("");
+
+        const { questions } = await getPublicQuestions({ limit: 1000 });
+        const mapped = (questions || []).map((q) => {
+          const category = Array.isArray(q.tags) && q.tags.length > 0 ? q.tags[0] : "General";
+          return {
+            id: q._id,
+            title: q.title,
+            difficulty: q.difficulty,
+            category,
+            solved: false,
+          };
+        });
+
+        if (mounted) setProblems(mapped);
+      } catch (e) {
+        if (mounted) setLoadError(e?.message || "Failed to load problems");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const categories = useMemo(() => {
+    return [...new Set(problems.map((p) => p.category))].sort((a, b) => a.localeCompare(b));
+  }, [problems]);
+
   const filteredProblems = useMemo(() => {
-    return mockProblems.filter((problem) => {
+    return problems.filter((problem) => {
       const matchesDifficulty =
         selectedDifficulty === "All" ||
         problem.difficulty === selectedDifficulty;
@@ -164,13 +60,13 @@ export default function ProblemLibrary() {
         selectedCategory === "All" || problem.category === selectedCategory;
       return matchesDifficulty && matchesCategory;
     });
-  }, [selectedDifficulty, selectedCategory]);
+  }, [problems, selectedDifficulty, selectedCategory]);
 
   const stats = useMemo(() => {
-    const total = mockProblems.length;
-    const solved = mockProblems.filter((p) => p.solved).length;
+    const total = problems.length;
+    const solved = problems.filter((p) => p.solved).length;
     return { total, solved };
-  }, []);
+  }, [problems]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
@@ -220,7 +116,27 @@ export default function ProblemLibrary() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
           >
-            <ProblemList problems={filteredProblems} />
+            {loading ? (
+              <div className="py-12 text-center">
+                <p
+                  className="text-[#78716C] text-sm uppercase tracking-wider"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Loading problems...
+                </p>
+              </div>
+            ) : loadError ? (
+              <div className="py-12 text-center">
+                <p
+                  className="text-[#92400E] text-sm uppercase tracking-wider"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {loadError}
+                </p>
+              </div>
+            ) : (
+              <ProblemList problems={filteredProblems} />
+            )}
           </motion.div>
         </div>
       </main>
