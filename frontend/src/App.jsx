@@ -6,9 +6,13 @@ import Signup from "./pages/signup";
 import ProblemLibrary from "./pages/problem";
 import ProblemDetail from "./pages/problemdetail";
 import Profile from "./pages/profile";
+import AdminLogin from "./pages/admin/AdminLogin";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import GuestRoute from "./components/auth/GuestRoute";
+
+// Admin Panel imports
+import { adminRoutes } from "./routes/adminRoutes";
 
 function App() {
   return (
@@ -59,6 +63,21 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          {adminRoutes.map((route) => (
+            <Route key={route.path} path={route.path} element={route.element}>
+              {route.children?.map((child) => (
+                <Route
+                  key={child.path || "index"}
+                  index={child.index}
+                  path={child.path}
+                  element={child.element}
+                />
+              ))}
+            </Route>
+          ))}
         </Routes>
       </Router>
     </AuthProvider>
