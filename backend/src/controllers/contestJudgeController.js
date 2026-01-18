@@ -471,7 +471,9 @@ export const contestSubmit = async (req, res) => {
 
     // Update Redis leaderboard
     if (isAccepted) {
-      await leaderboardService.updateScore(contestId, userId.toString(), {
+      const contestKeyId = contest._id.toString();
+
+      await leaderboardService.updateScore(contestKeyId, userId.toString(), {
         problemsSolved: registration.problemsSolved,
         totalTimeSeconds: registration.totalTime,
         penaltyMinutes: registration.totalPenalty,
@@ -479,7 +481,7 @@ export const contestSubmit = async (req, res) => {
 
       // Record solve for problem stats
       await leaderboardService.recordSolve(
-        contestId,
+        contestKeyId,
         userId.toString(),
         problemId.toString(),
         timeFromStart
@@ -487,7 +489,7 @@ export const contestSubmit = async (req, res) => {
 
       // Get solve count for notification
       const solveCount = await leaderboardService.getProblemSolveCount(
-        contestId,
+        contestKeyId,
         problemId.toString()
       );
 

@@ -19,6 +19,48 @@ class ContestWebSocketServer {
     this.rooms = new Map(); // contestId -> Set of WebSocket clients
     this.clientData = new WeakMap(); // WebSocket -> { userId, contestId, etc }
     this.heartbeatInterval = null;
+    this.redisContestSubscriptions = new Map(); // contestId -> unsubscribe()
+  }
+
+  ensureRedisSubscription(contestId) {
+    if (this.redisContestSubscriptions.has(contestId)) return;
+
+    const unsubscribe = leaderboardService.subscribeToContest(
+      contestId,
+      async (event) => {
+        try {
+          // Re-fetch to guarantee clients always receive a full, correct ordering.
+          const leaderboard = await leaderboardService.getTopN(contestId, 50);
+          this.notifyLeaderboardUpdate(contestId, {
+            entries: leaderboard.entries,
+            event,
+          });
+        } catch (error) {
+          console.error(
+            `[WS] Failed to broadcast leaderboard update for ${contestId}:`,
+            error?.message || error
+          );
+        }
+      }
+    );
+
+    this.redisContestSubscriptions.set(contestId, unsubscribe);
+  }
+
+  cleanupRedisSubscription(contestId) {
+    const unsubscribe = this.redisContestSubscriptions.get(contestId);
+    if (!unsubscribe) return;
+
+    try {
+      unsubscribe();
+    } catch (error) {
+      console.error(
+        `[WS] Failed to unsubscribe Redis updates for ${contestId}:`,
+        error?.message || error
+      );
+    }
+
+    this.redisContestSubscriptions.delete(contestId);
   }
 
   /**
@@ -206,6 +248,9 @@ class ContestWebSocketServer {
     this.rooms.get(contestId).add(ws);
     data.contestId = contestId;
 
+    // Bridge Redis Pub/Sub updates into the contest WebSocket room.
+    this.ensureRedisSubscription(contestId);
+
     // Send confirmation with initial leaderboard
     const leaderboard = await leaderboardService.getTopN(contestId, 20);
     
@@ -272,14 +317,17 @@ class ContestWebSocketServer {
     const data = this.clientData.get(ws);
     if (!data?.contestId) return;
 
-    const room = this.rooms.get(data.contestId);
+    const contestId = data.contestId;
+
+    const room = this.rooms.get(contestId);
     if (room) {
       room.delete(ws);
       if (room.size === 0) {
-        this.rooms.delete(data.contestId);
+        this.rooms.delete(contestId);
+        this.cleanupRedisSubscription(contestId);
       } else {
         // Broadcast updated count
-        this.broadcastToContest(data.contestId, {
+        this.broadcastToContest(contestId, {
           type: "participant_count",
           count: room.size,
         });
