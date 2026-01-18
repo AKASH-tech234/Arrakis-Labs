@@ -64,17 +64,17 @@ const submissionSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "Pending",
-        "Running",
-        "Accepted",
-        "Wrong Answer",
-        "Time Limit Exceeded",
-        "Memory Limit Exceeded",
-        "Runtime Error",
-        "Compilation Error",
-        "Internal Error",
+        "pending",
+        "running",
+        "accepted",
+        "wrong_answer",
+        "time_limit_exceeded",
+        "memory_limit_exceeded",
+        "runtime_error",
+        "compile_error",
+        "internal_error",
       ],
-      default: "Pending",
+      default: "pending",
     },
     // Test results summary
     passedCount: {
