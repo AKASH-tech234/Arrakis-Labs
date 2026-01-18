@@ -93,6 +93,11 @@ const OPTIONAL_COLUMNS = [
   "tags",
 ];
 
+// Transactions are great for small imports, but large CSV imports can exceed
+// MongoDB transaction limits (ops/size/time) and get aborted.
+const TRANSACTION_ROW_LIMIT = 50;
+const TRANSACTION_CHUNK_SIZE = 25;
+
 function normalizeHeader(header) {
   if (!header) return "";
   return header
@@ -130,6 +135,8 @@ function validateRow(row, index) {
   // Check required fields
   if (!row.title?.trim()) {
     errors.push(`Row ${rowNum}: Missing title`);
+  } else if (row.title.trim().length > 200) {
+    errors.push(`Row ${rowNum}: Title too long (max 200 characters)`);
   }
 
   if (!row.description?.trim()) {
@@ -172,7 +179,7 @@ function validateRow(row, index) {
         errors.push(`Row ${rowNum}: 'test_cases' must be a JSON array`);
       } else {
         testCases.forEach((tc, i) => {
-          if (!tc.input) {
+          if (tc.input === undefined) {
             errors.push(`Row ${rowNum}: Test case ${i + 1} missing 'input'`);
           }
           if (tc.expected_output === undefined) {
@@ -362,30 +369,57 @@ export const processCSVUpload = async (req, res) => {
       warnings: [],
     };
 
-    const runImport = async (activeSession) => {
-      for (const { row } of validationResults) {
+    const recordResult = (question, testCaseCount) => {
+      results.questionsCreated++;
+      results.testCasesCreated += testCaseCount;
+      results.questions.push({
+        id: question._id,
+        title: question.title,
+        difficulty: question.difficulty,
+        testCases: testCaseCount,
+      });
+    };
+
+    const runImport = async (rowsToImport, activeSession) => {
+      for (const { row } of rowsToImport) {
         const { question, testCaseCount } = await processRow(
           row,
           req.admin._id,
           activeSession
         );
-
-        results.questionsCreated++;
-        results.testCasesCreated += testCaseCount;
-        results.questions.push({
-          id: question._id,
-          title: question.title,
-          difficulty: question.difficulty,
-          testCases: testCaseCount,
-        });
+        recordResult(question, testCaseCount);
       }
     };
 
     try {
-      session.startTransaction();
       usedTransaction = true;
-      await runImport(session);
-      await session.commitTransaction();
+
+      // For larger imports, chunk into multiple transactions to avoid txn aborts.
+      if (validationResults.length > TRANSACTION_ROW_LIMIT) {
+        results.warnings.push(
+          `Large import (${validationResults.length} rows): processed in chunks of ${TRANSACTION_CHUNK_SIZE} with separate transactions`
+        );
+
+        for (let start = 0; start < validationResults.length; start += TRANSACTION_CHUNK_SIZE) {
+          const chunk = validationResults.slice(start, start + TRANSACTION_CHUNK_SIZE);
+          session.startTransaction();
+          try {
+            await runImport(chunk, session);
+            await session.commitTransaction();
+          } catch (chunkError) {
+            try {
+              await session.abortTransaction();
+            } catch {
+              // ignore
+            }
+            throw chunkError;
+          }
+        }
+      } else {
+        session.startTransaction();
+        await runImport(validationResults, session);
+        await session.commitTransaction();
+      }
     } catch (txError) {
       // Abort any in-flight transaction
       try {
@@ -413,7 +447,7 @@ export const processCSVUpload = async (req, res) => {
       results.questionsCreated = 0;
       results.testCasesCreated = 0;
       results.questions = [];
-      await runImport(undefined);
+      await runImport(validationResults, undefined);
     }
 
     // Log audit

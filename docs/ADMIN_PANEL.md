@@ -66,10 +66,25 @@ Bulk import questions with test cases.
 | `test_cases` | | JSON array of test cases |
 | `tags` | | JSON array or comma-separated |
 
+#### Hidden vs Visible Test Cases
+
+- `test_cases` is stored in the database as Piston-compatible `stdin` + `expectedStdout`.
+- By default, during CSV import the **first 2 test cases become visible** (used by **Run**), and the **rest become hidden** (used by **Submit**).
+- You can override per test case with an optional boolean field `is_hidden`.
+
+Supported fields inside each `test_cases` array item:
+
+- `input` (required): JSON object/array/string that will be converted to `stdin`
+- `expected_output` (required): expected result
+- `is_hidden` (optional): `true` / `false` (overrides the default rule)
+- `label` (optional)
+- `time_limit` (optional, ms)
+- `memory_limit` (optional, MB)
+
 #### Example CSV
 ```csv
 title,description,difficulty,constraints,examples,test_cases,tags
-Two Sum,"Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",Easy,"2 <= nums.length <= 10^4","[{""input"": ""nums = [2,7,11,15], target = 9"", ""output"": ""[0,1]""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1]}]","[""Array"", ""Hash Table""]"
+Two Sum,"Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",Easy,"2 <= nums.length <= 10^4","[{""input"": ""nums = [2,7,11,15], target = 9"", ""output"": ""[0,1]""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1], ""is_hidden"": false}, {""input"": {""nums"": [3,2,4], ""target"": 6}, ""expected_output"": [1,2], ""is_hidden"": false}, {""input"": {""nums"": [3,3], ""target"": 6}, ""expected_output"": [0,1], ""is_hidden"": true}]","[""Array"", ""Hash Table""]"
 ```
 
 ### Question Management

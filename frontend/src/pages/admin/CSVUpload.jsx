@@ -86,7 +86,7 @@ const CSVUpload = () => {
   const downloadTemplate = () => {
     const template = `title,description,difficulty,constraints,examples,test_cases,tags
 Two Sum,"Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",Easy,"2 <= nums.length <= 10^4
--10^9 <= nums[i] <= 10^9","[{""input"": ""[2,7,11,15], target=9"", ""output"": ""[0,1]"", ""explanation"": ""Because nums[0] + nums[1] == 9""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1]}, {""input"": {""nums"": [3,2,4], ""target"": 6}, ""expected_output"": [1,2]}]","[""Array"", ""Hash Table""]"`;
+-10^9 <= nums[i] <= 10^9","[{""input"": ""[2,7,11,15], target=9"", ""output"": ""[0,1]"", ""explanation"": ""Because nums[0] + nums[1] == 9""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1], ""is_hidden"": false}, {""input"": {""nums"": [3,2,4], ""target"": 6}, ""expected_output"": [1,2], ""is_hidden"": false}, {""input"": {""nums"": [3,3], ""target"": 6}, ""expected_output"": [0,1], ""is_hidden"": true}]","[""Array"", ""Hash Table""]"`;
     
     const blob = new Blob([template], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -309,7 +309,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
           </div>
           <div className="flex items-start gap-3">
             <span className="font-mono text-gray-500 w-32 flex-shrink-0">test_cases</span>
-            <span className="text-gray-400">JSON array with input/expected_output objects</span>
+            <span className="text-gray-400">JSON array with {"input", "expected_output"} (+ optional "is_hidden", "label", "time_limit", "memory_limit"). First 2 are visible by default; rest run as hidden on Submit.</span>
           </div>
           <div className="flex items-start gap-3">
             <span className="font-mono text-gray-500 w-32 flex-shrink-0">tags</span>

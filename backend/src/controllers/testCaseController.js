@@ -98,7 +98,7 @@ export const createTestCase = async (req, res) => {
       });
     }
 
-    if (!finalStdin || !finalExpectedStdout) {
+    if (finalStdin === undefined || finalStdin === null || finalExpectedStdout === undefined || finalExpectedStdout === null) {
       return res.status(400).json({
         success: false,
         message: "Test case input and expected output are required",

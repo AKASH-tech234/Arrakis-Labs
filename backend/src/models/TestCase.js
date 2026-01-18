@@ -16,14 +16,16 @@ const testCaseSchema = new mongoose.Schema(
     // Piston-compatible stdin format
     stdin: {
       type: String,
-      required: [true, "Test input (stdin) is required"],
-      trim: true,
+      default: "",
+      // Keep as-is (including empty string). Many problems legitimately have empty input.
+      trim: false,
     },
     // Expected stdout (trimmed for comparison)
     expectedStdout: {
       type: String,
-      required: [true, "Expected output is required"],
-      trim: true,
+      default: "",
+      // Keep as-is; comparison logic normalizes whitespace.
+      trim: false,
     },
     // CRITICAL: Hidden test cases are never shown to users
     isHidden: {
