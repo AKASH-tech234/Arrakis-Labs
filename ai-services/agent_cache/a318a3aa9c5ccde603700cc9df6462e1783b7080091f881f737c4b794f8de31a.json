@@ -1,0 +1,7 @@
+{
+  "focus_areas": [
+    "Time Complexity",
+    "Algorithmic Efficiency"
+  ],
+  "rationale": "The submission exceeded the time limit, which suggests that the current algorithm used is not efficient enough to solve the problem within the given constraints. To improve performance, consider optimizing your solution by using a more efficient algorithm or data structure."
+}

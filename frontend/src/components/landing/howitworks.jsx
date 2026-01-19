@@ -1,4 +1,5 @@
 // src/components/landing/HowItWorks.jsx - Dune-Inspired
+// eslint-disable-next-line no-unused-vars
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
@@ -46,11 +47,11 @@ function StepCard({ step, index }) {
         boxShadow: "0 0 60px rgba(245, 158, 11, 0.12)",
       }}
       whileTap={{ y: -4 }}
-      transition={{
-        type: "spring",
-        stiffness: 420,
-        damping: 30,
-      }}
+      // transition={{
+      //   type: "spring",
+      //   stiffness: 420,
+      //   damping: 30,
+      // }}
       className="relative group"
     >
       {/* Connector line */}

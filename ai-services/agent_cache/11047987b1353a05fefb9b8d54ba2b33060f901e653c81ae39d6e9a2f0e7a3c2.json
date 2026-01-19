@@ -1,0 +1,8 @@
+{
+  "focus_areas": [
+    "Time Complexity Analysis",
+    "Sliding Window Technique",
+    "Hash Sets and Hash Maps"
+  ],
+  "rationale": "Your submission received a 'Time Limit Exceeded' verdict, indicating that its time complexity was too high for the given input constraints (string length up to 5 * 10^4). For problems involving finding optimal substrings or subarrays, a common cause for TLE is using nested loops that result in O(N^2) or higher complexity, where an O(N) solution is often achievable. To improve, focus on optimizing the traversal and character checking process. Consider how to maintain a dynamic 'window' over the string and efficiently update character presence within that window without re-scanning."
+}

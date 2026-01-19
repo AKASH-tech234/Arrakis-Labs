@@ -4,6 +4,10 @@ import Question from "../models/Question.js";
 import TestCase from "../models/TestCase.js";
 import Submission from "../models/Submission.js";
 import { compareOutputs } from "../utils/stdinConverter.js";
+import {
+  getAIFeedback,
+  buildUserHistorySummary,
+} from "../services/aiService.js";
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
@@ -24,7 +28,7 @@ const LANGUAGE_MAP = {
 };
 
 // Helper: sleep for retry backoff
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Validate ObjectId to prevent injection
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -40,7 +44,7 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
  */
 async function executePiston(code, language, stdin, timeLimit = 2000) {
   const langConfig = LANGUAGE_MAP[language.toLowerCase()];
-  
+
   if (!langConfig) {
     throw new Error(`Unsupported language: ${language}`);
   }
@@ -54,7 +58,7 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
   }
 
   let lastError = null;
-  
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await axios.post(
@@ -69,10 +73,10 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
           compile_memory_limit: 256 * 1024 * 1024,
           run_memory_limit: 256 * 1024 * 1024,
         },
-        { 
+        {
           timeout: Math.max(timeLimit + 10000, 15000), // At least 15s for network
           validateStatus: (status) => status < 500, // Retry on 5xx
-        }
+        },
       );
 
       if (response.status >= 400) {
@@ -94,9 +98,10 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
       }
 
       // Check for runtime error (non-zero exit, has stderr, signal)
-      const hasRuntimeError = (run?.code !== 0 && run?.code !== undefined) || 
-                               run?.signal === "SIGSEGV" || 
-                               run?.signal === "SIGABRT";
+      const hasRuntimeError =
+        (run?.code !== 0 && run?.code !== undefined) ||
+        run?.signal === "SIGSEGV" ||
+        run?.signal === "SIGABRT";
 
       return {
         stdout: (run?.stdout || "").slice(0, 100000), // Limit output to 100KB
@@ -108,12 +113,12 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
       };
     } catch (error) {
       lastError = error;
-      
+
       // Don't retry on timeout (user code issue) or validation errors
       if (error.code === "ECONNABORTED" || error.message.includes("exceeds")) {
         break;
       }
-      
+
       // Retry on network/server errors
       if (attempt < MAX_RETRIES) {
         console.warn(`[Piston] Attempt ${attempt + 1} failed, retrying...`);
@@ -205,10 +210,11 @@ export const runCode = async (req, res) => {
           code,
           language,
           tc.stdin,
-          tc.timeLimit
+          tc.timeLimit,
         );
 
-        const passed = !execution.compileError &&
+        const passed =
+          !execution.compileError &&
           !execution.timedOut &&
           execution.exitCode === 0 &&
           compareOutputs(execution.stdout, tc.expectedStdout);
@@ -231,13 +237,15 @@ export const runCode = async (req, res) => {
       } catch (error) {
         // Check if it's a service unavailable error
         const isServiceError = error.message.includes("unavailable");
-        
+
         results.push({
           label: tc.label,
           stdin: tc.stdin,
           expectedStdout: tc.expectedStdout,
           actualStdout: "",
-          stderr: isServiceError ? "Execution service temporarily unavailable" : error.message,
+          stderr: isServiceError
+            ? "Execution service temporarily unavailable"
+            : error.message,
           passed: false,
           error: true,
           serviceError: isServiceError,
@@ -250,12 +258,14 @@ export const runCode = async (req, res) => {
       }
     }
 
-    const passedCount = results.filter(r => r.passed).length;
-    const hasServiceError = results.some(r => r.serviceError);
+    const passedCount = results.filter((r) => r.passed).length;
+    const hasServiceError = results.some((r) => r.serviceError);
 
     res.status(hasServiceError ? 503 : 200).json({
       success: !hasServiceError,
-      message: hasServiceError ? "Code execution service temporarily unavailable" : undefined,
+      message: hasServiceError
+        ? "Code execution service temporarily unavailable"
+        : undefined,
       data: {
         results,
         passedCount,
@@ -265,15 +275,16 @@ export const runCode = async (req, res) => {
     });
   } catch (error) {
     console.error("[Run Code Error]:", error.message);
-    
+
     // Distinguish between different error types
     if (error.message.includes("unavailable")) {
       return res.status(503).json({
         success: false,
-        message: "Code execution service temporarily unavailable. Please try again later.",
+        message:
+          "Code execution service temporarily unavailable. Please try again later.",
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: "Failed to execute code",
@@ -359,10 +370,11 @@ export const submitCode = async (req, res) => {
           code,
           language,
           tc.stdin,
-          tc.timeLimit
+          tc.timeLimit,
         );
 
-        const passed = !execution.compileError &&
+        const passed =
+          !execution.compileError &&
           !execution.timedOut &&
           execution.exitCode === 0 &&
           compareOutputs(execution.stdout, tc.expectedStdout);
@@ -399,7 +411,7 @@ export const submitCode = async (req, res) => {
       } catch (error) {
         // Check for service errors
         const isServiceError = error.message.includes("unavailable");
-        
+
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
@@ -407,7 +419,13 @@ export const submitCode = async (req, res) => {
           error: true,
           serviceError: isServiceError,
           // Only show error for visible tests
-          ...(tc.isHidden ? {} : { stderr: isServiceError ? "Execution service temporarily unavailable" : error.message }),
+          ...(tc.isHidden
+            ? {}
+            : {
+                stderr: isServiceError
+                  ? "Execution service temporarily unavailable"
+                  : error.message,
+              }),
         });
 
         // If service is down, mark submission and stop
@@ -417,8 +435,8 @@ export const submitCode = async (req, res) => {
       }
     }
 
-    const passedCount = results.filter(r => r.passed).length;
-    const hasServiceError = results.some(r => r.serviceError);
+    const passedCount = results.filter((r) => r.passed).length;
+    const hasServiceError = results.some((r) => r.serviceError);
     const allPassed = passedCount === allTestCases.length && !hasServiceError;
 
     // Determine status
@@ -427,9 +445,9 @@ export const submitCode = async (req, res) => {
       status = "runtime_error"; // Use this for service issues
     } else if (compileErrorOccurred) {
       status = "compile_error";
-    } else if (results.some(r => r.timedOut)) {
+    } else if (results.some((r) => r.timedOut)) {
       status = "time_limit_exceeded";
-    } else if (results.some(r => r.runtimeError)) {
+    } else if (results.some((r) => r.runtimeError)) {
       status = "runtime_error";
     } else if (allPassed) {
       status = "accepted";
@@ -450,28 +468,91 @@ export const submitCode = async (req, res) => {
       });
     }
 
+    // ============================================
+    // AI FEEDBACK INTEGRATION
+    // Request AI feedback for non-accepted submissions
+    // ============================================
+    let aiFeedback = null;
+    if (userId && status !== "accepted") {
+      try {
+        console.log("[Submit] Requesting AI feedback for failed submission...");
+
+        // Get user's recent submission history for context
+        const recentSubmissions = await Submission.find({ userId })
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .select("status questionId")
+          .lean();
+
+        const userHistorySummary = buildUserHistorySummary(recentSubmissions);
+
+        // Get problem category from question tags
+        const problemCategory =
+          question.tags?.length > 0
+            ? question.tags.join(", ")
+            : question.difficulty || "General";
+
+        // Call AI service (non-blocking - we don't fail submission if AI fails)
+        aiFeedback = await getAIFeedback({
+          userId: userId.toString(),
+          problemId: questionId.toString(),
+          problemCategory,
+          constraints: question.constraints || "No specific constraints",
+          code,
+          language,
+          verdict: status,
+          userHistorySummary,
+        });
+
+        if (aiFeedback) {
+          console.log("[Submit] AI feedback received successfully");
+        } else {
+          console.log("[Submit] AI feedback unavailable (service may be down)");
+        }
+      } catch (aiError) {
+        // Log but don't fail the submission
+        console.error(
+          "[Submit] AI feedback error (non-fatal):",
+          aiError.message,
+        );
+        aiFeedback = null;
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
         submissionId: submission?._id,
         status,
-        results: results.map(r => ({
+        results: results.map((r) => ({
           label: r.label,
           isHidden: r.isHidden,
           passed: r.passed,
           timedOut: r.timedOut,
           compileError: r.compileError,
           // Only include details for visible tests
-          ...(r.isHidden ? {} : {
-            stdin: r.stdin,
-            expectedStdout: r.expectedStdout,
-            actualStdout: r.actualStdout,
-            stderr: r.stderr,
-          }),
+          ...(r.isHidden
+            ? {}
+            : {
+                stdin: r.stdin,
+                expectedStdout: r.expectedStdout,
+                actualStdout: r.actualStdout,
+                stderr: r.stderr,
+              }),
         })),
         passedCount,
         totalCount: allTestCases.length,
         allPassed,
+        // Include AI feedback if available
+        aiFeedback: aiFeedback
+          ? {
+              explanation: aiFeedback.explanation,
+              improvementHint: aiFeedback.improvement_hint,
+              detectedPattern: aiFeedback.detected_pattern,
+              learningRecommendation: aiFeedback.learning_recommendation,
+              difficultyAdjustment: aiFeedback.difficulty_adjustment,
+            }
+          : null,
       },
     });
   } catch (error) {
@@ -522,12 +603,7 @@ export const getSubmissions = async (req, res) => {
  */
 export const getPublicQuestions = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      difficulty,
-      search,
-    } = req.query;
+    const { page = 1, limit = 20, difficulty, search } = req.query;
 
     const query = { isActive: true };
     if (difficulty) query.difficulty = difficulty;
@@ -573,7 +649,9 @@ export const getPublicQuestion = async (req, res) => {
     const question = await Question.findOne({
       _id: req.params.id,
       isActive: true,
-    }).select("-__v -createdBy -updatedBy").lean();
+    })
+      .select("-__v -createdBy -updatedBy")
+      .lean();
 
     if (!question) {
       return res.status(404).json({
@@ -595,7 +673,7 @@ export const getPublicQuestion = async (req, res) => {
       success: true,
       data: {
         ...question,
-        testCases: visibleTestCases.map(tc => ({
+        testCases: visibleTestCases.map((tc) => ({
           label: tc.label,
           stdin: tc.stdin,
           expectedStdout: tc.expectedStdout,

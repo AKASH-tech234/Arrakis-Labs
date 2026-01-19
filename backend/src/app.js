@@ -24,17 +24,15 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-
 const app = express();
 
 app.use(helmet());
 
-
 app.use(mongoSanitize());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 100, 
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: "Too many requests from this IP, please try again later.",
 });
 app.use("/api/", limiter);
@@ -64,9 +62,9 @@ app.use("/api/admin/login", adminAuthLimiter);
 const codeLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute window
   max: 20, // Max 20 executions per minute
-  message: { 
-    status: "error", 
-    message: "Too many code executions. Please wait before trying again." 
+  message: {
+    status: "error",
+    message: "Too many code executions. Please wait before trying again.",
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -78,12 +76,9 @@ const codeLimiter = rateLimit({
 
 app.use(express.json({ limit: "10kb" }));
 
-
 app.use(express.urlencoded({ limit: "10kb", extended: true }));
 
-
 app.use(cookieParser());
-
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -106,7 +101,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
 
 const connectDB = async () => {
   try {
@@ -136,6 +130,35 @@ app.get("/api/health", (req, res) => {
     message: "Server is running",
     timestamp: new Date().toISOString(),
   });
+});
+
+// AI Service health check endpoint
+app.get("/api/ai/health", async (req, res) => {
+  try {
+    const AI_SERVICE_URL =
+      process.env.AI_SERVICE_URL || "http://localhost:8000";
+    const response = await fetch(`${AI_SERVICE_URL}/health`, {
+      method: "GET",
+      timeout: 5000,
+    });
+    const data = await response.json();
+
+    res.status(200).json({
+      status: "success",
+      aiService: {
+        status: data.status,
+        url: AI_SERVICE_URL,
+      },
+    });
+  } catch (error) {
+    res.status(200).json({
+      status: "success",
+      aiService: {
+        status: "unavailable",
+        error: error.message,
+      },
+    });
+  }
 });
 
 // ============================================
@@ -191,24 +214,29 @@ app.post("/api/execute", codeLimiter, async (req, res) => {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     try {
-      const pistonResponse = await fetch("https://emkc.org/api/v2/piston/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          language: langConfig.language,
-          version: langConfig.version,
-          files: [{ name: langConfig.filename, content: code }],
-          stdin: stdin || "",
-          run_timeout: 10000, // 10s execution limit
-        }),
-        signal: controller.signal,
-      });
+      const pistonResponse = await fetch(
+        "https://emkc.org/api/v2/piston/execute",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            language: langConfig.language,
+            version: langConfig.version,
+            files: [{ name: langConfig.filename, content: code }],
+            stdin: stdin || "",
+            run_timeout: 10000, // 10s execution limit
+          }),
+          signal: controller.signal,
+        },
+      );
 
       clearTimeout(timeoutId);
 
       if (!pistonResponse.ok) {
         const errorText = await pistonResponse.text();
-        console.error(`Piston API error: ${pistonResponse.status} - ${errorText}`);
+        console.error(
+          `Piston API error: ${pistonResponse.status} - ${errorText}`,
+        );
         return res.status(502).json({
           status: "error",
           message: "Code execution service unavailable",
@@ -228,7 +256,7 @@ app.post("/api/execute", codeLimiter, async (req, res) => {
       });
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      
+
       if (fetchError.name === "AbortError") {
         return res.status(504).json({
           status: "error",
@@ -292,19 +320,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    
     await connectDB();
 
     const server = app.listen(PORT, () => {
       console.log(
         `✓ Server running on ${
           process.env.NODE_ENV || "development"
-        } mode at http://localhost:${PORT}`
+        } mode at http://localhost:${PORT}`,
       );
       console.log(`✓ API Base URL: http://localhost:${PORT}/api`);
     });
@@ -312,7 +338,7 @@ const startServer = async () => {
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {
         console.error(
-          `✗ Port ${PORT} is already in use. Stop the other process or set PORT in backend/.env (e.g. PORT=5001).`
+          `✗ Port ${PORT} is already in use. Stop the other process or set PORT in backend/.env (e.g. PORT=5001).`,
         );
         process.exit(1);
       }

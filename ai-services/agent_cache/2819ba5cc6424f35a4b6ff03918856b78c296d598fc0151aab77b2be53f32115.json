@@ -1,0 +1,7 @@
+{
+  "focus_areas": [
+    "Arrays",
+    "Algorithm Optimization"
+  ],
+  "rationale": "The submission failed due to Time Limit Exceeded. This suggests that the current solution logic is inefficient, likely due to excessive nested loops or lack of optimization. To improve performance, consider simplifying the solution logic and reducing nested loops, using more efficient data structures (like hash maps), or implementing a more optimal solution strategy."
+}

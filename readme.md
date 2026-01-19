@@ -1,33 +1,3 @@
-# CSV Upload Format (Admin)
-
-The admin CSV uploader accepts these columns (headers are case-insensitive; spaces/hyphens are allowed):
-
-- **Required**: `title`, `description`, `difficulty`
-- **Optional**: `id`, `created_at`, `updated_at`, `constraints`, `example` (or `examples`), `test_cases`, `tags`
-
-Notes:
-- `difficulty` must be one of: `Easy`, `Medium`, `Hard`
-- `created_at` / `updated_at` should be ISO strings (e.g. `2025-03-02T10:15:30Z`) or any JS-parseable date string
-- `example` can be a single JSON object; `examples` can be a JSON array of objects
-- `test_cases` must be a JSON array of objects with `input` and `expected_output`
-
-Minimal header example:
-`title,description,difficulty`
-
-Full header example:
-`id,title,description,difficulty,created_at,updated_at,examples,constraints,test_cases,tags`
-
-JSON field examples:
-
-`examples` (array):
-`[{"input":[1,2,3],"output":6,"explanation":"Sum all"}]`
-
-`example` (single object also allowed):
-`{"input":[1,2],"output":3}`
-
-`test_cases` (array):
-`[{"input":{"nums":[1,2],"target":3},"expected_output":true},{"input":{"nums":[1,1],"target":3},"expected_output":false}]`
-
 # Arrakis Labs – Code of the Desert
 
 ## Enterprise Product Requirements Document (PRD)
@@ -36,18 +6,8 @@ JSON field examples:
 **Date:** January 15, 2026  
 **Document Owner:** Principal Product Manager & AI Systems Architect  
 **Classification:** Internal - Engineering Implementation
-
 ---
-
-
-## Document Control
-
-| Version | Date         | Author       | Changes                   |
-| ------- | ------------ | ------------ | ------------------------- |
-| 1.0     | Jan 14, 2026 | Product Team | Initial comprehensive PRD |
-
 ---
-
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
