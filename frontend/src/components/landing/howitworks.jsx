@@ -39,7 +39,7 @@ function StepCard({ step, index }) {
       ref={ref}
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.15, ease: "easeOut" }}
+      transition={{ type: "spring", stiffness: 420, damping: 30, delay: index * 0.15 }}
 
       /* ⚡ Faster hover response */
       whileHover={{
