@@ -18,7 +18,7 @@
 
 ### What Problem It Solves
 
-Traditional coding platforms provide binary feedback (pass/fail), leaving learners without guidance on *why* their solution failed or *how* to improve. Arrakis Labs bridges this gap by:
+Traditional coding platforms provide binary feedback (pass/fail), leaving learners without guidance on _why_ their solution failed or _how_ to improve. Arrakis Labs bridges this gap by:
 
 - Analyzing code submissions with AI agents powered by LangGraph
 - Building a memory of user mistakes and patterns (RAG-based retrieval)
@@ -31,24 +31,28 @@ Traditional coding platforms provide binary feedback (pass/fail), leaving learne
 ## Key Features
 
 ### 🧠 AI-Powered Feedback
+
 - **Memory-driven analysis**: AI agents remember past mistakes and patterns
 - **Contextual hints**: Actionable improvement suggestions without revealing full solutions
 - **Learning recommendations**: Personalized focus areas based on submission history
 - **Difficulty adjustment**: Dynamic problem difficulty based on performance
 
 ### 🏆 Real-Time Contests
+
 - **Live leaderboards**: WebSocket-driven updates with sub-second latency
 - **Automated scheduling**: Contest state transitions (scheduled → live → ended)
 - **Multi-problem format**: Support for diverse problem sets
 - **Penalty scoring**: Time-based penalties for incorrect submissions
 
 ### ⚡ Code Execution & Judging
+
 - **Multi-language support**: Python, JavaScript, Java, C++
 - **Sandboxed execution**: Secure code execution via Piston API
 - **Hidden test cases**: Prevent gaming the system
 - **Detailed results**: Test-by-test breakdown with visible/hidden distinction
 
 ### 🔐 Security & Access Control
+
 - **JWT authentication**: Secure session management with HTTP-only cookies
 - **Role-based access**: Separate admin and user roles
 - **Rate limiting**: Prevent abuse of code execution and API endpoints
@@ -56,6 +60,7 @@ Traditional coding platforms provide binary feedback (pass/fail), leaving learne
 - **CORS protection**: Strict origin validation
 
 ### 📊 Admin Dashboard
+
 - **Problem management**: Create, edit, and organize coding problems
 - **Test case editor**: Manage visible and hidden test cases
 - **Contest lifecycle**: Schedule, monitor, and finalize contests
@@ -197,6 +202,7 @@ arrakis-labs/
 The backend is a modular Express.js application organized by domain:
 
 **Core Components:**
+
 - **`app.js`**: Server initialization, middleware setup, route registration
 - **Controllers**: Business logic for auth, problems, contests, admin operations
 - **Models**: Mongoose schemas for MongoDB collections
@@ -231,12 +237,14 @@ The backend is a modular Express.js application organized by domain:
 **Purpose**: Real-time updates for active contests
 
 **Features:**
+
 - Contest-specific rooms (users join via `contestId`)
 - Leaderboard broadcasts on submission events
 - Timer synchronization
 - Heartbeat for connection health
 
 **Events:**
+
 - `join_contest`: User joins a contest room
 - `leave_contest`: User leaves a room
 - `leaderboard_update`: Broadcast new rankings
@@ -245,12 +253,14 @@ The backend is a modular Express.js application organized by domain:
 ### Scheduler & Leaderboard
 
 **`contestScheduler.js`:**
+
 - Checks contest states every 30 seconds
 - Automatically starts contests at `startTime`
 - Automatically ends contests at `endTime`
 - Calculates final rankings
 
 **`leaderboardService.js`:**
+
 - Redis sorted sets for O(log N) rank operations
 - Composite score: `(problemsSolved * 1e12) - penaltyTime`
 - Pub/Sub for real-time updates across services
@@ -264,6 +274,7 @@ The backend is a modular Express.js application organized by domain:
 Built with **React 19**, **Vite**, and **React Router v7**.
 
 **Key Libraries:**
+
 - **Monaco Editor**: Code editing with syntax highlighting
 - **Framer Motion**: Smooth animations
 - **Axios**: HTTP client
@@ -296,6 +307,7 @@ Comprehensive dashboard for platform management:
 ```
 
 **Usage in components:**
+
 ```jsx
 const { leaderboard } = useContestWebSocket(contestId);
 // Leaderboard auto-updates when submissions occur
@@ -310,6 +322,7 @@ const { leaderboard } = useContestWebSocket(contestId);
 Built with **LangChain** and **LangGraph** for composable AI workflows.
 
 **Agents:**
+
 - **Feedback Agent**: Analyzes why code failed, provides improvement hints
 - **Learning Agent**: Recommends focus areas based on mistake patterns
 - **Difficulty Agent**: Suggests problem difficulty adjustments
@@ -330,23 +343,27 @@ Built with **LangChain** and **LangGraph** for composable AI workflows.
 ### Metrics & Caching
 
 **Caching Strategy:**
+
 - Agent responses cached by hash of `(user_id, problem_id, code, verdict)`
 - Cache hits avoid redundant LLM calls
 - JSON files stored in `agent_cache/`
 
 **Metrics:**
+
 - Agent execution time logged to `agent_metrics.json`
 - Used for performance monitoring and optimization
 
 ### Backend Integration
 
 **`aiService.js`** (backend):
+
 - Fetches user submission history
 - Builds `user_history_summary` string
 - Calls `/ai/feedback` endpoint
 - Returns response to user (non-blocking, won't fail submission if AI is down)
 
 **Request Payload:**
+
 ```json
 {
   "user_id": "...",
@@ -362,6 +379,7 @@ Built with **LangChain** and **LangGraph** for composable AI workflows.
 ```
 
 **Response:**
+
 ```json
 {
   "explanation": "Your solution doesn't handle...",
@@ -459,60 +477,60 @@ AI service runs at `http://localhost:8000`
 
 ### Auth API (`/api/auth`)
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/signup` | Register new user | Public |
-| POST | `/signin` | Login | Public |
-| POST | `/logout` | Logout | Protected |
-| GET | `/me` | Get current user | Protected |
-| PUT | `/update-profile` | Update profile | Protected |
-| PUT | `/change-password` | Change password | Protected |
+| Method | Endpoint           | Description       | Auth      |
+| ------ | ------------------ | ----------------- | --------- |
+| POST   | `/signup`          | Register new user | Public    |
+| POST   | `/signin`          | Login             | Public    |
+| POST   | `/logout`          | Logout            | Protected |
+| GET    | `/me`              | Get current user  | Protected |
+| PUT    | `/update-profile`  | Update profile    | Protected |
+| PUT    | `/change-password` | Change password   | Protected |
 
 ### Problems API (`/api`)
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/questions` | List public problems | Public |
-| GET | `/questions/:id` | Get problem details | Public |
-| POST | `/run` | Run code with visible tests | Rate-limited |
-| POST | `/submit` | Submit code with all tests | Protected |
-| GET | `/submissions` | User's submission history | Protected |
+| Method | Endpoint         | Description                 | Auth         |
+| ------ | ---------------- | --------------------------- | ------------ |
+| GET    | `/questions`     | List public problems        | Public       |
+| GET    | `/questions/:id` | Get problem details         | Public       |
+| POST   | `/run`           | Run code with visible tests | Rate-limited |
+| POST   | `/submit`        | Submit code with all tests  | Protected    |
+| GET    | `/submissions`   | User's submission history   | Protected    |
 
 ### Contest API (`/api/contests`)
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | List all contests | Optional auth |
-| GET | `/:id` | Get contest details | Optional auth |
-| POST | `/:id/register` | Register for contest | Protected |
-| POST | `/:id/join` | Join live contest | Protected |
-| GET | `/:id/problems/:problemId` | Get contest problem | Protected |
-| POST | `/:id/problems/:problemId/run` | Run code in contest | Protected |
-| POST | `/:id/problems/:problemId/submit` | Submit in contest | Protected |
-| GET | `/:id/leaderboard` | Get leaderboard | Optional auth |
-| GET | `/:id/standing` | Get user's rank | Protected |
+| Method | Endpoint                          | Description          | Auth          |
+| ------ | --------------------------------- | -------------------- | ------------- |
+| GET    | `/`                               | List all contests    | Optional auth |
+| GET    | `/:id`                            | Get contest details  | Optional auth |
+| POST   | `/:id/register`                   | Register for contest | Protected     |
+| POST   | `/:id/join`                       | Join live contest    | Protected     |
+| GET    | `/:id/problems/:problemId`        | Get contest problem  | Protected     |
+| POST   | `/:id/problems/:problemId/run`    | Run code in contest  | Protected     |
+| POST   | `/:id/problems/:problemId/submit` | Submit in contest    | Protected     |
+| GET    | `/:id/leaderboard`                | Get leaderboard      | Optional auth |
+| GET    | `/:id/standing`                   | Get user's rank      | Protected     |
 
 ### Admin API (`/api/admin`)
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/login` | Admin login | Public |
-| GET | `/problems` | List all problems | Admin |
-| POST | `/problems` | Create problem | Admin |
-| PUT | `/problems/:id` | Update problem | Admin |
-| DELETE | `/problems/:id` | Delete problem | Admin |
-| POST | `/upload-csv` | Bulk import problems | Admin |
-| GET | `/contests` | List admin contests | Admin |
-| POST | `/contests` | Create contest | Admin |
-| PUT | `/contests/:id` | Update contest | Admin |
-| POST | `/contests/:id/finalize` | Finalize contest | Admin |
+| Method | Endpoint                 | Description          | Auth   |
+| ------ | ------------------------ | -------------------- | ------ |
+| POST   | `/login`                 | Admin login          | Public |
+| GET    | `/problems`              | List all problems    | Admin  |
+| POST   | `/problems`              | Create problem       | Admin  |
+| PUT    | `/problems/:id`          | Update problem       | Admin  |
+| DELETE | `/problems/:id`          | Delete problem       | Admin  |
+| POST   | `/upload-csv`            | Bulk import problems | Admin  |
+| GET    | `/contests`              | List admin contests  | Admin  |
+| POST   | `/contests`              | Create contest       | Admin  |
+| PUT    | `/contests/:id`          | Update contest       | Admin  |
+| POST   | `/contests/:id/finalize` | Finalize contest     | Admin  |
 
 ### AI API (`/ai`)
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/health` | AI service health | Public |
-| POST | `/feedback` | Generate AI feedback | Internal (backend) |
+| Method | Endpoint    | Description          | Auth               |
+| ------ | ----------- | -------------------- | ------------------ |
+| GET    | `/health`   | AI service health    | Public             |
+| POST   | `/feedback` | Generate AI feedback | Internal (backend) |
 
 ---
 
@@ -521,12 +539,13 @@ AI service runs at `http://localhost:8000`
 ### Connection
 
 ```javascript
-const ws = new WebSocket('ws://localhost:5000/ws/contest');
+const ws = new WebSocket("ws://localhost:5000/ws/contest");
 ```
 
 ### Events
 
 **Client → Server:**
+
 ```json
 {
   "type": "join_contest",
@@ -536,6 +555,7 @@ const ws = new WebSocket('ws://localhost:5000/ws/contest');
 ```
 
 **Server → Client:**
+
 ```json
 {
   "type": "leaderboard_update",
@@ -610,19 +630,19 @@ services:
     build: ./backend
     ports: ["5000:5000"]
     depends_on: [mongodb, redis]
-  
+
   frontend:
     build: ./frontend
     ports: ["5173:5173"]
-  
+
   ai-service:
     build: ./ai-services
     ports: ["8000:8000"]
-  
+
   mongodb:
     image: mongo:7
     volumes: [mongo-data:/data/db]
-  
+
   redis:
     image: redis:7-alpine
     volumes: [redis-data:/data]
@@ -642,6 +662,7 @@ services:
 ### Code Standards
 
 **Backend (JavaScript):**
+
 - Use ES6+ features
 - Follow Airbnb style guide
 - Use meaningful variable names
@@ -649,6 +670,7 @@ services:
 - Handle errors gracefully
 
 **Frontend (React):**
+
 - Functional components with hooks
 - PropTypes or TypeScript for type safety
 - Keep components small and focused
@@ -656,6 +678,7 @@ services:
 - Follow accessibility best practices (a11y)
 
 **AI Services (Python):**
+
 - Follow PEP 8 style guide
 - Type hints for function signatures
 - Docstrings for classes and functions
@@ -671,4 +694,4 @@ services:
 ---
 
 **Built with 🧠 by Arrakis Labs**  
-*Master the art of coding through memory, reasoning, and adaptive intelligence.*
+_Master the art of coding through memory, reasoning, and adaptive intelligence._
