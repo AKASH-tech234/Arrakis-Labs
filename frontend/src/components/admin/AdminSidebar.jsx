@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Shield,
   ClipboardList,
+  Trophy,
 } from "lucide-react";
 
 const AdminSidebar = () => {
@@ -33,6 +34,11 @@ const AdminSidebar = () => {
       to: "/admin/questions",
       icon: FileText,
       label: "Questions",
+    },
+    {
+      to: "/admin/contests",
+      icon: Trophy,
+      label: "Contests",
     },
     {
       to: "/admin/upload",

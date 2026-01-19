@@ -60,3 +60,27 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+// Optional auth - populates req.user if token exists, but doesn't require it
+export const optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+
+    // Get token from header or cookie
+    if (req.headers.authorization?.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies.token) {
+      token = req.cookies.token;
+    }
+
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id);
+    }
+
+    next();
+  } catch (error) {
+    // Token invalid - continue without user
+    next();
+  }
+};

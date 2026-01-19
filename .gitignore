@@ -122,12 +122,26 @@ temp/
 # ============================================
 .prettierignore
 .eslintignore
-.env.example
 .venv
+
+# Secrets / key material
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.jks
+id_rsa
+id_rsa.pub
+.envrc
 
 # env files
 .env
 backend/.env
+
+# keep example env templates tracked
+!.env.example
+!**/.env.example
 
 # node
 node_modules/

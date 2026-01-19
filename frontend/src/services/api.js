@@ -1,5 +1,7 @@
 // src/services/api.js - Frontend API client
 
+import axios from "axios";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const TOKEN_KEY = "arrakis_token";
@@ -27,6 +29,33 @@ const clearToken = () => {
     // ignore
   }
 };
+
+// Axios client (used by contestApi and any axios-style consumers)
+const apiClient = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearToken();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+    }
+    return Promise.reject(error);
+  }
+);
 
 async function request(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
@@ -162,3 +191,5 @@ export async function signout() {
 }
 
 export { clearToken };
+
+export default apiClient;
