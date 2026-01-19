@@ -33,6 +33,44 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = express();
 
+// CORS must run before anything that can short-circuit requests (e.g. rate limiters),
+// otherwise browsers will fail preflight with missing Access-Control-Allow-Origin.
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+].filter(Boolean);
+
+const normalizeOrigin = (origin) => {
+  if (!origin || typeof origin !== "string") return origin;
+  return origin.endsWith("/") ? origin.slice(0, -1) : origin;
+};
+
+const isLocalDevOrigin = (origin) => {
+  const normalized = normalizeOrigin(origin);
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalized);
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow same-origin / non-browser clients (no Origin header)
+    if (!origin) return callback(null, true);
+
+    const normalized = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalized) || isLocalDevOrigin(normalized)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 app.use(helmet());
 
 
@@ -89,45 +127,6 @@ app.use(express.urlencoded({ limit: "10kb", extended: true }));
 
 
 app.use(cookieParser());
-
-
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "http://localhost:5173",
-  "http://localhost:5174",
-].filter(Boolean);
-
-const normalizeOrigin = (origin) => {
-  if (!origin || typeof origin !== "string") return origin;
-  return origin.endsWith("/") ? origin.slice(0, -1) : origin;
-};
-
-const isLocalDevOrigin = (origin) => {
-  const normalized = normalizeOrigin(origin);
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalized);
-};
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow same-origin / non-browser clients (no Origin header)
-    if (!origin) return callback(null, true);
-
-    const normalized = normalizeOrigin(origin);
-    if (allowedOrigins.includes(normalized) || isLocalDevOrigin(normalized)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-};
-
-app.use(cors(corsOptions));
-
-// Explicitly handle preflight requests
-app.options("*", cors(corsOptions));
 
 
 const connectDB = async () => {
