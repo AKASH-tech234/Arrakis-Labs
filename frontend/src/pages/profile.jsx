@@ -31,13 +31,13 @@ const itemVariants = {
   },
 };
 
-export default function Profile() {
+export default function Profile({ username, readOnly = false } = {}) {
   const [contests, setContests] = useState({ live: [], upcoming: [] });
   const [contestsLoading, setContestsLoading] = useState(true);
   const [contestsError, setContestsError] = useState(null);
   const [busy, setBusy] = useState({});
 
-  const { data: analytics } = useProfileAnalytics();
+  const { data: analytics } = useProfileAnalytics({ username });
 
   const setContestBusy = (contestId, value) => {
     setBusy((prev) => ({ ...prev, [contestId]: value }));
@@ -89,6 +89,8 @@ export default function Profile() {
   );
 
   const handleRegister = async (contest) => {
+    if (readOnly) return;
+
     const contestId = contest?._id;
     if (!contestId) return;
 
@@ -292,8 +294,8 @@ export default function Profile() {
                                 ) : canRegister ? (
                                   <button
                                     type="button"
-                                    disabled={Boolean(busy[contestId])}
-                                    onClick={() => handleRegister(contest)}
+                                    disabled={readOnly || Boolean(busy[contestId])}
+                                    onClick={readOnly ? undefined : () => handleRegister(contest)}
                                     className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                   >
                                     {busy[contestId] ? "Registering…" : "Register"}
