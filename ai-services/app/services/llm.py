@@ -37,7 +37,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 logger = logging.getLogger("llm_service")
 
-DEFAULT_MODEL = "gemini-2.5-flash"  # FAST + cheap + strong JSON
+DEFAULT_MODEL = "gemini-2.5-flash" 
 
 # Load environment variables from .env at startup
 load_dotenv()
@@ -45,10 +45,11 @@ load_dotenv()
 def get_llm(temperature: float = 0.2):
     """
     Central LLM factory.
-    Switched from Ollama to Gemini.
+    Switchedto Gemini.
     """
 
     api_key = os.getenv("GOOGLE_API_KEY")
+    print(api_key)
     if not api_key:
         raise RuntimeError("GOOGLE_API_KEY is not set in .env")
 
@@ -56,6 +57,7 @@ def get_llm(temperature: float = 0.2):
         f"Creating Gemini LLM instance "
         f"(model={DEFAULT_MODEL}, temp={temperature})"
     )
+    logger.debug(f"Using GOOGLE_API_KEY: {'*' * (len(api_key) - 4) + api_key[-4:]}")
 
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_MODEL,
