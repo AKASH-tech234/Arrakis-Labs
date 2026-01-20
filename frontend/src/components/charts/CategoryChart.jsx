@@ -1,23 +1,17 @@
 // src/components/charts/CategoryChart.jsx
 // Simple bar chart showing performance by category
 
-const mockCategoryData = [
-  { name: "Arrays", solved: 15, total: 30 },
-  { name: "Strings", solved: 12, total: 25 },
-  { name: "Math", solved: 8, total: 20 },
-  { name: "Linked List", solved: 5, total: 15 },
-  { name: "Binary Search", solved: 4, total: 12 },
-  { name: "Recursion", solved: 3, total: 18 },
-];
-
-export default function CategoryChart() {
-  const maxTotal = Math.max(...mockCategoryData.map((d) => d.total));
+export default function CategoryChart({ categories }) {
+  const data = Array.isArray(categories) ? categories : [];
+  const maxTotal = Math.max(1, ...data.map((d) => Number(d.total) || 0));
 
   return (
     <div className="space-y-4">
-      {mockCategoryData.map((category) => {
-        const percentage = (category.solved / category.total) * 100;
-        const barWidth = (category.total / maxTotal) * 100;
+      {data.map((category) => {
+        const solved = Number(category.solved) || 0;
+        const total = Number(category.total) || 0;
+        const percentage = total > 0 ? (solved / total) * 100 : 0;
+        const barWidth = total > 0 ? (total / maxTotal) * 100 : 0;
 
         return (
           <div key={category.name} className="space-y-1">
@@ -33,7 +27,7 @@ export default function CategoryChart() {
                 className="text-[#3D3D3D] text-xs"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                {category.solved}/{category.total}
+                {solved}/{total}
               </span>
             </div>
 
