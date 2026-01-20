@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
+import cookie from "cookie";
 import leaderboardService from "./leaderboardService.js";
 
 /**
@@ -130,6 +131,9 @@ class ContestWebSocketServer {
       connectedAt: Date.now(),
     });
 
+    // Try auto-auth from cookie
+    this.tryAuthFromCookie(ws, req);
+
     // Handle pong (heartbeat response)
     ws.on("pong", () => {
       const data = this.clientData.get(ws);
@@ -198,7 +202,7 @@ class ContestWebSocketServer {
   }
 
   /**
-   * Handle authentication
+   * Handle authentication - supports both explicit token and cookie-based auth
    */
   async handleAuthenticate(ws, payload) {
     const { token } = payload || {};
@@ -221,6 +225,37 @@ class ContestWebSocketServer {
       });
     } catch (error) {
       this.send(ws, { type: "auth_error", message: "Invalid token" });
+    }
+  }
+
+  /**
+   * Try to auto-authenticate from cookie on connection
+   */
+  tryAuthFromCookie(ws, req) {
+    try {
+      const cookieHeader = req.headers.cookie;
+      if (!cookieHeader) return false;
+
+      const cookies = cookie.parse(cookieHeader);
+      // Try userToken first, then legacy token name
+      const token = cookies.userToken || cookies.token;
+      if (!token) return false;
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const data = this.clientData.get(ws);
+
+      data.userId = decoded.id;
+      data.authenticated = true;
+
+      this.send(ws, {
+        type: "authenticated",
+        userId: decoded.id,
+        method: "cookie",
+      });
+
+      return true;
+    } catch {
+      return false;
     }
   }
 
