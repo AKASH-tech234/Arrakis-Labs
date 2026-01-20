@@ -23,6 +23,11 @@ import {
   getPublicQuestion,
 } from "./controllers/judgeController.js";
 
+import {
+  requestAIFeedback,
+  getAILearningSummary,
+} from "./controllers/aiController.js";
+
 import { protect } from "./middleware/authMiddleware.js";
 import leaderboardService from "./services/leaderboardService.js";
 import wsServer from "./services/websocketServer.js";
@@ -137,6 +142,10 @@ app.get("/api/questions/:id", getPublicQuestion);
 app.post("/api/run", codeLimiter, runCode);
 app.post("/api/submit", protect, codeLimiter, submitCode);
 app.get("/api/submissions", protect, getSubmissions);
+
+// AI Feedback routes
+app.post("/api/ai/feedback", protect, requestAIFeedback);
+app.post("/api/ai/summary", protect, getAILearningSummary);
 
 /* ======================================================
    ERRORS
