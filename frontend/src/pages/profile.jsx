@@ -9,6 +9,7 @@ import ActivityHeatmap from "../components/charts/ActivityHeatmap";
 import CategoryChart from "../components/charts/CategoryChart";
 import SubmissionSummary from "../components/charts/SubmissionSummary";
 import contestApi from "../services/contestApi";
+import apiClient from "../services/api";
 import useProfileAnalytics from "../hooks/useProfileAnalytics";
 
 const containerVariants = {
@@ -36,8 +37,56 @@ export default function Profile({ username, readOnly = false } = {}) {
   const [contestsLoading, setContestsLoading] = useState(true);
   const [contestsError, setContestsError] = useState(null);
   const [busy, setBusy] = useState({});
+  const [actionMessage, setActionMessage] = useState(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const { data: analytics } = useProfileAnalytics({ username });
+
+  const clearActionMessageSoon = () => {
+    window.setTimeout(() => setActionMessage(null), 2000);
+  };
+
+  const handleCopyProfileLink = async () => {
+    const publicUsername = analytics?.publicSettings?.publicUsername || analytics?.user?.username;
+    const url = readOnly || !publicUsername
+      ? window.location.href
+      : `${window.location.origin}/u/${encodeURIComponent(publicUsername)}`;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        window.prompt("Copy profile link:", url);
+      }
+      setActionMessage("Link copied");
+      clearActionMessageSoon();
+    } catch {
+      window.prompt("Copy profile link:", url);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (readOnly) return;
+    try {
+      setExportingPdf(true);
+      const res = await apiClient.post("/export/pdf", { format: "one_page", includeQr: true });
+      const fileUrl = res?.data?.data?.fileUrl;
+
+      if (!fileUrl) throw new Error("PDF export did not return a file URL");
+
+      const apiBase = String(apiClient?.defaults?.baseURL || "");
+      const origin = apiBase.replace(/\/?api\/?$/, "");
+      const absoluteUrl = `${origin}${fileUrl}`;
+      window.open(absoluteUrl, "_blank", "noopener,noreferrer");
+
+      setActionMessage("PDF generated");
+      clearActionMessageSoon();
+    } catch (err) {
+      alert(err?.response?.data?.message || err?.message || "Failed to export PDF");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const setContestBusy = (contestId, value) => {
     setBusy((prev) => ({ ...prev, [contestId]: value }));
@@ -155,8 +204,30 @@ export default function Profile({ username, readOnly = false } = {}) {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="mb-16 bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
+            className="mb-16 relative bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
           >
+            <div className="absolute top-6 right-6 z-20 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyProfileLink}
+                className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+              >
+                Copy link
+              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  disabled={exportingPdf}
+                  onClick={handleExportPdf}
+                  className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {exportingPdf ? "Exporting…" : "Export PDF"}
+                </button>
+              )}
+              {actionMessage && (
+                <div className="text-xs text-[#E8E4D9]/70 sm:ml-2 sm:self-center">{actionMessage}</div>
+              )}
+            </div>
             <div className="relative z-10">
               <ProfileHeader user={analytics?.user} />
             </div>
