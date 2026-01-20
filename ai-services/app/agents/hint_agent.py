@@ -6,7 +6,7 @@ from app.cache.cache_key import build_cache_key
 logger = logging.getLogger("hint_compression_agent")
 
 
-def hint_compression_agent(raw_hint: str, payload: dict) -> CompressedHint:
+def hint_agent(raw_hint: str, payload: dict) -> CompressedHint:
     logger.debug("✂️ hint_compression_agent called")
 
     augmented_context = f"""
