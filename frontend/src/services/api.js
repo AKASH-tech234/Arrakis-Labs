@@ -57,6 +57,8 @@ apiClient.interceptors.response.use(
   },
 );
 
+export default apiClient;
+
 async function request(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
@@ -266,4 +268,4 @@ export async function getAILearningSummary({
 
 export { clearToken };
 
-export default apiClient;
+//export default apiClient;

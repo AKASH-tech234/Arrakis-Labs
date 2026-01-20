@@ -33,6 +33,12 @@ import leaderboardService from "./services/leaderboardService.js";
 import wsServer from "./services/websocketServer.js";
 import contestScheduler from "./services/contestScheduler.js";
 
+import profileDashboardRoutes from "./routes/profileDashboardRoutes.js";
+import statsDashboardRoutes from "./routes/statsDashboardRoutes.js";
+import publicProfileRoutes from "./routes/publicProfileRoutes.js";
+import pdfExportRoutes from "./routes/pdfExportRoutes.js";
+import profileSyncScheduler from "./services/profileSyncScheduler.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -136,6 +142,15 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/contests", contestRoutes);
 
+// Coding Profile Dashboard
+app.use("/api/profile", profileDashboardRoutes);
+app.use("/api/stats", statsDashboardRoutes);
+app.use("/api/public", publicProfileRoutes);
+app.use("/api/export", pdfExportRoutes);
+
+// Serves generated assets (PDF exports, etc.)
+app.use("/exports", express.static(path.resolve(__dirname, "../public/exports")));
+
 app.get("/api/questions", getPublicQuestions);
 app.get("/api/questions/:id", getPublicQuestion);
 
@@ -179,8 +194,14 @@ const startServer = async () => {
   wsServer.initialize(server);
   await contestScheduler.initialize();
 
+  // periodic external platform sync (optional, best-effort)
+  profileSyncScheduler.start({
+    intervalMs: Number(process.env.PROFILE_SYNC_INTERVAL_MS) || 15 * 60 * 1000,
+  });
+
   const shutdown = async () => {
     contestScheduler.shutdown();
+    profileSyncScheduler.stop();
     wsServer.close();
     await leaderboardService.disconnect();
     server.close(() => mongoose.connection.close());

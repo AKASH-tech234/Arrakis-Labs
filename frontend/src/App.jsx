@@ -6,6 +6,7 @@ import Signup from "./pages/signup";
 import ProblemLibrary from "./pages/problem";
 import ProblemDetail from "./pages/problemdetail";
 import Profile from "./pages/profile";
+import PublicProfilePage from "./pages/publicProfile";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -74,6 +75,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/u/:username" element={<PublicProfilePage />} />
 
             {/* Contest Routes */}
             <Route path="/contests" element={<ContestList />} />
