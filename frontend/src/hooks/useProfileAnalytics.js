@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import apiClient from "../services/api";
 
 export default function useProfileAnalytics({ username } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = useCallback(() => setRefreshKey((x) => x + 1), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -35,7 +38,7 @@ export default function useProfileAnalytics({ username } = {}) {
       cancelled = true;
       controller.abort();
     };
-  }, [username]);
+  }, [username, refreshKey]);
 
-  return useMemo(() => ({ data, loading, error }), [data, loading, error]);
+  return useMemo(() => ({ data, loading, error, refetch }), [data, loading, error, refetch]);
 }
