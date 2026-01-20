@@ -107,7 +107,14 @@ async function resolveUserForRequest({ requestingUser, username, userId }) {
     const settings = await PublicProfileSettings.findOne({ publicUsername: username.toLowerCase() }).lean();
     if (!settings?.userId) return null;
 
-    if (!settings.isPublic) return { forbidden: true };
+    if (!settings.isPublic) {
+      if (requestingUser && String(requestingUser._id) === String(settings.userId)) {
+        const user = await User.findById(settings.userId).lean();
+        if (!user) return null;
+        return { user, settings };
+      }
+      return { forbidden: true };
+    }
 
     const user = await User.findById(settings.userId).lean();
     if (!user) return null;
