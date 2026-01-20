@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams } from "react-router-dom";
 import Landing from "./pages/landing";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
@@ -23,6 +23,11 @@ import QuestionList from "./pages/admin/QuestionList";
 import QuestionEditor from "./pages/admin/QuestionEditor";
 import TestCaseManager from "./pages/admin/TestCaseManager";
 import { AdminContestList, AdminContestEditor, AdminContestDetail } from "./pages/admin/contests";
+
+function PublicProfileRoute() {
+  const { username } = useParams();
+  return <Profile username={username} readOnly />;
+}
 
 function App() {
   return (
@@ -74,6 +79,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Public shareable Profile */}
+            <Route path="/u/:username" element={<PublicProfileRoute />} />
 
             {/* Contest Routes */}
             <Route path="/contests" element={<ContestList />} />
