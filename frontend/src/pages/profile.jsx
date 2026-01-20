@@ -9,6 +9,7 @@ import ActivityHeatmap from "../components/charts/ActivityHeatmap";
 import CategoryChart from "../components/charts/CategoryChart";
 import SubmissionSummary from "../components/charts/SubmissionSummary";
 import contestApi from "../services/contestApi";
+import useProfileAnalytics from "../hooks/useProfileAnalytics";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,6 +36,8 @@ export default function Profile() {
   const [contestsLoading, setContestsLoading] = useState(true);
   const [contestsError, setContestsError] = useState(null);
   const [busy, setBusy] = useState({});
+
+  const { data: analytics } = useProfileAnalytics();
 
   const setContestBusy = (contestId, value) => {
     setBusy((prev) => ({ ...prev, [contestId]: value }));
@@ -153,7 +156,7 @@ export default function Profile() {
             className="mb-16 bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
           >
             <div className="relative z-10">
-              <ProfileHeader />
+              <ProfileHeader user={analytics?.user} />
             </div>
             {/* Hover glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -175,7 +178,7 @@ export default function Profile() {
                 Performance Overview
               </h2>
             </div>
-            <StatsOverview />
+            <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
           {/* Contests - User Dashboard */}
@@ -332,7 +335,7 @@ export default function Profile() {
               </h2>
             </div>
             <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300">
-              <ActivityHeatmap />
+              <ActivityHeatmap activity={analytics?.activity} />
             </div>
           </motion.section>
 
@@ -357,7 +360,7 @@ export default function Profile() {
               <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative z-10">
-                  <CategoryChart />
+                  <CategoryChart categories={analytics?.categories} />
                 </div>
               </div>
             </motion.section>
@@ -376,7 +379,7 @@ export default function Profile() {
               <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative z-10">
-                  <SubmissionSummary />
+                  <SubmissionSummary submissions={analytics?.recentSubmissions} />
                 </div>
               </div>
             </motion.section>
