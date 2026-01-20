@@ -6,6 +6,8 @@ import Signup from "./pages/signup";
 import ProblemLibrary from "./pages/problem";
 import ProblemDetail from "./pages/problemdetail";
 import Profile from "./pages/profile";
+import ProfileCardPage from "./pages/profileCard";
+import CodingPlatformsPage from "./pages/codingPlatforms";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -76,6 +78,23 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile/card"
+              element={
+                <ProtectedRoute>
+                  <ProfileCardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile/platforms"
+              element={
+                <ProtectedRoute>
+                  <CodingPlatformsPage />
                 </ProtectedRoute>
               }
             />
