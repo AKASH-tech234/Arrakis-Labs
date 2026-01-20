@@ -16,6 +16,7 @@ import contestRoutes from "./routes/contestRoutes.js";
 import adminContestRoutes from "./routes/adminContestRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
+import exportRoutes from "./routes/exportRoutes.js";
 
 import {
   runCode,
@@ -139,6 +140,10 @@ app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/contests", contestRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/public", publicRoutes);
+app.use("/api/export", exportRoutes);
+
+// Serve generated exports (PDFs)
+app.use("/exports", express.static(path.resolve(__dirname, "../public/exports")));
 
 app.get("/api/questions", getPublicQuestions);
 app.get("/api/questions/:id", getPublicQuestion);
