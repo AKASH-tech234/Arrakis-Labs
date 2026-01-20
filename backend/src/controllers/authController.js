@@ -14,20 +14,20 @@ const generateToken = (id) => {
 const sendTokenResponse = (user, statusCode, res, message = "Success") => {
   const token = generateToken(user._id);
 
-  // Cookie options
+  // Cookie options - use unique path to avoid conflicts with adminToken
   const cookieOptions = {
     expires: new Date(
       Date.now() + (process.env.JWT_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
   };
 
-  res.status(statusCode).cookie("token", token, cookieOptions).json({
+  res.status(statusCode).cookie("userToken", token, cookieOptions).json({
     success: true,
     message,
-    token,
     user: {
       id: user._id,
       name: user.name,
@@ -302,10 +302,12 @@ export const githubAuth = async (req, res) => {
 // @access  Private
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token", {
+    // Clear userToken cookie with matching options
+    res.clearCookie("userToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({
