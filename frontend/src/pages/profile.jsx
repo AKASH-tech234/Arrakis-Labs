@@ -9,6 +9,8 @@ import ActivityHeatmap from "../components/charts/ActivityHeatmap";
 import CategoryChart from "../components/charts/CategoryChart";
 import SubmissionSummary from "../components/charts/SubmissionSummary";
 import contestApi from "../services/contestApi";
+import apiClient from "../services/api";
+import useProfileAnalytics from "../hooks/useProfileAnalytics";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,11 +32,61 @@ const itemVariants = {
   },
 };
 
-export default function Profile() {
+export default function Profile({ username, readOnly = false } = {}) {
   const [contests, setContests] = useState({ live: [], upcoming: [] });
   const [contestsLoading, setContestsLoading] = useState(true);
   const [contestsError, setContestsError] = useState(null);
   const [busy, setBusy] = useState({});
+  const [actionMessage, setActionMessage] = useState(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const { data: analytics } = useProfileAnalytics({ username });
+
+  const clearActionMessageSoon = () => {
+    window.setTimeout(() => setActionMessage(null), 2000);
+  };
+
+  const handleCopyProfileLink = async () => {
+    const publicUsername = analytics?.publicSettings?.publicUsername || analytics?.user?.username;
+    const url = readOnly || !publicUsername
+      ? window.location.href
+      : `${window.location.origin}/u/${encodeURIComponent(publicUsername)}`;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        window.prompt("Copy profile link:", url);
+      }
+      setActionMessage("Link copied");
+      clearActionMessageSoon();
+    } catch {
+      window.prompt("Copy profile link:", url);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (readOnly) return;
+    try {
+      setExportingPdf(true);
+      const res = await apiClient.post("/export/pdf", { format: "one_page", includeQr: true });
+      const fileUrl = res?.data?.data?.fileUrl;
+
+      if (!fileUrl) throw new Error("PDF export did not return a file URL");
+
+      const apiBase = String(apiClient?.defaults?.baseURL || "");
+      const origin = apiBase.replace(/\/?api\/?$/, "");
+      const absoluteUrl = `${origin}${fileUrl}`;
+      window.open(absoluteUrl, "_blank", "noopener,noreferrer");
+
+      setActionMessage("PDF generated");
+      clearActionMessageSoon();
+    } catch (err) {
+      alert(err?.response?.data?.message || err?.message || "Failed to export PDF");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const setContestBusy = (contestId, value) => {
     setBusy((prev) => ({ ...prev, [contestId]: value }));
@@ -86,6 +138,8 @@ export default function Profile() {
   );
 
   const handleRegister = async (contest) => {
+    if (readOnly) return;
+
     const contestId = contest?._id;
     if (!contestId) return;
 
@@ -150,10 +204,32 @@ export default function Profile() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="mb-16 bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
+            className="mb-16 relative bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
           >
+            <div className="absolute top-6 right-6 z-20 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyProfileLink}
+                className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+              >
+                Copy link
+              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  disabled={exportingPdf}
+                  onClick={handleExportPdf}
+                  className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {exportingPdf ? "Exporting…" : "Export PDF"}
+                </button>
+              )}
+              {actionMessage && (
+                <div className="text-xs text-[#E8E4D9]/70 sm:ml-2 sm:self-center">{actionMessage}</div>
+              )}
+            </div>
             <div className="relative z-10">
-              <ProfileHeader />
+              <ProfileHeader user={analytics?.user} />
             </div>
             {/* Hover glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -175,7 +251,7 @@ export default function Profile() {
                 Performance Overview
               </h2>
             </div>
-            <StatsOverview />
+            <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
           {/* Contests - User Dashboard */}
@@ -289,8 +365,8 @@ export default function Profile() {
                                 ) : canRegister ? (
                                   <button
                                     type="button"
-                                    disabled={Boolean(busy[contestId])}
-                                    onClick={() => handleRegister(contest)}
+                                    disabled={readOnly || Boolean(busy[contestId])}
+                                    onClick={readOnly ? undefined : () => handleRegister(contest)}
                                     className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                   >
                                     {busy[contestId] ? "Registering…" : "Register"}
@@ -332,7 +408,7 @@ export default function Profile() {
               </h2>
             </div>
             <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300">
-              <ActivityHeatmap />
+              <ActivityHeatmap activity={analytics?.activity} />
             </div>
           </motion.section>
 
@@ -357,7 +433,7 @@ export default function Profile() {
               <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative z-10">
-                  <CategoryChart />
+                  <CategoryChart categories={analytics?.categories} />
                 </div>
               </div>
             </motion.section>
@@ -376,7 +452,7 @@ export default function Profile() {
               <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative z-10">
-                  <SubmissionSummary />
+                  <SubmissionSummary submissions={analytics?.recentSubmissions} />
                 </div>
               </div>
             </motion.section>

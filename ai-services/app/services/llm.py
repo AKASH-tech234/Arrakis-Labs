@@ -30,14 +30,17 @@
 #         raise
     
     
-    
 import os
 import logging
+from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 logger = logging.getLogger("llm_service")
 
 DEFAULT_MODEL = "gemini-2.5-flash"  # FAST + cheap + strong JSON
+
+# Load environment variables from .env at startup
+load_dotenv()
 
 def get_llm(temperature: float = 0.2):
     """
@@ -45,12 +48,12 @@ def get_llm(temperature: float = 0.2):
     Switched from Ollama to Gemini.
     """
 
-    api_key ="AIzaSyBl0GRkPrd1BmiPDrP2Vjpu7dsSu9UD3yY"
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise RuntimeError("GOOGLE_API_KEY is not set")
+        raise RuntimeError("GOOGLE_API_KEY is not set in .env")
 
     logger.debug(
-        f"🔧 Creating Gemini LLM instance "
+        f"Creating Gemini LLM instance "
         f"(model={DEFAULT_MODEL}, temp={temperature})"
     )
 
@@ -61,6 +64,5 @@ def get_llm(temperature: float = 0.2):
         convert_system_message_to_human=True,  # IMPORTANT for Gemini
     )
 
-    logger.debug("✅ Gemini LLM instance created")
+    logger.debug("Gemini LLM instance created")
     return llm
-

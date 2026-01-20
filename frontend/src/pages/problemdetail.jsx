@@ -7,7 +7,12 @@ import ProblemDescription from "../components/problem/ProblemDescription";
 import CodeEditor from "../components/editor/CodeEditor";
 import OutputPanel from "../components/editor/OutputPanel";
 import AIFeedbackPanel from "../components/feedback/AIFeedbackPanel";
-import { getPublicQuestion, runQuestion, submitQuestion } from "../services/api";
+import {
+  getPublicQuestion,
+  runQuestion,
+  submitQuestion,
+} from "../services/api";
+import { useAIFeedback } from "../hooks/useAIFeedback";
 
 // Map UI language names to Piston runtime identifiers
 const languageMap = {
@@ -34,6 +39,18 @@ export default function ProblemDetail() {
   const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const abortControllerRef = useRef(null);
+
+  // Track last submission details for AI feedback
+  const [lastSubmission, setLastSubmission] = useState(null);
+
+  // AI Feedback hook
+  const {
+    feedback,
+    loading: feedbackLoading,
+    error: feedbackError,
+    fetchFeedback,
+    reset: resetFeedback,
+  } = useAIFeedback();
 
   const [loadingProblem, setLoadingProblem] = useState(true);
   const [problemError, setProblemError] = useState("");
@@ -66,7 +83,10 @@ export default function ProblemDetail() {
   const problem = useMemo(() => {
     if (!problemRaw) return defaultProblem;
 
-    const category = Array.isArray(problemRaw.tags) && problemRaw.tags.length > 0 ? problemRaw.tags[0] : "General";
+    const category =
+      Array.isArray(problemRaw.tags) && problemRaw.tags.length > 0
+        ? problemRaw.tags[0]
+        : "General";
     const constraints =
       typeof problemRaw.constraints === "string"
         ? problemRaw.constraints
@@ -84,14 +104,22 @@ export default function ProblemDetail() {
       description: problemRaw.description,
       constraints,
       examples: Array.isArray(problemRaw.examples) ? problemRaw.examples : [],
-      testCases: Array.isArray(problemRaw.testCases) ? problemRaw.testCases : [],
+      testCases: Array.isArray(problemRaw.testCases)
+        ? problemRaw.testCases
+        : [],
     };
   }, [problemRaw]);
 
   /**
    * Format execution result for display
    */
-  const formatJudgeOutput = ({ headerText, statusLabel, passedCount, totalCount, results }) => {
+  const formatJudgeOutput = ({
+    headerText,
+    statusLabel,
+    passedCount,
+    totalCount,
+    results,
+  }) => {
     const lines = [headerText];
 
     if (statusLabel) lines.push(`Status: ${statusLabel}`);
@@ -108,8 +136,10 @@ export default function ProblemDetail() {
       lines.push(`\n[${badge}] ${label}${hiddenSuffix}`);
       if (!r.isHidden) {
         if (r.stdin !== undefined) lines.push(`stdin: ${String(r.stdin)}`);
-        if (r.expectedStdout !== undefined) lines.push(`expected: ${String(r.expectedStdout)}`);
-        if (r.actualStdout !== undefined) lines.push(`actual: ${String(r.actualStdout)}`);
+        if (r.expectedStdout !== undefined)
+          lines.push(`expected: ${String(r.expectedStdout)}`);
+        if (r.actualStdout !== undefined)
+          lines.push(`actual: ${String(r.actualStdout)}`);
         if (r.stderr) lines.push(`stderr: ${String(r.stderr)}`);
       }
 
@@ -142,12 +172,15 @@ export default function ProblemDetail() {
     setStatus("running");
     setOutput(isSubmit ? "Submitting..." : "Running...");
     setSubmitted(false);
+    setLastSubmission(null);
+    resetFeedback();
 
     try {
+      const langKey = (languageMap[language] || language).toLowerCase();
       const payload = {
         questionId: id,
         code,
-        language: (languageMap[language] || language).toLowerCase(),
+        language: langKey,
         signal: controller.signal,
       };
 
@@ -167,13 +200,28 @@ export default function ProblemDetail() {
           passedCount: data.passedCount,
           totalCount: data.totalCount,
           results: data.results,
-        })
+        }),
       );
 
-      const isAccepted = isSubmit ? data.status === "accepted" : !!data.allPassed;
+      const isAccepted = isSubmit
+        ? data.status === "accepted"
+        : !!data.allPassed;
       setStatus(isAccepted ? "success" : "error");
 
-      if (isSubmit && isAccepted) setSubmitted(true);
+      // Track submission details for AI feedback (only for failed submissions)
+      if (isSubmit && !isAccepted) {
+        setLastSubmission({
+          questionId: id,
+          code,
+          language: langKey,
+          verdict: data.status || "wrong_answer",
+          errorType: data.errorType || null,
+        });
+        setSubmitted(true);
+      } else if (isSubmit && isAccepted) {
+        setSubmitted(true);
+        setLastSubmission(null);
+      }
     } catch (err) {
       if (err.name === "AbortError") {
         // Request was cancelled, keep previous output or show cancelled
@@ -272,8 +320,8 @@ export default function ProblemDetail() {
               {/* Output Panel */}
               <OutputPanel output={output} status={status} />
 
-              {/* Get AI Feedback Button */}
-              {submitted && !showFeedback && (
+              {/* Get AI Feedback Button - Shows only for failed submissions */}
+              {submitted && lastSubmission && !showFeedback && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -281,12 +329,37 @@ export default function ProblemDetail() {
                   className="border-t border-[#1A1814] px-4 py-3"
                 >
                   <button
-                    onClick={() => setShowFeedback(true)}
+                    onClick={() => {
+                      setShowFeedback(true);
+                      fetchFeedback(lastSubmission);
+                    }}
                     className="w-full py-2 border border-[#92400E]/30 text-[#D97706] hover:bg-[#92400E]/10 transition-colors duration-200 text-xs uppercase tracking-wider"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
                     Get AI Feedback
                   </button>
+                </motion.div>
+              )}
+
+              {/* Success Message for Accepted Submissions */}
+              {submitted && !lastSubmission && !showFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="border-t border-[#1A1814] px-4 py-3"
+                >
+                  <div className="flex items-center justify-center gap-2 py-2 border border-[#22C55E]/30 bg-[#22C55E]/5">
+                    <span className="text-[#22C55E]">✓</span>
+                    <span
+                      className="text-[#22C55E] text-xs uppercase tracking-wider"
+                      style={{
+                        fontFamily: "'Rajdhani', system-ui, sans-serif",
+                      }}
+                    >
+                      Solution Accepted
+                    </span>
+                  </div>
                 </motion.div>
               )}
             </motion.div>
@@ -296,7 +369,13 @@ export default function ProblemDetail() {
               <div className="w-1/2">
                 <AIFeedbackPanel
                   isVisible={showFeedback}
-                  onClose={() => setShowFeedback(false)}
+                  onClose={() => {
+                    setShowFeedback(false);
+                    resetFeedback();
+                  }}
+                  loading={feedbackLoading}
+                  error={feedbackError}
+                  feedback={feedback}
                 />
               </div>
             )}
