@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
       window.dispatchEvent(new CustomEvent("auth:logout"));
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 async function request(path, { method = "GET", body, signal } = {}) {
@@ -85,7 +85,12 @@ async function request(path, { method = "GET", body, signal } = {}) {
   return response.json().catch(() => ({}));
 }
 
-export async function getPublicQuestions({ page = 1, limit = 1000, difficulty, search } = {}) {
+export async function getPublicQuestions({
+  page = 1,
+  limit = 1000,
+  difficulty,
+  search,
+} = {}) {
   const params = new URLSearchParams();
   if (page) params.set("page", String(page));
   if (limit) params.set("limit", String(limit));
@@ -93,7 +98,9 @@ export async function getPublicQuestions({ page = 1, limit = 1000, difficulty, s
   if (search) params.set("search", search);
 
   const qs = params.toString();
-  const data = await request(`/questions${qs ? `?${qs}` : ""}`, { method: "GET" });
+  const data = await request(`/questions${qs ? `?${qs}` : ""}`, {
+    method: "GET",
+  });
   return {
     questions: data.data || [],
     pagination: data.pagination,
@@ -129,7 +136,9 @@ export async function getMySubmissions({ questionId } = {}) {
   if (questionId) params.set("questionId", questionId);
   const qs = params.toString();
 
-  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, { method: "GET" });
+  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, {
+    method: "GET",
+  });
   return data.data || [];
 }
 
@@ -188,6 +197,71 @@ export async function signout() {
   } finally {
     clearToken();
   }
+}
+
+/* ======================================================
+   AI FEEDBACK API
+====================================================== */
+
+/**
+ * Request AI feedback for a failed submission
+ * @param {Object} params
+ * @param {string} params.questionId - The question ID
+ * @param {string} params.code - The submitted code
+ * @param {string} params.language - Programming language
+ * @param {string} params.verdict - Submission verdict (wrong_answer, runtime_error, etc.)
+ * @param {string} [params.errorType] - Type of error (optional)
+ * @param {AbortSignal} [params.signal] - Optional abort signal
+ * @returns {Promise<Object>} AI feedback response
+ */
+export async function getAIFeedback({
+  questionId,
+  code,
+  language,
+  verdict,
+  errorType,
+  signal,
+}) {
+  if (!questionId) throw new Error("questionId is required");
+  if (!code) throw new Error("code is required");
+  if (!language) throw new Error("language is required");
+  if (!verdict) throw new Error("verdict is required");
+
+  const data = await request("/ai/feedback", {
+    method: "POST",
+    body: { questionId, code, language, verdict, errorType },
+    signal,
+  });
+
+  return data.data;
+}
+
+/**
+ * Get AI learning summary for an accepted submission
+ * @param {Object} params
+ * @param {string} params.questionId - The question ID
+ * @param {string} params.code - The submitted code
+ * @param {string} params.language - Programming language
+ * @param {AbortSignal} [params.signal] - Optional abort signal
+ * @returns {Promise<Object>} AI learning summary response
+ */
+export async function getAILearningSummary({
+  questionId,
+  code,
+  language,
+  signal,
+}) {
+  if (!questionId) throw new Error("questionId is required");
+  if (!code) throw new Error("code is required");
+  if (!language) throw new Error("language is required");
+
+  const data = await request("/ai/summary", {
+    method: "POST",
+    body: { questionId, code, language },
+    signal,
+  });
+
+  return data.data;
 }
 
 export { clearToken };
