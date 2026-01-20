@@ -1,0 +1,5 @@
+{
+  "explanation": "The submission failed due to Time Limit Exceeded. This suggests that the current solution is not efficient enough to solve the problem within the given time limit. The large input size (2 <= nums.length <= 10^5) might be causing the issue.",
+  "improvement_hint": "Consider using a more efficient data structure such as a hash map to store and search for numbers in the array. This can significantly reduce the time complexity of your solution.",
+  "detected_pattern": null
+}

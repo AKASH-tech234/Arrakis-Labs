@@ -2,17 +2,6 @@
 // Stats cards showing problems solved, acceptance rate, and streak
 import { motion } from "framer-motion";
 
-const mockStats = {
-  problemsSolved: 47,
-  totalProblems: 150,
-  acceptanceRate: 68.5,
-  currentStreak: 12,
-  maxStreak: 28,
-  easyCount: 22,
-  mediumCount: 18,
-  hardCount: 7,
-};
-
 const StatCard = ({ label, value, unit, accent, delay }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -47,14 +36,24 @@ const StatCard = ({ label, value, unit, accent, delay }) => (
   </motion.div>
 );
 
-export default function StatsOverview() {
+export default function StatsOverview({ stats }) {
+  const s = stats || {};
+  const problemsSolved = Number(s.problemsSolved) || 0;
+  const totalProblems = Number(s.totalProblems) || 0;
+  const acceptanceRate = Number.isFinite(s.acceptanceRate) ? s.acceptanceRate : Number(s.acceptanceRate) || 0;
+  const currentStreak = Number(s.currentStreak) || 0;
+  const maxStreak = Number(s.maxStreak) || 0;
+  const easyCount = Number(s.easyCount) || 0;
+  const mediumCount = Number(s.mediumCount) || 0;
+  const hardCount = Number(s.hardCount) || 0;
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {/* Problems Solved */}
       <StatCard
         label="Solved"
-        value={mockStats.problemsSolved}
-        unit={`/${mockStats.totalProblems}`}
+        value={problemsSolved}
+        unit={`/${totalProblems}`}
         accent="text-[#E8E4D9]"
         delay={0}
       />
@@ -62,7 +61,7 @@ export default function StatsOverview() {
       {/* Acceptance Rate */}
       <StatCard
         label="Acceptance"
-        value={mockStats.acceptanceRate}
+        value={acceptanceRate}
         unit="%"
         accent="text-[#E8E4D9]"
         delay={0.1}
@@ -71,7 +70,7 @@ export default function StatsOverview() {
       {/* Current Streak */}
       <StatCard
         label="Current Streak"
-        value={mockStats.currentStreak}
+        value={currentStreak}
         unit="days"
         accent="text-[#F59E0B]"
         delay={0.2}
@@ -80,7 +79,7 @@ export default function StatsOverview() {
       {/* Max Streak */}
       <StatCard
         label="Best Streak"
-        value={mockStats.maxStreak}
+        value={maxStreak}
         unit="days"
         accent="text-[#D97706]"
         delay={0.3}
@@ -122,7 +121,7 @@ export default function StatsOverview() {
                 className="text-[#E8E4D9] group-hover:text-[#F59E0B] text-lg font-bold transition-colors duration-300"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                {mockStats.easyCount}
+                {easyCount}
               </span>
             </motion.div>
 
@@ -141,7 +140,7 @@ export default function StatsOverview() {
                 className="text-[#E8E4D9] group-hover:text-[#F59E0B] text-lg font-bold transition-colors duration-300"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                {mockStats.mediumCount}
+                {mediumCount}
               </span>
             </motion.div>
 
@@ -160,7 +159,7 @@ export default function StatsOverview() {
                 className="text-[#E8E4D9] group-hover:text-[#F59E0B] text-lg font-bold transition-colors duration-300"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                {mockStats.hardCount}
+                {hardCount}
               </span>
             </motion.div>
           </div>

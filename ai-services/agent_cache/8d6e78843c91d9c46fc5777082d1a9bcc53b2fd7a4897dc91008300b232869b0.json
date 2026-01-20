@@ -1,0 +1,8 @@
+{
+  "focus_areas": [
+    "Systematic testing with array edge cases",
+    "Common array manipulation pitfalls (e.g., off-by-one errors, incorrect indexing)",
+    "Understanding problem requirements and constraints for array-based problems"
+  ],
+  "rationale": "The 'Wrong Answer' verdict, combined with an 'Unknown' error type and the 'Arrays' problem category, suggests that the submitted solution likely failed to produce the correct output for one or more test cases. Without specific error details or past patterns, common reasons for 'Wrong Answer' in array problems include incorrect handling of edge cases (e.g., empty arrays, single-element arrays, arrays with specific value distributions), off-by-one errors in indexing or loop boundaries, or a misunderstanding of the problem's requirements for certain inputs. The constraint `n up to 1e5` implies that an efficient algorithm is necessary, but the primary issue here appears to be logical correctness rather than performance, given the 'Wrong Answer' verdict."
+}

@@ -1,5 +1,7 @@
 // src/services/api.js - Frontend API client
 
+import axios from "axios";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const TOKEN_KEY = "arrakis_token";
@@ -27,6 +29,33 @@ const clearToken = () => {
     // ignore
   }
 };
+
+// Axios client (used by contestApi and any axios-style consumers)
+const apiClient = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearToken();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+    }
+    return Promise.reject(error);
+  },
+);
 
 async function request(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
@@ -56,7 +85,12 @@ async function request(path, { method = "GET", body, signal } = {}) {
   return response.json().catch(() => ({}));
 }
 
-export async function getPublicQuestions({ page = 1, limit = 1000, difficulty, search } = {}) {
+export async function getPublicQuestions({
+  page = 1,
+  limit = 1000,
+  difficulty,
+  search,
+} = {}) {
   const params = new URLSearchParams();
   if (page) params.set("page", String(page));
   if (limit) params.set("limit", String(limit));
@@ -64,7 +98,9 @@ export async function getPublicQuestions({ page = 1, limit = 1000, difficulty, s
   if (search) params.set("search", search);
 
   const qs = params.toString();
-  const data = await request(`/questions${qs ? `?${qs}` : ""}`, { method: "GET" });
+  const data = await request(`/questions${qs ? `?${qs}` : ""}`, {
+    method: "GET",
+  });
   return {
     questions: data.data || [],
     pagination: data.pagination,
@@ -100,7 +136,9 @@ export async function getMySubmissions({ questionId } = {}) {
   if (questionId) params.set("questionId", questionId);
   const qs = params.toString();
 
-  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, { method: "GET" });
+  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, {
+    method: "GET",
+  });
   return data.data || [];
 }
 
@@ -161,6 +199,7 @@ export async function signout() {
   }
 }
 
+<<<<<<< HEAD
 export async function googleAuth(token) {
   const data = await request("/auth/google", {
     method: "POST",
@@ -169,6 +208,73 @@ export async function googleAuth(token) {
 
   if (data?.token) setToken(data.token);
   return data;
+=======
+/* ======================================================
+   AI FEEDBACK API
+====================================================== */
+
+/**
+ * Request AI feedback for a failed submission
+ * @param {Object} params
+ * @param {string} params.questionId - The question ID
+ * @param {string} params.code - The submitted code
+ * @param {string} params.language - Programming language
+ * @param {string} params.verdict - Submission verdict (wrong_answer, runtime_error, etc.)
+ * @param {string} [params.errorType] - Type of error (optional)
+ * @param {AbortSignal} [params.signal] - Optional abort signal
+ * @returns {Promise<Object>} AI feedback response
+ */
+export async function getAIFeedback({
+  questionId,
+  code,
+  language,
+  verdict,
+  errorType,
+  signal,
+}) {
+  if (!questionId) throw new Error("questionId is required");
+  if (!code) throw new Error("code is required");
+  if (!language) throw new Error("language is required");
+  if (!verdict) throw new Error("verdict is required");
+
+  const data = await request("/ai/feedback", {
+    method: "POST",
+    body: { questionId, code, language, verdict, errorType },
+    signal,
+  });
+
+  return data.data;
+}
+
+/**
+ * Get AI learning summary for an accepted submission
+ * @param {Object} params
+ * @param {string} params.questionId - The question ID
+ * @param {string} params.code - The submitted code
+ * @param {string} params.language - Programming language
+ * @param {AbortSignal} [params.signal] - Optional abort signal
+ * @returns {Promise<Object>} AI learning summary response
+ */
+export async function getAILearningSummary({
+  questionId,
+  code,
+  language,
+  signal,
+}) {
+  if (!questionId) throw new Error("questionId is required");
+  if (!code) throw new Error("code is required");
+  if (!language) throw new Error("language is required");
+
+  const data = await request("/ai/summary", {
+    method: "POST",
+    body: { questionId, code, language },
+    signal,
+  });
+
+  return data.data;
+>>>>>>> d7b225c92343d594dc009048c4e8fee6324094c2
 }
 
 export { clearToken };
+
+export default apiClient;

@@ -1,32 +1,25 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from app.prompts.feedback import FEEDBACK_PROMPT
-from app.services.llm import get_llm
+import logging
 from app.schemas.feedback import FeedbackResponse
-from langchain_core.output_parsers import PydanticOutputParser
+from app.agents.base_json_agent import run_json_agent
+from app.cache.cache_key import build_cache_key
 
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.2
-)
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a Mentat. Be precise, calm, analytical."),
-    ("human", "{context}")
-])
+logger = logging.getLogger("feedback_agent")
 
 
-def feedback_agent(context: str) -> FeedbackResponse:
-    llm = get_llm()
+def feedback_agent(context: str, payload: dict) -> FeedbackResponse:
+    logger.debug(f"📨 feedback_agent called with payload keys: {list(payload.keys())}")
+    cache_key = build_cache_key("feedback_agent", payload)
+    logger.debug(f"   └─ Cache key generated: {cache_key[:16]}...")
 
-    parser = PydanticOutputParser(
-        pydantic_object=FeedbackResponse
+    return run_json_agent(
+        agent_name="feedback_agent",
+        context=context,
+        cache_key=cache_key,
+        schema=FeedbackResponse,
+        system_prompt="Explain why the solution failed and suggest one improvement.",
+        fallback=FeedbackResponse(
+            explanation="Unable to generate structured feedback.",
+            improvement_hint="Simplify logic and retry.",
+            detected_pattern="Model output formatting issue"
+        )
     )
-
-    chain = FEEDBACK_PROMPT | llm | parser
-
-    result: FeedbackResponse = chain.invoke({
-        "context": context
-    })
-
-    return result

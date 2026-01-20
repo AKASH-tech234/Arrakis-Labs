@@ -1,5 +1,8 @@
 from typing import List, Optional
+import logging
 from app.schemas.submission import SubmissionContext
+
+logger = logging.getLogger("context_builder")
 
 
 def format_memory_chunks(chunks: Optional[List[str]]) -> str:
@@ -23,6 +26,9 @@ def build_context(
 
     This context is intentionally structured and concise.
     """
+    logger.debug("📄 build_context called")
+    logger.debug(f"   └─ user_memory chunks: {len(user_memory) if user_memory else 0}")
+    logger.debug(f"   └─ problem_knowledge chunks: {len(problem_knowledge) if problem_knowledge else 0}")
 
     memory_block = format_memory_chunks(user_memory)
     knowledge_block = format_memory_chunks(problem_knowledge)
@@ -56,4 +62,5 @@ INSTRUCTIONS FOR ANALYSIS
 - Be calm, precise, and analytical
 """
 
+    logger.info(f"✅ Context built: {len(context)} chars")
     return context.strip()

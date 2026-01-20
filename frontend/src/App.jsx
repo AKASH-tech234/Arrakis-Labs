@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams } from "react-router-dom";
 import Landing from "./pages/landing";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
@@ -11,6 +11,9 @@ import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import GuestRoute from "./components/auth/GuestRoute";
 
+// Contest Pages
+import { ContestList, ContestDetail, ContestProblem } from "./pages/contest";
+
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./components/admin/AdminLayout";
@@ -19,6 +22,12 @@ import CSVUpload from "./pages/admin/CSVUpload";
 import QuestionList from "./pages/admin/QuestionList";
 import QuestionEditor from "./pages/admin/QuestionEditor";
 import TestCaseManager from "./pages/admin/TestCaseManager";
+import { AdminContestList, AdminContestEditor, AdminContestDetail } from "./pages/admin/contests";
+
+function PublicProfileRoute() {
+  const { username } = useParams();
+  return <Profile username={username} readOnly />;
+}
 
 function App() {
   return (
@@ -71,6 +80,28 @@ function App() {
               }
             />
 
+            {/* Public shareable Profile */}
+            <Route path="/u/:username" element={<PublicProfileRoute />} />
+
+            {/* Contest Routes */}
+            <Route path="/contests" element={<ContestList />} />
+            <Route
+              path="/contests/:contestId"
+              element={
+                <ProtectedRoute>
+                  <ContestDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contests/:contestId/problems/:problemId"
+              element={
+                <ProtectedRoute>
+                  <ContestProblem />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
@@ -82,6 +113,12 @@ function App() {
               <Route path="questions/:id" element={<QuestionEditor />} />
               <Route path="questions/:id/edit" element={<QuestionEditor />} />
               <Route path="questions/:id/test-cases" element={<TestCaseManager />} />
+              
+              {/* Admin Contest Routes */}
+              <Route path="contests" element={<AdminContestList />} />
+              <Route path="contests/new" element={<AdminContestEditor />} />
+              <Route path="contests/:id" element={<AdminContestDetail />} />
+              <Route path="contests/:id/edit" element={<AdminContestEditor />} />
             </Route>
           </Routes>
         </Router>

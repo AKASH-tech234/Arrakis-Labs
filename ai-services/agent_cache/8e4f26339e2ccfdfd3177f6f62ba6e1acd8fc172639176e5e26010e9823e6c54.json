@@ -1,0 +1,10 @@
+{
+  "summary": "Time Limit Exceeded on problem two_sum in python",
+  "strengths": [],
+  "improvement_areas": [
+    "Optimize the algorithm to reduce time complexity"
+  ],
+  "recurring_patterns": [
+    "Time Complexity issues"
+  ]
+}
