@@ -161,4 +161,14 @@ export async function signout() {
   }
 }
 
+export async function googleAuth(token) {
+  const data = await request("/auth/google", {
+    method: "POST",
+    body: { token },
+  });
+
+  if (data?.token) setToken(data.token);
+  return data;
+}
+
 export { clearToken };
