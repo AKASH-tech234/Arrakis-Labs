@@ -60,12 +60,13 @@ export const adminLogin = async (req, res) => {
     // Generate token
     const token = generateAdminToken(admin);
 
-    // Cookie options
+    // Cookie options - use unique cookie name and path to avoid conflicts with userToken
     const cookieOptions = {
       expires: new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 hours
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     };
 
     // Log successful login
@@ -81,7 +82,6 @@ export const adminLogin = async (req, res) => {
     res.status(200).cookie("adminToken", token, cookieOptions).json({
       success: true,
       message: "Login successful",
-      token,
       admin: {
         id: admin._id,
         email: admin.email,
@@ -104,11 +104,12 @@ export const adminLogin = async (req, res) => {
  */
 export const adminLogout = async (req, res) => {
   try {
-    // Clear cookie
+    // Clear adminToken cookie with matching options
     res.clearCookie("adminToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     // Log logout

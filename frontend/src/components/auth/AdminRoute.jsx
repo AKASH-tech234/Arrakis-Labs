@@ -1,30 +1,11 @@
 // src/components/auth/AdminRoute.jsx
 // Protected route wrapper for admin-only access
 import { Navigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 
 export default function AdminRoute({ children }) {
-  const [adminUser, setAdminUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, loading } = useAdminAuth();
   const location = useLocation();
-
-  useEffect(() => {
-    // Check for admin token in localStorage
-    const token = localStorage.getItem("adminToken");
-    const user = localStorage.getItem("adminUser");
-
-    if (token && user) {
-      try {
-        const parsedUser = JSON.parse(user);
-        if (parsedUser.role === "admin") {
-          setAdminUser(parsedUser);
-        }
-      } catch (e) {
-        console.error("Error parsing admin user:", e);
-      }
-    }
-    setLoading(false);
-  }, []);
 
   // Show loading state
   if (loading) {
@@ -47,7 +28,7 @@ export default function AdminRoute({ children }) {
   }
 
   // Not logged in as admin - redirect to admin login
-  if (!adminUser) {
+  if (!isAuthenticated) {
     return (
       <Navigate to="/admin/login" state={{ from: location.pathname }} replace />
     );
