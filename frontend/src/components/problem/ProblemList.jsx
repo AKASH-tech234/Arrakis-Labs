@@ -6,7 +6,7 @@ export default function ProblemList({ problems }) {
     return (
       <div className="py-12 text-center">
         <p
-          className="text-[#78716C] text-sm uppercase tracking-wider"
+          className="text-[#A29A8C] text-base uppercase tracking-wider"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
           No problems match your filters
@@ -16,18 +16,18 @@ export default function ProblemList({ problems }) {
   }
 
   return (
-    <div className="divide-y divide-[#1A1814]">
+    <div className="space-y-3">
       {/* Table Header */}
-      <div className="flex items-center justify-between gap-4 py-3 px-4 -mx-4 border-b border-[#1A1814]">
+      <div className="flex items-center justify-between gap-4 py-4 px-5 border-b border-[#666]/20">
         <div className="flex items-center gap-3">
           <span
-            className="text-[#3D3D3D] text-[10px] uppercase tracking-wider w-12"
+            className="text-[#A29A8C] text-xs uppercase tracking-wider w-12 font-semibold"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             Status
           </span>
           <span
-            className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
+            className="text-[#A29A8C] text-xs uppercase tracking-wider font-semibold"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             Title
@@ -35,13 +35,13 @@ export default function ProblemList({ problems }) {
         </div>
         <div className="flex items-center gap-6">
           <span
-            className="text-[#3D3D3D] text-[10px] uppercase tracking-wider hidden sm:block"
+            className="text-[#A29A8C] text-xs uppercase tracking-wider hidden sm:block font-semibold"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             Category
           </span>
           <span
-            className="text-[#3D3D3D] text-[10px] uppercase tracking-wider w-16 text-right"
+            className="text-[#A29A8C] text-xs uppercase tracking-wider w-16 text-right font-semibold"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             Difficulty

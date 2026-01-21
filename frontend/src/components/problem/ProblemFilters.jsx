@@ -9,24 +9,24 @@ export default function ProblemFilters({
   const difficulties = ["All", "Easy", "Medium", "Hard"];
 
   return (
-    <div className="flex flex-wrap items-center gap-6 mb-8">
+    <div className="flex flex-wrap items-center gap-6 mb-8 p-5">
       {/* Difficulty Filter */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <span
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
+          className="text-[#A29A8C] text-xs uppercase tracking-wider font-semibold"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
           Difficulty
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {difficulties.map((diff) => (
             <button
               key={diff}
               onClick={() => setSelectedDifficulty(diff)}
-              className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors duration-200 ${
+              className={`px-4 py-2 text-xs uppercase tracking-wider transition-all duration-200 rounded border ${
                 selectedDifficulty === diff
-                  ? "text-[#E8E4D9] bg-[#1A1814]"
-                  : "text-[#78716C] hover:text-[#E8E4D9]"
+                  ? "text-[#0A0A08] bg-[#D97706] border-[#D97706]"
+                  : "text-[#A29A8C] hover:text-[#E8E4D9] border-[#666]/30 hover:border-[#D97706]/40"
               }`}
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
@@ -37,9 +37,9 @@ export default function ProblemFilters({
       </div>
 
       {/* Category Filter */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <span
-          className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
+          className="text-[#A29A8C] text-xs uppercase tracking-wider font-semibold"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
           Category
@@ -47,8 +47,8 @@ export default function ProblemFilters({
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="bg-[#0A0A08] border border-[#1A1814] text-[#E8E4D9] px-3 py-1.5 text-xs uppercase tracking-wider
-                   focus:outline-none focus:border-[#78716C] transition-colors duration-200 appearance-none cursor-pointer"
+          className="bg-[#0A0A08] border border-[#666]/30 text-[#E8E4D9] px-4 py-2 text-xs uppercase tracking-wider rounded
+                   focus:outline-none focus:border-[#D97706] focus:ring-2 focus:ring-[#D97706]/20 transition-colors duration-200 appearance-none cursor-pointer"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
           <option value="All">All</option>

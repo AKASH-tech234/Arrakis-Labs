@@ -168,6 +168,16 @@ export async function signout() {
   }
 }
 
+<<<<<<< HEAD
+export async function googleAuth(token) {
+  const data = await request("/auth/google", {
+    method: "POST",
+    body: { token },
+  });
+
+  if (data?.token) setToken(data.token);
+  return data;
+=======
 /* ======================================================
    AI FEEDBACK API
 ====================================================== */
@@ -231,6 +241,7 @@ export async function getAILearningSummary({
   });
 
   return data.data;
+>>>>>>> d7b225c92343d594dc009048c4e8fee6324094c2
 }
 
 /**

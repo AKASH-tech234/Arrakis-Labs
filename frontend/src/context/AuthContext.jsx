@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getMe, signin, signup, signout } from "../services/api";
+import { getMe, signin, signup, signout, googleAuth } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -46,6 +46,11 @@ export function AuthProvider({ children }) {
       },
       async register({ name, email, password, passwordConfirm }) {
         const result = await signup({ name, email, password, passwordConfirm });
+        setUser(result.user);
+        return result;
+      },
+      async loginWithGoogle(token) {
+        const result = await googleAuth(token);
         setUser(result.user);
         return result;
       },

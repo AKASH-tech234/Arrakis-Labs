@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import axios from "axios";
+import { OAuth2Client } from "google-auth-library";
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -162,12 +163,25 @@ export const googleAuth = async (req, res) => {
       });
     }
 
-    // Verify token with Google
-    const response = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${token}`
-    );
+    // Verify token with Google using OAuth2Client
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (error) {
+      console.error(`[Auth Error] Google Token Verification Failed: ${error.message}`);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired Google token",
+      });
+    }
 
-    const { id, name, email, picture } = response.data;
+    const { sub: id, name, email, picture } = payload;
 
     if (!email) {
       return res.status(400).json({

@@ -1,5 +1,5 @@
 // src/pages/Signup.jsx - Dune-Inspired
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import ArrakisLogo from "../components/ui/ArrakisLogo";
@@ -13,8 +13,50 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleResponse = async (response) => {
+    setError("");
+    setSubmitting(true);
+
+    try {
+      if (!response.credential) {
+        throw new Error("No credentials received from Google");
+      }
+      
+      await loginWithGoogle(response.credential);
+      navigate("/problems", { replace: true });
+    } catch (err) {
+      setError(err.message || "Google signup failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    if (window.google) {
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-button-signup"),
+        { theme: "dark", size: "large" }
+      );
+    }
+  };
+
+  useEffect(() => {
+    // Initialize Google Sign-In after component mounts
+    const timer = setTimeout(() => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "208012919124-f2s18cpj845hogatl2ptg451vnt5lju2.apps.googleusercontent.com",
+          callback: handleGoogleResponse,
+        });
+        // Render button immediately
+        handleGoogleSignIn();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -214,6 +256,21 @@ export default function Signup() {
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
               or
+            </span>
+            <div className="flex-1 h-px bg-[#1A1814]" />
+          </div>
+
+          {/* Google Sign-In Button */}
+          <div id="google-button-signup" className="flex justify-center mb-6" />
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-[#1A1814]" />
+            <span
+              className="text-[#3D3D3D] text-xs uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Continue with
             </span>
             <div className="flex-1 h-px bg-[#1A1814]" />
           </div>

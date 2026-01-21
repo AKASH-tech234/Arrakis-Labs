@@ -26,14 +26,21 @@
     "express": "^4.18.2",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.1.5",
+    "google-auth-library": "^9.14.0",
     "helmet": "^7.1.0",
     "ioredis": "^5.9.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.5.0",
     "multer": "^1.4.5-lts.1",
+<<<<<<< HEAD
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "uuid": "^13.0.0"
+=======
     "pdfkit": "^0.15.0",
     "uuid": "^13.0.0",
     "ws": "^8.18.0"
+>>>>>>> d7b225c92343d594dc009048c4e8fee6324094c2
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
