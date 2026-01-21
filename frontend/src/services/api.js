@@ -233,6 +233,32 @@ export async function getAILearningSummary({
   return data.data;
 }
 
+/**
+ * Get user's submission history
+ * @param {Object} params
+ * @param {string} [params.userId] - User ID (optional, uses auth)
+ * @param {number} [params.limit] - Max submissions to return
+ * @param {AbortSignal} [params.signal] - Optional abort signal
+ * @returns {Promise<Array>} Array of submission records
+ */
+export async function getSubmissionHistory({
+  userId,
+  limit = 50,
+  signal,
+} = {}) {
+  const params = new URLSearchParams();
+  if (userId) params.set("userId", userId);
+  if (limit) params.set("limit", String(limit));
+
+  const qs = params.toString();
+  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, {
+    method: "GET",
+    signal,
+  });
+
+  return data.data || [];
+}
+
 export { clearToken };
 
 export default apiClient;
