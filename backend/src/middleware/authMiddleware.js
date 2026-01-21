@@ -6,10 +6,13 @@ export const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Get token from header or cookie
+    // Get token from header or cookie (userToken for users)
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies.userToken) {
+      token = req.cookies.userToken;
     } else if (req.cookies.token) {
+      // Fallback for legacy cookie name
       token = req.cookies.token;
     }
 
@@ -66,10 +69,13 @@ export const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    // Get token from header or cookie
+    // Get token from header or cookie (userToken for users)
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies.userToken) {
+      token = req.cookies.userToken;
     } else if (req.cookies.token) {
+      // Fallback for legacy cookie name
       token = req.cookies.token;
     }
 

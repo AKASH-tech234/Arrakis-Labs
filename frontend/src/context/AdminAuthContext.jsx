@@ -19,25 +19,12 @@ export const AdminAuthProvider = ({ children }) => {
   // Check for existing admin session on mount
   useEffect(() => {
     const checkAdminAuth = async () => {
-      const token = localStorage.getItem("adminToken");
-      const storedAdmin = localStorage.getItem("adminUser");
-
-      if (token && storedAdmin) {
-        try {
-          // Verify token is still valid
-          const response = await getAdminProfile();
-          if (response.success) {
-            setAdmin(response.admin);
-          } else {
-            // Token invalid, clear storage
-            localStorage.removeItem("adminToken");
-            localStorage.removeItem("adminUser");
-          }
-        } catch (err) {
-          // Token expired or invalid
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("adminUser");
-        }
+      try {
+        // Cookie-based session; backend sets HttpOnly adminToken cookie on login
+        const response = await getAdminProfile();
+        if (response.success) setAdmin(response.admin);
+      } catch {
+        setAdmin(null);
       }
       setLoading(false);
     };
@@ -73,8 +60,6 @@ export const AdminAuthProvider = ({ children }) => {
       // Ignore logout errors
     } finally {
       setAdmin(null);
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
     }
   }, []);
 
