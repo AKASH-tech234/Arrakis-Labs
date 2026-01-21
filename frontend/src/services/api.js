@@ -1,5 +1,3 @@
-// src/services/api.js - Frontend API client
-
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -168,7 +166,6 @@ export async function signout() {
   }
 }
 
-<<<<<<< HEAD
 export async function googleAuth(token) {
   const data = await request("/auth/google", {
     method: "POST",
@@ -177,7 +174,7 @@ export async function googleAuth(token) {
 
   if (data?.token) setToken(data.token);
   return data;
-=======
+}
 /* ======================================================
    AI FEEDBACK API
 ====================================================== */
@@ -241,7 +238,6 @@ export async function getAILearningSummary({
   });
 
   return data.data;
->>>>>>> d7b225c92343d594dc009048c4e8fee6324094c2
 }
 
 /**
