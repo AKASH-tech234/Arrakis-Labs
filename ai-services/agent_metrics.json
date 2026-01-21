@@ -1,0 +1,202 @@
+[
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 6.67,
+    "timestamp": 1768969811
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 8.12,
+    "timestamp": 1768969819
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 4.18,
+    "timestamp": 1768969823
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 6.93,
+    "timestamp": 1768969830
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 6.74,
+    "timestamp": 1768969837
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 0.03,
+    "timestamp": 1768969845
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 0.02,
+    "timestamp": 1768969845
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 0.02,
+    "timestamp": 1768969845
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 0.03,
+    "timestamp": 1768969845
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 0.03,
+    "timestamp": 1768969845
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 8.96,
+    "timestamp": 1768987140
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 11.56,
+    "timestamp": 1768987152
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 8.22,
+    "timestamp": 1768987160
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 0.04,
+    "timestamp": 1768987160
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 0.02,
+    "timestamp": 1768987160
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 0.02,
+    "timestamp": 1768987160
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 13.85,
+    "timestamp": 1768987174
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 15.28,
+    "timestamp": 1768987176
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 6.78,
+    "timestamp": 1768987181
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 9.59,
+    "timestamp": 1768987185
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987667
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987667
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987668
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 0.03,
+    "timestamp": 1768987668
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 0.02,
+    "timestamp": 1768987668
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987669
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987669
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987669
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987669
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987669
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "pattern_detection_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "hint_compression_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  },
+  {
+    "agent": "difficulty_agent",
+    "elapsed_seconds": 0.0,
+    "timestamp": 1768987926
+  }
+]

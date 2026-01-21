@@ -1,0 +1,8 @@
+{
+  "focus_areas": [
+    "C++ Syntax Fundamentals",
+    "C++ Standard Library Usage",
+    "Interpreting Compiler Error Messages"
+  ],
+  "rationale": "A 'Compile Error' in C++ indicates that the code could not be successfully translated into an executable program. This typically arises from fundamental issues such as syntax errors (e.g., missing semicolons, incorrect keyword usage, mismatched braces), undeclared variables or functions, incorrect type usage, or missing necessary header files for standard library components. Focusing on these foundational aspects of C++ programming and carefully analyzing the specific error messages provided by the compiler will be crucial for resolving such issues."
+}

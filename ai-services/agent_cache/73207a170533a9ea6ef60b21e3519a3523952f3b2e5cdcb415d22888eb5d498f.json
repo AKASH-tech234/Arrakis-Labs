@@ -1,0 +1,4 @@
+{
+  "action": "maintain",
+  "rationale": "The submission resulted in a 'Wrong Answer', indicating a logical flaw in the solution that produced incorrect output for certain test cases. Given this is a hard problem and the user's first attempt, maintaining the current difficulty is appropriate to allow for further practice at this level. A critical step for improvement is to carefully trace the algorithm's behavior with various edge cases, such as an empty tree, a single-node tree, or highly skewed trees, as these often reveal subtle bugs."
+}

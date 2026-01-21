@@ -1,0 +1,9 @@
+{
+  "focus_areas": [
+    "Thoroughly analyze and test for edge cases, such as empty trees, single-node trees, or highly skewed trees, as these are frequent causes of 'Wrong Answer' in complex tree problems.",
+    "Review recursive base cases to ensure they correctly terminate and handle the simplest inputs (e.g., null nodes) without propagating errors.",
+    "Consider the implications of problem constraints on data types and potential overflows for intermediate calculations, even if the final result fits standard types.",
+    "Develop a habit of generating custom test cases that specifically target boundary conditions and tricky scenarios to validate algorithm robustness."
+  ],
+  "rationale": "The 'Wrong Answer' verdict indicates that the C++ submission produced an incorrect output for at least one test case. In hard problems, especially those involving tree data structures, this frequently stems from the algorithm failing to correctly handle specific edge cases or complex scenarios. Common pitfalls include incorrect base cases in recursive solutions, improper handling of null pointers, or logical errors when dealing with trees of minimal size or extreme structures (e.g., empty tree, single-node tree, or highly skewed trees)."
+}

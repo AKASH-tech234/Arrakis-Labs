@@ -8,6 +8,48 @@ import axios from "axios";
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const AI_TIMEOUT_MS = 60000; // 60 seconds for AI processing
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// STRUCTURED LOGGING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LOG_PREFIX = {
+  INFO: "\x1b[36m[AI-SVC]\x1b[0m", // Cyan
+  SUCCESS: "\x1b[32m[AI-SVC]\x1b[0m", // Green
+  WARN: "\x1b[33m[AI-SVC]\x1b[0m", // Yellow
+  ERROR: "\x1b[31m[AI-SVC]\x1b[0m", // Red
+  HTTP: "\x1b[35m[AI-SVC]\x1b[0m", // Magenta
+};
+
+const log = {
+  info: (msg, data) => {
+    console.log(`${LOG_PREFIX.INFO} ${msg}`, data ? JSON.stringify(data) : "");
+  },
+  success: (msg, data) => {
+    console.log(
+      `${LOG_PREFIX.SUCCESS} ✓ ${msg}`,
+      data ? JSON.stringify(data) : "",
+    );
+  },
+  warn: (msg, data) => {
+    console.warn(
+      `${LOG_PREFIX.WARN} ⚠ ${msg}`,
+      data ? JSON.stringify(data) : "",
+    );
+  },
+  error: (msg, data) => {
+    console.error(
+      `${LOG_PREFIX.ERROR} ✗ ${msg}`,
+      data ? JSON.stringify(data) : "",
+    );
+  },
+  http: (method, url, status, duration) => {
+    const statusColor = status >= 400 ? "\x1b[31m" : "\x1b[32m";
+    console.log(
+      `${LOG_PREFIX.HTTP} ${method} ${url} ${statusColor}${status}\x1b[0m ${duration}ms`,
+    );
+  },
+};
+
 /**
  * Map backend verdict status to AI service expected format
  */
@@ -95,10 +137,17 @@ export async function getAIFeedback({
   verdict,
   userHistorySummary,
 }) {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/ai/feedback`;
+
   try {
-    console.log(
-      `[AI Service] Requesting feedback for user ${userId}, problem ${problemId}`,
-    );
+    log.info("Preparing AI request", {
+      userId,
+      problemId,
+      verdict,
+      language,
+      codeLength: code?.length,
+    });
 
     // Build the payload matching SubmissionContext schema
     const payload = {
@@ -113,43 +162,53 @@ export async function getAIFeedback({
       user_history_summary: userHistorySummary,
     };
 
-    console.log(`[AI Service] Payload:`, {
-      user_id: payload.user_id,
-      problem_id: payload.problem_id,
-      problem_category: payload.problem_category,
+    log.info(`→ POST ${url}`, {
       verdict: payload.verdict,
       error_type: payload.error_type,
-      code_length: payload.code?.length,
     });
 
-    const response = await axios.post(
-      `${AI_SERVICE_URL}/ai/feedback`,
-      payload,
-      {
-        timeout: AI_TIMEOUT_MS,
-        headers: {
-          "Content-Type": "application/json",
-        },
+    const response = await axios.post(url, payload, {
+      timeout: AI_TIMEOUT_MS,
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
 
-    console.log(`[AI Service] Success - received feedback`);
+    const duration = Date.now() - startTime;
+    log.http("POST", "/ai/feedback", response.status, duration);
+
+    log.success("AI feedback received", {
+      hintCount: response.data?.hints?.length || 0,
+      feedbackType: response.data?.feedback_type,
+      hasExplanation: !!response.data?.explanation,
+    });
+
     return response.data;
   } catch (error) {
-    // Log error but don't fail the submission
+    const duration = Date.now() - startTime;
+
+    // Detailed error logging
     if (error.response) {
-      console.error(
-        `[AI Service] Error ${error.response.status}:`,
-        error.response.data,
-      );
+      log.http("POST", "/ai/feedback", error.response.status, duration);
+      log.error("AI Service error response", {
+        status: error.response.status,
+        data: error.response.data,
+      });
     } else if (error.code === "ECONNREFUSED") {
-      console.error(
-        `[AI Service] Connection refused - is the AI service running at ${AI_SERVICE_URL}?`,
-      );
+      log.error("AI Service connection refused", {
+        url: AI_SERVICE_URL,
+        message: "Is the AI service running?",
+      });
     } else if (error.code === "ETIMEDOUT" || error.code === "ECONNABORTED") {
-      console.error(`[AI Service] Request timed out after ${AI_TIMEOUT_MS}ms`);
+      log.error("AI Service timeout", {
+        timeout: AI_TIMEOUT_MS,
+        duration,
+      });
     } else {
-      console.error(`[AI Service] Error:`, error.message);
+      log.error("AI Service request failed", {
+        code: error.code,
+        message: error.message,
+      });
     }
 
     return null;
@@ -161,13 +220,33 @@ export async function getAIFeedback({
  * @returns {Promise<boolean>}
  */
 export async function checkAIServiceHealth() {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/health`;
+
   try {
-    const response = await axios.get(`${AI_SERVICE_URL}/health`, {
-      timeout: 5000,
-    });
-    return response.data?.status === "ok";
+    log.info(`Health check → ${url}`);
+    const response = await axios.get(url, { timeout: 5000 });
+    const duration = Date.now() - startTime;
+
+    log.http("GET", "/health", response.status, duration);
+
+    if (response.data?.status === "ok") {
+      log.success("AI Service is healthy", {
+        version: response.data.version,
+        timestamp: response.data.timestamp,
+      });
+      return true;
+    }
+
+    log.warn("AI Service returned unexpected status", response.data);
+    return false;
   } catch (error) {
-    console.error(`[AI Service] Health check failed:`, error.message);
+    const duration = Date.now() - startTime;
+    log.error("Health check failed", {
+      duration,
+      error: error.message,
+      code: error.code,
+    });
     return false;
   }
 }

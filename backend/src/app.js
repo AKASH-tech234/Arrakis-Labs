@@ -29,6 +29,7 @@ import {
 import {
   requestAIFeedback,
   getAILearningSummary,
+  getAIHealth,
 } from "./controllers/aiController.js";
 
 import { protect } from "./middleware/authMiddleware.js";
@@ -94,12 +95,19 @@ app.use(cookieParser());
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
+  skip: () => process.env.NODE_ENV !== "production", // Skip in development
 });
 app.use("/api", apiLimiter);
 
+// Skip auth rate limiting entirely in development
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: () => process.env.NODE_ENV !== "production", // Skip in development
+  message: {
+    status: "error",
+    message: "Too many authentication attempts. Please try again later.",
+  },
 });
 app.use("/api/auth/signin", authLimiter);
 app.use("/api/auth/signup", authLimiter);
@@ -107,6 +115,7 @@ app.use("/api/auth/signup", authLimiter);
 const codeLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
+  skip: () => process.env.NODE_ENV !== "production", // Skip in development
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
 
@@ -143,7 +152,10 @@ app.use("/api/public", publicRoutes);
 app.use("/api/export", exportRoutes);
 
 // Serve generated exports (PDFs)
-app.use("/exports", express.static(path.resolve(__dirname, "../public/exports")));
+app.use(
+  "/exports",
+  express.static(path.resolve(__dirname, "../public/exports")),
+);
 
 app.get("/api/questions", getPublicQuestions);
 app.get("/api/questions/:id", getPublicQuestion);
@@ -153,6 +165,7 @@ app.post("/api/submit", protect, codeLimiter, submitCode);
 app.get("/api/submissions", protect, getSubmissions);
 
 // AI Feedback routes
+app.get("/api/ai/health", getAIHealth);
 app.post("/api/ai/feedback", protect, requestAIFeedback);
 app.post("/api/ai/summary", protect, getAILearningSummary);
 
