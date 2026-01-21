@@ -1,0 +1,4 @@
+{
+  "action": "decrease",
+  "rationale": "The user received a Wrong Answer, which is consistent with their recurring mistake of missing edge cases and difficulties with boundary condition handling. Decreasing the difficulty will provide an opportunity to reinforce these fundamental skills in a less complex problem."
+}
