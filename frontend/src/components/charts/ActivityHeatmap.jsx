@@ -5,28 +5,53 @@ import { motion } from "framer-motion";
 const WEEKS = 52;
 const DAYS_PER_WEEK = 7;
 
-// Generate mock activity data for the past year
-const generateMockData = () => {
+function startOfUtcDay(d) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+function toIsoDate(d) {
+  return d.toISOString().split("T")[0];
+}
+
+function computeLevel(count, maxCount) {
+  if (!count) return 0;
+  if (!maxCount) return 0;
+
+  const t1 = Math.max(1, Math.ceil(maxCount * 0.25));
+  const t2 = Math.max(t1 + 1, Math.ceil(maxCount * 0.5));
+  const t3 = Math.max(t2 + 1, Math.ceil(maxCount * 0.75));
+
+  if (count <= t1) return 1;
+  if (count <= t2) return 2;
+  if (count <= t3) return 3;
+  return 4;
+}
+
+function buildHeatmapData(activity = []) {
+  const map = new Map((activity || []).map((d) => [d.date, Number(d.count) || 0]));
+  const maxCount = Math.max(0, ...Array.from(map.values()));
+
   const data = [];
-  const today = new Date();
+  const today = startOfUtcDay(new Date());
 
   for (let week = WEEKS - 1; week >= 0; week--) {
     const weekData = [];
     for (let day = 0; day < DAYS_PER_WEEK; day++) {
       const date = new Date(today);
-      date.setDate(date.getDate() - (week * 7 + (6 - day)));
-
-      const level = Math.random() > 0.6 ? Math.floor(Math.random() * 5) : 0;
-
+      date.setUTCDate(date.getUTCDate() - (week * 7 + (6 - day)));
+      const key = toIsoDate(date);
+      const count = map.get(key) || 0;
       weekData.push({
-        date: date.toISOString().split("T")[0],
-        level,
+        date: key,
+        level: computeLevel(count, maxCount),
+        count,
       });
     }
     data.push(weekData);
   }
+
   return data;
-};
+}
 
 // Sand-toned color scale
 const levelColors = {
@@ -53,8 +78,8 @@ const monthLabels = [
   "Dec",
 ];
 
-export default function ActivityHeatmap() {
-  const activityData = generateMockData();
+export default function ActivityHeatmap({ activity }) {
+  const activityData = buildHeatmapData(activity);
 
   // Month label positioning
   const getMonthPositions = () => {
@@ -155,7 +180,7 @@ export default function ActivityHeatmap() {
                          hover:ring-2 hover:ring-[#F59E0B]
                          hover:ring-offset-1 hover:ring-offset-[#0A0A08]"
               style={{ backgroundColor: levelColors[day.level] }}
-              title={`${day.date}: ${day.level} submissions`}
+              title={`${day.date}: ${day.count} submissions`}
               whileHover={{ scale: 1.3 }}
             />
           ))}

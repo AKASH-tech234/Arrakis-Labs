@@ -14,6 +14,9 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import contestRoutes from "./routes/contestRoutes.js";
 import adminContestRoutes from "./routes/adminContestRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
+import exportRoutes from "./routes/exportRoutes.js";
 
 import {
   runCode,
@@ -26,6 +29,7 @@ import {
 import {
   requestAIFeedback,
   getAILearningSummary,
+  getAIHealth,
 } from "./controllers/aiController.js";
 
 import { protect } from "./middleware/authMiddleware.js";
@@ -91,12 +95,19 @@ app.use(cookieParser());
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
+  skip: () => process.env.NODE_ENV !== "production", // Skip in development
 });
 app.use("/api", apiLimiter);
 
+// Skip auth rate limiting entirely in development
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: () => process.env.NODE_ENV !== "production", // Skip in development
+  message: {
+    status: "error",
+    message: "Too many authentication attempts. Please try again later.",
+  },
 });
 app.use("/api/auth/signin", authLimiter);
 app.use("/api/auth/signup", authLimiter);
@@ -104,6 +115,7 @@ app.use("/api/auth/signup", authLimiter);
 const codeLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
+  skip: () => process.env.NODE_ENV !== "production", // Skip in development
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
 
@@ -135,6 +147,15 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/contests", contestRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/public", publicRoutes);
+app.use("/api/export", exportRoutes);
+
+// Serve generated exports (PDFs)
+app.use(
+  "/exports",
+  express.static(path.resolve(__dirname, "../public/exports")),
+);
 
 app.get("/api/questions", getPublicQuestions);
 app.get("/api/questions/:id", getPublicQuestion);
@@ -144,6 +165,7 @@ app.post("/api/submit", protect, codeLimiter, submitCode);
 app.get("/api/submissions", protect, getSubmissions);
 
 // AI Feedback routes
+app.get("/api/ai/health", getAIHealth);
 app.post("/api/ai/feedback", protect, requestAIFeedback);
 app.post("/api/ai/summary", protect, getAILearningSummary);
 

@@ -1,43 +1,22 @@
 // src/components/charts/SubmissionSummary.jsx
 // Recent submissions list
 
-const mockSubmissions = [
-  {
-    id: 1,
-    problem: "Two Sum",
-    status: "Accepted",
-    time: "2 hours ago",
-    runtime: "45ms",
-  },
-  {
-    id: 2,
-    problem: "Add Two Numbers",
-    status: "Accepted",
-    time: "1 day ago",
-    runtime: "68ms",
-  },
-  {
-    id: 3,
-    problem: "Longest Substring",
-    status: "Wrong Answer",
-    time: "2 days ago",
-    runtime: "—",
-  },
-  {
-    id: 4,
-    problem: "Palindrome Number",
-    status: "Accepted",
-    time: "3 days ago",
-    runtime: "32ms",
-  },
-  {
-    id: 5,
-    problem: "Reverse Integer",
-    status: "Accepted",
-    time: "4 days ago",
-    runtime: "41ms",
-  },
-];
+function formatTimeAgo(dateLike) {
+  if (!dateLike) return "";
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const diffMs = Date.now() - d.getTime();
+  const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffDay > 0) return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
+  if (diffHr > 0) return `${diffHr} hour${diffHr === 1 ? "" : "s"} ago`;
+  if (diffMin > 0) return `${diffMin} min ago`;
+  return "just now";
+}
 
 const statusStyles = {
   Accepted: "text-[#78716C]",
@@ -45,7 +24,9 @@ const statusStyles = {
   "Time Limit": "text-[#D97706]",
 };
 
-export default function SubmissionSummary() {
+export default function SubmissionSummary({ submissions }) {
+  const items = Array.isArray(submissions) ? submissions : [];
+
   return (
     <div className="divide-y divide-[#1A1814]">
       {/* Header */}
@@ -73,7 +54,7 @@ export default function SubmissionSummary() {
       </div>
 
       {/* Submissions */}
-      {mockSubmissions.map((submission) => (
+      {items.map((submission) => (
         <div
           key={submission.id}
           className="flex items-center justify-between py-3 px-1"
@@ -97,7 +78,7 @@ export default function SubmissionSummary() {
               className="text-[#3D3D3D] text-xs w-20 text-right hidden sm:block"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {submission.time}
+              {formatTimeAgo(submission.createdAt)}
             </span>
           </div>
         </div>

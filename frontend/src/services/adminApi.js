@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Create axios instance for admin API
 const adminApi = axios.create({
@@ -14,11 +15,6 @@ const adminApi = axios.create({
 // Add auth token to requests
 adminApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("adminToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // IMPORTANT: Let the browser set the multipart boundary for FormData.
     // Setting Content-Type manually can result in req.file being undefined on the server.
     if (config.data instanceof FormData) {
@@ -37,20 +33,23 @@ adminApi.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Handle 401 responses (auto-logout)
+// DON'T redirect here - let the components handle it to avoid infinite loops
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only redirect for 401 on protected endpoints, NOT on /profile check
+    // The AdminLayout/AdminLogin components will handle auth redirects
     if (error.response?.status === 401) {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      window.location.href = "/admin/login";
+      // Don't redirect - just reject the promise
+      // Components will check isAuthenticated and redirect appropriately
+      console.warn("[AdminAPI] 401 Unauthorized - auth required");
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // ==========================================
@@ -58,10 +57,6 @@ adminApi.interceptors.response.use(
 // ==========================================
 export const adminLogin = async (email, password) => {
   const response = await adminApi.post("/login", { email, password });
-  if (response.data.success) {
-    localStorage.setItem("adminToken", response.data.token);
-    localStorage.setItem("adminUser", JSON.stringify(response.data.admin));
-  }
   return response.data;
 };
 
@@ -69,8 +64,7 @@ export const adminLogout = async () => {
   try {
     await adminApi.post("/logout");
   } finally {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
+    // cookie-based auth; nothing to clear client-side
   }
 };
 
@@ -124,7 +118,10 @@ export const getTestCases = async (questionId) => {
 };
 
 export const createTestCase = async (questionId, data) => {
-  const response = await adminApi.post(`/questions/${questionId}/test-cases`, data);
+  const response = await adminApi.post(
+    `/questions/${questionId}/test-cases`,
+    data,
+  );
   return response.data;
 };
 
@@ -139,7 +136,9 @@ export const deleteTestCase = async (testCaseId) => {
 };
 
 export const toggleTestCaseHidden = async (testCaseId) => {
-  const response = await adminApi.patch(`/test-cases/${testCaseId}/toggle-hidden`);
+  const response = await adminApi.patch(
+    `/test-cases/${testCaseId}/toggle-hidden`,
+  );
   return response.data;
 };
 
@@ -149,7 +148,7 @@ export const toggleTestCaseHidden = async (testCaseId) => {
 export const previewCSV = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
-  
+
   const response = await adminApi.post("/preview-csv", formData);
   return response.data;
 };
@@ -157,7 +156,7 @@ export const previewCSV = async (file) => {
 export const uploadCSV = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
-  
+
   const response = await adminApi.post("/upload-csv", formData);
   return response.data;
 };

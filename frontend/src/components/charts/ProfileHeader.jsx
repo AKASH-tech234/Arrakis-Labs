@@ -2,14 +2,12 @@
 // User profile header with minimal info
 import { motion } from "framer-motion";
 
-const mockUser = {
-  name: "Paul Atreides",
-  username: "muaddib",
-  descriptor: "In disciplined practice",
-  memberSince: "2024",
-};
+export default function ProfileHeader({ user }) {
+  const name = user?.name || "—";
+  const username = user?.username || "—";
+  const descriptor = user?.descriptor || "—";
+  const memberSince = user?.memberSince || "—";
 
-export default function ProfileHeader() {
   return (
     <div className="flex items-start gap-8">
       {/* Avatar */}
@@ -27,7 +25,7 @@ export default function ProfileHeader() {
             className="text-4xl font-bold uppercase bg-gradient-to-r from-[#D97706] to-[#F59E0B] bg-clip-text text-transparent"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
-            {mockUser.name.charAt(0)}
+            {String(name).charAt(0) || "?"}
           </motion.span>
         </div>
       </motion.div>
@@ -47,7 +45,7 @@ export default function ProfileHeader() {
             className="text-3xl font-bold tracking-wide bg-gradient-to-r from-[#E8E4D9] to-[#F59E0B] bg-clip-text text-transparent"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
-            {mockUser.name}
+            {name}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -56,7 +54,7 @@ export default function ProfileHeader() {
             className="text-[#D97706] text-sm uppercase tracking-widest font-medium mt-1"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
-            @{mockUser.username}
+            @{username}
           </motion.p>
         </div>
 
@@ -77,7 +75,7 @@ export default function ProfileHeader() {
               className="text-[#F59E0B] font-medium italic tracking-wide"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {mockUser.descriptor}
+              {descriptor}
             </p>
           </div>
 
@@ -94,7 +92,7 @@ export default function ProfileHeader() {
               className="text-[#E8E4D9] font-medium"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {mockUser.memberSince}
+              {memberSince}
             </p>
           </div>
         </motion.div>

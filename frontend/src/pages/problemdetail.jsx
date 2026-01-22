@@ -6,13 +6,13 @@ import AppHeader from "../components/layout/AppHeader";
 import ProblemDescription from "../components/problem/ProblemDescription";
 import CodeEditor from "../components/editor/CodeEditor";
 import OutputPanel from "../components/editor/OutputPanel";
-import AIFeedbackPanel from "../components/feedback/AIFeedbackPanel";
+import AIFeedbackPanelV2 from "../components/feedback/AIFeedbackPanelV2";
 import {
   getPublicQuestion,
   runQuestion,
   submitQuestion,
 } from "../services/api";
-import { useAIFeedback } from "../hooks/useAIFeedback";
+import { useAIFeedback, checkAIHealth } from "../hooks/useAIFeedback";
 
 // Map UI language names to Piston runtime identifiers
 const languageMap = {
@@ -38,23 +38,34 @@ export default function ProblemDetail() {
   const [status, setStatus] = useState("idle");
   const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [aiServiceAvailable, setAiServiceAvailable] = useState(null);
   const abortControllerRef = useRef(null);
 
   // Track last submission details for AI feedback
   const [lastSubmission, setLastSubmission] = useState(null);
 
-  // AI Feedback hook
+  // AI Feedback hook with progressive disclosure
   const {
     feedback,
     loading: feedbackLoading,
     error: feedbackError,
     fetchFeedback,
     reset: resetFeedback,
+    revealNextHint,
+    hasMoreHints,
+    nextHintLabel,
+    toggleExplanation,
+    showFullExplanation,
   } = useAIFeedback();
 
   const [loadingProblem, setLoadingProblem] = useState(true);
   const [problemError, setProblemError] = useState("");
   const [problemRaw, setProblemRaw] = useState(null);
+
+  // Check AI service health on mount
+  useEffect(() => {
+    checkAIHealth().then(setAiServiceAvailable);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -103,6 +114,7 @@ export default function ProblemDetail() {
       category,
       description: problemRaw.description,
       constraints,
+      constraintsText: problemRaw.constraints || "",
       examples: Array.isArray(problemRaw.examples) ? problemRaw.examples : [],
       testCases: Array.isArray(problemRaw.testCases)
         ? problemRaw.testCases
@@ -151,6 +163,29 @@ export default function ProblemDetail() {
   };
 
   /**
+   * Trigger AI feedback for a submission
+   * Called for ALL verdicts (accepted, wrong_answer, tle, etc.)
+   * Backend handles auth, context enrichment, and AI service communication
+   */
+  const triggerAIFeedback = async (submissionData) => {
+    if (!aiServiceAvailable) {
+      console.warn("AI service not available, skipping feedback");
+      return;
+    }
+
+    setShowFeedback(true);
+
+    // Backend handles userId, problemCategory, constraints
+    await fetchFeedback({
+      questionId: submissionData.questionId,
+      code: submissionData.code,
+      language: submissionData.language,
+      verdict: submissionData.verdict,
+      errorType: submissionData.errorType,
+    });
+  };
+
+  /**
    * Execute code via Piston API
    */
   const runOrSubmit = async (code, language, isSubmit = false) => {
@@ -174,6 +209,7 @@ export default function ProblemDetail() {
     setSubmitted(false);
     setLastSubmission(null);
     resetFeedback();
+    setShowFeedback(false);
 
     try {
       const langKey = (languageMap[language] || language).toLowerCase();
@@ -208,23 +244,27 @@ export default function ProblemDetail() {
         : !!data.allPassed;
       setStatus(isAccepted ? "success" : "error");
 
-      // Track submission details for AI feedback (only for failed submissions)
-      if (isSubmit && !isAccepted) {
-        setLastSubmission({
+      // ========================================
+      // CRITICAL FIX: Trigger AI feedback for ALL submissions
+      // Not just failed ones - accepted submissions get optimization hints
+      // ========================================
+      if (isSubmit) {
+        const submissionData = {
           questionId: id,
           code,
           language: langKey,
-          verdict: data.status || "wrong_answer",
+          verdict: data.status || (isAccepted ? "accepted" : "wrong_answer"),
           errorType: data.errorType || null,
-        });
+        };
+
+        setLastSubmission(submissionData);
         setSubmitted(true);
-      } else if (isSubmit && isAccepted) {
-        setSubmitted(true);
-        setLastSubmission(null);
+
+        // Auto-trigger AI feedback for all submissions
+        triggerAIFeedback(submissionData);
       }
     } catch (err) {
       if (err.name === "AbortError") {
-        // Request was cancelled, keep previous output or show cancelled
         setOutput((prev) => prev || "Cancelled.");
         setStatus("idle");
       } else {
@@ -244,6 +284,12 @@ export default function ProblemDetail() {
 
   const handleSubmit = (code, language) => {
     runOrSubmit(code, language, true);
+  };
+
+  const handleRetryFeedback = () => {
+    if (lastSubmission) {
+      triggerAIFeedback(lastSubmission);
+    }
   };
 
   return (
@@ -268,6 +314,19 @@ export default function ProblemDetail() {
             >
               {loadingProblem ? "Loading..." : problem.title}
             </span>
+            {/* AI Service Status Indicator */}
+            {aiServiceAvailable !== null && (
+              <span
+                className={`ml-auto text-[10px] px-2 py-0.5 rounded-full ${
+                  aiServiceAvailable
+                    ? "bg-[#22C55E]/10 text-[#22C55E]"
+                    : "bg-[#EF4444]/10 text-[#EF4444]"
+                }`}
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                AI {aiServiceAvailable ? "Online" : "Offline"}
+              </span>
+            )}
           </div>
         </div>
 
@@ -320,7 +379,7 @@ export default function ProblemDetail() {
               {/* Output Panel */}
               <OutputPanel output={output} status={status} />
 
-              {/* Get AI Feedback Button - Shows only for failed submissions */}
+              {/* Manual AI Feedback Toggle (if auto-trigger failed or user closed panel) */}
               {submitted && lastSubmission && !showFeedback && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -329,53 +388,36 @@ export default function ProblemDetail() {
                   className="border-t border-[#1A1814] px-4 py-3"
                 >
                   <button
-                    onClick={() => {
-                      setShowFeedback(true);
-                      fetchFeedback(lastSubmission);
-                    }}
-                    className="w-full py-2 border border-[#92400E]/30 text-[#D97706] hover:bg-[#92400E]/10 transition-colors duration-200 text-xs uppercase tracking-wider"
+                    onClick={() => triggerAIFeedback(lastSubmission)}
+                    disabled={!aiServiceAvailable}
+                    className="w-full py-2 border border-[#92400E]/30 text-[#D97706] hover:bg-[#92400E]/10 transition-colors duration-200 text-xs uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
-                    Get AI Feedback
+                    {status === "success"
+                      ? "View AI Optimization Tips"
+                      : "Get AI Feedback"}
                   </button>
-                </motion.div>
-              )}
-
-              {/* Success Message for Accepted Submissions */}
-              {submitted && !lastSubmission && !showFeedback && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="border-t border-[#1A1814] px-4 py-3"
-                >
-                  <div className="flex items-center justify-center gap-2 py-2 border border-[#22C55E]/30 bg-[#22C55E]/5">
-                    <span className="text-[#22C55E]">✓</span>
-                    <span
-                      className="text-[#22C55E] text-xs uppercase tracking-wider"
-                      style={{
-                        fontFamily: "'Rajdhani', system-ui, sans-serif",
-                      }}
-                    >
-                      Solution Accepted
-                    </span>
-                  </div>
                 </motion.div>
               )}
             </motion.div>
 
-            {/* AI Feedback Panel */}
+            {/* AI Feedback Panel - Progressive Disclosure */}
             {showFeedback && (
               <div className="w-1/2">
-                <AIFeedbackPanel
+                <AIFeedbackPanelV2
                   isVisible={showFeedback}
                   onClose={() => {
                     setShowFeedback(false);
-                    resetFeedback();
                   }}
                   loading={feedbackLoading}
                   error={feedbackError}
                   feedback={feedback}
+                  onRevealNextHint={revealNextHint}
+                  hasMoreHints={hasMoreHints}
+                  nextHintLabel={nextHintLabel}
+                  onToggleExplanation={toggleExplanation}
+                  showFullExplanation={showFullExplanation}
+                  onRetry={handleRetryFeedback}
                 />
               </div>
             )}

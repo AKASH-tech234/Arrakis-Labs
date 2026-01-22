@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
+from typing import Dict, Any, Optional, List
+from pydantic import BaseModel
 import time
 import logging
 import traceback
+import uuid
 
 from app.schemas.submission import SubmissionContext
 from app.schemas.feedback import FeedbackResponse
@@ -11,22 +13,75 @@ from app.graph.sync_workflow import sync_workflow
 from app.graph.async_workflow import async_workflow
 
 # -------------------------
-# Logging
+# Logging - Structured
 # -------------------------
 logger = logging.getLogger("routes")
-logger.info("📦 Routes module loading...")
+
+def log_event(event: str, **kwargs):
+    """Structured log helper"""
+    log_data = {"event": event, "service": "ai-routes", **kwargs}
+    logger.info(str(log_data))
+
+log_event("module_loaded", module="routes")
 
 # -------------------------
 # Configuration
 # -------------------------
-MAX_REQUEST_SECONDS = 30  # sync workflow should be fast
-logger.info(f"⏱️  Max request timeout: {MAX_REQUEST_SECONDS}s")
+MAX_REQUEST_SECONDS = 30
+log_event("config_loaded", max_request_seconds=MAX_REQUEST_SECONDS)
+
+# -------------------------
+# Response DTOs - Clean Frontend-Ready Responses
+# -------------------------
+class HintLevel(BaseModel):
+    """Single hint with level indicator"""
+    level: int
+    content: str
+    hint_type: str  # "conceptual", "specific", "approach", "solution"
+
+class AIFeedbackDTO(BaseModel):
+    """Clean, structured response for frontend consumption"""
+    success: bool
+    verdict: str
+    submission_id: str
+    
+    # Progressive hints (ordered from vague to specific)
+    hints: List[HintLevel]
+    
+    # Full explanation (hidden by default)
+    explanation: Optional[str] = None
+    
+    # Pattern detection
+    detected_pattern: Optional[str] = None
+    
+    # For accepted submissions
+    optimization_tips: Optional[List[str]] = None
+    complexity_analysis: Optional[str] = None
+    edge_cases: Optional[List[str]] = None
+    
+    # Metadata
+    feedback_type: str  # "error_feedback", "success_feedback", "optimization"
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "verdict": "wrong_answer",
+                "submission_id": "sub_abc123",
+                "hints": [
+                    {"level": 1, "content": "Think about edge cases...", "hint_type": "conceptual"},
+                    {"level": 2, "content": "Consider when the array is empty", "hint_type": "specific"}
+                ],
+                "explanation": "Your solution fails when...",
+                "feedback_type": "error_feedback"
+            }
+        }
 
 # -------------------------
 # Router
 # -------------------------
 router = APIRouter()
-logger.info("✅ APIRouter created")
+log_event("router_created")
 
 # -------------------------
 # Health Check
@@ -36,94 +91,278 @@ def health_check():
     return {
         "status": "ok",
         "service": "Mentat Trials AI Service",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "version": "1.0.0"
     }
 
 # -------------------------
-# AI Feedback Endpoint (SYNC + ASYNC)
+# Helper: Build Progressive Hints
 # -------------------------
-@router.post("/ai/feedback")
+def build_progressive_hints(
+    verdict: str,
+    feedback: Optional[FeedbackResponse],
+    hint: Optional[str],
+    detected_pattern: Optional[str]
+) -> List[HintLevel]:
+    """
+    Build progressive hint structure based on verdict and feedback.
+    
+    For WRONG answers: conceptual → specific → approach → solution
+    For ACCEPTED: optimization → complexity → edge cases
+    For TLE: complexity → optimization → specific fix
+    """
+    hints = []
+    
+    if verdict == "accepted":
+        # Accepted: Show optimization hints progressively
+        if feedback and feedback.explanation:
+            hints.append(HintLevel(
+                level=1,
+                content="Great job! Your solution is correct. Want to see how to optimize?",
+                hint_type="conceptual"
+            ))
+        if feedback and feedback.improvement_hint:
+            hints.append(HintLevel(
+                level=2,
+                content=feedback.improvement_hint,
+                hint_type="optimization"
+            ))
+        if detected_pattern:
+            hints.append(HintLevel(
+                level=3,
+                content=f"This problem uses the {detected_pattern} pattern. Understanding this will help you solve similar problems faster.",
+                hint_type="pattern"
+            ))
+    
+    elif verdict in ["time_limit_exceeded", "tle"]:
+        # TLE: Focus on complexity and optimization
+        hints.append(HintLevel(
+            level=1,
+            content="Your solution is too slow. Think about the time complexity of your approach.",
+            hint_type="conceptual"
+        ))
+        if feedback and feedback.improvement_hint:
+            hints.append(HintLevel(
+                level=2,
+                content=feedback.improvement_hint,
+                hint_type="specific"
+            ))
+        if hint:
+            hints.append(HintLevel(
+                level=3,
+                content=hint,
+                hint_type="approach"
+            ))
+        if detected_pattern:
+            hints.append(HintLevel(
+                level=4,
+                content=f"Consider using the {detected_pattern} pattern for better performance.",
+                hint_type="pattern"
+            ))
+    
+    else:
+        # Wrong answer / runtime error: Progressive hints
+        if feedback and feedback.explanation:
+            # Extract first conceptual hint
+            explanation_lines = feedback.explanation.split(". ")
+            if explanation_lines:
+                hints.append(HintLevel(
+                    level=1,
+                    content=explanation_lines[0] + ".",
+                    hint_type="conceptual"
+                ))
+        
+        if feedback and feedback.improvement_hint:
+            hints.append(HintLevel(
+                level=2,
+                content=feedback.improvement_hint,
+                hint_type="specific"
+            ))
+        
+        if hint:
+            hints.append(HintLevel(
+                level=3,
+                content=hint,
+                hint_type="approach"
+            ))
+        
+        if detected_pattern:
+            hints.append(HintLevel(
+                level=4,
+                content=f"Pattern hint: This problem typically uses {detected_pattern}.",
+                hint_type="pattern"
+            ))
+        
+        # Final full explanation as last hint
+        if feedback and feedback.explanation and len(hints) > 0:
+            hints.append(HintLevel(
+                level=len(hints) + 1,
+                content=feedback.explanation,
+                hint_type="solution"
+            ))
+    
+    # Ensure at least one hint
+    if not hints:
+        hints.append(HintLevel(
+            level=1,
+            content="Review your approach and consider edge cases.",
+            hint_type="conceptual"
+        ))
+    
+    return hints
+
+# -------------------------
+# AI Feedback Endpoint (UNIFIED - ALL VERDICTS)
+# -------------------------
+@router.post("/ai/feedback", response_model=AIFeedbackDTO)
 def generate_ai_feedback(
     payload: SubmissionContext,
     background_tasks: BackgroundTasks,
-) -> Dict[str, Any]:
+) -> AIFeedbackDTO:
     """
-    SYNC:
+    UNIFIED AI Feedback endpoint - called for ALL submission verdicts.
+    
+    Verdicts handled:
+    - accepted: optimization hints, complexity analysis, edge cases
+    - wrong_answer: progressive hints → approach → fix
+    - time_limit_exceeded: complexity analysis → optimization hints
+    - runtime_error: error analysis → fix suggestions
+    - compile_error: syntax fix suggestions
+    
+    SYNC agents (user-facing):
     - feedback
-    - pattern detection
+    - pattern detection  
     - hint
-
-    ASYNC (background):
+    
+    ASYNC agents (background):
     - learning
     - difficulty
-    - weekly report (conditional)
     - memory storage
     """
     start_time = time.time()
+    submission_id = f"sub_{uuid.uuid4().hex[:12]}"
+    
+    log_event("feedback_request_received",
+        submission_id=submission_id,
+        user_id=payload.user_id,
+        problem_id=payload.problem_id,
+        verdict=payload.verdict,
+        language=payload.language
+    )
 
     try:
-        logger.info("🎯 NEW AI FEEDBACK REQUEST")
-        logger.info(f"📥 User ID: {payload.user_id}")
-        logger.info(f"📥 Problem ID: {payload.problem_id}")
-        logger.info(f"📥 Verdict: {payload.verdict}")
-
         # -------------------------
         # Build initial state
         # -------------------------
         state: Dict[str, Any] = payload.model_dump()
+        state["submission_id"] = submission_id
+        
+        log_event("workflow_starting",
+            submission_id=submission_id,
+            workflow="sync"
+        )
 
         # -------------------------
         # SYNC WORKFLOW (user-facing)
         # -------------------------
-        logger.info("🚀 Running SYNC workflow...")
         sync_result = sync_workflow.invoke(state)
 
         elapsed = time.time() - start_time
         if elapsed > MAX_REQUEST_SECONDS:
+            log_event("workflow_timeout",
+                submission_id=submission_id,
+                elapsed_seconds=elapsed
+            )
             raise TimeoutError("Sync AI workflow exceeded time budget")
 
-        feedback: FeedbackResponse | None = sync_result.get("feedback")
-        if feedback is None:
-            raise ValueError("Feedback agent failed to produce output")
+        feedback: Optional[FeedbackResponse] = sync_result.get("feedback")
+        detected_pattern: Optional[str] = sync_result.get("detected_pattern")
+        hint: Optional[str] = sync_result.get("hint")
+        
+        log_event("sync_workflow_completed",
+            submission_id=submission_id,
+            has_feedback=feedback is not None,
+            has_pattern=detected_pattern is not None,
+            has_hint=hint is not None,
+            elapsed_seconds=round(elapsed, 2)
+        )
 
         # -------------------------
         # ASYNC WORKFLOW (background)
         # -------------------------
-        logger.info("🧵 Scheduling ASYNC workflow...")
-        background_tasks.add_task(
-            async_workflow.invoke,
-            sync_result,
-        )
+        log_event("async_workflow_scheduling", submission_id=submission_id)
+        background_tasks.add_task(async_workflow.invoke, sync_result)
 
         # -------------------------
-        # RESPONSE (FAST)
+        # Build Progressive Response
         # -------------------------
-        response = {
-            "explanation": feedback.explanation,
-            "improvement_hint": feedback.improvement_hint,
-            "detected_pattern": sync_result.get("detected_pattern"),
-            "hint": sync_result.get("hint"),
-        }
-
-        logger.info(
-            f"🎉 SUCCESS: Sync response in {time.time() - start_time:.2f}s"
+        hints = build_progressive_hints(
+            verdict=payload.verdict,
+            feedback=feedback,
+            hint=hint,
+            detected_pattern=detected_pattern
         )
+        
+        # Determine feedback type
+        if payload.verdict == "accepted":
+            feedback_type = "success_feedback"
+        elif payload.verdict in ["time_limit_exceeded", "tle"]:
+            feedback_type = "optimization"
+        else:
+            feedback_type = "error_feedback"
+        
+        # Build response DTO
+        response = AIFeedbackDTO(
+            success=True,
+            verdict=payload.verdict,
+            submission_id=submission_id,
+            hints=hints,
+            explanation=feedback.explanation if feedback else None,
+            detected_pattern=detected_pattern,
+            optimization_tips=None,  # Populated for accepted
+            complexity_analysis=None,
+            edge_cases=None,
+            feedback_type=feedback_type
+        )
+        
+        # Add optimization tips for accepted submissions
+        if payload.verdict == "accepted" and feedback:
+            response.optimization_tips = [feedback.improvement_hint] if feedback.improvement_hint else []
+        
+        log_event("response_sent",
+            submission_id=submission_id,
+            verdict=payload.verdict,
+            hint_count=len(hints),
+            total_time_seconds=round(time.time() - start_time, 2)
+        )
+        
         return response
 
     except TimeoutError:
-        logger.error("❌ TIMEOUT ERROR")
+        log_event("request_timeout", submission_id=submission_id)
         raise HTTPException(
             status_code=504,
-            detail="AI processing timed out. Please retry.",
+            detail={
+                "error": "AI processing timed out",
+                "submission_id": submission_id,
+                "retry": True
+            }
         )
 
     except Exception as e:
-        logger.error("❌ AI FEEDBACK ENDPOINT FAILURE")
-        logger.error(f"Type: {type(e).__name__}")
-        logger.error(f"Message: {str(e)}")
+        log_event("request_failed",
+            submission_id=submission_id,
+            error_type=type(e).__name__,
+            error_message=str(e)
+        )
         logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
-            detail=f"AI feedback generation failed: {str(e)}",
+            detail={
+                "error": "AI feedback generation failed",
+                "message": str(e),
+                "submission_id": submission_id
+            }
         )
 # -------------------------
 # Weekly Report Endpoint (ON-DEMAND)

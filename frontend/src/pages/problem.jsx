@@ -73,7 +73,7 @@ export default function ProblemLibrary() {
       <AppHeader />
 
       <main className="pt-14">
-        <div className="max-w-4xl mx-auto px-6 lg:px-12 py-12">
+        <div className="max-w-5xl mx-auto px-6 lg:px-12 py-12">
           {/* Page Header */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -82,13 +82,13 @@ export default function ProblemLibrary() {
             className="mb-12"
           >
             <h1
-              className="text-[#E8E4D9] text-xl font-medium tracking-[0.15em] uppercase mb-3"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              className="text-[#E8E4D9] text-4xl font-bold tracking-[0.15em] uppercase mb-3"
+              style={{ fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif" }}
             >
               Problem Archive
             </h1>
             <p
-              className="text-[#78716C] text-sm tracking-wider"
+              className="text-[#A29A8C] text-base tracking-wider"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
               {stats.solved} of {stats.total} completed
@@ -119,7 +119,7 @@ export default function ProblemLibrary() {
             {loading ? (
               <div className="py-12 text-center">
                 <p
-                  className="text-[#78716C] text-sm uppercase tracking-wider"
+                  className="text-[#A29A8C] text-base uppercase tracking-wider"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Loading problems...
@@ -128,7 +128,7 @@ export default function ProblemLibrary() {
             ) : loadError ? (
               <div className="py-12 text-center">
                 <p
-                  className="text-[#92400E] text-sm uppercase tracking-wider"
+                  className="text-[#F59E0B] text-base uppercase tracking-wider"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   {loadError}

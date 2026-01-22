@@ -1,33 +1,13 @@
-// src/services/api.js - Frontend API client
-
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const TOKEN_KEY = "arrakis_token";
-
-const getToken = () => {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-};
-
-const setToken = (token) => {
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-  } catch {
-    // ignore
-  }
-};
-
+// Cookie-based auth: tokens are stored as HttpOnly cookies by the backend.
+// Frontend must send credentials and should not store tokens in localStorage.
 const clearToken = () => {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // ignore
-  }
+  // There is no client-side token to clear (HttpOnly cookie).
+  // Keep this helper to preserve existing call sites and trigger UI logout.
+  window.dispatchEvent(new CustomEvent("auth:logout"));
 };
 
 // Axios client (used by contestApi and any axios-style consumers)
@@ -38,11 +18,6 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
 
@@ -59,8 +34,6 @@ apiClient.interceptors.response.use(
 
 async function request(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${API_BASE}${path}`, {
     method,
@@ -73,8 +46,6 @@ async function request(path, { method = "GET", body, signal } = {}) {
   // Auto-clear token on 401 (expired/invalid)
   if (response.status === 401) {
     clearToken();
-    // Dispatch custom event for AuthContext to catch
-    window.dispatchEvent(new CustomEvent("auth:logout"));
   }
 
   if (!response.ok) {
@@ -171,8 +142,6 @@ export async function signup({ name, email, password, passwordConfirm }) {
     method: "POST",
     body: { name, email, password, passwordConfirm },
   });
-
-  if (data?.token) setToken(data.token);
   return data;
 }
 
@@ -181,8 +150,6 @@ export async function signin({ email, password }) {
     method: "POST",
     body: { email, password },
   });
-
-  if (data?.token) setToken(data.token);
   return data;
 }
 
@@ -199,6 +166,15 @@ export async function signout() {
   }
 }
 
+export async function googleAuth(token) {
+  const data = await request("/auth/google", {
+    method: "POST",
+    body: { token },
+  });
+
+  if (data?.token) setToken(data.token);
+  return data;
+}
 /* ======================================================
    AI FEEDBACK API
 ====================================================== */

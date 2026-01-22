@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import axios from "axios";
+import { OAuth2Client } from "google-auth-library";
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -14,20 +15,20 @@ const generateToken = (id) => {
 const sendTokenResponse = (user, statusCode, res, message = "Success") => {
   const token = generateToken(user._id);
 
-  // Cookie options
+  // Cookie options - use unique path to avoid conflicts with adminToken
   const cookieOptions = {
     expires: new Date(
       Date.now() + (process.env.JWT_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
   };
 
-  res.status(statusCode).cookie("token", token, cookieOptions).json({
+  res.status(statusCode).cookie("userToken", token, cookieOptions).json({
     success: true,
     message,
-    token,
     user: {
       id: user._id,
       name: user.name,
@@ -162,12 +163,25 @@ export const googleAuth = async (req, res) => {
       });
     }
 
-    // Verify token with Google
-    const response = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${token}`
-    );
+    // Verify token with Google using OAuth2Client
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (error) {
+      console.error(`[Auth Error] Google Token Verification Failed: ${error.message}`);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired Google token",
+      });
+    }
 
-    const { id, name, email, picture } = response.data;
+    const { sub: id, name, email, picture } = payload;
 
     if (!email) {
       return res.status(400).json({
@@ -302,10 +316,12 @@ export const githubAuth = async (req, res) => {
 // @access  Private
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token", {
+    // Clear userToken cookie with matching options
+    res.clearCookie("userToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({

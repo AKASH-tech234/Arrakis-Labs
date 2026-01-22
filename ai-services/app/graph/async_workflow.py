@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Dict, List
+from typing import TypedDict, Optional, Dict, List, Any
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import traceback
@@ -28,6 +28,10 @@ class AsyncState(TypedDict, total=False):
 
     context: str
     feedback: Optional[FeedbackResponse]
+
+    # NEW: Structured problem and user profile (passed from sync workflow)
+    problem: Optional[Dict[str, Any]]  # ProblemContext as dict
+    user_profile: Optional[Dict[str, Any]]  # UserProfile as dict
 
     learning_recommendation: Optional[LearningRecommendation]
     difficulty_adjustment: Optional[DifficultyAdjustment]
