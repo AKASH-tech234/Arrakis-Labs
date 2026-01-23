@@ -127,8 +127,16 @@ const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI missing");
 
+  console.log("\n" + "=".repeat(80));
+  console.log("🔌 Connecting to MongoDB...");
+  console.log("   URI:", uri.substring(0, 50) + "...");
+
   await mongoose.connect(uri);
-  console.log("✓ MongoDB connected");
+
+  console.log("✅ MongoDB Connected Successfully");
+  console.log("   Database:", mongoose.connection.db.databaseName);
+  console.log("   Host:", mongoose.connection.host);
+  console.log("=".repeat(80) + "\n");
 };
 
 /* ======================================================
