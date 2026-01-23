@@ -302,6 +302,15 @@ export const submitCode = async (req, res) => {
     const { questionId, code, language } = req.body;
     const userId = req.user?._id; // From auth middleware
 
+    console.log("\n" + "=".repeat(80));
+    console.log("📝 CODE SUBMISSION");
+    console.log("=".repeat(80));
+    console.log("👤 User ID:", userId?.toString());
+    console.log("🎯 Question ID:", questionId);
+    console.log("💻 Language:", language);
+    console.log("📊 Code Length:", code?.length || 0, "bytes");
+    console.log("=".repeat(80) + "\n");
+
     // Input validation
     if (!questionId || !code || !language) {
       return res.status(400).json({
@@ -347,11 +356,23 @@ export const submitCode = async (req, res) => {
       });
     }
 
+    console.log("✅ Question found:", question.title);
+    console.log("   Category:", question.category || "Uncategorized");
+    console.log("   Difficulty:", question.difficulty || "Unknown");
+
     // Get ALL test cases (hidden + visible)
+    console.log("🧪 Fetching test cases from MongoDB...");
     const allTestCases = await TestCase.find({
       questionId,
       isActive: true,
     }).sort({ order: 1 });
+
+    console.log("✅ Retrieved", allTestCases.length, "test cases");
+    console.log("   Hidden:", allTestCases.filter((tc) => tc.isHidden).length);
+    console.log(
+      "   Visible:",
+      allTestCases.filter((tc) => !tc.isHidden).length,
+    );
 
     if (allTestCases.length === 0) {
       return res.status(400).json({
