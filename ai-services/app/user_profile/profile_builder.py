@@ -119,6 +119,59 @@ TOPIC_WEAKNESS_KEYWORDS = {
 
 
 # ============================================================================
+# MEMORY NORMALIZATION (CRITICAL: Handles mixed formats)
+# ============================================================================
+
+def normalize_memory_chunks(memory_input: Any) -> str:
+    """
+    Normalize memory chunks into a single string, handling all formats.
+    
+    CRITICAL: RAG retriever returns List[str], but this function handles:
+    - List[str] - normal case
+    - List[Dict] - if chunks have metadata
+    - str - already normalized
+    - None - empty
+    
+    Args:
+        memory_input: Memory in any format
+        
+    Returns:
+        Concatenated string safe for text analysis
+    """
+    if not memory_input:
+        return ""
+    
+    # Already a string
+    if isinstance(memory_input, str):
+        return memory_input
+    
+    # List of items
+    if isinstance(memory_input, list):
+        normalized_parts = []
+        for item in memory_input:
+            if isinstance(item, str):
+                normalized_parts.append(item)
+            elif isinstance(item, dict):
+                # Extract text from dict - handle multiple possible keys
+                text = (
+                    item.get("content") or 
+                    item.get("text") or 
+                    item.get("page_content") or
+                    item.get("summary") or
+                    str(item)
+                )
+                normalized_parts.append(str(text))
+            else:
+                # Convert anything else to string
+                normalized_parts.append(str(item))
+        return "\n".join(normalized_parts)
+    
+    # Fallback: convert to string
+    logger.warning(f"Unexpected memory format: {type(memory_input)}")
+    return str(memory_input)
+
+
+# ============================================================================
 # PROFILE BUILDING FUNCTIONS
 # ============================================================================
 
@@ -133,6 +186,10 @@ def derive_mistakes_from_memory(memory_text: str) -> List[str]:
     Returns:
         List of identified mistake patterns
     """
+    # Normalize input defensively
+    if not isinstance(memory_text, str):
+        memory_text = normalize_memory_chunks(memory_text)
+    
     if not memory_text or not memory_text.strip():
         return []
     
@@ -160,6 +217,10 @@ def derive_weak_topics_from_memory(memory_text: str) -> List[str]:
     Returns:
         List of identified weak topics
     """
+    # Normalize input defensively
+    if not isinstance(memory_text, str):
+        memory_text = normalize_memory_chunks(memory_text)
+    
     if not memory_text or not memory_text.strip():
         return []
     
@@ -197,6 +258,10 @@ def extract_recurring_patterns(memory_text: str) -> List[str]:
     Returns:
         List of recurring patterns
     """
+    # Normalize input defensively
+    if not isinstance(memory_text, str):
+        memory_text = normalize_memory_chunks(memory_text)
+    
     if not memory_text or not memory_text.strip():
         return []
     
@@ -230,6 +295,10 @@ def extract_recent_categories(memory_text: str) -> List[str]:
     Returns:
         List of recent categories (max 5)
     """
+    # Normalize input defensively
+    if not isinstance(memory_text, str):
+        memory_text = normalize_memory_chunks(memory_text)
+    
     if not memory_text or not memory_text.strip():
         return []
     
@@ -291,19 +360,26 @@ def build_user_profile(
     """
     logger.info(f"Building user profile for user_id={user_id}")
     
+    # DEFENSIVE: Normalize memory_text if it's not a string
+    if not isinstance(memory_text, str):
+        memory_text = normalize_memory_chunks(memory_text)
+    
     # Derive components from memory
     common_mistakes = derive_mistakes_from_memory(memory_text)
     weak_topics = derive_weak_topics_from_memory(memory_text)
     recurring_patterns = extract_recurring_patterns(memory_text)
     recent_categories = extract_recent_categories(memory_text)
     
-    # Extract stats if provided
+    # Extract stats if provided - DEFENSIVE: handle non-dict input
     total_submissions = None
     success_rate = None
     
-    if submission_stats:
+    if submission_stats and isinstance(submission_stats, dict):
         total_submissions = submission_stats.get("total_submissions")
         success_rate = submission_stats.get("success_rate")
+    elif submission_stats:
+        # submission_stats is not a dict - log warning and skip
+        logger.warning(f"submission_stats has unexpected type: {type(submission_stats)}")
     
     profile = UserProfile(
         user_id=user_id,

@@ -6,7 +6,7 @@ import axios from "axios";
  */
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
-const AI_TIMEOUT_MS = 60000; // 60 seconds for AI processing
+const AI_TIMEOUT_MS = 90000; // 90 seconds for AI processing
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STRUCTURED LOGGING

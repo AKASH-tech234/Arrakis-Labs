@@ -22,6 +22,7 @@ const PageLoader = () => (
 // Lazy-loaded admin pages
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
 const ProblemList = lazy(() => import("../pages/admin/problems/ProblemList"));
+const AdminPOTDScheduler = lazy(() => import("../pages/admin/AdminPOTDScheduler"));
 // Additional pages to be created:
 // const ProblemEditor = lazy(() => import("../pages/admin/problems/ProblemEditor"));
 // const TestCaseManager = lazy(() => import("../pages/admin/problems/TestCaseManager"));
@@ -90,6 +91,9 @@ export const adminRoutes = [
         path: "problems/new",
         element: <PlaceholderPage title="Create Problem" />,
       },
+
+      // POTD
+      { path: "potd", element: withSuspense(AdminPOTDScheduler) },
       {
         path: "problems/:id/edit",
         element: <PlaceholderPage title="Edit Problem" />,

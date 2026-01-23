@@ -202,3 +202,115 @@ body {
     offset-distance: 100%;
   }
 }
+
+/* ============================================
+   LEETCODE-STYLE EDITOR STYLES (ARRAKIS THEME)
+   ============================================ */
+
+/* Resizable horizontal divider */
+.arrakis-divider {
+  position: relative;
+  z-index: 10;
+}
+
+.arrakis-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 40px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 4px,
+    #3D3D3D 4px,
+    #3D3D3D 8px
+  );
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.arrakis-divider:hover::before {
+  opacity: 1;
+}
+
+/* Editor panel */
+.arrakis-editor {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.arrakis-editor-header {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Line numbers styling */
+.line-numbers {
+  counter-reset: line;
+}
+
+/* Code textarea selection - Spice amber */
+.arrakis-editor textarea::selection {
+  background-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Output panel */
+.arrakis-output {
+  min-height: 100px;
+}
+
+/* Smooth transitions for panel resizing */
+.arrakis-panel-transition {
+  transition: width 0.2s ease-out, height 0.2s ease-out, opacity 0.15s ease;
+}
+
+/* Focus mode animation */
+@keyframes editor-expand {
+  from {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.arrakis-editor-expand {
+  animation: editor-expand 0.2s ease-out;
+}
+
+/* Custom scrollbar for editor - Arrakis theme */
+.arrakis-editor ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.arrakis-editor ::-webkit-scrollbar-track {
+  background: #0A0A08;
+}
+
+.arrakis-editor ::-webkit-scrollbar-thumb {
+  background: #1A1814;
+}
+
+.arrakis-editor ::-webkit-scrollbar-thumb:hover {
+  background: #92400E;
+}
+
+.arrakis-editor ::-webkit-scrollbar-corner {
+  background: #0A0A08;
+}
+
+/* Loading spinner animation */
+@keyframes arrakis-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.arrakis-spinner {
+  animation: arrakis-spin 0.8s linear infinite;
+}
+

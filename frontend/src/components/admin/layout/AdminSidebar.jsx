@@ -16,6 +16,7 @@ const navSections = [
     items: [
       { path: "/admin/problems", label: "Problems", icon: "⬡" },
       { path: "/admin/contests", label: "Contests", icon: "◇" },
+      { path: "/admin/potd", label: "POTD Scheduler", icon: "🔥" },
     ],
   },
   {

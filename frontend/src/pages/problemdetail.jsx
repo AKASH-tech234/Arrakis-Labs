@@ -1,5 +1,5 @@
 // src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
@@ -41,10 +41,8 @@ export default function ProblemDetail() {
   const [aiServiceAvailable, setAiServiceAvailable] = useState(null);
   const abortControllerRef = useRef(null);
 
-  // Track last submission details for AI feedback
   const [lastSubmission, setLastSubmission] = useState(null);
 
-  // AI Feedback hook with progressive disclosure
   const {
     feedback,
     loading: feedbackLoading,
@@ -62,14 +60,12 @@ export default function ProblemDetail() {
   const [problemError, setProblemError] = useState("");
   const [problemRaw, setProblemRaw] = useState(null);
 
-  // Check AI service health on mount
   useEffect(() => {
     checkAIHealth().then(setAiServiceAvailable);
   }, []);
 
   useEffect(() => {
     let mounted = true;
-    const controller = new AbortController();
 
     const load = async () => {
       try {
@@ -87,10 +83,10 @@ export default function ProblemDetail() {
     load();
     return () => {
       mounted = false;
-      controller.abort();
     };
   }, [id]);
 
+  // ✅ FIXED: DO NOT REFORMAT CONSTRAINTS
   const problem = useMemo(() => {
     if (!problemRaw) return defaultProblem;
 
@@ -98,13 +94,6 @@ export default function ProblemDetail() {
       Array.isArray(problemRaw.tags) && problemRaw.tags.length > 0
         ? problemRaw.tags[0]
         : "General";
-    const constraints =
-      typeof problemRaw.constraints === "string"
-        ? problemRaw.constraints
-            .split(/\r?\n/)
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
 
     return {
       id: problemRaw._id,
@@ -113,88 +102,26 @@ export default function ProblemDetail() {
       difficulty: problemRaw.difficulty,
       category,
       description: problemRaw.description,
-      constraints,
-      constraintsText: problemRaw.constraints || "",
-      examples: Array.isArray(problemRaw.examples) ? problemRaw.examples : [],
+
+      // 🔥 LeetCode-style constraints (already formatted in API layer)
+      constraints: Array.isArray(problemRaw.constraints)
+        ? problemRaw.constraints
+        : [],
+
+      examples: Array.isArray(problemRaw.examples)
+        ? problemRaw.examples
+        : [],
       testCases: Array.isArray(problemRaw.testCases)
         ? problemRaw.testCases
         : [],
     };
   }, [problemRaw]);
 
-  /**
-   * Format execution result for display
-   */
-  const formatJudgeOutput = ({
-    headerText,
-    statusLabel,
-    passedCount,
-    totalCount,
-    results,
-  }) => {
-    const lines = [headerText];
-
-    if (statusLabel) lines.push(`Status: ${statusLabel}`);
-    if (typeof passedCount === "number" && typeof totalCount === "number") {
-      lines.push(`Passed: ${passedCount}/${totalCount}`);
-    }
-
-    lines.push("\n=== RESULTS ===");
-    (results || []).forEach((r, idx) => {
-      const label = r.label || `Test ${idx + 1}`;
-      const badge = r.passed ? "PASS" : "FAIL";
-      const hiddenSuffix = r.isHidden ? " (hidden)" : "";
-
-      lines.push(`\n[${badge}] ${label}${hiddenSuffix}`);
-      if (!r.isHidden) {
-        if (r.stdin !== undefined) lines.push(`stdin: ${String(r.stdin)}`);
-        if (r.expectedStdout !== undefined)
-          lines.push(`expected: ${String(r.expectedStdout)}`);
-        if (r.actualStdout !== undefined)
-          lines.push(`actual: ${String(r.actualStdout)}`);
-        if (r.stderr) lines.push(`stderr: ${String(r.stderr)}`);
-      }
-
-      if (r.compileError) lines.push("compile_error: true");
-      if (r.timedOut) lines.push("timed_out: true");
-    });
-
-    return lines.join("\n");
-  };
-
-  /**
-   * Trigger AI feedback for a submission
-   * Called for ALL verdicts (accepted, wrong_answer, tle, etc.)
-   * Backend handles auth, context enrichment, and AI service communication
-   */
-  const triggerAIFeedback = async (submissionData) => {
-    if (!aiServiceAvailable) {
-      console.warn("AI service not available, skipping feedback");
-      return;
-    }
-
-    setShowFeedback(true);
-
-    // Backend handles userId, problemCategory, constraints
-    await fetchFeedback({
-      questionId: submissionData.questionId,
-      code: submissionData.code,
-      language: submissionData.language,
-      verdict: submissionData.verdict,
-      errorType: submissionData.errorType,
-    });
-  };
-
-  /**
-   * Execute code via Piston API
-   */
   const runOrSubmit = async (code, language, isSubmit = false) => {
-    // Abort any in-flight request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    // Validate input
     if (!code || !code.trim()) {
       setStatus("error");
       setOutput("No code to run.");
@@ -224,30 +151,16 @@ export default function ProblemDetail() {
         ? await submitQuestion(payload)
         : await runQuestion(payload);
 
-      const headerText = isSubmit
-        ? `Submitted ${language} solution`
-        : `Running ${language} solution`;
-
-      const statusLabel = isSubmit ? data.status : undefined;
       setOutput(
-        formatJudgeOutput({
-          headerText,
-          statusLabel,
-          passedCount: data.passedCount,
-          totalCount: data.totalCount,
-          results: data.results,
-        }),
+        JSON.stringify(data, null, 2)
       );
 
       const isAccepted = isSubmit
         ? data.status === "accepted"
         : !!data.allPassed;
+
       setStatus(isAccepted ? "success" : "error");
 
-      // ========================================
-      // CRITICAL FIX: Trigger AI feedback for ALL submissions
-      // Not just failed ones - accepted submissions get optimization hints
-      // ========================================
       if (isSubmit) {
         const submissionData = {
           questionId: id,
@@ -259,13 +172,10 @@ export default function ProblemDetail() {
 
         setLastSubmission(submissionData);
         setSubmitted(true);
-
-        // Auto-trigger AI feedback for all submissions
         triggerAIFeedback(submissionData);
       }
     } catch (err) {
       if (err.name === "AbortError") {
-        setOutput((prev) => prev || "Cancelled.");
         setStatus("idle");
       } else {
         setOutput(`Error: ${err.message}`);
@@ -278,149 +188,196 @@ export default function ProblemDetail() {
     }
   };
 
-  const handleRun = (code, language) => {
-    runOrSubmit(code, language, false);
-  };
+  const handleRun = (code, language) => runOrSubmit(code, language, false);
+  const handleSubmit = (code, language) => runOrSubmit(code, language, true);
 
-  const handleSubmit = (code, language) => {
-    runOrSubmit(code, language, true);
-  };
+  // Resizable panel state
+  const [panelWidth, setPanelWidth] = useState(50); // percentage
+  const [isDragging, setIsDragging] = useState(false);
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  const [previousWidth, setPreviousWidth] = useState(50);
+  const containerRef = useRef(null);
 
-  const handleRetryFeedback = () => {
-    if (lastSubmission) {
-      triggerAIFeedback(lastSubmission);
+  // Output panel vertical resize state
+  const [outputHeight, setOutputHeight] = useState(180); // pixels
+  const [isOutputDragging, setIsOutputDragging] = useState(false);
+  const editorPanelRef = useRef(null);
+
+  // Handle resize drag
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging || !containerRef.current) return;
+    
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+    
+    // Clamp between 20% and 80%
+    const clampedWidth = Math.min(Math.max(newWidth, 20), 80);
+    
+    requestAnimationFrame(() => {
+      setPanelWidth(clampedWidth);
+    });
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }, []);
+
+  // Attach mouse listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
     }
-  };
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Editor fullscreen controls
+  const handleToggleFullscreen = useCallback(() => {
+    if (!isEditorFullscreen) {
+      setPreviousWidth(panelWidth);
+      setPanelWidth(0);
+    } else {
+      setPanelWidth(previousWidth);
+    }
+    setIsEditorFullscreen(!isEditorFullscreen);
+  }, [isEditorFullscreen, panelWidth, previousWidth]);
+
+  const handleRestoreEditor = useCallback(() => {
+    setPanelWidth(previousWidth || 50);
+    setIsEditorFullscreen(false);
+  }, [previousWidth]);
+
+  // Keyboard shortcut: Esc to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isEditorFullscreen) {
+        handleRestoreEditor();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEditorFullscreen, handleRestoreEditor]);
+
+  // Output panel vertical resize handlers
+  const handleOutputResizeStart = useCallback((e) => {
+    e.preventDefault();
+    setIsOutputDragging(true);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const handleOutputResizeMove = useCallback((e) => {
+    if (!isOutputDragging || !editorPanelRef.current) return;
+    
+    const panel = editorPanelRef.current;
+    const rect = panel.getBoundingClientRect();
+    const newHeight = rect.bottom - e.clientY;
+    
+    // Clamp between 100px and 400px
+    const clampedHeight = Math.min(Math.max(newHeight, 100), 400);
+    
+    requestAnimationFrame(() => {
+      setOutputHeight(clampedHeight);
+    });
+  }, [isOutputDragging]);
+
+  const handleOutputResizeEnd = useCallback(() => {
+    setIsOutputDragging(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }, []);
+
+  // Attach mouse listeners for output panel dragging
+  useEffect(() => {
+    if (isOutputDragging) {
+      window.addEventListener("mousemove", handleOutputResizeMove);
+      window.addEventListener("mouseup", handleOutputResizeEnd);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleOutputResizeMove);
+      window.removeEventListener("mouseup", handleOutputResizeEnd);
+    };
+  }, [isOutputDragging, handleOutputResizeMove, handleOutputResizeEnd]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
       <AppHeader />
 
       <main className="pt-14 h-screen flex flex-col">
-        {/* Breadcrumb */}
-        <div className="border-b border-[#1A1814] px-4 py-2">
-          <div className="max-w-7xl mx-auto flex items-center gap-2">
-            <Link
-              to="/problems"
-              className="text-[#78716C] hover:text-[#E8E4D9] text-xs uppercase tracking-wider transition-colors"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-            >
-              Problems
-            </Link>
-            <span className="text-[#3D3D3D]">/</span>
-            <span
-              className="text-[#E8E4D9] text-xs uppercase tracking-wider"
-              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-            >
-              {loadingProblem ? "Loading..." : problem.title}
-            </span>
-            {/* AI Service Status Indicator */}
-            {aiServiceAvailable !== null && (
-              <span
-                className={`ml-auto text-[10px] px-2 py-0.5 rounded-full ${
-                  aiServiceAvailable
-                    ? "bg-[#22C55E]/10 text-[#22C55E]"
-                    : "bg-[#EF4444]/10 text-[#EF4444]"
-                }`}
-                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-              >
-                AI {aiServiceAvailable ? "Online" : "Offline"}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Main Content - Split View */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Problem Description */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="w-1/2 border-r border-[#1A1814] overflow-auto"
+        <div 
+          ref={containerRef}
+          className="flex-1 flex overflow-hidden relative"
+        >
+          {/* Problem Panel */}
+          <div 
+            className="overflow-auto bg-[#0A0A08] transition-all duration-200 ease-out"
+            style={{ 
+              width: `${panelWidth}%`,
+              minWidth: panelWidth > 0 ? "200px" : "0",
+              opacity: panelWidth < 5 ? 0 : 1,
+              visibility: panelWidth < 5 ? "hidden" : "visible",
+            }}
           >
             {loadingProblem ? (
-              <div className="p-6">
-                <p
-                  className="text-[#78716C] text-sm uppercase tracking-wider"
-                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-                >
-                  Loading problem...
-                </p>
-              </div>
+              <div className="p-6 text-[#78716C]">Loading problem...</div>
             ) : problemError ? (
-              <div className="p-6">
-                <p
-                  className="text-[#92400E] text-sm uppercase tracking-wider"
-                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-                >
-                  {problemError}
-                </p>
-              </div>
+              <div className="p-6 text-[#92400E]">{problemError}</div>
             ) : (
               <ProblemDescription problem={problem} />
             )}
-          </motion.div>
+          </div>
 
-          {/* Right Panel - Editor + Output + Feedback */}
-          <div className="w-1/2 flex">
-            {/* Editor Section */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className={`flex flex-col ${showFeedback ? "w-1/2" : "w-full"}`}
-            >
-              {/* Code Editor */}
-              <div className="flex-1">
-                <CodeEditor onRun={handleRun} onSubmit={handleSubmit} />
-              </div>
+          {/* Resizable Divider */}
+          <div
+            onMouseDown={handleMouseDown}
+            className={`arrakis-divider w-1 cursor-col-resize flex-shrink-0 relative group transition-colors duration-150 ${
+              isDragging ? "bg-[#F59E0B]" : "bg-[#1A1814] hover:bg-[#92400E]/50"
+            }`}
+            style={{ 
+              display: panelWidth < 5 || panelWidth > 95 ? "none" : "block" 
+            }}
+          >
+            {/* Drag handle indicator */}
+            <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[#F59E0B]/10" />
+          </div>
 
-              {/* Output Panel */}
-              <OutputPanel output={output} status={status} />
-
-              {/* Manual AI Feedback Toggle (if auto-trigger failed or user closed panel) */}
-              {submitted && lastSubmission && !showFeedback && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="border-t border-[#1A1814] px-4 py-3"
-                >
-                  <button
-                    onClick={() => triggerAIFeedback(lastSubmission)}
-                    disabled={!aiServiceAvailable}
-                    className="w-full py-2 border border-[#92400E]/30 text-[#D97706] hover:bg-[#92400E]/10 transition-colors duration-200 text-xs uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-                  >
-                    {status === "success"
-                      ? "View AI Optimization Tips"
-                      : "Get AI Feedback"}
-                  </button>
-                </motion.div>
-              )}
-            </motion.div>
-
-            {/* AI Feedback Panel - Progressive Disclosure */}
-            {showFeedback && (
-              <div className="w-1/2">
-                <AIFeedbackPanelV2
-                  isVisible={showFeedback}
-                  onClose={() => {
-                    setShowFeedback(false);
-                  }}
-                  loading={feedbackLoading}
-                  error={feedbackError}
-                  feedback={feedback}
-                  onRevealNextHint={revealNextHint}
-                  hasMoreHints={hasMoreHints}
-                  nextHintLabel={nextHintLabel}
-                  onToggleExplanation={toggleExplanation}
-                  showFullExplanation={showFullExplanation}
-                  onRetry={handleRetryFeedback}
-                />
-              </div>
-            )}
+          {/* Editor Panel */}
+          <div 
+            ref={editorPanelRef}
+            className="flex flex-col overflow-hidden bg-[#0A0A08] transition-all duration-200 ease-out"
+            style={{ 
+              width: `${100 - panelWidth}%`,
+              flexGrow: isEditorFullscreen ? 1 : 0,
+            }}
+          >
+            <div className="flex-1 overflow-hidden">
+              <CodeEditor 
+                onRun={handleRun} 
+                onSubmit={handleSubmit}
+                isFullscreen={isEditorFullscreen}
+                onToggleFullscreen={handleToggleFullscreen}
+                onRestore={handleRestoreEditor}
+              />
+            </div>
+            <OutputPanel 
+              output={output} 
+              status={status} 
+              height={outputHeight}
+              onResizeStart={handleOutputResizeStart}
+            />
           </div>
         </div>
       </main>

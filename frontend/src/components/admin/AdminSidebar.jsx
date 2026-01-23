@@ -12,6 +12,8 @@ import {
   Shield,
   ClipboardList,
   Trophy,
+  Flame,
+  Calendar,
 } from "lucide-react";
 
 const AdminSidebar = () => {
@@ -34,6 +36,11 @@ const AdminSidebar = () => {
       to: "/admin/questions",
       icon: FileText,
       label: "Questions",
+    },
+    {
+      to: "/admin/potd",
+      icon: Flame,
+      label: "POTD Scheduler",
     },
     {
       to: "/admin/contests",

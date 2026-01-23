@@ -24,10 +24,12 @@ def log_event(event: str, **kwargs):
 
 log_event("module_loaded", module="routes")
 
-# -------------------------
+# ═══════════════════════════════════════════════════════════════════════════════
 # Configuration
-# -------------------------
-MAX_REQUEST_SECONDS = 30
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPORTANT: This timeout MUST match SYNC_TOTAL_BUDGET_SECONDS in sync_workflow.py
+# The workflow needs 60s for quality-first agent completions (no skipping)
+MAX_REQUEST_SECONDS = 65  # 60s workflow + 5s buffer for I/O
 log_event("config_loaded", max_request_seconds=MAX_REQUEST_SECONDS)
 
 # -------------------------
@@ -94,7 +96,33 @@ def health_check():
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "version": "1.0.0"
     }
-
+#rag status
+@router.get("/ai/rag-stats/{user_id}")
+def get_rag_stats(user_id: str):
+    """Get RAG usage statistics for debugging"""
+    
+    from app.rag.monitoring import rag_monitor
+    from app.rag.retriever import retrieve_user_memory
+    
+    # Get stored statistics
+    stats = rag_monitor.get_user_stats(user_id)
+    
+    # Test retrieval
+    test_results = retrieve_user_memory(
+        user_id=user_id,
+        query="array problem mistake",
+        k=5
+    )
+    
+    return {
+        "user_id": user_id,
+        "stats": stats,
+        "test_retrieval": {
+            "query": "array problem mistake",
+            "results_count": len(test_results),
+            "sample_content": test_results[0][:200] if test_results else None
+        }
+    }
 # -------------------------
 # Helper: Build Progressive Hints
 # -------------------------
@@ -242,6 +270,17 @@ def generate_ai_feedback(
     start_time = time.time()
     submission_id = f"sub_{uuid.uuid4().hex[:12]}"
     
+    print(f"\n{'='*80}")
+    print(f"🎯 NEW FEEDBACK REQUEST")
+    print(f"{'='*80}")
+    print(f"📋 Submission ID: {submission_id}")
+    print(f"👤 User ID: {payload.user_id}")
+    print(f"🎲 Problem ID: {payload.problem_id}")
+    print(f"📊 Verdict: {payload.verdict}")
+    print(f"💻 Language: {payload.language}")
+    print(f"🏷️  Category: {payload.problem_category}")
+    print(f"{'='*80}\n")
+    
     log_event("feedback_request_received",
         submission_id=submission_id,
         user_id=payload.user_id,
@@ -257,6 +296,7 @@ def generate_ai_feedback(
         state: Dict[str, Any] = payload.model_dump()
         state["submission_id"] = submission_id
         
+        print(f"🔄 Starting SYNC workflow...")
         log_event("workflow_starting",
             submission_id=submission_id,
             workflow="sync"
@@ -279,6 +319,11 @@ def generate_ai_feedback(
         detected_pattern: Optional[str] = sync_result.get("detected_pattern")
         hint: Optional[str] = sync_result.get("hint")
         
+        print(f"\n✅ SYNC workflow completed in {elapsed:.2f}s")
+        print(f"   └─ Feedback: {'✓' if feedback else '✗'}")
+        print(f"   └─ Pattern: {'✓' if detected_pattern else '✗'}")
+        print(f"   └─ Hint: {'✓' if hint else '✗'}")
+        
         log_event("sync_workflow_completed",
             submission_id=submission_id,
             has_feedback=feedback is not None,
@@ -290,6 +335,7 @@ def generate_ai_feedback(
         # -------------------------
         # ASYNC WORKFLOW (background)
         # -------------------------
+        print(f"\n🚀 Scheduling ASYNC workflow (background)...")
         log_event("async_workflow_scheduling", submission_id=submission_id)
         background_tasks.add_task(async_workflow.invoke, sync_result)
 
@@ -303,10 +349,11 @@ def generate_ai_feedback(
             detected_pattern=detected_pattern
         )
         
-        # Determine feedback type
-        if payload.verdict == "accepted":
+        # Determine feedback type (case-insensitive verdict check)
+        verdict_lower = payload.verdict.lower() if payload.verdict else ""
+        if verdict_lower == "accepted":
             feedback_type = "success_feedback"
-        elif payload.verdict in ["time_limit_exceeded", "tle"]:
+        elif verdict_lower in ["time_limit_exceeded", "tle"]:
             feedback_type = "optimization"
         else:
             feedback_type = "error_feedback"
@@ -326,8 +373,15 @@ def generate_ai_feedback(
         )
         
         # Add optimization tips for accepted submissions
-        if payload.verdict == "accepted" and feedback:
+        if verdict_lower == "accepted" and feedback:
             response.optimization_tips = [feedback.improvement_hint] if feedback.improvement_hint else []
+        
+        print(f"\n📤 Sending response:")
+        print(f"   └─ Success: {response.success}")
+        print(f"   └─ Feedback Type: {feedback_type}")
+        print(f"   └─ Hints Count: {len(response.hints)}")
+        print(f"   └─ Total Time: {elapsed:.2f}s")
+        print(f"{'='*80}\n")
         
         log_event("response_sent",
             submission_id=submission_id,

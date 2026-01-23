@@ -17,3 +17,14 @@ beautifulsoup4
 sentence_transformers
 langgraph
 pydantic
+redis
+pymongo
+motor
+httpx
+langchain_google_genai
+langchain_ollama
+langchain_chroma
+pytest
+pytest-asyncio
+pytest-cov
+httpx

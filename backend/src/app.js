@@ -17,6 +17,8 @@ import adminContestRoutes from "./routes/adminContestRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import exportRoutes from "./routes/exportRoutes.js";
+import potdRoutes from "./routes/potdRoutes.js";
+import adminPOTDRoutes from "./routes/adminPOTDRoutes.js";
 
 import {
   runCode,
@@ -36,6 +38,7 @@ import { protect } from "./middleware/authMiddleware.js";
 import leaderboardService from "./services/leaderboardService.js";
 import wsServer from "./services/websocketServer.js";
 import contestScheduler from "./services/contestScheduler.js";
+import potdScheduler from "./services/potdScheduler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -127,8 +130,16 @@ const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI missing");
 
+  console.log("\n" + "=".repeat(80));
+  console.log("🔌 Connecting to MongoDB...");
+  console.log("   URI:", uri.substring(0, 50) + "...");
+
   await mongoose.connect(uri);
-  console.log("✓ MongoDB connected");
+
+  console.log("✅ MongoDB Connected Successfully");
+  console.log("   Database:", mongoose.connection.db.databaseName);
+  console.log("   Host:", mongoose.connection.host);
+  console.log("=".repeat(80) + "\n");
 };
 
 /* ======================================================
@@ -146,10 +157,12 @@ app.get("/api/health", (_, res) =>
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/contests", adminContestRoutes);
+app.use("/api/admin/potd", adminPOTDRoutes);
 app.use("/api/contests", contestRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/potd", potdRoutes);
 
 // Serve generated exports (PDFs)
 app.use(
@@ -200,9 +213,11 @@ const startServer = async () => {
 
   wsServer.initialize(server);
   await contestScheduler.initialize();
+  await potdScheduler.initialize();
 
   const shutdown = async () => {
     contestScheduler.shutdown();
+    potdScheduler.shutdown();
     wsServer.close();
     await leaderboardService.disconnect();
     server.close(() => mongoose.connection.close());

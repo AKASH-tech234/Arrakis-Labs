@@ -142,8 +142,12 @@ export const requestAIFeedback = async (req, res) => {
 
     // Get question details for context
     log.debug("Fetching question details", { questionId });
+    console.log("📖 Fetching question from MongoDB:", questionId);
+
     const question = await Question.findById(questionId).lean();
+
     if (!question) {
+      console.log("❌ Question not found in MongoDB:", questionId);
       log.warn("Question not found", { questionId });
       return res.status(404).json({
         success: false,

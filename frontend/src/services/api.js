@@ -1,32 +1,27 @@
 import axios from "axios";
+import { leetCodeConstraints } from "../lib/leetcodeConstraints";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Cookie-based auth: tokens are stored as HttpOnly cookies by the backend.
-// Frontend must send credentials and should not store tokens in localStorage.
+// Cookie-based auth
 const clearToken = () => {
-  // There is no client-side token to clear (HttpOnly cookie).
-  // Keep this helper to preserve existing call sites and trigger UI logout.
   window.dispatchEvent(new CustomEvent("auth:logout"));
 };
 
-// Axios client (used by contestApi and any axios-style consumers)
+// Axios client
 const apiClient = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
-apiClient.interceptors.request.use((config) => {
-  return config;
-});
+apiClient.interceptors.request.use((config) => config);
 
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
       clearToken();
-      window.dispatchEvent(new CustomEvent("auth:logout"));
     }
     return Promise.reject(error);
   },
@@ -43,7 +38,6 @@ async function request(path, { method = "GET", body, signal } = {}) {
     signal,
   });
 
-  // Auto-clear token on 401 (expired/invalid)
   if (response.status === 401) {
     clearToken();
   }
@@ -55,6 +49,10 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
   return response.json().catch(() => ({}));
 }
+
+/* ======================================================
+   QUESTIONS (🔥 LEETCODE CONSTRAINTS APPLIED HERE)
+====================================================== */
 
 export async function getPublicQuestions({
   page = 1,
@@ -69,20 +67,61 @@ export async function getPublicQuestions({
   if (search) params.set("search", search);
 
   const qs = params.toString();
-  const data = await request(`/questions${qs ? `?${qs}` : ""}`, {
-    method: "GET",
+  const data = await request(`/questions${qs ? `?${qs}` : ""}`);
+
+  // Safely parse constraints using leetCodeConstraints (keeps original on error)
+  const questions = (data.data || []).map((q) => {
+    let constraintsOut = q.constraints || [];
+    try {
+      if (Array.isArray(q.constraints)) {
+        constraintsOut = leetCodeConstraints(q.constraints);
+      } else if (typeof q.constraints === "string") {
+        constraintsOut = leetCodeConstraints([q.constraints]);
+      }
+    } catch (err) {
+      console.error("Constraint parsing failed for question:", q.id, err);
+      constraintsOut = q.constraints || [];
+    }
+
+    return {
+      ...q,
+      constraints: constraintsOut,
+    };
   });
+
   return {
-    questions: data.data || [],
+    questions,
     pagination: data.pagination,
   };
 }
 
 export async function getPublicQuestion(questionId) {
   if (!questionId) throw new Error("questionId is required");
-  const data = await request(`/questions/${questionId}`, { method: "GET" });
-  return data.data;
+
+  const data = await request(`/questions/${questionId}`);
+
+  // Safely parse constraints for single question
+  let constraintsOut = data.data?.constraints || [];
+  try {
+    if (Array.isArray(data.data?.constraints)) {
+      constraintsOut = leetCodeConstraints(data.data.constraints);
+    } else if (typeof data.data?.constraints === "string") {
+      constraintsOut = leetCodeConstraints([data.data.constraints]);
+    }
+  } catch (err) {
+    console.error("Constraint parsing failed for question detail:", data.data?.id, err);
+    constraintsOut = data.data?.constraints || [];
+  }
+
+  return {
+    ...data.data,
+    constraints: constraintsOut,
+  };
 }
+
+/* ======================================================
+   RUN / SUBMIT
+====================================================== */
 
 export async function runQuestion({ questionId, code, language, signal }) {
   const data = await request("/run", {
@@ -105,23 +144,16 @@ export async function submitQuestion({ questionId, code, language, signal }) {
 export async function getMySubmissions({ questionId } = {}) {
   const params = new URLSearchParams();
   if (questionId) params.set("questionId", questionId);
-  const qs = params.toString();
 
-  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, {
-    method: "GET",
-  });
+  const qs = params.toString();
+  const data = await request(`/submissions${qs ? `?${qs}` : ""}`);
   return data.data || [];
 }
 
-/**
- * Execute code via the backend Piston proxy
- * @param {Object} params
- * @param {string} params.code - Source code to execute
- * @param {string} params.language - Language identifier (python, javascript, java, cpp)
- * @param {string} [params.stdin] - Optional stdin input
- * @param {AbortSignal} [params.signal] - Optional abort signal
- * @returns {Promise<{stdout: string, stderr: string, output: string, exitCode: number}>}
- */
+/* ======================================================
+   CODE EXECUTION
+====================================================== */
+
 export async function executeCode({ code, language, stdin = "", signal }) {
   const data = await request("/execute", {
     method: "POST",
@@ -137,24 +169,26 @@ export async function executeCode({ code, language, stdin = "", signal }) {
   };
 }
 
+/* ======================================================
+   AUTH
+====================================================== */
+
 export async function signup({ name, email, password, passwordConfirm }) {
-  const data = await request("/auth/signup", {
+  return request("/auth/signup", {
     method: "POST",
     body: { name, email, password, passwordConfirm },
   });
-  return data;
 }
 
 export async function signin({ email, password }) {
-  const data = await request("/auth/signin", {
+  return request("/auth/signin", {
     method: "POST",
     body: { email, password },
   });
-  return data;
 }
 
 export async function getMe() {
-  const data = await request("/auth/me", { method: "GET" });
+  const data = await request("/auth/me");
   return data.user;
 }
 
@@ -167,29 +201,18 @@ export async function signout() {
 }
 
 export async function googleAuth(token) {
+  if (!token) throw new Error("Google token is required");
   const data = await request("/auth/google", {
     method: "POST",
     body: { token },
   });
-
-  if (data?.token) setToken(data.token);
   return data;
 }
+
 /* ======================================================
-   AI FEEDBACK API
+   AI FEEDBACK
 ====================================================== */
 
-/**
- * Request AI feedback for a failed submission
- * @param {Object} params
- * @param {string} params.questionId - The question ID
- * @param {string} params.code - The submitted code
- * @param {string} params.language - Programming language
- * @param {string} params.verdict - Submission verdict (wrong_answer, runtime_error, etc.)
- * @param {string} [params.errorType] - Type of error (optional)
- * @param {AbortSignal} [params.signal] - Optional abort signal
- * @returns {Promise<Object>} AI feedback response
- */
 export async function getAIFeedback({
   questionId,
   code,
@@ -198,56 +221,32 @@ export async function getAIFeedback({
   errorType,
   signal,
 }) {
-  if (!questionId) throw new Error("questionId is required");
-  if (!code) throw new Error("code is required");
-  if (!language) throw new Error("language is required");
-  if (!verdict) throw new Error("verdict is required");
-
   const data = await request("/ai/feedback", {
     method: "POST",
     body: { questionId, code, language, verdict, errorType },
     signal,
   });
-
   return data.data;
 }
 
-/**
- * Get AI learning summary for an accepted submission
- * @param {Object} params
- * @param {string} params.questionId - The question ID
- * @param {string} params.code - The submitted code
- * @param {string} params.language - Programming language
- * @param {AbortSignal} [params.signal] - Optional abort signal
- * @returns {Promise<Object>} AI learning summary response
- */
 export async function getAILearningSummary({
   questionId,
   code,
   language,
   signal,
 }) {
-  if (!questionId) throw new Error("questionId is required");
-  if (!code) throw new Error("code is required");
-  if (!language) throw new Error("language is required");
-
   const data = await request("/ai/summary", {
     method: "POST",
     body: { questionId, code, language },
     signal,
   });
-
   return data.data;
 }
 
-/**
- * Get user's submission history
- * @param {Object} params
- * @param {string} [params.userId] - User ID (optional, uses auth)
- * @param {number} [params.limit] - Max submissions to return
- * @param {AbortSignal} [params.signal] - Optional abort signal
- * @returns {Promise<Array>} Array of submission records
- */
+/* ======================================================
+   SUBMISSIONS
+====================================================== */
+
 export async function getSubmissionHistory({
   userId,
   limit = 50,
@@ -258,14 +257,9 @@ export async function getSubmissionHistory({
   if (limit) params.set("limit", String(limit));
 
   const qs = params.toString();
-  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, {
-    method: "GET",
-    signal,
-  });
-
+  const data = await request(`/submissions${qs ? `?${qs}` : ""}`, { signal });
   return data.data || [];
 }
 
 export { clearToken };
-
 export default apiClient;
