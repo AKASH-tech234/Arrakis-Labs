@@ -1,5 +1,5 @@
 // src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
@@ -191,25 +191,193 @@ export default function ProblemDetail() {
   const handleRun = (code, language) => runOrSubmit(code, language, false);
   const handleSubmit = (code, language) => runOrSubmit(code, language, true);
 
+  // Resizable panel state
+  const [panelWidth, setPanelWidth] = useState(50); // percentage
+  const [isDragging, setIsDragging] = useState(false);
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  const [previousWidth, setPreviousWidth] = useState(50);
+  const containerRef = useRef(null);
+
+  // Output panel vertical resize state
+  const [outputHeight, setOutputHeight] = useState(180); // pixels
+  const [isOutputDragging, setIsOutputDragging] = useState(false);
+  const editorPanelRef = useRef(null);
+
+  // Handle resize drag
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging || !containerRef.current) return;
+    
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+    
+    // Clamp between 20% and 80%
+    const clampedWidth = Math.min(Math.max(newWidth, 20), 80);
+    
+    requestAnimationFrame(() => {
+      setPanelWidth(clampedWidth);
+    });
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }, []);
+
+  // Attach mouse listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Editor fullscreen controls
+  const handleToggleFullscreen = useCallback(() => {
+    if (!isEditorFullscreen) {
+      setPreviousWidth(panelWidth);
+      setPanelWidth(0);
+    } else {
+      setPanelWidth(previousWidth);
+    }
+    setIsEditorFullscreen(!isEditorFullscreen);
+  }, [isEditorFullscreen, panelWidth, previousWidth]);
+
+  const handleRestoreEditor = useCallback(() => {
+    setPanelWidth(previousWidth || 50);
+    setIsEditorFullscreen(false);
+  }, [previousWidth]);
+
+  // Keyboard shortcut: Esc to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isEditorFullscreen) {
+        handleRestoreEditor();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEditorFullscreen, handleRestoreEditor]);
+
+  // Output panel vertical resize handlers
+  const handleOutputResizeStart = useCallback((e) => {
+    e.preventDefault();
+    setIsOutputDragging(true);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const handleOutputResizeMove = useCallback((e) => {
+    if (!isOutputDragging || !editorPanelRef.current) return;
+    
+    const panel = editorPanelRef.current;
+    const rect = panel.getBoundingClientRect();
+    const newHeight = rect.bottom - e.clientY;
+    
+    // Clamp between 100px and 400px
+    const clampedHeight = Math.min(Math.max(newHeight, 100), 400);
+    
+    requestAnimationFrame(() => {
+      setOutputHeight(clampedHeight);
+    });
+  }, [isOutputDragging]);
+
+  const handleOutputResizeEnd = useCallback(() => {
+    setIsOutputDragging(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }, []);
+
+  // Attach mouse listeners for output panel dragging
+  useEffect(() => {
+    if (isOutputDragging) {
+      window.addEventListener("mousemove", handleOutputResizeMove);
+      window.addEventListener("mouseup", handleOutputResizeEnd);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleOutputResizeMove);
+      window.removeEventListener("mouseup", handleOutputResizeEnd);
+    };
+  }, [isOutputDragging, handleOutputResizeMove, handleOutputResizeEnd]);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
       <AppHeader />
 
       <main className="pt-14 h-screen flex flex-col">
-        <div className="flex-1 flex overflow-hidden">
-          <motion.div className="w-1/2 border-r border-[#1A1814] overflow-auto">
+        <div 
+          ref={containerRef}
+          className="flex-1 flex overflow-hidden relative"
+        >
+          {/* Problem Panel */}
+          <div 
+            className="overflow-auto bg-[#0A0A08] transition-all duration-200 ease-out"
+            style={{ 
+              width: `${panelWidth}%`,
+              minWidth: panelWidth > 0 ? "200px" : "0",
+              opacity: panelWidth < 5 ? 0 : 1,
+              visibility: panelWidth < 5 ? "hidden" : "visible",
+            }}
+          >
             {loadingProblem ? (
-              <div className="p-6">Loading problem...</div>
+              <div className="p-6 text-[#78716C]">Loading problem...</div>
             ) : problemError ? (
-              <div className="p-6">{problemError}</div>
+              <div className="p-6 text-[#92400E]">{problemError}</div>
             ) : (
               <ProblemDescription problem={problem} />
             )}
-          </motion.div>
+          </div>
 
-          <div className="w-1/2 flex flex-col">
-            <CodeEditor onRun={handleRun} onSubmit={handleSubmit} />
-            <OutputPanel output={output} status={status} />
+          {/* Resizable Divider */}
+          <div
+            onMouseDown={handleMouseDown}
+            className={`arrakis-divider w-1 cursor-col-resize flex-shrink-0 relative group transition-colors duration-150 ${
+              isDragging ? "bg-[#F59E0B]" : "bg-[#1A1814] hover:bg-[#92400E]/50"
+            }`}
+            style={{ 
+              display: panelWidth < 5 || panelWidth > 95 ? "none" : "block" 
+            }}
+          >
+            {/* Drag handle indicator */}
+            <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[#F59E0B]/10" />
+          </div>
+
+          {/* Editor Panel */}
+          <div 
+            ref={editorPanelRef}
+            className="flex flex-col overflow-hidden bg-[#0A0A08] transition-all duration-200 ease-out"
+            style={{ 
+              width: `${100 - panelWidth}%`,
+              flexGrow: isEditorFullscreen ? 1 : 0,
+            }}
+          >
+            <div className="flex-1 overflow-hidden">
+              <CodeEditor 
+                onRun={handleRun} 
+                onSubmit={handleSubmit}
+                isFullscreen={isEditorFullscreen}
+                onToggleFullscreen={handleToggleFullscreen}
+                onRestore={handleRestoreEditor}
+              />
+            </div>
+            <OutputPanel 
+              output={output} 
+              status={status} 
+              height={outputHeight}
+              onResizeStart={handleOutputResizeStart}
+            />
           </div>
         </div>
       </main>
