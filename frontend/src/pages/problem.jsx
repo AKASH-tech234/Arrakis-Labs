@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
 import ProblemList from "../components/problem/ProblemList";
 import ProblemFilters from "../components/problem/ProblemFilters";
+import POTDBanner from "../components/potd/POTDBanner";
 import { getPublicQuestions } from "../services/api";
 
 export default function ProblemLibrary() {
@@ -108,6 +109,15 @@ export default function ProblemLibrary() {
               setSelectedCategory={setSelectedCategory}
               categories={categories}
             />
+          </motion.div>
+
+          {/* POTD Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+          >
+            <POTDBanner />
           </motion.div>
 
           {/* Problem List */}
