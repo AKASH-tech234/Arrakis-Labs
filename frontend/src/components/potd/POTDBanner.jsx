@@ -19,23 +19,27 @@ export default function POTDBanner() {
   useEffect(() => {
     if (!potd) return;
 
+    // Safely get endTime from nested structure
+    const endTime = potd?.potd?.endTime || potd?.endTime;
+    if (!endTime) return;
+
     // Initial calculation
     const now = new Date();
-    const end = new Date(potd.potd.endTime);
+    const end = new Date(endTime);
     const initial = Math.max(0, end - now);
     setTimeRemaining(initial);
 
     // Debug logging
-    console.log('POTD Timer Debug:', {
+    console.log("POTD Timer Debug:", {
       currentTime: now.toISOString(),
       endTime: end.toISOString(),
       remainingMs: initial,
-      remainingHours: (initial / (1000 * 60 * 60)).toFixed(2)
+      remainingHours: (initial / (1000 * 60 * 60)).toFixed(2),
     });
 
     const timer = setInterval(() => {
       const now = new Date();
-      const end = new Date(potd.potd.endTime);
+      const end = new Date(endTime);
       const remaining = Math.max(0, end - now);
       setTimeRemaining(remaining);
 
@@ -87,15 +91,17 @@ export default function POTDBanner() {
 
   if (loading) {
     return (
-      <div 
+      <div
         className="mb-8 rounded-lg p-6 border"
-        style={{ 
+        style={{
           backgroundColor: "rgba(248, 168, 68, 0.05)",
-          borderColor: "rgba(248, 168, 68, 0.2)"
+          borderColor: "rgba(248, 168, 68, 0.2)",
         }}
       >
         <div className="h-24 flex items-center justify-center">
-          <div className="animate-pulse text-[#A29A8C]">Loading Problem of the Day...</div>
+          <div className="animate-pulse text-[#A29A8C]">
+            Loading Problem of the Day...
+          </div>
         </div>
       </div>
     );
@@ -103,23 +109,25 @@ export default function POTDBanner() {
 
   if (!potd) {
     return (
-      <div 
+      <div
         className="mb-8 rounded-lg p-6 border"
-        style={{ 
+        style={{
           backgroundColor: "rgba(248, 168, 68, 0.05)",
-          borderColor: "rgba(248, 168, 68, 0.2)"
+          borderColor: "rgba(248, 168, 68, 0.2)",
         }}
       >
         <div className="flex items-center gap-3">
           <Flame className="w-6 h-6" style={{ color: "#F8A844" }} />
           <div>
-            <h3 
+            <h3
               className="text-[#E8E4D9] text-lg font-bold tracking-wider uppercase"
-              style={{ fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif" }}
+              style={{
+                fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif",
+              }}
             >
               Problem of the Day
             </h3>
-            <p 
+            <p
               className="text-[#A29A8C] text-sm tracking-wide mt-1"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
@@ -131,15 +139,49 @@ export default function POTDBanner() {
     );
   }
 
-  const { problem } = potd.potd;
-  const userProgress = potd.userProgress;
+  // Safely extract problem data with fallbacks
+  const problem = potd?.potd?.problem || potd?.problem || null;
+  const userProgress = potd?.userProgress || null;
+
+  // Handle case where problem data is missing
+  if (!problem) {
+    return (
+      <div
+        className="mb-8 rounded-lg p-6 border"
+        style={{
+          backgroundColor: "rgba(248, 168, 68, 0.05)",
+          borderColor: "rgba(248, 168, 68, 0.2)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <Flame className="w-6 h-6" style={{ color: "#F8A844" }} />
+          <div>
+            <h3
+              className="text-[#E8E4D9] text-lg font-bold tracking-wider uppercase"
+              style={{
+                fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif",
+              }}
+            >
+              Problem of the Day
+            </h3>
+            <p
+              className="text-[#A29A8C] text-sm tracking-wide mt-1"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Problem data unavailable. Please refresh the page.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div 
+    <div
       className="mb-8 rounded-lg p-6 border transition-all duration-300 hover:shadow-lg"
-      style={{ 
+      style={{
         backgroundColor: "rgba(248, 168, 68, 0.08)",
-        borderColor: "rgba(248, 168, 68, 0.3)"
+        borderColor: "rgba(248, 168, 68, 0.3)",
       }}
     >
       {/* Header */}
@@ -147,13 +189,15 @@ export default function POTDBanner() {
         <div className="flex items-center gap-3">
           <Flame className="w-6 h-6" style={{ color: "#F8A844" }} />
           <div>
-            <h3 
+            <h3
               className="text-[#E8E4D9] text-lg font-bold tracking-wider uppercase"
-              style={{ fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif" }}
+              style={{
+                fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif",
+              }}
             >
               Problem of the Day
             </h3>
-            <p 
+            <p
               className="text-[#A29A8C] text-xs tracking-wide"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
@@ -161,15 +205,15 @@ export default function POTDBanner() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {/* Timer */}
-          <div 
+          <div
             className="flex items-center gap-2 px-3 py-1.5 rounded"
             style={{ backgroundColor: "rgba(10, 10, 8, 0.6)" }}
           >
             <Clock className="w-4 h-4" style={{ color: "#A29A8C" }} />
-            <span 
+            <span
               className="font-mono text-sm"
               style={{ color: "#F8A844", fontFamily: "'Rajdhani', monospace" }}
             >
@@ -179,9 +223,17 @@ export default function POTDBanner() {
 
           {/* User Status */}
           {userProgress?.solved && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded"
+              style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}
+            >
               <Trophy className="w-4 h-4" style={{ color: "#10B981" }} />
-              <span className="text-sm font-medium" style={{ color: "#10B981" }}>Solved</span>
+              <span
+                className="text-sm font-medium"
+                style={{ color: "#10B981" }}
+              >
+                Solved
+              </span>
             </div>
           )}
         </div>
@@ -190,26 +242,23 @@ export default function POTDBanner() {
       {/* Problem Details */}
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <Link 
-            to={`/problems/${problem._id}?potd=true`}
-            className="group"
-          >
-            <h4 
+          <Link to={`/problems/${problem._id}?potd=true`} className="group">
+            <h4
               className="text-[#E8E4D9] text-xl font-semibold mb-2 group-hover:text-[#F8A844] transition-colors"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
               {problem.title}
             </h4>
           </Link>
-          
+
           <div className="flex items-center gap-3 flex-wrap">
             {/* Difficulty Badge */}
-            <span 
+            <span
               className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider"
-              style={{ 
+              style={{
                 backgroundColor: `${getDifficultyColor(problem.difficulty)}20`,
                 color: getDifficultyColor(problem.difficulty),
-                fontFamily: "'Rajdhani', system-ui, sans-serif"
+                fontFamily: "'Rajdhani', system-ui, sans-serif",
               }}
             >
               {problem.difficulty}
@@ -220,10 +269,10 @@ export default function POTDBanner() {
               <span
                 key={tag}
                 className="px-2.5 py-1 rounded text-xs tracking-wide"
-                style={{ 
+                style={{
                   backgroundColor: "rgba(162, 154, 140, 0.1)",
                   color: "#A29A8C",
-                  fontFamily: "'Rajdhani', system-ui, sans-serif"
+                  fontFamily: "'Rajdhani', system-ui, sans-serif",
                 }}
               >
                 {tag}
@@ -231,14 +280,20 @@ export default function POTDBanner() {
             ))}
 
             {/* Attempts Counter */}
-            {userProgress && !userProgress.solved && userProgress.attempts > 0 && (
-              <span 
-                className="text-xs"
-                style={{ color: "#A29A8C", fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-              >
-                {userProgress.attempts} attempt{userProgress.attempts !== 1 ? "s" : ""}
-              </span>
-            )}
+            {userProgress &&
+              !userProgress.solved &&
+              userProgress.attempts > 0 && (
+                <span
+                  className="text-xs"
+                  style={{
+                    color: "#A29A8C",
+                    fontFamily: "'Rajdhani', system-ui, sans-serif",
+                  }}
+                >
+                  {userProgress.attempts} attempt
+                  {userProgress.attempts !== 1 ? "s" : ""}
+                </span>
+              )}
           </div>
         </div>
 
@@ -246,9 +301,9 @@ export default function POTDBanner() {
         <Link
           to={`/problems/${problem._id}?potd=true`}
           className="ml-6 flex items-center gap-2 px-6 py-3 rounded transition-all duration-200 group"
-          style={{ 
+          style={{
             backgroundColor: "#F8A844",
-            fontFamily: "'Rajdhani', system-ui, sans-serif"
+            fontFamily: "'Rajdhani', system-ui, sans-serif",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = "#E69735";
