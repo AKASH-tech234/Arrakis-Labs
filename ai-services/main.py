@@ -59,11 +59,29 @@ logging.basicConfig(
 
 logger = StructuredLogger("main")
 
+print("\n" + "="*80)
+print("🚀 MENTAT TRIALS AI SERVICE")
+print("="*80)
+print(f"📅 Starting at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+print("="*80 + "\n")
+
 logger.info("service_startup", message="STARTING MENTAT TRIALS AI SERVICE")
 
 from app.api.routes import router
 
 logger.info("module_loaded", module="routes")
+
+# Initialize MongoDB connection
+print("🔌 Initializing connections...")
+from app.db.mongodb import mongo_client
+try:
+    mongo_connected = mongo_client.connect()
+    if mongo_connected:
+        print("✅ MongoDB connection established\n")
+    else:
+        print("⚠️  MongoDB not available - running without database features\n")
+except Exception as e:
+    print(f"⚠️  MongoDB connection failed: {e}\n")
 
 # -------------------------
 # FASTAPI APP
@@ -152,6 +170,15 @@ async def tracing_middleware(request: Request, call_next):
 # REGISTER ROUTES
 # -------------------------
 app.include_router(router)
+
+print("✅ Routes registered: /health, /ai/feedback, /ai/weekly-report")
+print("\n" + "="*80)
+print("✨ AI SERVICE READY")
+print("="*80)
+print(f"🌐 Listening on: http://localhost:8000")
+print(f"📝 API Docs: http://localhost:8000/docs")
+print(f"📋 Health: http://localhost:8000/health")
+print("="*80 + "\n")
 
 logger.info("router_registered", routes=["/health", "/ai/feedback", "/ai/weekly-report"])
 logger.info("service_ready", message="AI Service ready to accept requests")
