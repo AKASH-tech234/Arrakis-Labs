@@ -6,10 +6,14 @@ import traceback
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.exceptions import OutputParserException
+from app.cache.redis_cache import redis_cache
+# DEPRECATED: File-based caching replaced by Redis
+# from app.cache.agent_cache import get_cached as get_file_cached, set_cached as set_file_cached
 
 from app.services.llm import get_llm
 from app.metrics.agent_metries import record_metric
-from app.cache.agent_cache import get_cached, set_cached
+# DEPRECATED: File-based caching replaced by Redis
+# from app.cache.agent_cache import get_cached, set_cached
 
 logger = logging.getLogger("base_json_agent")
 
@@ -34,20 +38,20 @@ def run_json_agent(
     start = time.time()
 
     # -------------------------
-    # CACHE CHECK (SAFE)
+    # CACHE CHECK (Redis-only)
     # -------------------------
     use_cache = agent_name not in NON_DETERMINISTIC_AGENTS
 
     if use_cache:
-        logger.debug(f"   └─ Checking cache for key: {cache_key[:16]}...")
-        cached = get_cached(cache_key)
-        if cached is not None:
-            logger.info(f"⚡ [{agent_name}] CACHE HIT - returning cached result")
+        # Redis caching (fast, distributed)
+        logger.debug(f"   └─ Checking Redis cache...")
+        cached = redis_cache.get(agent_name, cache_key)
+        
+        if cached:
+            logger.info(f"⚡ [{agent_name}] REDIS CACHE HIT")
             record_metric(agent_name, time.time() - start)
             return schema(**cached)
-        logger.debug("   └─ Cache miss - proceeding with LLM call")
-    else:
-        logger.debug(f"   └─ Cache bypassed for {agent_name}")
+        
 
     # -------------------------
     # PREPARE CONTEXT
@@ -113,11 +117,11 @@ def run_json_agent(
                 return fallback
 
         # -------------------------
-        # CACHE WRITE (SAFE)
+        # CACHE WRITE (Redis-only)
         # -------------------------
         if use_cache:
-            logger.debug("   └─ Writing result to cache...")
-            set_cached(cache_key, result.model_dump())
+            logger.debug("   └─ Writing result to Redis cache...")
+            redis_cache.set(agent_name, cache_key, result.model_dump())
 
         record_metric(agent_name, time.time() - start)
         logger.info(
