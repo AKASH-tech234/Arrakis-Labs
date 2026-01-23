@@ -150,8 +150,16 @@ export default function CodeEditor({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle Tab key for indentation
+  // Handle Tab key for indentation and Ctrl+Enter for submit
   const handleKeyDown = useCallback((e) => {
+    // Ctrl + Enter to submit
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      onSubmit?.(code, language);
+      return;
+    }
+    
+    // Tab for indentation
     if (e.key === "Tab") {
       e.preventDefault();
       const textarea = textareaRef.current;
@@ -165,7 +173,7 @@ export default function CodeEditor({
         textarea.selectionStart = textarea.selectionEnd = start + 4;
       });
     }
-  }, [code, language]);
+  }, [code, language, onSubmit]);
 
   return (
     <div className="arrakis-editor flex flex-col h-full bg-[#0A0A08] overflow-hidden">
