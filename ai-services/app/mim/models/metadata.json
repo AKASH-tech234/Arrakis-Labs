@@ -1,0 +1,39 @@
+{
+  "version": "v1",
+  "trained_at": "2026-01-25T02:02:38.026144",
+  "metrics": {
+    "root_cause_classifier": {
+      "accuracy": 0.7257890315612624
+    },
+    "readiness_model": {
+      "accuracy": 0.9389975599023961,
+      "roc_auc": 0.920152077376348
+    },
+    "performance_forecaster": {
+      "accuracy": 0.6933177327093084,
+      "roc_auc": 0.6522266216295203
+    },
+    "problem_recommender": {
+      "accuracy": 0.9349273970958838,
+      "is_fallback": true
+    }
+  },
+  "root_cause_categories": [
+    "boundary_condition_blindness",
+    "off_by_one_error",
+    "integer_overflow",
+    "wrong_data_structure",
+    "logic_error",
+    "time_complexity_issue",
+    "recursion_issue",
+    "comparison_error",
+    "algorithm_choice",
+    "edge_case_handling",
+    "input_parsing",
+    "misread_problem",
+    "partial_solution",
+    "type_error",
+    "unknown",
+    "none"
+  ]
+}
