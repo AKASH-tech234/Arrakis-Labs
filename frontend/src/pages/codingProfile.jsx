@@ -54,7 +54,7 @@ function StatCard({ label, value }) {
 
 export default function CodingProfile() {
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState(null);
+  const [summary, setSummary] = useState({});
   const [error, setError] = useState(null);
 
   const platforms = useMemo(() => {
@@ -86,7 +86,7 @@ export default function CodingProfile() {
         console.log("[CodingProfile] /profile/coding-summary ->", data);
       }
 
-      setSummary(data);
+      setSummary(data || {});
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Failed to load Coding Profile");
     } finally {
@@ -241,7 +241,7 @@ export default function CodingProfile() {
               <p className="text-red-400">{error}</p>
             ) : (
               <>
-                <ProfileHeader user={{ ...summary?.user, descriptor: "Coding profile" }} />
+                <ProfileHeader user={{ ...(summary?.user || {}), descriptor: "Coding profile" }} />
               </>
             )}
           </motion.div>
