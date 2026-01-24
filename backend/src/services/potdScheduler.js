@@ -164,6 +164,26 @@ class POTDScheduler {
 
       return publishedPOTD;
     } catch (error) {
+      // If multiple instances race, the unique index on activeDate will throw.
+      // Treat that as idempotent success and return the existing record.
+      if (error?.code === 11000) {
+        const existing = await PublishedPOTD.findOne({ activeDate: today });
+        if (existing) {
+          try {
+            await POTDCalendar.updateOne(
+              { _id: scheduledPOTD._id },
+              { $set: { isPublished: true } }
+            );
+            await POTDCalendar.updateOne(
+              { _id: scheduledPOTD._id, publishedAt: null },
+              { $set: { publishedAt: new Date() } }
+            );
+          } catch {
+            // Best-effort; published record is the source of truth.
+          }
+          return existing;
+        }
+      }
       console.error("❌ Failed to publish POTD:", error);
       throw error;
     }
