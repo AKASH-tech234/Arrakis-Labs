@@ -188,7 +188,9 @@ export async function getCodingProfileSummary(req, res) {
       data: {
         user: normalizeUserName(user),
         internal,
-        platforms,
+        platforms: Array.isArray(platforms) ? platforms : [],
+        totalSolved: Number.isFinite(combinedTotalSolved) ? combinedTotalSolved : 0,
+        activity: Array.isArray(combinedActivity) ? combinedActivity : [],
         combined: {
           totalSolved: combinedTotalSolved,
           bestRating,
