@@ -8,7 +8,6 @@ import {
   solvePOTD,
   getPOTDHistory,
   getStreakLeaderboard,
-  getSchedulerStatus,
 } from "../controllers/potdController.js";
 
 const router = express.Router();
@@ -47,8 +46,5 @@ router.post("/attempt", protect, recordPOTDAttempt);
 
 // Mark POTD as solved (called after successful submission)
 router.post("/solve", protect, solvePOTD);
-
-// Get scheduler status (for debugging, can be admin-restricted)
-router.get("/status", protect, getSchedulerStatus);
 
 export default router;
