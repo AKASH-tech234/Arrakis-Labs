@@ -57,6 +57,16 @@ export default function CodingProfile() {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
 
+  const platforms = useMemo(() => {
+    if (!Array.isArray(summary?.platforms)) return [];
+    return summary.platforms.filter((p) => p && typeof p === "object");
+  }, [summary]);
+
+  const contributions = useMemo(() => {
+    if (!Array.isArray(summary?.combined?.contributions)) return [];
+    return summary.combined.contributions.filter((c) => c && typeof c === "object");
+  }, [summary]);
+
   const [view, setView] = useState(VIEW.combined);
   const [selectedPlatform, setSelectedPlatform] = useState("arrakis");
 
@@ -69,6 +79,13 @@ export default function CodingProfile() {
       setLoading(true);
       setError(null);
       const data = await getCodingProfileSummary();
+
+      if (import.meta.env.DEV) {
+        // Temporary verification logging
+        // eslint-disable-next-line no-console
+        console.log("[CodingProfile] /profile/coding-summary ->", data);
+      }
+
       setSummary(data);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Failed to load Coding Profile");
@@ -83,12 +100,14 @@ export default function CodingProfile() {
   }, []);
 
   const connectedPlatforms = useMemo(() => {
-    const external = Array.isArray(summary?.platforms) ? summary.platforms : [];
     return [
       { platform: "arrakis", label: "Arrakis" },
-      ...external.map((p) => ({ platform: p.platform, label: formatPlatformName(p.platform) })),
+      ...platforms
+        .map((p) => p?.platform)
+        .filter(Boolean)
+        .map((platform) => ({ platform, label: formatPlatformName(platform) })),
     ];
-  }, [summary]);
+  }, [platforms]);
 
   const activity = useMemo(() => {
     if (view === VIEW.combined) {
@@ -98,9 +117,9 @@ export default function CodingProfile() {
     if (selectedPlatform === "arrakis") {
       return summary?.internal?.activity || [];
     }
-    const p = (summary?.platforms || []).find((x) => x.platform === selectedPlatform);
+    const p = platforms.find((x) => x?.platform === selectedPlatform);
     return p?.activity || [];
-  }, [summary, view, selectedPlatform]);
+  }, [summary, view, selectedPlatform, platforms]);
 
   const statsForSelected = useMemo(() => {
     if (view === VIEW.combined) {
@@ -117,12 +136,12 @@ export default function CodingProfile() {
       };
     }
 
-    const p = (summary?.platforms || []).find((x) => x.platform === selectedPlatform);
+    const p = platforms.find((x) => x?.platform === selectedPlatform);
     return {
       totalSolved: p?.stats?.totalSolved ?? 0,
       rating: p?.stats?.rating ?? null,
     };
-  }, [summary, view, selectedPlatform]);
+  }, [summary, view, selectedPlatform, platforms]);
 
   const openAdd = () => {
     setModalMode("add");
@@ -334,12 +353,12 @@ export default function CodingProfile() {
               </div>
 
               <div className="space-y-3">
-                {(summary?.platforms || []).length === 0 ? (
+                {platforms.length === 0 ? (
                   <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-[#78716C]">
                     No external profiles added yet.
                   </div>
                 ) : (
-                  (summary?.platforms || []).map((p) => (
+                  platforms.map((p) => (
                     <div key={p.id} className="bg-white/5 border border-white/10 rounded-xl p-5">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -399,13 +418,13 @@ export default function CodingProfile() {
                 )}
               </div>
 
-              {view === VIEW.combined && (summary?.combined?.contributions || []).length > 0 && (
+              {view === VIEW.combined && contributions.length > 0 && (
                 <div className="mt-10 bg-gradient-to-br from-[#1A1814]/30 to-[#0A0A08]/40 border border-[#D97706]/10 rounded-xl p-6">
                   <h3 className="text-[#E8E4D9] text-sm uppercase tracking-widest mb-4" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
                     Contributions
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(summary?.combined?.contributions || []).map((c) => (
+                    {contributions.map((c) => (
                       <div key={c.platform} className="bg-white/5 border border-white/10 rounded-xl p-4">
                         <p className="text-[#E8E4D9] font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
                           {formatPlatformName(c.platform)}
@@ -427,7 +446,7 @@ export default function CodingProfile() {
         open={modalOpen}
         mode={modalMode}
         initial={modalInitial}
-        existingPlatforms={(summary?.platforms || []).map((p) => p.platform)}
+        existingPlatforms={platforms.map((p) => p?.platform).filter(Boolean)}
         onClose={() => setModalOpen(false)}
         onSubmit={handleModalSubmit}
       />
