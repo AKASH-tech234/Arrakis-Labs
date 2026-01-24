@@ -87,6 +87,58 @@ const userSchema = new mongoose.Schema(
         default: null,
       },
     },
+    // AI-computed cognitive profile (pre-computed for fast access)
+    aiProfile: {
+      weakTopics: {
+        type: [String],
+        default: [],
+      },
+      strongTopics: {
+        type: [String],
+        default: [],
+      },
+      commonMistakes: {
+        type: [String], // Recurring mistake patterns
+        default: [],
+      },
+      recurringPatterns: {
+        type: [String], // Abstract patterns (e.g., "off-by-one errors")
+        default: [],
+      },
+      successRate: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 1,
+      },
+      totalSubmissions: {
+        type: Number,
+        default: 0,
+      },
+      recentCategories: {
+        type: [String], // Last N categories attempted
+        default: [],
+      },
+      skillLevels: {
+        type: Map,
+        of: Number, // topic -> skill level (0-100)
+        default: {},
+      },
+      learningStyle: {
+        type: String,
+        enum: ["visual", "hands-on", "theoretical", null],
+        default: null,
+      },
+      difficultyReadiness: {
+        easy: { type: Number, default: 1.0, min: 0, max: 1 },
+        medium: { type: Number, default: 0.5, min: 0, max: 1 },
+        hard: { type: Number, default: 0.2, min: 0, max: 1 },
+      },
+      lastUpdated: {
+        type: Date,
+        default: null,
+      },
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -118,7 +170,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Hash password before saving

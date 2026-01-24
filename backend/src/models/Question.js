@@ -21,7 +21,7 @@ const exampleSchema = new mongoose.Schema(
       default: "",
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const questionSchema = new mongoose.Schema(
@@ -69,6 +69,29 @@ const questionSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Primary topic/category (e.g., "Arrays", "Dynamic Programming")
+    topic: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    // AI-assist fields (optional - inferred dynamically if not set)
+    expectedApproach: {
+      type: String,
+      default: null, // e.g., "Two pointers", "Binary search"
+    },
+    commonMistakes: {
+      type: [String],
+      default: [], // Known pitfalls for this problem
+    },
+    timeComplexityHint: {
+      type: String,
+      default: null, // Expected O() notation
+    },
+    spaceComplexityHint: {
+      type: String,
+      default: null, // Expected memory complexity
+    },
     // For optimistic concurrency control
     version: {
       type: Number,
@@ -100,7 +123,7 @@ const questionSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes for efficient queries

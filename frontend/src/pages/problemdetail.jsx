@@ -181,8 +181,26 @@ export default function ProblemDetail() {
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-        // Navigate to results page where user can EXPLICITLY request AI feedback
-        navigate(`/submissions/${submission.id}`);
+        // ✨ FIX: Show AI feedback panel instead of navigating away immediately
+        // Only for non-accepted submissions - show hints progressively
+        if (!isAccepted && data.aiFeedback) {
+          setShowFeedback(true); // Show the side panel with hints
+          // If aiFeedback came from backend, use it directly
+          // Otherwise, fetch it via the hook
+        } else if (!isAccepted && aiServiceAvailable) {
+          // No aiFeedback from backend - fetch via hook
+          setShowFeedback(true);
+          fetchFeedback({
+            questionId: id,
+            code,
+            language: langKey,
+            verdict: data.status || "wrong_answer",
+            errorType: data.errorType,
+          });
+        } else if (isAccepted) {
+          // Accepted - navigate to full results page
+          navigate(`/submissions/${submission.id}`);
+        }
       }
     } catch (err) {
       if (err.name === "AbortError") {
@@ -375,7 +393,9 @@ export default function ProblemDetail() {
             ref={editorPanelRef}
             className="flex flex-col overflow-hidden bg-[#0A0A08] transition-all duration-200 ease-out"
             style={{
-              width: `${100 - panelWidth}%`,
+              width: showFeedback
+                ? `${(100 - panelWidth) * 0.6}%`
+                : `${100 - panelWidth}%`,
               flexGrow: isEditorFullscreen ? 1 : 0,
             }}
           >
@@ -395,6 +415,70 @@ export default function ProblemDetail() {
               onResizeStart={handleOutputResizeStart}
             />
           </div>
+
+          {/* ✨ AI Feedback Side Panel - Shows hints progressively */}
+          {showFeedback && (
+            <div
+              className="flex-shrink-0 transition-all duration-300 ease-out"
+              style={{
+                width: `${(100 - panelWidth) * 0.4}%`,
+                minWidth: "320px",
+                maxWidth: "450px",
+              }}
+            >
+              <AIFeedbackPanelV2
+                isVisible={showFeedback}
+                onClose={() => {
+                  setShowFeedback(false);
+                  // Navigate to full results when panel is closed
+                  if (lastSubmission) {
+                    navigate(`/submissions/${lastSubmission.questionId}`);
+                  }
+                }}
+                loading={feedbackLoading}
+                error={feedbackError}
+                feedback={
+                  feedback ||
+                  (lastSubmission?.aiFeedback
+                    ? {
+                        success: true,
+                        verdict: lastSubmission.verdict,
+                        feedbackType:
+                          lastSubmission.verdict === "accepted"
+                            ? "success_feedback"
+                            : "error_feedback",
+                        hints: lastSubmission.aiFeedback.hints || [],
+                        allHintsCount:
+                          lastSubmission.aiFeedback.hints?.length || 0,
+                        explanation: lastSubmission.aiFeedback.explanation,
+                        hasExplanation: !!lastSubmission.aiFeedback.explanation,
+                        detectedPattern:
+                          lastSubmission.aiFeedback.detectedPattern,
+                        mimInsights:
+                          lastSubmission.aiFeedback.mimInsights ||
+                          lastSubmission.aiFeedback.mim_insights,
+                      }
+                    : null)
+                }
+                onRevealNextHint={revealNextHint}
+                hasMoreHints={hasMoreHints}
+                nextHintLabel={nextHintLabel}
+                onToggleExplanation={toggleExplanation}
+                showFullExplanation={showFullExplanation}
+                onRetry={() => {
+                  if (lastSubmission) {
+                    fetchFeedback({
+                      questionId: lastSubmission.questionId,
+                      code: lastSubmission.code,
+                      language: lastSubmission.language,
+                      verdict: lastSubmission.verdict,
+                      errorType: lastSubmission.errorType,
+                    });
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
       </main>
     </div>

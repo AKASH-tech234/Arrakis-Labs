@@ -280,8 +280,9 @@ def build_context(
     # ═══════════════════════════════════════════════════════════════════════════
     mongo_stats_section = ""
     try:
-        # ✨ FIX: Check mongo_client first before accessing .db attribute
-        if mongo_client is not None and mongo_client.db is not None:
+        # ✨ FIX: Use getattr to safely check if db exists and is connected
+        has_db = getattr(mongo_client, 'db', None) is not None
+        if has_db:
             mongo_submissions = mongo_client.get_user_submissions(
                 user_id=submission.user_id,
                 limit=20

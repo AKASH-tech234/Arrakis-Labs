@@ -83,9 +83,10 @@ def feedback_agent(context: str, payload: dict) -> FeedbackResponse:
     )
 
     # -------------------------
-    # ACCEPTED → minimal feedback
+    # ACCEPTED → minimal feedback (case-insensitive check)
     # -------------------------
-    if payload.get("verdict") == "Accepted":
+    verdict = (payload.get("verdict") or "").lower()
+    if verdict == "accepted":
         return FeedbackResponse(
             explanation="Your solution passed all test cases successfully.",
             improvement_hint="No changes required.",

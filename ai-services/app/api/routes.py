@@ -618,52 +618,91 @@ def get_mim_profile(
     """
     Get cognitive profile for a user from MIM.
     
-    Returns:
-    - Current skill level
-    - Strengths and weaknesses
-    - Common mistake patterns
-    - Learning trajectory
+    Returns data in format expected by frontend CognitiveProfile component:
+    - strengths: list of strong topic areas
+    - weaknesses: list of weak topic areas
+    - readiness_scores: dict of difficulty -> readiness (0-1)
+    - learning_trajectory: dict with trend info
     """
     try:
-        from app.mim.inference import get_mim_inference
-        from app.db.mongodb import get_database
-        
-        mim = get_mim_inference()
-        db = get_database()
+        from app.db.mongodb import mongo_client
         
         # Get recent submissions for profile building
-        submissions = list(db.submissions.find(
-            {"user_id": user_id},
-            sort=[("created_at", -1)],
-            limit=50
-        ))
+        submissions = mongo_client.get_user_submissions(user_id=user_id, limit=50)
         
         if not submissions:
-            return {
-                "user_id": user_id,
-                "status": "no_data",
-                "message": "No submissions found for this user",
-                "profile": None
-            }
+            # Return empty profile structure - frontend handles "no data" state
+            return None
         
-        # Build cognitive profile
-        profile = mim.build_user_profile(user_id, submissions)
+        # Analyze submissions to build profile
+        total = len(submissions)
+        accepted = sum(1 for s in submissions if s.get("status") == "accepted")
+        success_rate = (accepted / total * 100) if total > 0 else 0
         
+        # Identify strong/weak areas based on failures
+        weak_topics = []
+        strong_topics = []
+        category_performance = {}
+        difficulty_performance = {"Easy": {"total": 0, "passed": 0}, "Medium": {"total": 0, "passed": 0}, "Hard": {"total": 0, "passed": 0}}
+        
+        for sub in submissions:
+            # Extract category from submission data
+            tags = sub.get("tags", [])
+            cat = sub.get("category") or (tags[0] if isinstance(tags, list) and tags else "General")
+            diff = sub.get("difficulty") or "Medium"
+            
+            if cat not in category_performance:
+                category_performance[cat] = {"total": 0, "passed": 0}
+            category_performance[cat]["total"] += 1
+            
+            if diff in difficulty_performance:
+                difficulty_performance[diff]["total"] += 1
+            
+            if sub.get("status") == "accepted":
+                category_performance[cat]["passed"] += 1
+                if diff in difficulty_performance:
+                    difficulty_performance[diff]["passed"] += 1
+        
+        for cat, stats in category_performance.items():
+            rate = (stats["passed"] / stats["total"]) if stats["total"] > 0 else 0
+            if rate < 0.4 and stats["total"] >= 2:
+                weak_topics.append(cat)
+            elif rate > 0.7 and stats["total"] >= 2:
+                strong_topics.append(cat)
+        
+        # Calculate readiness scores per difficulty
+        readiness_scores = {}
+        for diff, stats in difficulty_performance.items():
+            if stats["total"] > 0:
+                readiness_scores[diff] = stats["passed"] / stats["total"]
+            else:
+                # Default readiness based on level
+                readiness_scores[diff] = 0.5 if diff == "Easy" else 0.3 if diff == "Medium" else 0.1
+        
+        # Determine learning trend
+        if len(submissions) >= 10:
+            recent_5 = submissions[:5]
+            older_5 = submissions[5:10]
+            recent_rate = sum(1 for s in recent_5 if s.get("status") == "accepted") / 5
+            older_rate = sum(1 for s in older_5 if s.get("status") == "accepted") / 5
+            if recent_rate > older_rate + 0.1:
+                trend = "Improving"
+            elif recent_rate < older_rate - 0.1:
+                trend = "Needs attention"
+            else:
+                trend = "Stable"
+        else:
+            trend = "Building profile..."
+        
+        # Return flat structure expected by CognitiveProfile.jsx
         response = {
-            "user_id": user_id,
-            "status": "success",
-            "profile": {
-                "current_level": profile.current_level,
-                "strengths": profile.strengths,
-                "weak_topics": profile.weak_topics,
-                "common_mistake_types": profile.common_mistake_types,
-                "recurring_patterns": profile.recurring_patterns,
-                "total_submissions": profile.total_submissions,
-                "success_rate": profile.success_rate,
-                "avg_attempts_to_solve": profile.avg_attempts_to_solve,
-                "learning_velocity": profile.learning_velocity,
-                "improvement_trend": profile.improvement_trend,
-                "last_updated": profile.last_updated.isoformat() if profile.last_updated else None
+            "strengths": strong_topics[:5],
+            "weaknesses": weak_topics[:5],
+            "readiness_scores": readiness_scores,
+            "learning_trajectory": {
+                "trend": trend,
+                "total_submissions": total,
+                "success_rate": round(success_rate, 2)
             }
         }
         
@@ -673,9 +712,9 @@ def get_mim_profile(
             for sub in submissions[:history_limit]:
                 history.append({
                     "submission_id": str(sub.get("_id", "")),
-                    "problem_id": sub.get("problem_id"),
-                    "verdict": sub.get("verdict"),
-                    "created_at": sub.get("created_at").isoformat() if sub.get("created_at") else None
+                    "problem_id": sub.get("questionId"),
+                    "verdict": sub.get("status"),
+                    "created_at": sub.get("createdAt")
                 })
             response["submission_history"] = history
         
@@ -699,83 +738,126 @@ def get_mim_recommendations(
     """
     Get personalized problem recommendations for a user.
     
-    Returns:
-    - Ranked list of recommended problems
-    - Success probability for each
-    - Relevance scores
-    - Focus topics
+    Returns actual problems from the database based on user's weak areas.
     """
     try:
-        from app.mim.recommender import get_recommender
-        from app.mim.inference import get_mim_inference
-        from app.db.mongodb import get_database
+        from app.db.mongodb import mongo_client
         
-        recommender = get_recommender()
-        mim = get_mim_inference()
-        db = get_database()
+        # Get user submissions to understand their profile
+        submissions = mongo_client.get_user_submissions(user_id=user_id, limit=50)
         
-        # Get user data
-        submissions = list(db.submissions.find(
-            {"user_id": user_id},
-            sort=[("created_at", -1)],
-            limit=50
-        ))
+        # Analyze user's performance
+        total = len(submissions)
+        accepted = sum(1 for s in submissions if s.get("status") == "accepted")
+        success_rate = (accepted / total * 100) if total > 0 else 50
         
-        # Get cognitive profile
-        profile = mim.build_user_profile(user_id, submissions) if submissions else None
+        # Determine user level and recommended difficulty
+        if success_rate >= 70:
+            level = "Advanced"
+            recommended_difficulty = "Hard"
+        elif success_rate >= 40:
+            level = "Intermediate"
+            recommended_difficulty = "Medium"
+        else:
+            level = "Beginner"
+            recommended_difficulty = "Easy"
         
-        # Get candidate problems
-        query = {}
+        # Override with filter if provided
         if difficulty_filter:
-            query["difficulty"] = difficulty_filter
+            recommended_difficulty = difficulty_filter
         
-        candidate_problems = list(db.problems.find(query, limit=100))
+        # Identify weak topics and solved problem IDs
+        weak_topics = []
+        category_failures = {}
+        solved_problem_ids = set()
         
-        if not candidate_problems:
+        for sub in submissions:
+            if sub.get("status") == "accepted":
+                solved_problem_ids.add(sub.get("questionId"))
+            else:
+                tags = sub.get("tags", [])
+                cat = sub.get("category") or (tags[0] if isinstance(tags, list) and tags else "General")
+                category_failures[cat] = category_failures.get(cat, 0) + 1
+        
+        # Sort by failure count
+        weak_topics = sorted(category_failures.keys(), key=lambda x: category_failures[x], reverse=True)[:5]
+        
+        # Query actual problems from database
+        recommendations = []
+        
+        if mongo_client.db is not None:
+            # Build query for unsolved problems
+            query = {
+                "_id": {"$nin": list(solved_problem_ids)},  # Exclude already solved
+            }
+            
+            # Add difficulty filter
+            if recommended_difficulty:
+                query["difficulty"] = recommended_difficulty
+            
+            # Try to find problems matching weak topics
+            if weak_topics:
+                query["$or"] = [
+                    {"tags": {"$in": weak_topics}},
+                    {"category": {"$in": weak_topics}}
+                ]
+            
+            try:
+                # Fetch problems from database
+                problems = list(
+                    mongo_client.db.problems
+                    .find(query)
+                    .limit(num_recommendations * 2)  # Fetch extra to filter
+                )
+                
+                # If not enough problems with weak topics, get any unsolved problems
+                if len(problems) < num_recommendations:
+                    fallback_query = {
+                        "_id": {"$nin": list(solved_problem_ids)},
+                    }
+                    if recommended_difficulty:
+                        fallback_query["difficulty"] = recommended_difficulty
+                    
+                    more_problems = list(
+                        mongo_client.db.problems
+                        .find(fallback_query)
+                        .limit(num_recommendations - len(problems))
+                    )
+                    problems.extend(more_problems)
+                
+                # Build recommendations from actual problems
+                for i, prob in enumerate(problems[:num_recommendations]):
+                    problem_id = str(prob.get("_id", ""))
+                    tags = prob.get("tags", [])
+                    category = tags[0] if tags else prob.get("category", "General")
+                    
+                    # Calculate confidence based on whether it matches weak area
+                    is_weak_area = any(t in weak_topics for t in tags) if tags else False
+                    confidence = 0.4 if is_weak_area else 0.6
+                    
+                    recommendations.append({
+                        "problem_id": problem_id,
+                        "title": prob.get("title", f"Problem {problem_id}"),
+                        "difficulty": prob.get("difficulty", recommended_difficulty),
+                        "category": category,
+                        "confidence": confidence,
+                        "reason": f"Recommended to strengthen your {category} skills." if is_weak_area else "Recommended to diversify your practice."
+                    })
+                    
+            except Exception as db_err:
+                logger.warning(f"Database query failed: {db_err}")
+        
+        # If no problems found in DB, return message
+        if not recommendations:
             return {
-                "user_id": user_id,
-                "status": "no_candidates",
-                "message": "No candidate problems found",
-                "recommendations": []
+                "recommendations": [],
+                "message": "Complete more problems to get personalized recommendations."
             }
         
-        # Get recommendations
-        if recommender.is_fitted and profile:
-            recommendations = recommender.recommend(
-                user_id=user_id,
-                candidate_problems=candidate_problems,
-                user_profile=profile,
-                n_recommendations=num_recommendations
-            )
-        else:
-            # Fallback to rule-based recommendations
-            recommendations = recommender._fallback_recommendations(
-                user_id=user_id,
-                candidate_problems=candidate_problems,
-                user_profile=profile,
-                n_recommendations=num_recommendations
-            )
-        
         return {
-            "user_id": user_id,
-            "status": "success",
-            "is_ml_based": recommender.is_fitted,
-            "current_level": profile.current_level if profile else "Unknown",
-            "recommendations": [
-                {
-                    "rank": i + 1,
-                    "problem_id": rec.get("problem_id"),
-                    "title": rec.get("title", "Unknown"),
-                    "difficulty": rec.get("difficulty", "Medium"),
-                    "tags": rec.get("tags", []),
-                    "success_probability": rec.get("success_probability", 0.5),
-                    "relevance_score": rec.get("relevance_score", 0.5),
-                    "reasoning": rec.get("reasoning", "")
-                }
-                for i, rec in enumerate(recommendations)
-            ],
-            "focus_topics": profile.weak_topics[:3] if profile else [],
-            "avoid_topics": profile.strengths[:2] if profile else []
+            "recommendations": recommendations,
+            "focus_topics": weak_topics[:3],
+            "current_level": level
         }
         
     except Exception as e:

@@ -8,6 +8,10 @@ import {
   getAIFeedback,
   buildUserHistorySummary,
 } from "../services/aiService.js";
+import {
+  getAttemptNumber,
+  updateUserAIProfile,
+} from "../utils/userStatsAggregator.js";
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
@@ -477,6 +481,14 @@ export const submitCode = async (req, res) => {
     // Create submission record if user is authenticated
     let submission = null;
     if (userId) {
+      // Get attempt number for this user+problem combo
+      const attemptNumber = await getAttemptNumber(userId, questionId);
+
+      // Denormalize problem fields for AI queries
+      const problemCategory =
+        question.topic ||
+        (question.tags?.length > 0 ? question.tags[0] : "General");
+
       submission = await Submission.create({
         userId,
         questionId,
@@ -485,8 +497,19 @@ export const submitCode = async (req, res) => {
         status,
         passedCount,
         totalCount: allTestCases.length,
+        // AI tracking fields
+        attemptNumber,
+        // Denormalized problem fields (immutable historical data)
+        problemCategory,
+        problemDifficulty: question.difficulty,
+        problemTags: question.tags || [],
         // Don't store full test case results for security
       });
+
+      // Async update user's AI profile (non-blocking)
+      updateUserAIProfile(userId).catch((err) =>
+        console.error("[Submit] AI profile update failed:", err.message),
+      );
     }
 
     // ============================================
@@ -509,11 +532,15 @@ export const submitCode = async (req, res) => {
 
         // Get problem category from question tags
         const problemCategory =
-          question.tags?.length > 0
-            ? question.tags.join(", ")
-            : question.difficulty || "General";
+          question.topic ||
+          (question.tags?.length > 0 ? question.tags[0] : "General");
 
-        // Call AI service (non-blocking - we don't fail submission if AI fails)
+        // Get user's AI profile for personalization
+        const { getUserAIProfile } =
+          await import("../utils/userStatsAggregator.js");
+        const userProfile = await getUserAIProfile(userId).catch(() => null);
+
+        // Call AI service with enriched context
         aiFeedback = await getAIFeedback({
           userId: userId.toString(),
           problemId: questionId.toString(),
@@ -523,10 +550,27 @@ export const submitCode = async (req, res) => {
           language,
           verdict: status,
           userHistorySummary,
+          // Enhanced context for AI personalization
+          problem: {
+            title: question.title,
+            difficulty: question.difficulty,
+            tags: question.tags || [],
+            topic: question.topic || problemCategory,
+            expectedApproach: question.expectedApproach || null,
+            commonMistakes: question.commonMistakes || [],
+            timeComplexityHint: question.timeComplexityHint || null,
+            spaceComplexityHint: question.spaceComplexityHint || null,
+          },
+          userProfile,
         });
 
         if (aiFeedback) {
           console.log("[Submit] AI feedback received successfully");
+          // Mark submission as having received AI feedback
+          if (submission) {
+            submission.aiFeedbackReceived = true;
+            await submission.save();
+          }
         } else {
           console.log("[Submit] AI feedback unavailable (service may be down)");
         }

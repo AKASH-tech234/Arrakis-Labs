@@ -20,6 +20,7 @@ import exportRoutes from "./routes/exportRoutes.js";
 import potdRoutes from "./routes/potdRoutes.js";
 import adminPOTDRoutes from "./routes/adminPOTDRoutes.js";
 import mimRoutes from "./routes/mimRoutes.js";
+import aiProfileRoutes from "./routes/aiProfileRoutes.js";
 
 import {
   runCode,
@@ -161,6 +162,7 @@ app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/admin/potd", adminPOTDRoutes);
 app.use("/api/contests", contestRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/users", aiProfileRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/potd", potdRoutes);

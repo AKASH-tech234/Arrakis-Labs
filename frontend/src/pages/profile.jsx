@@ -8,7 +8,7 @@ import StatsOverview from "../components/charts/StatsOverview";
 import ActivityHeatmap from "../components/charts/ActivityHeatmap";
 import CategoryChart from "../components/charts/CategoryChart";
 import SubmissionSummary from "../components/charts/SubmissionSummary";
-import { CognitiveProfile } from "../components/mim";
+import { CognitiveProfile, ProblemRecommendations } from "../components/mim";
 import contestApi from "../services/contestApi";
 import apiClient from "../services/api";
 import useProfileAnalytics from "../hooks/useProfileAnalytics";
@@ -286,6 +286,27 @@ export default function Profile({ username, readOnly = false } = {}) {
                 </h2>
               </div>
               <CognitiveProfile userId={analytics.user._id} />
+            </motion.section>
+          )}
+
+          {/* Problem Recommendations - MIM */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.24 }}
+              className="mb-16"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Recommended Problems
+                </h2>
+              </div>
+              <ProblemRecommendations userId={analytics.user._id} limit={5} />
             </motion.section>
           )}
 

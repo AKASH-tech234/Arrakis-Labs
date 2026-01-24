@@ -32,7 +32,7 @@ const testResultSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const submissionSchema = new mongoose.Schema(
@@ -109,10 +109,41 @@ const submissionSchema = new mongoose.Schema(
       type: Boolean,
       default: false, // false = submit, true = run (examples only)
     },
+    // AI tracking fields
+    timeSpent: {
+      type: Number, // seconds spent on problem before submission
+      default: null,
+    },
+    hintsUsed: {
+      type: Number,
+      default: 0,
+    },
+    attemptNumber: {
+      type: Number,
+      default: 1, // Which attempt this is for user+problem
+    },
+    aiFeedbackReceived: {
+      type: Boolean,
+      default: false,
+    },
+    // Denormalized problem fields (immutable historical data)
+    problemCategory: {
+      type: String,
+      default: null,
+    },
+    problemDifficulty: {
+      type: String,
+      enum: ["Easy", "Medium", "Hard", null],
+      default: null,
+    },
+    problemTags: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
