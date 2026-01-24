@@ -147,8 +147,73 @@ export async function checkAIServiceHealth() {
   return aiRequest("/health", { method: "GET" });
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIM (Misconception Identification Model) API
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /ai/mim/status
+ * Get MIM model status and health
+ * @returns {Promise<MIMStatusResponse>}
+ */
+export async function getMIMStatus() {
+  return aiRequest("/ai/mim/status", { method: "GET" });
+}
+
+/**
+ * GET /ai/mim/profile/:userId
+ * Get user's cognitive profile from MIM
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMProfileResponse>}
+ */
+export async function getMIMProfile({ userId, signal }) {
+  if (!userId) throw new Error("userId is required");
+  return aiRequest(`/ai/mim/profile/${encodeURIComponent(userId)}`, {
+    method: "GET",
+    signal,
+  });
+}
+
+/**
+ * GET /ai/mim/recommend/:userId
+ * Get personalized problem recommendations from MIM
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {number} [params.limit=5] - Number of recommendations
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMRecommendationsResponse>}
+ */
+export async function getMIMRecommendations({ userId, limit = 5, signal }) {
+  if (!userId) throw new Error("userId is required");
+  const url = `/ai/mim/recommend/${encodeURIComponent(userId)}?limit=${limit}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
+/**
+ * GET /ai/mim/predict/:userId/:problemId
+ * Get pre-submission prediction for a user on a specific problem
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {string} params.problemId - Problem identifier
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMPredictionResponse>}
+ */
+export async function getMIMPrediction({ userId, problemId, signal }) {
+  if (!userId) throw new Error("userId is required");
+  if (!problemId) throw new Error("problemId is required");
+  const url = `/ai/mim/predict/${encodeURIComponent(userId)}/${encodeURIComponent(problemId)}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
 export default {
   getAIFeedback,
   getWeeklyReport,
   checkAIServiceHealth,
+  // MIM APIs
+  getMIMStatus,
+  getMIMProfile,
+  getMIMRecommendations,
+  getMIMPrediction,
 };

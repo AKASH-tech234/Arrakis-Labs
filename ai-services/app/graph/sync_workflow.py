@@ -22,6 +22,10 @@ from app.graph.orchestrator import orchestrator_node
 from app.problem.problem_repository import get_problem_by_id, ProblemContext
 from app.user_profile.profile_builder import build_user_profile
 
+# MIM Integration
+from app.mim.inference import MIMInference
+from app.mim.schemas import MIMPrediction
+
 logger = logging.getLogger("sync_workflow")
 
 
@@ -29,13 +33,14 @@ logger = logging.getLogger("sync_workflow")
 # TIME BUDGET CONSTANTS (QUALITY > SPEED)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Total SYNC workflow budget: 60 seconds (allow all agents to complete)
-SYNC_TOTAL_BUDGET_SECONDS = 60.0
+# Total SYNC workflow budget: 65 seconds (Option B: Accept longer response time for MIM)
+SYNC_TOTAL_BUDGET_SECONDS = 65.0
 
 # Per-agent time budgets - generous to ensure completion
 AGENT_TIME_BUDGETS = {
     "retrieve_memory": 10.0,     # RAG retrieval with k=7
     "retrieve_problem": 10.0,    # DB/API fetch
+    "mim_prediction": 5.0,       # MIM inference (sklearn - fast)
     "build_user_profile": 5.0,   # Heuristic processing
     "build_context": 5.0,        # Context assembly
     "feedback_agent": 30.0,      # LLM call - MUST COMPLETE
@@ -80,6 +85,9 @@ class MentatSyncState(TypedDict):
     
     # === STRUCTURED USER PROFILE ===
     user_profile: Optional[Dict[str, Any]]
+    
+    # === MIM INTELLIGENCE (NEW) ===
+    mim_insights: Optional[Dict[str, Any]]  # MIM predictions for agents
 
     # === AGENT OUTPUTS (shared for coordination) ===
     feedback: Optional[FeedbackResponse]
@@ -296,6 +304,95 @@ def retrieve_problem_node(state: MentatSyncState) -> MentatSyncState:
     return state
 
 
+def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
+    """
+    MIM INTELLIGENCE NODE - Get ML predictions before agent execution.
+    
+    Runs AFTER retrieve_problem, BEFORE build_user_profile.
+    
+    Provides agents with:
+    - Predicted root cause of failure (with confidence)
+    - User readiness scores for different difficulties
+    - Performance forecast (next 5 submissions)
+    - Similar past mistakes from history
+    - Recommended focus areas
+    
+    GRACEFUL DEGRADATION: Agents work without MIM if prediction fails.
+    """
+    _log_budget_status(state, "mim_prediction")
+    
+    start = time.time()
+    print(f"\n🧠 [MIM PREDICTION] Starting ML inference...")
+    logger.info(f"🧠 mim_prediction_node started | user={state['user_id']} | verdict={state.get('verdict')}")
+    
+    try:
+        # Get user history from MongoDB for feature extraction
+        from app.db.mongodb import mongo_client
+        user_history = []
+        
+        try:
+            if mongo_client.db is not None:
+                user_history = mongo_client.get_user_submissions(
+                    user_id=state["user_id"],
+                    limit=50
+                ) or []
+        except Exception as e:
+            logger.warning(f"Failed to fetch user history for MIM: {e}")
+        
+        # Run MIM inference
+        mim = MIMInference()
+        prediction = mim.predict(
+            submission={
+                "user_id": state["user_id"],
+                "problem_id": state["problem_id"],
+                "code": state.get("code", ""),
+                "verdict": state.get("verdict", ""),
+                "language": state.get("language", ""),
+                "problem_category": state.get("problem_category", ""),
+                "error_type": state.get("error_type"),
+                "constraints": state.get("constraints", ""),
+            },
+            user_history=user_history,
+            problem_context=state.get("problem"),
+            user_memory=state.get("user_memory", []),
+        )
+        
+        # Store prediction in state for agents
+        state["mim_insights"] = prediction.model_dump()
+        
+        elapsed = time.time() - start
+        state["_node_timings"]["mim_prediction"] = elapsed
+        
+        print(f"✅ [MIM PREDICTION] Completed in {elapsed:.2f}s")
+        print(f"   └─ Root Cause: {prediction.root_cause.failure_cause} (confidence: {prediction.root_cause.confidence:.0%})")
+        print(f"   └─ User Level: {prediction.readiness.current_level}")
+        print(f"   └─ Cold Start: {'Yes' if prediction.is_cold_start else 'No'}")
+        
+        logger.info(
+            f"✅ MIM prediction complete | "
+            f"root_cause={prediction.root_cause.failure_cause} "
+            f"confidence={prediction.root_cause.confidence:.2f} "
+            f"cold_start={prediction.is_cold_start}"
+        )
+        
+        # Add to agent_results for coordination
+        if state.get("agent_results"):
+            state["agent_results"]["mim_root_cause"] = prediction.root_cause.failure_cause
+            state["agent_results"]["mim_confidence"] = prediction.root_cause.confidence
+        
+    except Exception as e:
+        elapsed = time.time() - start
+        logger.error(f"❌ MIM prediction failed: {e}")
+        print(f"⚠️  [MIM PREDICTION] Failed in {elapsed:.2f}s: {e}")
+        print(f"   └─ Agents will proceed without MIM insights")
+        
+        # Graceful degradation - agents still work
+        state["mim_insights"] = None
+        state["_node_timings"]["mim_prediction"] = elapsed
+    
+    return state
+
+
 def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
     """
     Build User Profile - Heuristic pattern extraction (NO LLM).
@@ -392,12 +489,14 @@ def build_context_node(state: MentatSyncState) -> MentatSyncState:
 
     try:
         # Build rich context with all structured data - NO TRUNCATION
+        # ✨ NEW: Include MIM predictions for agent guidance
         context = build_context(
             submission, 
             state.get("user_memory", []),
             problem_context=state.get("problem"),
             user_profile=state.get("user_profile"),
-            include_full_code=True  # Always include full code
+            include_full_code=True,  # Always include full code
+            mim_insights=state.get("mim_insights"),  # ✨ MIM predictions
         )
         
         # NO TRUNCATION - quality > speed
@@ -685,20 +784,22 @@ def build_sync_workflow():
     """
     Build the SYNC workflow graph.
     
-    FLOW (optimized for speed):
-    1. retrieve_memory → retrieve_problem → build_user_profile  [PARALLEL-ISH, ~2-3s]
-    2. orchestrator → build_context                             [Fast, <1s]
-    3. feedback                                                  [LLM, ~5-8s]
-    4. pattern_detection + hint                                  [Optional, skippable]
-    5. timing_summary                                            [Logging only]
+    FLOW (with MIM integration):
+    1. retrieve_memory → retrieve_problem                        [Data fetch, ~2-3s]
+    2. mim_prediction                                            [ML inference, ~0.3s]
+    3. build_user_profile → orchestrator → build_context         [Fast, <1s]
+    4. feedback                                                  [LLM, ~5-8s]
+    5. pattern_detection + hint                                  [Optional, skippable]
+    6. timing_summary                                            [Logging only]
     
-    TOTAL TARGET: <10 seconds
+    TOTAL TARGET: <15 seconds (extended for MIM)
     """
     graph = StateGraph(MentatSyncState)
 
     # Core nodes
     graph.add_node("retrieve_memory", retrieve_memory_node)
     graph.add_node("retrieve_problem", retrieve_problem_node)
+    graph.add_node("mim_prediction", mim_prediction_node)  # ✨ NEW: MIM Intelligence
     graph.add_node("build_user_profile", build_user_profile_node)
     graph.add_node("orchestrator", orchestrator_node)
     graph.add_node("build_context", build_context_node)
@@ -709,10 +810,11 @@ def build_sync_workflow():
 
     graph.set_entry_point("retrieve_memory")
 
-    # Flow: Sequential with early-exit potential
-    # retrieve_memory → retrieve_problem → build_user_profile → orchestrator
+    # Flow: Sequential with MIM integration
+    # retrieve_memory → retrieve_problem → mim_prediction → build_user_profile → orchestrator
     graph.add_edge("retrieve_memory", "retrieve_problem")
-    graph.add_edge("retrieve_problem", "build_user_profile")
+    graph.add_edge("retrieve_problem", "mim_prediction")  # ✨ NEW EDGE
+    graph.add_edge("mim_prediction", "build_user_profile")  # ✨ MODIFIED EDGE
     graph.add_edge("build_user_profile", "orchestrator")
     
     # orchestrator → build_context → feedback

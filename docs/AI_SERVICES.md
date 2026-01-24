@@ -253,6 +253,16 @@ The main entry point that:
 | `/ai/weekly-report`       | POST   | Generate weekly progress report          | 30s     |
 | `/ai/rag-stats/{user_id}` | GET    | Get RAG statistics for debugging         | -       |
 
+#### MIM Endpoints (V2.0) 🆕
+
+| Endpoint                                 | Method | Description                          | Auth |
+| ---------------------------------------- | ------ | ------------------------------------ | ---- |
+| `/ai/mim/status`                         | GET    | Model status and health              | No   |
+| `/ai/mim/profile/{user_id}`              | GET    | User cognitive profile               | No   |
+| `/ai/mim/recommend/{user_id}`            | GET    | Personalized problem recommendations | No   |
+| `/ai/mim/train`                          | POST   | Trigger model training (background)  | No   |
+| `/ai/mim/predict/{user_id}/{problem_id}` | GET    | Pre-submission prediction            | No   |
+
 **Timeout Update:** `/ai/feedback` timeout increased from 30s to **65s** to accommodate the 60s sync workflow budget plus overhead.
 
 ### 3. Schemas (`app/schemas/`)
@@ -1207,6 +1217,48 @@ Async Workflow: 60-90s (background)
 ---
 
 ## Version History
+
+### 2.1.0 - MIM V2.0 ML Enhancement (2026-01-24)
+
+**MIM Enhancements:**
+
+**New Components:**
+
+- ✅ `recommender.py` - LightGBM-based problem recommendation engine (13 features)
+- ✅ `evaluation.py` - Evaluation pipeline with user-aware splits
+- ✅ `test_mim.py` - 85+ comprehensive unit tests
+
+**New API Endpoints:**
+
+- `GET /ai/mim/status` - Model status and health
+- `GET /ai/mim/profile/{user_id}` - User cognitive profile
+- `GET /ai/mim/recommend/{user_id}` - Problem recommendations
+- `POST /ai/mim/train` - Trigger model training
+- `GET /ai/mim/predict/{user_id}/{problem_id}` - Pre-submission prediction
+
+**Schema Additions:**
+
+- `ROOT_CAUSE_CATEGORIES` - Expanded from 9 to 15 categories
+- `MIMDifficultyAdjustment` - Difficulty calibration recommendations
+- `MIMProblemRecommendation` - Single problem recommendation
+- `MIMRecommendations` - Full recommendation response
+- `MIMModelMetrics` - Training/evaluation metrics
+- `MIMStatus` - System health status
+
+**New Root Cause Categories (6 new):**
+
+- `algorithm_choice` - Wrong algorithm selected
+- `edge_case_handling` - Specific edge case issues
+- `input_parsing` - Failed to parse input correctly
+- `misread_problem` - Misunderstood problem statement
+- `partial_solution` - Solution is incomplete
+- `type_error` - Type conversion/casting issues
+
+**Evaluation Improvements:**
+
+- User-aware data splits (no user leakage)
+- ROC-AUC, Precision@K, NDCG@K, MRR metrics
+- Cross-validation with user grouping
 
 ### 2.0.0 - Intelligence-First Refactoring (2026-01-24)
 

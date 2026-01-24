@@ -165,7 +165,7 @@ arrakis-labs/
 │   ├── main.py           # FastAPI app entry point
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── routes.py # /ai/feedback endpoint
+│   │   │   └── routes.py # /ai/feedback + /ai/mim/* endpoints
 │   │   ├── agents/       # LangGraph agents
 │   │   │   ├── feedback_agent.py
 │   │   │   ├── learning_agent.py
@@ -173,6 +173,13 @@ arrakis-labs/
 │   │   │   └── report_agent.py
 │   │   ├── graph/
 │   │   │   └── workflow.py # LangGraph workflow orchestration
+│   │   ├── mim/          # Mentat Intelligence Model (ML layer)
+│   │   │   ├── feature_extractor.py  # 60-dim feature engineering
+│   │   │   ├── model.py              # sklearn ML models
+│   │   │   ├── inference.py          # Real-time predictions
+│   │   │   ├── recommender.py        # Problem recommendations (LightGBM)
+│   │   │   ├── evaluation.py         # User-aware evaluation pipeline
+│   │   │   └── schemas.py            # Pydantic models
 │   │   ├── rag/          # RAG components
 │   │   │   ├── retriever.py
 │   │   │   ├── embeddings.py
@@ -181,6 +188,8 @@ arrakis-labs/
 │   │   ├── cache/        # Agent response caching
 │   │   ├── prompts/      # LLM prompts
 │   │   └── services/     # LLM clients
+│   ├── tests/            # Unit tests
+│   │   └── test_mim.py   # 85+ MIM unit tests
 │   ├── vector_db/        # Chroma persistent storage
 │   ├── agent_cache/      # JSON cache for agent responses
 │   └── requirement.txt
@@ -190,7 +199,10 @@ arrakis-labs/
 │
 └── docs/                 # Documentation
     ├── ADMIN_PANEL.md
-    └── ADMIN_PANEL_DESIGN.md
+    ├── ADMIN_PANEL_DESIGN.md
+    ├── AI_SERVICES.md        # AI services documentation
+    ├── MIM_DOCUMENTATION.md  # ML model documentation (V2.0)
+    └── readme.md             # PRD document
 ```
 
 ---
@@ -531,6 +543,16 @@ AI service runs at `http://localhost:8000`
 | ------ | ----------- | -------------------- | ------------------ |
 | GET    | `/health`   | AI service health    | Public             |
 | POST   | `/feedback` | Generate AI feedback | Internal (backend) |
+
+#### MIM Endpoints (V2.0) 🆕
+
+| Method | Endpoint                                 | Description                          |
+| ------ | ---------------------------------------- | ------------------------------------ |
+| GET    | `/ai/mim/status`                         | Model status and health              |
+| GET    | `/ai/mim/profile/{user_id}`              | User cognitive profile               |
+| GET    | `/ai/mim/recommend/{user_id}`            | Personalized problem recommendations |
+| POST   | `/ai/mim/train`                          | Trigger model training (background)  |
+| GET    | `/ai/mim/predict/{user_id}/{problem_id}` | Pre-submission prediction            |
 
 ---
 

@@ -19,6 +19,7 @@ import publicRoutes from "./routes/publicRoutes.js";
 import exportRoutes from "./routes/exportRoutes.js";
 import potdRoutes from "./routes/potdRoutes.js";
 import adminPOTDRoutes from "./routes/adminPOTDRoutes.js";
+import mimRoutes from "./routes/mimRoutes.js";
 
 import {
   runCode,
@@ -181,6 +182,9 @@ app.get("/api/submissions", protect, getSubmissions);
 app.get("/api/ai/health", getAIHealth);
 app.post("/api/ai/feedback", protect, requestAIFeedback);
 app.post("/api/ai/summary", protect, getAILearningSummary);
+
+// MIM (Misconception Identification Model) routes
+app.use("/api/mim", mimRoutes);
 
 /* ======================================================
    ERRORS
