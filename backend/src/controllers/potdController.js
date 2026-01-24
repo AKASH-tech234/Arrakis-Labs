@@ -3,6 +3,8 @@ import PublishedPOTD from "../models/PublishedPOTD.js";
 import UserPOTDTracking from "../models/UserPOTDTracking.js";
 import UserStreak from "../models/UserStreak.js";
 import Question from "../models/Question.js";
+import mongoose from "mongoose";
+import Submission from "../models/Submission.js";
 import potdScheduler from "../services/potdScheduler.js";
 
 /**
@@ -108,19 +110,53 @@ export const getUserStreak = async (req, res) => {
  */
 export const getUserPOTDCalendar = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, year, month } = req.query;
 
-    // Default to current month if not specified
-    const start = startDate
-      ? new Date(startDate)
-      : new Date(new Date().setDate(1));
-    const end = endDate ? new Date(endDate) : new Date();
+    let start;
+    let end;
+
+    if (year && month) {
+      const y = parseInt(year, 10);
+      const m = parseInt(month, 10);
+
+      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid year/month parameters",
+        });
+      }
+
+      start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+      end = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+    } else if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid startDate/endDate parameters",
+        });
+      }
+    } else {
+      // Default to current month in UTC
+      const now = new Date();
+      start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+      end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+    }
+
+    // Normalize to UTC day boundaries
+    start.setUTCHours(0, 0, 0, 0);
+    end.setUTCHours(23, 59, 59, 999);
 
     // Get user's POTD tracking records
     const userTracking = await UserPOTDTracking.getUserCalendar(
       req.user._id,
       start,
       end
+    );
+
+    const trackingByPotdId = new Map(
+      userTracking.map((t) => [t.potdId.toString(), t])
     );
 
     // Get all published POTDs in the date range
@@ -136,9 +172,7 @@ export const getUserPOTDCalendar = async (req, res) => {
       const potdDate = new Date(potd.activeDate);
       potdDate.setUTCHours(0, 0, 0, 0);
 
-      const tracking = userTracking.find(
-        (t) => t.potdId.toString() === potd._id.toString()
-      );
+      const tracking = trackingByPotdId.get(potd._id.toString());
 
       const isToday = potdDate.getTime() === today.getTime();
       const isPast = potdDate < today;
@@ -190,6 +224,7 @@ export const getUserPOTDCalendar = async (req, res) => {
  */
 export const recordPOTDAttempt = async (req, res) => {
   try {
+    const { potdId } = req.body;
     const potd = await PublishedPOTD.getToday();
 
     if (!potd) {
@@ -208,6 +243,14 @@ export const recordPOTDAttempt = async (req, res) => {
       });
     }
 
+    // Optional client-provided potdId guard
+    if (potdId && potdId.toString() !== potd._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid POTD id for today",
+      });
+    }
+
     // Get or create tracking entry
     let tracking = await UserPOTDTracking.getOrCreate(
       req.user._id,
@@ -217,6 +260,7 @@ export const recordPOTDAttempt = async (req, res) => {
     );
 
     // Update attempt count
+    const isFirstAttemptForThisPOTD = tracking.attempts === 0;
     if (!tracking.firstAttemptAt) {
       tracking.firstAttemptAt = now;
     }
@@ -229,8 +273,10 @@ export const recordPOTDAttempt = async (req, res) => {
       $inc: { "stats.totalAttempts": 1 },
     });
 
-    // Record attempt in streak
-    await UserStreak.recordAttempt(req.user._id);
+    // Record attempt in streak once per POTD/day
+    if (isFirstAttemptForThisPOTD) {
+      await UserStreak.recordAttempt(req.user._id);
+    }
 
     res.json({
       success: true,
@@ -256,7 +302,7 @@ export const recordPOTDAttempt = async (req, res) => {
  */
 export const solvePOTD = async (req, res) => {
   try {
-    const { submissionId, language } = req.body;
+    const { submissionId, language, potdId } = req.body;
 
     const potd = await PublishedPOTD.getToday();
 
@@ -276,6 +322,38 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
+    // Optional client-provided potdId guard
+    if (potdId && potdId.toString() !== potd._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid POTD id for today",
+      });
+    }
+
+    // Validate submission (prevents marking as solved without an accepted submission)
+    if (!submissionId || !mongoose.Types.ObjectId.isValid(submissionId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid submissionId is required to mark POTD as solved",
+      });
+    }
+
+    const submission = await Submission.findOne({
+      _id: submissionId,
+      userId: req.user._id,
+      questionId: potd.problemId?._id || potd.problemId,
+      isRun: false,
+      status: "accepted",
+      createdAt: { $gte: potd.startTime, $lte: potd.endTime },
+    }).select("_id language createdAt");
+
+    if (!submission) {
+      return res.status(400).json({
+        success: false,
+        message: "Submission is not a valid accepted solution for today's POTD",
+      });
+    }
+
     // Get or create tracking entry
     let tracking = await UserPOTDTracking.getOrCreate(
       req.user._id,
@@ -284,7 +362,7 @@ export const solvePOTD = async (req, res) => {
       potd.activeDate
     );
 
-    // Check if already solved
+    // Fast path: already solved
     if (tracking.solved) {
       return res.json({
         success: true,
@@ -296,19 +374,36 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Mark as solved
-    tracking.solved = true;
-    tracking.solvedAt = now;
-    tracking.bestSubmissionId = submissionId;
-    tracking.language = language;
+    // Atomically mark as solved to prevent duplicate stats/streak updates under concurrency.
+    const timeSpent = tracking.firstAttemptAt
+      ? Math.floor((now - tracking.firstAttemptAt) / 1000)
+      : 0;
 
-    if (tracking.firstAttemptAt) {
-      tracking.timeSpent = Math.floor(
-        (now - tracking.firstAttemptAt) / 1000
-      );
+    const updatedTracking = await UserPOTDTracking.findOneAndUpdate(
+      { _id: tracking._id, solved: false },
+      {
+        $set: {
+          solved: true,
+          solvedAt: now,
+          bestSubmissionId: submission._id,
+          language: language || submission.language || null,
+          timeSpent,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedTracking) {
+      // Another request solved it first.
+      return res.json({
+        success: true,
+        data: {
+          message: "POTD already solved",
+          solvedAt: tracking.solvedAt,
+          alreadySolved: true,
+        },
+      });
     }
-
-    await tracking.save();
 
     // Update POTD stats
     await PublishedPOTD.findByIdAndUpdate(potd._id, {
@@ -325,8 +420,8 @@ export const solvePOTD = async (req, res) => {
       success: true,
       data: {
         message: "Congratulations! POTD solved!",
-        solvedAt: tracking.solvedAt,
-        timeSpent: tracking.timeSpent,
+        solvedAt: updatedTracking.solvedAt,
+        timeSpent: updatedTracking.timeSpent,
         streak: {
           currentStreak: streakResult.currentStreak,
           maxStreak: streakResult.maxStreak,
