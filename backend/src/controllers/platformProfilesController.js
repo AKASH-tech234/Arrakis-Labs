@@ -10,6 +10,85 @@ const PLATFORMS = [
   "custom",
 ];
 
+function safeUrlParse(raw) {
+  try {
+    return new URL(raw);
+  } catch {
+    return null;
+  }
+}
+
+function inferHandleFromProfileUrl({ platform, profileUrl }) {
+  const u = safeUrlParse(profileUrl);
+  const pathname = u?.pathname || "";
+  const host = String(u?.hostname || "").toLowerCase();
+
+  const lastSegment = (p) => {
+    const parts = String(p || "")
+      .split("/")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : null;
+  };
+
+  if (platform === "custom") return null;
+
+  if (platform === "leetcode") {
+    if (!host.includes("leetcode.com")) return null;
+    // /u/<handle>/ or /<handle>/
+    const parts = pathname.split("/").filter(Boolean);
+    if (parts[0] === "u" && parts[1]) return parts[1];
+    if (parts[0]) return parts[0];
+    return null;
+  }
+
+  if (platform === "codeforces") {
+    if (!host.includes("codeforces.com")) return null;
+    const m = pathname.match(/^\/profile\/([^\/]+)\/?$/i);
+    return m?.[1] || null;
+  }
+
+  if (platform === "codechef") {
+    if (!host.includes("codechef.com")) return null;
+    const m = pathname.match(/^\/users\/([^\/]+)\/?$/i);
+    return m?.[1] || null;
+  }
+
+  if (platform === "atcoder") {
+    if (!host.includes("atcoder.jp")) return null;
+    const m = pathname.match(/^\/users\/([^\/]+)\/?$/i);
+    return m?.[1] || null;
+  }
+
+  if (platform === "hackerrank") {
+    if (!host.includes("hackerrank.com")) return null;
+    const parts = pathname.split("/").filter(Boolean);
+    if (!parts.length) return null;
+    if (parts[0] === "profile" && parts[1]) return parts[1];
+    return parts[0] || null;
+  }
+
+  return null;
+}
+
+function validateProfileUrlForPlatform({ platform, profileUrl }) {
+  const u = safeUrlParse(profileUrl);
+  if (!u) throw new Error("profileUrl must be a valid URL");
+  if (!/^https?:$/.test(u.protocol)) throw new Error("profileUrl must be http(s)");
+
+  if (platform === "custom") return;
+
+  const host = String(u.hostname || "").toLowerCase();
+  const ok =
+    (platform === "leetcode" && host.includes("leetcode.com")) ||
+    (platform === "codeforces" && host.includes("codeforces.com")) ||
+    (platform === "codechef" && host.includes("codechef.com")) ||
+    (platform === "atcoder" && host.includes("atcoder.jp")) ||
+    (platform === "hackerrank" && host.includes("hackerrank.com"));
+
+  if (!ok) throw new Error("profileUrl does not match the selected platform");
+}
+
 function asString(v) {
   if (v === undefined || v === null) return null;
   return String(v);
@@ -61,7 +140,13 @@ export async function addPlatformProfile(req, res) {
     const userId = req.user._id;
     const platform = requireEnum(req.body?.platform, "platform", PLATFORMS);
     const profileUrl = requireString(req.body?.profileUrl, "profileUrl", { max: 500 });
-    const handle = requireString(req.body?.handle, "handle", { max: 60 });
+
+    validateProfileUrlForPlatform({ platform, profileUrl });
+
+    const handleFromBody = optionalString(req.body?.handle, { max: 60 });
+    const inferred = inferHandleFromProfileUrl({ platform, profileUrl });
+    const handle = handleFromBody || inferred;
+    if (!handle) throw new Error("handle is required (or provide a valid profileUrl)");
 
     const doc = await PlatformProfile.create({
       userId,
@@ -86,12 +171,28 @@ export async function updatePlatformProfile(req, res) {
     const userId = req.user._id;
     const id = req.params.id;
 
+    const existing = await PlatformProfile.findOne({ _id: id, userId }).lean();
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Platform profile not found" });
+    }
+
     const patch = {};
     if (req.body?.profileUrl !== undefined) {
-      patch.profileUrl = optionalString(req.body.profileUrl, { max: 500 }) ?? "";
+      const nextUrl = optionalString(req.body.profileUrl, { max: 500 });
+      if (!nextUrl) throw new Error("profileUrl is required");
+      validateProfileUrlForPlatform({ platform: existing.platform, profileUrl: nextUrl });
+      patch.profileUrl = nextUrl;
+
+      // If handle isn't explicitly provided, infer from URL.
+      if (req.body?.handle === undefined) {
+        const inferred = inferHandleFromProfileUrl({ platform: existing.platform, profileUrl: nextUrl });
+        if (inferred) patch.handle = inferred;
+      }
     }
     if (req.body?.handle !== undefined) {
-      patch.handle = optionalString(req.body.handle, { max: 60 }) ?? "";
+      const nextHandle = optionalString(req.body.handle, { max: 60 });
+      if (!nextHandle) throw new Error("handle is required");
+      patch.handle = nextHandle;
     }
     if (req.body?.isEnabled !== undefined) {
       patch.isEnabled = optionalBoolean(req.body.isEnabled);
@@ -105,10 +206,6 @@ export async function updatePlatformProfile(req, res) {
       { $set: patch },
       { new: true }
     );
-
-    if (!updated) {
-      return res.status(404).json({ success: false, message: "Platform profile not found" });
-    }
 
     return res.json({ success: true, data: updated });
   } catch (err) {
