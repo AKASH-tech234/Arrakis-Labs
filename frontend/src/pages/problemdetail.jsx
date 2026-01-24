@@ -4,11 +4,16 @@ import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
 import ProblemDescription from "../components/problem/ProblemDescription";
+import ProblemSubmissionsPanel from "../components/problem/ProblemSubmissionsPanel";
+import SolutionDiscussion from "../components/discuss/SolutionDiscussion";
 import CodeEditor from "../components/editor/CodeEditor";
 import OutputPanel from "../components/editor/OutputPanel";
 import AIFeedbackPanelV2 from "../components/feedback/AIFeedbackPanelV2";
+import { MessageSquare } from "lucide-react";
+import DiscussDrawer from "../components/discuss/DiscussDrawer";
 import {
   getPublicQuestion,
+  getMySubmissions,
   runQuestion,
   submitQuestion,
 } from "../services/api";
@@ -53,6 +58,10 @@ export default function ProblemDetail() {
   const abortControllerRef = useRef(null);
 
   const [lastSubmission, setLastSubmission] = useState(null);
+  const [lastAcceptedFromHistory, setLastAcceptedFromHistory] = useState(null);
+
+  const [discussOpen, setDiscussOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("description");
 
   const {
     feedback,
@@ -97,6 +106,34 @@ export default function ProblemDetail() {
     };
   }, [id]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAccepted = async () => {
+      try {
+        const submissions = await getMySubmissions({ questionId: id });
+        const accepted = Array.isArray(submissions)
+          ? submissions.find((s) => String(s.status).toLowerCase() === "accepted")
+          : null;
+
+        if (!mounted) return;
+
+        if (accepted?._id) {
+          setLastAcceptedFromHistory({ submissionId: accepted._id });
+        } else {
+          setLastAcceptedFromHistory(null);
+        }
+      } catch {
+        if (mounted) setLastAcceptedFromHistory(null);
+      }
+    };
+
+    loadAccepted();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
   // ✅ FIXED: DO NOT REFORMAT CONSTRAINTS
   const problem = useMemo(() => {
     if (!problemRaw) return defaultProblem;
@@ -125,6 +162,14 @@ export default function ProblemDetail() {
         : [],
     };
   }, [problemRaw]);
+
+  const lastAcceptedSubmission = useMemo(() => {
+    const verdict = String(lastSubmission?.verdict || "").toLowerCase();
+    if (verdict === "accepted" && lastSubmission?.backendSubmissionId) {
+      return { submissionId: lastSubmission.backendSubmissionId };
+    }
+    return lastAcceptedFromHistory;
+  }, [lastSubmission, lastAcceptedFromHistory]);
 
   const runOrSubmit = async (code, language, isSubmit = false) => {
     if (abortControllerRef.current) {
@@ -361,6 +406,28 @@ export default function ProblemDetail() {
           ref={containerRef}
           className="flex-1 flex overflow-hidden relative"
         >
+          <div className="absolute bottom-6 right-6 z-[70]">
+            <button
+              type="button"
+              onClick={() => {
+                if (panelWidth < 5) {
+                  setDiscussOpen(true);
+                } else {
+                  setActiveTab("discuss");
+                }
+              }}
+              className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#2A2A24] bg-[#0A0A08] text-[#E8E4D9] hover:border-[#D97706]/60 hover:shadow-[0_0_0_1px_rgba(217,119,6,0.18)] transition-all"
+            >
+              <MessageSquare className="w-4 h-4 text-[#F59E0B] group-hover:text-[#FBBF24] transition-colors" />
+              <span
+                className="text-xs tracking-[0.25em] uppercase"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Discuss
+              </span>
+            </button>
+          </div>
+
           {/* Problem Panel */}
           <div
             className="overflow-auto bg-[#0A0A08] transition-all duration-200 ease-out"
@@ -376,7 +443,52 @@ export default function ProblemDetail() {
             ) : problemError ? (
               <div className="p-6 text-[#92400E]">{problemError}</div>
             ) : (
-              <ProblemDescription problem={problem} />
+              <div className="h-full flex flex-col">
+                <div className="sticky top-0 z-10 bg-[#0A0A08] border-b border-[#1A1814]">
+                  <div className="px-6 pt-4 pb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      {[
+                        { key: "description", label: "Description" },
+                        { key: "submissions", label: "Submissions" },
+                        { key: "discuss", label: "Discuss" },
+                      ].map((t) => (
+                        <button
+                          key={t.key}
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(t.key);
+                            if (t.key === "discuss" && panelWidth < 5) setDiscussOpen(true);
+                          }}
+                          className={`px-3 py-2 rounded-lg border text-xs tracking-[0.25em] uppercase transition-all ${
+                            activeTab === t.key
+                              ? "border-[#D97706]/50 bg-[#0F0F0D] text-[#E8E4D9]"
+                              : "border-[#1A1814] bg-[#0A0A08] text-[#A29A8C] hover:border-[#D97706]/30"
+                          }`}
+                          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 min-h-0">
+                  {activeTab === "description" ? (
+                    <ProblemDescription problem={problem} />
+                  ) : activeTab === "submissions" ? (
+                    <ProblemSubmissionsPanel
+                      questionId={id}
+                      onAccepted={(a) => setLastAcceptedFromHistory(a)}
+                    />
+                  ) : (
+                    <SolutionDiscussion
+                      problemId={problem?.id || problem?._id}
+                      lastAcceptedSubmission={lastAcceptedSubmission}
+                    />
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -420,6 +532,13 @@ export default function ProblemDetail() {
             />
           </div>
         </div>
+
+        <DiscussDrawer
+          open={discussOpen}
+          onClose={() => setDiscussOpen(false)}
+          problem={problem}
+          lastAcceptedSubmission={lastAcceptedSubmission}
+        />
       </main>
     </div>
   );
