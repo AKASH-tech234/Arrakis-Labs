@@ -116,6 +116,14 @@ export default function AppHeader() {
                 >
                   View Profile
                 </Link>
+                <Link
+                  to="/coding-profile"
+                  onClick={() => setProfileOpen(false)}
+                  className="block px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30 transition-colors text-xs uppercase tracking-wider"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Coding Profile
+                </Link>
                 <button
                   type="button"
                   onClick={async () => {

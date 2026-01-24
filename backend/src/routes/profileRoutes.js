@@ -8,6 +8,11 @@ import {
   getPublicSettings,
   upsertPublicSettings,
 } from "../controllers/platformProfilesController.js";
+import {
+  deletePlatformProfile,
+  syncPlatformProfileHandler,
+  getCodingProfileSummary,
+} from "../controllers/codingProfileController.js";
 
 const router = express.Router();
 
@@ -18,6 +23,11 @@ router.get("/analytics", optionalAuth, getProfileAnalytics);
 router.get("/platforms", protect, listPlatformProfiles);
 router.post("/platform", protect, addPlatformProfile);
 router.put("/platform/:id", protect, updatePlatformProfile);
+router.delete("/platform/:id", protect, deletePlatformProfile);
+router.post("/platform/:id/sync", protect, syncPlatformProfileHandler);
+
+// Coding Profile summary (DB-only)
+router.get("/coding-summary", protect, getCodingProfileSummary);
 
 // Public profile settings
 router.get("/public-settings", protect, getPublicSettings);
