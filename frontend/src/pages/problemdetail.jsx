@@ -22,6 +22,119 @@ const languageMap = {
   "C++": "cpp",
 };
 
+// Format output in LeetCode style (plain text, not JSON)
+const formatLeetCodeOutput = (data, isSubmit) => {
+  // Handle compile errors
+  if (data.status === "compile_error" || data.compileError || data.error?.includes("compile")) {
+    const errorMsg = data.compileError || data.error || data.message || "Compilation failed";
+    // Parse line/char info if available
+    const lineMatch = errorMsg.match(/line\s*(\d+)/i);
+    const charMatch = errorMsg.match(/(?:char|column|col)\s*(\d+)/i);
+    
+    let output = "Compile Error\n";
+    if (lineMatch || charMatch) {
+      output += `Line ${lineMatch?.[1] || "?"}: Char ${charMatch?.[1] || "?"}: `;
+    }
+    output += `error: ${errorMsg.replace(/^.*error:\s*/i, "")}`;
+    return output;
+  }
+
+  // Handle runtime errors
+  if (data.status === "runtime_error" || data.runtimeError) {
+    const errorMsg = data.runtimeError || data.error || data.message || "Runtime error occurred";
+    return `Runtime Error\n\n${errorMsg}`;
+  }
+
+  // Handle time limit exceeded
+  if (data.status === "time_limit_exceeded" || data.timeout) {
+    return "Time Limit Exceeded\n\nYour code took too long to execute.";
+  }
+
+  // Handle wrong answer
+  if (data.status === "wrong_answer" || (data.results && !data.allPassed)) {
+    let output = "Wrong Answer\n\n";
+    
+    if (data.results && Array.isArray(data.results)) {
+      const failedTest = data.results.find(r => !r.passed);
+      if (failedTest) {
+        if (failedTest.input !== undefined) {
+          output += `Input:\n${failedTest.input}\n\n`;
+        }
+        output += `Expected Output:\n${failedTest.expected || failedTest.expectedOutput || "N/A"}\n\n`;
+        output += `Actual Output:\n${failedTest.actual || failedTest.output || failedTest.stdout || "N/A"}`;
+      }
+    } else if (data.expected !== undefined || data.actual !== undefined) {
+      output += `Expected Output:\n${data.expected || "N/A"}\n\n`;
+      output += `Actual Output:\n${data.actual || data.output || "N/A"}`;
+    }
+    
+    return output;
+  }
+
+  // Handle accepted
+  if (data.status === "accepted" || data.allPassed) {
+    let output = "Accepted\n\n";
+    
+    if (data.results && Array.isArray(data.results)) {
+      const passedCount = data.results.filter(r => r.passed).length;
+      output += `${passedCount}/${data.results.length} test cases passed\n\n`;
+      
+      // Show runtime if available
+      if (data.runtime || data.executionTime) {
+        output += `Runtime: ${data.runtime || data.executionTime} ms\n`;
+      }
+      if (data.memory) {
+        output += `Memory: ${data.memory} MB`;
+      }
+    } else {
+      output += "All test cases passed!";
+    }
+    
+    return output;
+  }
+
+  // Handle successful run (not submit) - just show stdout
+  if (data.output !== undefined || data.stdout !== undefined) {
+    const stdout = data.output || data.stdout || "";
+    
+    if (data.results && Array.isArray(data.results)) {
+      let output = "";
+      const passedCount = data.results.filter(r => r.passed).length;
+      const totalCount = data.results.length;
+      
+      if (passedCount === totalCount) {
+        output += `✓ ${passedCount}/${totalCount} test cases passed\n\n`;
+      } else {
+        output += `✗ ${passedCount}/${totalCount} test cases passed\n\n`;
+      }
+      
+      // Show first test case output
+      if (data.results[0]) {
+        const first = data.results[0];
+        if (first.input !== undefined) {
+          output += `Input:\n${first.input}\n\n`;
+        }
+        output += `Output:\n${first.output || first.stdout || first.actual || ""}`;
+        
+        if (!first.passed && first.expected) {
+          output += `\n\nExpected:\n${first.expected}`;
+        }
+      }
+      
+      return output;
+    }
+    
+    return stdout || "(No output)";
+  }
+
+  // Fallback - show raw data in readable format
+  if (data.message) {
+    return data.message;
+  }
+  
+  return "Code executed successfully.";
+};
+
 const defaultProblem = {
   id: 0,
   title: "Problem Not Found",
@@ -42,6 +155,7 @@ export default function ProblemDetail() {
   const abortControllerRef = useRef(null);
 
   const [lastSubmission, setLastSubmission] = useState(null);
+  const [runResults, setRunResults] = useState(null); // Store raw results for Result tab
 
   const {
     feedback,
@@ -135,6 +249,7 @@ export default function ProblemDetail() {
     setOutput(isSubmit ? "Submitting..." : "Running...");
     setSubmitted(false);
     setLastSubmission(null);
+    setRunResults(null);
     resetFeedback();
     setShowFeedback(false);
 
@@ -151,9 +266,12 @@ export default function ProblemDetail() {
         ? await submitQuestion(payload)
         : await runQuestion(payload);
 
-      setOutput(
-        JSON.stringify(data, null, 2)
-      );
+      // Store raw results for Result tab
+      setRunResults(data);
+
+      // Format output in LeetCode style (plain text, not JSON)
+      const formattedOutput = formatLeetCodeOutput(data, isSubmit);
+      setOutput(formattedOutput);
 
       const isAccepted = isSubmit
         ? data.status === "accepted"
@@ -377,6 +495,8 @@ export default function ProblemDetail() {
               status={status} 
               height={outputHeight}
               onResizeStart={handleOutputResizeStart}
+              testCases={problem.examples}
+              runResults={runResults}
             />
           </div>
         </div>
