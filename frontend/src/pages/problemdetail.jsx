@@ -1,6 +1,6 @@
 // src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
 import ProblemDescription from "../components/problem/ProblemDescription";
@@ -12,6 +12,7 @@ import {
   runQuestion,
   submitQuestion,
 } from "../services/api";
+import { recordPOTDAttempt, solvePOTD } from "../services/potdApi";
 import { useAIFeedback, checkAIHealth } from "../hooks/useAIFeedback";
 import { useSubmission } from "../context/SubmissionContext";
 
@@ -36,7 +37,13 @@ const defaultProblem = {
 export default function ProblemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { recordSubmission } = useSubmission();
+
+  const isPOTD = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("potd") === "true";
+  }, [location.search]);
 
   const [output, setOutput] = useState("");
   const [status, setStatus] = useState("idle");
@@ -162,6 +169,24 @@ export default function ProblemDetail() {
       setStatus(isAccepted ? "success" : "error");
 
       if (isSubmit) {
+        // Best-effort POTD tracking (UTC day semantics enforced server-side).
+        // We avoid sending potdId unless we have it; undefined is omitted by JSON.
+        if (isPOTD && data?.submissionId) {
+          try {
+            await recordPOTDAttempt(undefined, data.submissionId);
+          } catch {
+            // ignore
+          }
+
+          if (data.status === "accepted") {
+            try {
+              await solvePOTD(undefined, data.submissionId);
+            } catch {
+              // ignore
+            }
+          }
+        }
+
         const submissionData = {
           questionId: id,
           questionTitle: problem.title,
@@ -171,6 +196,7 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
+          backendSubmissionId: data.submissionId || null,
         };
 
         // Record submission in context (DOES NOT auto-trigger AI)

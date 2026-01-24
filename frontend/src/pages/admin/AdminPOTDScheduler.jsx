@@ -102,11 +102,11 @@ export default function AdminPOTDScheduler() {
   }, [showModal, searchQuery, difficultyFilter]);
 
   const daysInMonth = useMemo(() => {
-    return new Date(year, month + 1, 0).getDate();
+    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   }, [year, month]);
 
   const firstDayOfMonth = useMemo(() => {
-    return new Date(year, month, 1).getDay();
+    return new Date(Date.UTC(year, month, 1)).getUTCDay();
   }, [year, month]);
 
   const scheduleMap = useMemo(() => {

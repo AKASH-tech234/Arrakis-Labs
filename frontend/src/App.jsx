@@ -12,6 +12,9 @@ import ProblemLibrary from "./pages/problem";
 import ProblemDetail from "./pages/problemdetail";
 import SubmissionResult from "./pages/SubmissionResult";
 import Profile from "./pages/profile";
+import POTDHome from "./pages/potd/POTDHome";
+import POTDHistory from "./pages/potd/POTDHistory";
+import POTDLeaderboard from "./pages/potd/POTDLeaderboard";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { SubmissionProvider } from "./context/SubmissionContext";
@@ -29,6 +32,7 @@ import CSVUpload from "./pages/admin/CSVUpload";
 import QuestionList from "./pages/admin/QuestionList";
 import QuestionEditor from "./pages/admin/QuestionEditor";
 import TestCaseManager from "./pages/admin/TestCaseManager";
+import AdminPOTDScheduler from "./pages/admin/AdminPOTDScheduler";
 import {
   AdminContestList,
   AdminContestEditor,
@@ -75,6 +79,32 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              <Route
+                path="/potd"
+                element={
+                  <ProtectedRoute>
+                    <POTDHome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/potd/history"
+                element={
+                  <ProtectedRoute>
+                    <POTDHistory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/potd/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <POTDLeaderboard />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route
                 path="/problems/:id"
                 element={
@@ -136,6 +166,8 @@ function App() {
                   path="questions/:id/test-cases"
                   element={<TestCaseManager />}
                 />
+
+                <Route path="potd" element={<AdminPOTDScheduler />} />
 
                 {/* Admin Contest Routes */}
                 <Route path="contests" element={<AdminContestList />} />

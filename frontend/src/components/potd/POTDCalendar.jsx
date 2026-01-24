@@ -29,8 +29,8 @@ export default function POTDCalendar() {
   const fetchCalendarData = async () => {
     try {
       setLoading(true);
-      const startDate = new Date(year, month, 1).toISOString();
-      const endDate = new Date(year, month + 1, 0).toISOString();
+      const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)).toISOString();
+      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)).toISOString();
 
       const response = await getUserPOTDCalendar(startDate, endDate);
       if (response.success) {
@@ -45,11 +45,11 @@ export default function POTDCalendar() {
   };
 
   const daysInMonth = useMemo(() => {
-    return new Date(year, month + 1, 0).getDate();
+    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   }, [year, month]);
 
   const firstDayOfMonth = useMemo(() => {
-    return new Date(year, month, 1).getDay();
+    return new Date(Date.UTC(year, month, 1)).getUTCDay();
   }, [year, month]);
 
   const calendarMap = useMemo(() => {
@@ -80,9 +80,9 @@ export default function POTDCalendar() {
     const status = getDayStatus(day);
     const today = new Date();
     const isToday =
-      day === today.getDate() &&
-      month === today.getMonth() &&
-      year === today.getFullYear();
+      day === today.getUTCDate() &&
+      month === today.getUTCMonth() &&
+      year === today.getUTCFullYear();
 
     let bgColor = "bg-gray-800/30";
     let icon = null;
