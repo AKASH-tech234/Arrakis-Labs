@@ -99,31 +99,8 @@ export const schedulePOTD = async (req, res) => {
 
     // Auto-publish if scheduling for today
     if (date.getTime() === today.getTime()) {
-      // Check if today's POTD already exists
-      const existingPOTD = await PublishedPOTD.findOne({ activeDate: today });
-      
-      if (!existingPOTD) {
-        // Create published POTD
-        const startTime = new Date(today);
-        const endTime = new Date(today);
-        endTime.setUTCHours(23, 59, 59, 999);
-
-        await PublishedPOTD.create({
-          problemId,
-          scheduleId: newSchedule._id,
-          activeDate: today,
-          startTime,
-          endTime,
-          status: "active",
-        });
-
-        // Mark schedule as published
-        newSchedule.isPublished = true;
-        newSchedule.publishedAt = new Date();
-        await newSchedule.save();
-
-        console.log(`✅ Auto-published POTD for today: ${problem.title}`);
-      }
+      // Publish via scheduler for consistent behavior + correct schema fields
+      await potdScheduler.checkAndPublishTodaysPOTD();
     }
 
     res.status(201).json({
