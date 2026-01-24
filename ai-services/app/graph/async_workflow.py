@@ -128,12 +128,18 @@ def learning_node(state: AsyncState) -> AsyncState:
     """
     ASYNC: Generate personalized learning recommendations.
     
-    MUST COMPLETE - No skip conditions based on verdict.
-    Even accepted submissions provide learning opportunities.
+    RESPECTS orchestrator plan - skips if run_learning is False.
     """
     _init_async_timing(state)
     
-    # LOG verdict but NEVER skip
+    # CHECK orchestrator plan - respect the decision
+    plan = state.get("plan", {})
+    if not plan.get("run_learning", True):
+        logger.info("⏭️ [ASYNC] learning_agent SKIPPED by orchestrator plan")
+        state["learning_recommendation"] = None
+        state["_async_timings"]["learning_agent"] = 0.0
+        return state
+    
     verdict = state.get("verdict", "").lower()
     logger.info(f"🧠 [ASYNC] learning_agent starting | verdict={verdict}")
     
@@ -180,11 +186,20 @@ def difficulty_node(state: AsyncState) -> AsyncState:
     """
     ASYNC: Adjust difficulty based on performance.
     
-    MUST COMPLETE - No skip conditions.
-    Difficulty decisions should be made for every submission.
+    RESPECTS orchestrator plan - skips if run_difficulty is False.
     """
+    # CHECK orchestrator plan - respect the decision
+    plan = state.get("plan", {})
+    if not plan.get("run_difficulty", True):
+        logger.info("⏭️ [ASYNC] difficulty_agent SKIPPED by orchestrator plan")
+        state["difficulty_adjustment"] = None
+        if "_async_timings" not in state:
+            state["_async_timings"] = {}
+        state["_async_timings"]["difficulty_agent"] = 0.0
+        return state
+    
     start = time.time()
-    logger.info("📈 [ASYNC] difficulty_agent starting (MUST COMPLETE)")
+    logger.info("📈 [ASYNC] difficulty_agent starting")
     
     # Build context enriched with learning recommendations for coherent decisions
     context = state.get("context", "")

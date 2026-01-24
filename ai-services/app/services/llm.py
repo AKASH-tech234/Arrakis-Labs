@@ -45,11 +45,11 @@ load_dotenv()
 def get_llm(temperature: float = 0.2):
     """
     Central LLM factory.
-    Switchedto Gemini.
+    Switched to Gemini.
     """
 
     api_key = os.getenv("GOOGLE_API_KEY")
-    print(api_key)
+    # SECURITY: Never print API keys to logs
     if not api_key:
         raise RuntimeError("GOOGLE_API_KEY is not set in .env")
 

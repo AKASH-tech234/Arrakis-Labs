@@ -1,7 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import MongoClient
+
+from pymongo import MongoClient, uri_parser
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,6 +12,8 @@ class MongoDBClient:
     
     def __init__(self):
         self.mongo_uri = os.getenv("MONGODB_URI")
+        # Allow specifying database name separately when URI omits a default database
+        self.db_name = os.getenv("MONGODB_DB_NAME") or os.getenv("MONGODB_DB")
         self.client = None
         self.db = None
     
@@ -24,7 +27,13 @@ class MongoDBClient:
         try:
             print(f"🔌 Connecting to MongoDB...")
             self.client = MongoClient(self.mongo_uri)
-            self.db = self.client.get_database()
+
+            # Resolve database name from env or URI; raise clear error if missing
+            resolved_db = self._resolve_db_name(self.mongo_uri)
+            if not resolved_db:
+                raise ValueError("No default database defined. Set MONGODB_DB_NAME or include a database in MONGODB_URI")
+
+            self.db = self.client.get_database(resolved_db)
             
             # Test connection
             self.client.admin.command('ping')
@@ -35,6 +44,17 @@ class MongoDBClient:
             print(f"❌ MongoDB connection failed: {e}")
             logger.error(f"❌ MongoDB connection failed: {e}")
             return False
+
+    def _resolve_db_name(self, uri: str) -> Optional[str]:
+        """Determine the database name from env or URI."""
+        if self.db_name:
+            return self.db_name
+        try:
+            parsed = uri_parser.parse_uri(uri)
+            return parsed.get("database")
+        except Exception as e:
+            logger.error(f"Failed to parse MongoDB URI for database name: {e}")
+            return None
     
     def get_user_submissions(
         self,

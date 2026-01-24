@@ -217,7 +217,7 @@ def build_context(
     # ═══════════════════════════════════════════════════════════════════════════
     mongo_stats_section = ""
     try:
-        if mongo_client.db:
+        if mongo_client.db is not None:
             mongo_submissions = mongo_client.get_user_submissions(
                 user_id=submission.user_id,
                 limit=20

@@ -1,6 +1,6 @@
 // src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../components/layout/AppHeader";
 import ProblemDescription from "../components/problem/ProblemDescription";
@@ -13,6 +13,7 @@ import {
   submitQuestion,
 } from "../services/api";
 import { useAIFeedback, checkAIHealth } from "../hooks/useAIFeedback";
+import { useSubmission } from "../context/SubmissionContext";
 
 // Map UI language names to Piston runtime identifiers
 const languageMap = {
@@ -34,6 +35,9 @@ const defaultProblem = {
 
 export default function ProblemDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { recordSubmission } = useSubmission();
+
   const [output, setOutput] = useState("");
   const [status, setStatus] = useState("idle");
   const [submitted, setSubmitted] = useState(false);
@@ -108,9 +112,7 @@ export default function ProblemDetail() {
         ? problemRaw.constraints
         : [],
 
-      examples: Array.isArray(problemRaw.examples)
-        ? problemRaw.examples
-        : [],
+      examples: Array.isArray(problemRaw.examples) ? problemRaw.examples : [],
       testCases: Array.isArray(problemRaw.testCases)
         ? problemRaw.testCases
         : [],
@@ -151,9 +153,7 @@ export default function ProblemDetail() {
         ? await submitQuestion(payload)
         : await runQuestion(payload);
 
-      setOutput(
-        JSON.stringify(data, null, 2)
-      );
+      setOutput(JSON.stringify(data, null, 2));
 
       const isAccepted = isSubmit
         ? data.status === "accepted"
@@ -164,15 +164,23 @@ export default function ProblemDetail() {
       if (isSubmit) {
         const submissionData = {
           questionId: id,
+          questionTitle: problem.title,
           code,
           language: langKey,
           verdict: data.status || (isAccepted ? "accepted" : "wrong_answer"),
           errorType: data.errorType || null,
+          runtime: data.runtime || null,
+          memory: data.memory || null,
         };
+
+        // Record submission in context (DOES NOT auto-trigger AI)
+        const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
         setSubmitted(true);
-        triggerAIFeedback(submissionData);
+
+        // Navigate to results page where user can EXPLICITLY request AI feedback
+        navigate(`/submissions/${submission.id}`);
       }
     } catch (err) {
       if (err.name === "AbortError") {
@@ -211,20 +219,23 @@ export default function ProblemDetail() {
     document.body.style.userSelect = "none";
   }, []);
 
-  const handleMouseMove = useCallback((e) => {
-    if (!isDragging || !containerRef.current) return;
-    
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
-    const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
-    
-    // Clamp between 20% and 80%
-    const clampedWidth = Math.min(Math.max(newWidth, 20), 80);
-    
-    requestAnimationFrame(() => {
-      setPanelWidth(clampedWidth);
-    });
-  }, [isDragging]);
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDragging || !containerRef.current) return;
+
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
+      const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+
+      // Clamp between 20% and 80%
+      const clampedWidth = Math.min(Math.max(newWidth, 20), 80);
+
+      requestAnimationFrame(() => {
+        setPanelWidth(clampedWidth);
+      });
+    },
+    [isDragging],
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -279,20 +290,23 @@ export default function ProblemDetail() {
     document.body.style.userSelect = "none";
   }, []);
 
-  const handleOutputResizeMove = useCallback((e) => {
-    if (!isOutputDragging || !editorPanelRef.current) return;
-    
-    const panel = editorPanelRef.current;
-    const rect = panel.getBoundingClientRect();
-    const newHeight = rect.bottom - e.clientY;
-    
-    // Clamp between 100px and 400px
-    const clampedHeight = Math.min(Math.max(newHeight, 100), 400);
-    
-    requestAnimationFrame(() => {
-      setOutputHeight(clampedHeight);
-    });
-  }, [isOutputDragging]);
+  const handleOutputResizeMove = useCallback(
+    (e) => {
+      if (!isOutputDragging || !editorPanelRef.current) return;
+
+      const panel = editorPanelRef.current;
+      const rect = panel.getBoundingClientRect();
+      const newHeight = rect.bottom - e.clientY;
+
+      // Clamp between 100px and 400px
+      const clampedHeight = Math.min(Math.max(newHeight, 100), 400);
+
+      requestAnimationFrame(() => {
+        setOutputHeight(clampedHeight);
+      });
+    },
+    [isOutputDragging],
+  );
 
   const handleOutputResizeEnd = useCallback(() => {
     setIsOutputDragging(false);
@@ -317,14 +331,14 @@ export default function ProblemDetail() {
       <AppHeader />
 
       <main className="pt-14 h-screen flex flex-col">
-        <div 
+        <div
           ref={containerRef}
           className="flex-1 flex overflow-hidden relative"
         >
           {/* Problem Panel */}
-          <div 
+          <div
             className="overflow-auto bg-[#0A0A08] transition-all duration-200 ease-out"
-            style={{ 
+            style={{
               width: `${panelWidth}%`,
               minWidth: panelWidth > 0 ? "200px" : "0",
               opacity: panelWidth < 5 ? 0 : 1,
@@ -346,8 +360,8 @@ export default function ProblemDetail() {
             className={`arrakis-divider w-1 cursor-col-resize flex-shrink-0 relative group transition-colors duration-150 ${
               isDragging ? "bg-[#F59E0B]" : "bg-[#1A1814] hover:bg-[#92400E]/50"
             }`}
-            style={{ 
-              display: panelWidth < 5 || panelWidth > 95 ? "none" : "block" 
+            style={{
+              display: panelWidth < 5 || panelWidth > 95 ? "none" : "block",
             }}
           >
             {/* Drag handle indicator */}
@@ -355,26 +369,26 @@ export default function ProblemDetail() {
           </div>
 
           {/* Editor Panel */}
-          <div 
+          <div
             ref={editorPanelRef}
             className="flex flex-col overflow-hidden bg-[#0A0A08] transition-all duration-200 ease-out"
-            style={{ 
+            style={{
               width: `${100 - panelWidth}%`,
               flexGrow: isEditorFullscreen ? 1 : 0,
             }}
           >
             <div className="flex-1 overflow-hidden">
-              <CodeEditor 
-                onRun={handleRun} 
+              <CodeEditor
+                onRun={handleRun}
                 onSubmit={handleSubmit}
                 isFullscreen={isEditorFullscreen}
                 onToggleFullscreen={handleToggleFullscreen}
                 onRestore={handleRestoreEditor}
               />
             </div>
-            <OutputPanel 
-              output={output} 
-              status={status} 
+            <OutputPanel
+              output={output}
+              status={status}
               height={outputHeight}
               onResizeStart={handleOutputResizeStart}
             />
