@@ -602,7 +602,7 @@ export const getSubmissions = async (req, res) => {
     const submissions = await Submission.find(query)
       .sort({ createdAt: -1 })
       .limit(50)
-      .select("questionId language status passedCount totalCount createdAt")
+      .select("_id questionId language status passedCount totalCount createdAt")
       .lean();
 
     res.status(200).json({
