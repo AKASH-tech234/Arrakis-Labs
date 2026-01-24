@@ -57,15 +57,64 @@ export default function CodingProfile() {
   const [summary, setSummary] = useState({});
   const [error, setError] = useState(null);
 
-  const platforms = useMemo(() => {
-    if (!Array.isArray(summary?.platforms)) return [];
-    return summary.platforms.filter((p) => p && typeof p === "object");
+  const summarySafe = useMemo(() => {
+    const DEFAULT = {
+      user: {},
+      platforms: [],
+      combined: {
+        totalSolved: 0,
+        bestRating: null,
+        activity: [],
+        contributions: [],
+      },
+      internal: {
+        stats: {
+          totalSolved: 0,
+          rating: null,
+        },
+        activity: [],
+      },
+    };
+
+    const s = summary && typeof summary === "object" ? summary : {};
+    const combined = s?.combined && typeof s.combined === "object" ? s.combined : {};
+    const internal = s?.internal && typeof s.internal === "object" ? s.internal : {};
+    const internalStats = internal?.stats && typeof internal.stats === "object" ? internal.stats : {};
+
+    return {
+      ...DEFAULT,
+      ...s,
+      user: s?.user && typeof s.user === "object" ? s.user : DEFAULT.user,
+      platforms: Array.isArray(s?.platforms) ? s.platforms : DEFAULT.platforms,
+      combined: {
+        ...DEFAULT.combined,
+        ...combined,
+        activity: Array.isArray(combined?.activity) ? combined.activity : DEFAULT.combined.activity,
+        contributions: Array.isArray(combined?.contributions)
+          ? combined.contributions
+          : DEFAULT.combined.contributions,
+      },
+      internal: {
+        ...DEFAULT.internal,
+        ...internal,
+        stats: {
+          ...DEFAULT.internal.stats,
+          ...internalStats,
+        },
+        activity: Array.isArray(internal?.activity) ? internal.activity : DEFAULT.internal.activity,
+      },
+    };
   }, [summary]);
 
+  const platforms = useMemo(() => {
+    if (!Array.isArray(summarySafe?.platforms)) return [];
+    return summarySafe.platforms.filter((p) => p && typeof p === "object");
+  }, [summarySafe]);
+
   const contributions = useMemo(() => {
-    if (!Array.isArray(summary?.combined?.contributions)) return [];
-    return summary.combined.contributions.filter((c) => c && typeof c === "object");
-  }, [summary]);
+    if (!Array.isArray(summarySafe?.combined?.contributions)) return [];
+    return summarySafe.combined.contributions.filter((c) => c && typeof c === "object");
+  }, [summarySafe]);
 
   const [view, setView] = useState(VIEW.combined);
   const [selectedPlatform, setSelectedPlatform] = useState("arrakis");
@@ -111,28 +160,34 @@ export default function CodingProfile() {
 
   const activity = useMemo(() => {
     if (view === VIEW.combined) {
-      return summary?.combined?.activity || [];
+      const raw = summarySafe?.combined?.activity;
+      if (!Array.isArray(raw)) return [];
+      return raw.filter((d) => d && typeof d === "object" && d.date);
     }
 
     if (selectedPlatform === "arrakis") {
-      return summary?.internal?.activity || [];
+      const raw = summarySafe?.internal?.activity;
+      if (!Array.isArray(raw)) return [];
+      return raw.filter((d) => d && typeof d === "object" && d.date);
     }
     const p = platforms.find((x) => x?.platform === selectedPlatform);
-    return p?.activity || [];
-  }, [summary, view, selectedPlatform, platforms]);
+    const raw = p?.activity;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((d) => d && typeof d === "object" && d.date);
+  }, [summarySafe, view, selectedPlatform, platforms]);
 
   const statsForSelected = useMemo(() => {
     if (view === VIEW.combined) {
       return {
-        totalSolved: summary?.combined?.totalSolved ?? 0,
-        rating: summary?.combined?.bestRating ?? null,
+        totalSolved: summarySafe?.combined?.totalSolved ?? 0,
+        rating: summarySafe?.combined?.bestRating ?? null,
       };
     }
 
     if (selectedPlatform === "arrakis") {
       return {
-        totalSolved: summary?.internal?.stats?.totalSolved ?? 0,
-        rating: summary?.internal?.stats?.rating ?? null,
+        totalSolved: summarySafe?.internal?.stats?.totalSolved ?? 0,
+        rating: summarySafe?.internal?.stats?.rating ?? null,
       };
     }
 
@@ -141,7 +196,7 @@ export default function CodingProfile() {
       totalSolved: p?.stats?.totalSolved ?? 0,
       rating: p?.stats?.rating ?? null,
     };
-  }, [summary, view, selectedPlatform, platforms]);
+  }, [summarySafe, view, selectedPlatform, platforms]);
 
   const openAdd = () => {
     setModalMode("add");
@@ -241,7 +296,7 @@ export default function CodingProfile() {
               <p className="text-red-400">{error}</p>
             ) : (
               <>
-                <ProfileHeader user={{ ...(summary?.user || {}), descriptor: "Coding profile" }} />
+                <ProfileHeader user={{ ...(summarySafe?.user || {}), descriptor: "Coding profile" }} />
               </>
             )}
           </motion.div>
@@ -359,7 +414,7 @@ export default function CodingProfile() {
                   </div>
                 ) : (
                   platforms.map((p) => (
-                    <div key={p.id} className="bg-white/5 border border-white/10 rounded-xl p-5">
+                      <div key={p?.id || p?._id || `${p?.platform || "platform"}:${p?.profileUrl || ""}`} className="bg-white/5 border border-white/10 rounded-xl p-5">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                           <p className="text-[#E8E4D9] font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
@@ -425,7 +480,7 @@ export default function CodingProfile() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {contributions.map((c) => (
-                      <div key={c.platform} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                      <div key={c?.platform || "platform"} className="bg-white/5 border border-white/10 rounded-xl p-4">
                         <p className="text-[#E8E4D9] font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
                           {formatPlatformName(c.platform)}
                         </p>
