@@ -585,12 +585,21 @@ export default function SubmissionResult() {
   const hasSubmission = !!submission;
   const isAccepted = submission?.verdict === "accepted";
 
-  // Auto-request AI feedback when page loads
+  // Auto-request AI feedback ONLY if not already present
+  // ✨ FIX: Skip if aiFeedback already came with submission (avoids duplicate calls)
   useEffect(() => {
-    if (hasSubmission && aiStatus === "idle") {
+    if (hasSubmission && aiStatus === "idle" && !hasAIFeedback) {
+      // Only request if we don't already have feedback
+      console.log(
+        "[SubmissionResult] No aiFeedback from backend, requesting...",
+      );
       requestAIFeedback();
+    } else if (hasAIFeedback) {
+      console.log(
+        "[SubmissionResult] aiFeedback already present, skipping duplicate request",
+      );
     }
-  }, [hasSubmission, aiStatus, requestAIFeedback]);
+  }, [hasSubmission, aiStatus, hasAIFeedback, requestAIFeedback]);
 
   // Set initial view based on verdict once feedback is loaded
   useEffect(() => {

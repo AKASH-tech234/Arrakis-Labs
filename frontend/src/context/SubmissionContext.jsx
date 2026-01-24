@@ -234,7 +234,8 @@ export function SubmissionProvider({ children }) {
 
   /**
    * Record a completed submission
-   * DOES NOT trigger AI automatically - user must explicitly request
+   * If aiFeedback is included (from backend response), it will be set directly
+   * This avoids duplicate AI calls when backend already provides feedback
    */
   const recordSubmission = useCallback((submissionData) => {
     const submission = {
@@ -249,6 +250,40 @@ export function SubmissionProvider({ children }) {
       type: ActionTypes.SUBMISSION_COMPLETE,
       payload: { submission },
     });
+
+    // ✨ NEW: If aiFeedback came with submission, set it immediately
+    // This avoids duplicate API calls - backend already provided feedback!
+    if (submissionData.aiFeedback) {
+      console.log(
+        "[SubmissionContext] AI feedback already included from backend - skipping duplicate call",
+      );
+      const processedFeedback = {
+        success: true,
+        verdict: submission.verdict,
+        submissionId: submission.id,
+        feedbackType:
+          submissionData.aiFeedback.feedbackType || "error_feedback",
+        hints: submissionData.aiFeedback.hints || [],
+        allHintsCount: submissionData.aiFeedback.hints?.length || 0,
+        explanation: submissionData.aiFeedback.explanation,
+        hasExplanation: !!submissionData.aiFeedback.explanation,
+        detectedPattern: submissionData.aiFeedback.detectedPattern,
+        optimizationTips: submissionData.aiFeedback.optimizationTips || [],
+        complexityAnalysis: submissionData.aiFeedback.complexityAnalysis,
+        edgeCases: submissionData.aiFeedback.edgeCases || [],
+        improvementHint: submissionData.aiFeedback.improvementHint,
+        // ✨ NEW: Include MIM insights from backend
+        mimInsights:
+          submissionData.aiFeedback.mimInsights ||
+          submissionData.aiFeedback.mim_insights ||
+          null,
+      };
+
+      dispatch({
+        type: ActionTypes.AI_REQUEST_SUCCESS,
+        payload: { feedback: processedFeedback },
+      });
+    }
 
     return submission;
   }, []);
@@ -351,6 +386,9 @@ export function SubmissionProvider({ children }) {
             complexityAnalysis: data.data.complexityAnalysis,
             edgeCases: data.data.edgeCases || [],
             improvementHint: data.data.improvementHint,
+            // ✨ NEW: Include MIM insights from API response
+            mimInsights:
+              data.data.mimInsights || data.data.mim_insights || null,
           };
 
           dispatch({

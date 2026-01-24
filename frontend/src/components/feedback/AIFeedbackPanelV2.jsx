@@ -2,6 +2,7 @@
 // Progressive Hint Disclosure Panel - No raw JSON, beautified UI
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import MIMInsights from "../mim/MIMInsights"; // ✨ Import MIM insights component
 
 /**
  * Hint Type Badge Colors
@@ -399,6 +400,32 @@ export default function AIFeedbackPanelV2({
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+                )}
+
+                {/* ✨ MIM Insights - Machine Learning Predictions (NO LLM calls) */}
+                {feedback.mimInsights && (
+                  <div className="pt-4 border-t border-[#1A1814]">
+                    <MIMInsights
+                      insights={{
+                        root_cause:
+                          feedback.mimInsights.root_cause ||
+                          feedback.mimInsights.rootCause,
+                        readiness_scores: feedback.mimInsights.readiness
+                          ? {
+                              easy: feedback.mimInsights.readiness
+                                .easy_readiness,
+                              medium:
+                                feedback.mimInsights.readiness.medium_readiness,
+                              hard: feedback.mimInsights.readiness
+                                .hard_readiness,
+                            }
+                          : {},
+                        similar_mistakes: [],
+                        recommended_focus: [],
+                      }}
+                      expanded={false}
+                    />
                   </div>
                 )}
 

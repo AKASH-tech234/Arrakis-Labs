@@ -171,9 +171,11 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
+          // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
+          aiFeedback: data.aiFeedback || null,
         };
 
-        // Record submission in context (DOES NOT auto-trigger AI)
+        // Record submission in context (includes aiFeedback if present)
         const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
