@@ -50,8 +50,8 @@ export default function ProblemList({ problems }) {
       </div>
 
       {/* Problem Items */}
-      {problems.map((problem) => (
-        <ProblemCard key={problem.id} problem={problem} />
+      {problems.map((problem, index) => (
+        <ProblemCard key={problem.id} problem={problem} index={index} />
       ))}
     </div>
   );

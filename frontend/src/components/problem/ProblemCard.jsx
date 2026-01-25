@@ -14,8 +14,9 @@ const difficultyBgStyles = {
   Hard: "group-hover:bg-[#92400E]/10",
 };
 
-export default function ProblemCard({ problem }) {
+export default function ProblemCard({ problem, index }) {
   const { id, title, difficulty, category, solved } = problem;
+  const displaySequential = typeof index === "number" ? index + 1 : null;
 
   return (
     <motion.div
@@ -37,6 +38,17 @@ export default function ProblemCard({ problem }) {
           {/* Left: Title and Category */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
+              {/* Sequential number badge */}
+              {displaySequential !== null && (
+                <motion.div
+                  className="flex items-center justify-center w-10 h-10 rounded border-2 border-[#D97706] bg-[#0A0A08] group-hover:bg-[#D97706]/10 group-hover:border-[#F59E0B] transition-all duration-300"
+                  whileHover={{ scale: 1.03 }}
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  <span className="text-[#F59E0B] text-sm font-bold">{displaySequential}</span>
+                </motion.div>
+              )}
+
               {/* Solved indicator */}
               <motion.span
                 className={`text-xs uppercase tracking-wider transition-colors duration-300 ${
