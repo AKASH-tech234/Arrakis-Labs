@@ -1,14 +1,9 @@
-// src/components/feedback/LearningTimeline.jsx
-// Learning Timeline Component - Async-Aware Progress Visualization
-// Timeline updates immediately after sync feedback, async results are eventually consistent
+
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { TIMELINE_EVENT_TYPES } from "../../hooks/profile/useLearningTimeline";
 
-/**
- * Event Icon Component
- */
 function EventIcon({ type }) {
   const icons = {
     [TIMELINE_EVENT_TYPES.SUBMISSION]: (
@@ -76,9 +71,6 @@ function EventIcon({ type }) {
   return icons[type] || icons[TIMELINE_EVENT_TYPES.SUBMISSION];
 }
 
-/**
- * Get color for event type
- */
 function getEventColor(event) {
   const { type, metadata } = event;
 
@@ -96,9 +88,6 @@ function getEventColor(event) {
   }
 }
 
-/**
- * Format timestamp for display
- */
 function formatTimestamp(date) {
   const now = new Date();
   const diff = now - new Date(date);
@@ -117,9 +106,6 @@ function formatTimestamp(date) {
   });
 }
 
-/**
- * Single Timeline Event Component
- */
 function TimelineEvent({ event, isLast = false }) {
   const color = getEventColor(event);
 
@@ -129,7 +115,7 @@ function TimelineEvent({ event, isLast = false }) {
       animate={{ opacity: 1, x: 0 }}
       className="flex gap-4"
     >
-      {/* Timeline Line + Icon */}
+      {}
       <div className="flex flex-col items-center">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -145,7 +131,7 @@ function TimelineEvent({ event, isLast = false }) {
         )}
       </div>
 
-      {/* Event Content */}
+      {}
       <div className="flex-1 pb-6">
         <div className="flex items-start justify-between gap-2">
           <h4
@@ -171,7 +157,7 @@ function TimelineEvent({ event, isLast = false }) {
           {event.description}
         </p>
 
-        {/* Additional metadata tags */}
+        {}
         {event.metadata?.language && (
           <span
             className="inline-block mt-2 px-2 py-0.5 text-[10px] uppercase tracking-wider bg-[#1A1814] text-[#78716C] rounded"
@@ -185,9 +171,6 @@ function TimelineEvent({ event, isLast = false }) {
   );
 }
 
-/**
- * Timeline Stats Summary
- */
 function TimelineStats({ stats }) {
   if (!stats) return null;
 
@@ -241,29 +224,6 @@ function TimelineStats({ stats }) {
   );
 }
 
-/**
- * Learning Timeline Component
- *
- * Visualizes user progress without waiting for async results.
- *
- * Data Sources:
- * - Local submission history
- * - AI feedback summaries already received
- * - Weekly report (when user opens it)
- *
- * RULES:
- * - Timeline updates immediately after sync feedback
- * - Async results are eventually consistent
- * - No blocking UI
- *
- * @param {Object} props
- * @param {Array} props.timeline - Timeline events from useLearningTimeline
- * @param {Object} props.stats - Timeline statistics
- * @param {number} props.limit - Max events to show (default: 10)
- * @param {boolean} props.showStats - Whether to show stats summary
- * @param {string} props.emptyMessage - Message when no events
- * @param {string} props.className - Additional CSS classes
- */
 export default function LearningTimeline({
   timeline = [],
   stats = null,
@@ -272,7 +232,7 @@ export default function LearningTimeline({
   emptyMessage = "No activity yet. Start solving problems!",
   className = "",
 }) {
-  // Limit displayed events
+  
   const displayedEvents = useMemo(
     () => timeline.slice(0, limit),
     [timeline, limit],
@@ -280,10 +240,10 @@ export default function LearningTimeline({
 
   return (
     <div className={`${className}`}>
-      {/* Stats Summary */}
+      {}
       {showStats && stats && <TimelineStats stats={stats} />}
 
-      {/* Timeline Events */}
+      {}
       {displayedEvents.length > 0 ? (
         <div className="space-y-0">
           {displayedEvents.map((event, index) => (
@@ -318,7 +278,7 @@ export default function LearningTimeline({
         </div>
       )}
 
-      {/* Show More */}
+      {}
       {timeline.length > limit && (
         <div className="text-center mt-4">
           <span
@@ -333,9 +293,6 @@ export default function LearningTimeline({
   );
 }
 
-/**
- * Compact Timeline (for sidebar/widget use)
- */
 export function CompactTimeline({ timeline = [], limit = 5 }) {
   const events = timeline.slice(0, limit);
 

@@ -34,7 +34,6 @@ export async function exportProfilePdf(req, res) {
     const format = req.body?.format === "two_page" ? "two_page" : "one_page";
     const includeQr = !!req.body?.includeQr;
 
-    // All data comes from DB via our aggregation service + stored platform stats
     const [settings, combined, platformStats] = await Promise.all([
       PublicProfileSettings.findOne({ userId }).lean(),
       computeAggregatedStats(userId),
@@ -54,7 +53,6 @@ export async function exportProfilePdf(req, res) {
     const stream = fs.createWriteStream(filePath);
     doc.pipe(stream);
 
-    // Header
     doc.fontSize(18).fillColor("#111111").text("Arrakis Profile", { align: "left" });
     doc.moveDown(0.25);
     doc
@@ -64,7 +62,6 @@ export async function exportProfilePdf(req, res) {
 
     doc.moveDown(1);
 
-    // Summary
     doc.fontSize(13).fillColor("#111111").text("Summary", { underline: false });
     doc.moveDown(0.5);
 
@@ -80,7 +77,6 @@ export async function exportProfilePdf(req, res) {
 
     doc.moveDown(5);
 
-    // Difficulty
     doc.fontSize(13).fillColor("#111111").text("Difficulty Split", { underline: false });
     doc.moveDown(0.5);
 
@@ -91,7 +87,6 @@ export async function exportProfilePdf(req, res) {
 
     doc.moveDown(4);
 
-    // Platforms
     doc.fontSize(13).fillColor("#111111").text("Platform-wise Statistics", { underline: false });
     doc.moveDown(0.5);
 
@@ -122,7 +117,6 @@ export async function exportProfilePdf(req, res) {
       }
     }
 
-    // Optional QR section (not generated unless enabled)
     if (includeQr && publicProfilePath) {
       doc.moveDown(1);
       doc
@@ -162,7 +156,6 @@ export async function exportProfilePdf(req, res) {
       stream.on("error", reject);
     });
 
-    // Served by express static mount at /exports
     return res.json({ success: true, data: { fileUrl: `/exports/${baseName}` } });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message || "PDF export failed" });

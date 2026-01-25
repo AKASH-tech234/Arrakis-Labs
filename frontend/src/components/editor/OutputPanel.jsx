@@ -1,4 +1,4 @@
-// src/components/editor/OutputPanel.jsx
+
 import { useState } from "react";
 
 const TabButton = ({ active, onClick, children }) => (
@@ -32,7 +32,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
       className="arrakis-output border-t border-[#1A1814] bg-[#0A0A08] flex flex-col"
       style={{ height: height ? `${height}px` : undefined }}
     >
-      {/* Resize Handle */}
+      {}
       <div
         onMouseDown={onResizeStart}
         className="h-1 cursor-row-resize bg-[#1A1814] hover:bg-[#92400E]/50 transition-colors duration-150 flex-shrink-0 group"
@@ -42,7 +42,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
         </div>
       </div>
 
-      {/* Tab Bar */}
+      {}
       <div className="flex items-center justify-between px-2 bg-[#121210] border-b border-[#1A1814]">
         <div className="flex items-center">
           <TabButton 
@@ -65,7 +65,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
           </TabButton>
         </div>
         
-        {/* Status indicator */}
+        {}
         {status !== "idle" && (
           <div className={`flex items-center gap-2 px-3 py-1 ${currentStatus.bg}`}>
             {status === "running" && (
@@ -81,7 +81,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
         )}
       </div>
 
-      {/* Output Content */}
+      {}
       <div className="flex-1 p-4 overflow-auto">
         {output ? (
           <pre

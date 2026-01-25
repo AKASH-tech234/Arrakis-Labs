@@ -1,4 +1,4 @@
-// src/App.jsx
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -22,10 +22,8 @@ import { SubmissionProvider } from "./context/SubmissionContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import GuestRoute from "./components/auth/GuestRoute";
 
-// Contest Pages
 import { ContestList, ContestDetail, ContestProblem } from "./pages/contest";
 
-// Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -52,7 +50,7 @@ function App() {
         <SubmissionProvider>
           <Router>
             <Routes>
-              {/* Public Routes */}
+              {}
               <Route path="/" element={<Landing />} />
               <Route
                 path="/login"
@@ -71,7 +69,7 @@ function App() {
                 }
               />
 
-              {/* Authenticated Routes */}
+              {}
               <Route
                 path="/problems"
                 element={
@@ -140,10 +138,10 @@ function App() {
                 }
               />
 
-              {/* Public shareable Profile */}
+              {}
               <Route path="/u/:username" element={<PublicProfileRoute />} />
 
-              {/* Contest Routes */}
+              {}
               <Route path="/contests" element={<ContestList />} />
               <Route
                 path="/contests/:contestId"
@@ -162,7 +160,7 @@ function App() {
                 }
               />
 
-              {/* Admin Routes */}
+              {}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
@@ -179,7 +177,7 @@ function App() {
 
                 <Route path="potd" element={<AdminPOTDScheduler />} />
 
-                {/* Admin Contest Routes */}
+                {}
                 <Route path="contests" element={<AdminContestList />} />
                 <Route path="contests/new" element={<AdminContestEditor />} />
                 <Route path="contests/:id" element={<AdminContestDetail />} />

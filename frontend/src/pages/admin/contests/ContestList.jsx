@@ -3,11 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import adminApi from '../../../services/admin/adminApi';
 
-/**
- * Admin Contest List Page
- * Shows all contests with management options
- */
-
 export default function AdminContestList() {
   const { admin } = useAdminAuth();
   const navigate = useNavigate();
@@ -104,7 +99,7 @@ export default function AdminContestList() {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Contests</h1>
@@ -121,7 +116,7 @@ export default function AdminContestList() {
         </Link>
       </div>
 
-      {/* Filters */}
+      {}
       <div className="flex items-center gap-2 mb-6">
         {['all', 'draft', 'scheduled', 'live', 'ended', 'cancelled'].map((status) => (
           <button
@@ -144,7 +139,7 @@ export default function AdminContestList() {
         </div>
       )}
 
-      {/* Contest Table */}
+      {}
       <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-700/50">
@@ -273,7 +268,7 @@ export default function AdminContestList() {
         </table>
       </div>
 
-      {/* Pagination */}
+      {}
       {pagination && pagination.pages > 1 && (
         <div className="flex items-center justify-between mt-6">
           <p className="text-gray-400 text-sm">

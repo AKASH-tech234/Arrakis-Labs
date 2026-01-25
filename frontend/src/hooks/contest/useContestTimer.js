@@ -1,10 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-/**
- * Contest Timer Hook
- * Handles countdown with server time synchronization
- */
-
 export function useContestTimer(endTime, options = {}) {
   const { serverTime, onEnd, syncInterval = 60000 } = options;
   
@@ -16,36 +11,30 @@ export function useContestTimer(endTime, options = {}) {
   const serverOffsetRef = useRef(0);
   const intervalRef = useRef(null);
 
-  // Calculate server time offset
   useEffect(() => {
     if (serverTime) {
       serverOffsetRef.current = serverTime - Date.now();
     }
   }, [serverTime]);
 
-  // Get corrected current time
   const getCorrectedTime = useCallback(() => {
     return Date.now() + serverOffsetRef.current;
   }, []);
 
-  // Calculate time left
   const calculateTimeLeft = useCallback(() => {
     const now = getCorrectedTime();
     const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
     return remaining;
   }, [getCorrectedTime]);
 
-  // Start timer
   const start = useCallback(() => {
     if (intervalRef.current) return;
     
     setIsRunning(true);
     setIsEnded(false);
-    
-    // Initial calculation
+
     setTimeLeft(calculateTimeLeft());
-    
-    // Update every second
+
     intervalRef.current = setInterval(() => {
       const remaining = calculateTimeLeft();
       setTimeLeft(remaining);
@@ -58,7 +47,6 @@ export function useContestTimer(endTime, options = {}) {
     }, 1000);
   }, [calculateTimeLeft, onEnd]);
 
-  // Stop timer
   const stop = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -67,13 +55,11 @@ export function useContestTimer(endTime, options = {}) {
     setIsRunning(false);
   }, []);
 
-  // Update end time
   const updateEndTime = useCallback((newEndTime) => {
     endTimeRef.current = new Date(newEndTime).getTime();
     setTimeLeft(calculateTimeLeft());
   }, [calculateTimeLeft]);
 
-  // Format time as HH:MM:SS
   const formatTime = useCallback((seconds) => {
     if (seconds <= 0) return '00:00:00';
     
@@ -88,7 +74,6 @@ export function useContestTimer(endTime, options = {}) {
     ].join(':');
   }, []);
 
-  // Auto-start when endTime is set
   useEffect(() => {
     if (endTime) {
       endTimeRef.current = new Date(endTime).getTime();
@@ -112,19 +97,16 @@ export function useContestTimer(endTime, options = {}) {
     start,
     stop,
     updateEndTime,
-    // Helpers
+    
     hours: Math.floor(timeLeft / 3600),
     minutes: Math.floor((timeLeft % 3600) / 60),
     seconds: timeLeft % 60,
-    // Progress (0-100)
+    
     progress: endTime ? 
       Math.max(0, Math.min(100, (1 - timeLeft / ((new Date(endTime) - Date.now()) / 1000 + timeLeft)) * 100)) : 0,
   };
 }
 
-/**
- * Countdown to start timer
- */
 export function useCountdownTimer(startTime, options = {}) {
   const { serverTime, onStart } = options;
   

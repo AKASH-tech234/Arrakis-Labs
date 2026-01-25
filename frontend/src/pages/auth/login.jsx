@@ -1,4 +1,4 @@
-// src/pages/Login.jsx - Dune-Inspired
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -44,14 +44,14 @@ export default function Login() {
   };
 
   useEffect(() => {
-    // Initialize Google Sign-In after component mounts
+    
     const timer = setTimeout(() => {
       if (window.google) {
         window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "208012919124-f2s18cpj845hogatl2ptg451vnt5lju2.apps.googleusercontent.com",
           callback: handleGoogleResponse,
         });
-        // Render button immediately
+        
         handleGoogleSignIn();
       }
     }, 100);
@@ -78,7 +78,7 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center px-6"
       style={{ backgroundColor: "#0A0A08" }}
     >
-      {/* Background glow */}
+      {}
       <div
         className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[350px] blur-[120px]"
         style={{
@@ -93,14 +93,14 @@ export default function Login() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative z-10 w-full max-w-md"
       >
-        {/* Brand */}
+        {}
         <div className="text-center mb-12">
           <Link to="/" className="inline-block">
             <ArrakisLogo size="lg" showWordmark={true} animated={true} />
           </Link>
         </div>
 
-        {/* Login Card - Angular, no rounded corners */}
+        {}
         <div
           className="border border-[#1A1814] p-8 md:p-10"
           style={{ backgroundColor: "#0D0D0B" }}
@@ -127,7 +127,7 @@ export default function Login() {
                 {error}
               </div>
             )}
-            {/* Email */}
+            {}
             <div>
               <label
                 htmlFor="email"
@@ -149,7 +149,7 @@ export default function Login() {
               />
             </div>
 
-            {/* Password */}
+            {}
             <div>
               <label
                 htmlFor="password"
@@ -171,7 +171,7 @@ export default function Login() {
               />
             </div>
 
-            {/* Forgot password */}
+            {}
             <div className="text-right">
               <a
                 href="#"
@@ -182,7 +182,7 @@ export default function Login() {
               </a>
             </div>
 
-            {/* Submit */}
+            {}
             <button
               type="submit"
               disabled={submitting}
@@ -194,7 +194,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Divider */}
+          {}
           <div className="flex items-center gap-4 my-8">
             <div className="flex-1 h-px bg-[#1A1814]" />
             <span
@@ -206,10 +206,10 @@ export default function Login() {
             <div className="flex-1 h-px bg-[#1A1814]" />
           </div>
 
-          {/* Google Sign-In Button */}
+          {}
           <div id="google-button" className="flex justify-center mb-6" />
 
-          {/* Divider */}
+          {}
           <div className="flex items-center gap-4 my-6">
             <div className="flex-1 h-px bg-[#1A1814]" />
             <span
@@ -221,7 +221,7 @@ export default function Login() {
             <div className="flex-1 h-px bg-[#1A1814]" />
           </div>
 
-          {/* Sign Up Link */}
+          {}
           <p
             className="text-center text-[#78716C] text-xs uppercase tracking-wider"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
@@ -236,7 +236,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Back to Home */}
+        {}
         <div className="text-center mt-10">
           <Link
             to="/"

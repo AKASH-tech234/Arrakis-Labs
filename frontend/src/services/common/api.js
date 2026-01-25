@@ -3,12 +3,10 @@ import { leetCodeConstraints } from "../../lib/leetcodeConstraints";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Cookie-based auth
 const clearToken = () => {
   window.dispatchEvent(new CustomEvent("auth:logout"));
 };
 
-// Axios client
 const apiClient = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
@@ -50,10 +48,6 @@ async function request(path, { method = "GET", body, signal } = {}) {
   return response.json().catch(() => ({}));
 }
 
-/* ======================================================
-   QUESTIONS (🔥 LEETCODE CONSTRAINTS APPLIED HERE)
-====================================================== */
-
 export async function getPublicQuestions({
   page = 1,
   limit = 1000,
@@ -69,7 +63,6 @@ export async function getPublicQuestions({
   const qs = params.toString();
   const data = await request(`/questions${qs ? `?${qs}` : ""}`);
 
-  // Safely parse constraints using leetCodeConstraints (keeps original on error)
   const questions = (data.data || []).map((q) => {
     let constraintsOut = q.constraints || [];
     try {
@@ -100,7 +93,6 @@ export async function getPublicQuestion(questionId) {
 
   const data = await request(`/questions/${questionId}`);
 
-  // Safely parse constraints for single question
   let constraintsOut = data.data?.constraints || [];
   try {
     if (Array.isArray(data.data?.constraints)) {
@@ -118,10 +110,6 @@ export async function getPublicQuestion(questionId) {
     constraints: constraintsOut,
   };
 }
-
-/* ======================================================
-   RUN / SUBMIT
-====================================================== */
 
 export async function runQuestion({ questionId, code, language, signal }) {
   const data = await request("/run", {
@@ -150,10 +138,6 @@ export async function getMySubmissions({ questionId } = {}) {
   return data.data || [];
 }
 
-/* ======================================================
-   CODE EXECUTION
-====================================================== */
-
 export async function executeCode({ code, language, stdin = "", signal }) {
   const data = await request("/execute", {
     method: "POST",
@@ -168,10 +152,6 @@ export async function executeCode({ code, language, stdin = "", signal }) {
     exitCode: data.exitCode ?? -1,
   };
 }
-
-/* ======================================================
-   AUTH
-====================================================== */
 
 export async function signup({ name, email, password, passwordConfirm }) {
   return request("/auth/signup", {
@@ -209,10 +189,6 @@ export async function googleAuth(token) {
   return data;
 }
 
-/* ======================================================
-   AI FEEDBACK
-====================================================== */
-
 export async function getAIFeedback({
   questionId,
   code,
@@ -242,10 +218,6 @@ export async function getAILearningSummary({
   });
   return data.data;
 }
-
-/* ======================================================
-   SUBMISSIONS
-====================================================== */
 
 export async function getSubmissionHistory({
   userId,

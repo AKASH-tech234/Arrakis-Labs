@@ -29,7 +29,6 @@ const platformProfileSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    // Optional username/handle for scraping/sync
     handle: {
       type: String,
       required: true,
@@ -39,14 +38,12 @@ const platformProfileSchema = new mongoose.Schema(
 
     isEnabled: { type: Boolean, default: true },
 
-    // Visibility for public profiles: allow per-platform hiding
     visibility: {
       type: String,
       enum: ["public", "private"],
       default: "private",
     },
 
-    // Sync bookkeeping
     syncStatus: {
       type: String,
       enum: ["pending", "syncing", "success", "error"],

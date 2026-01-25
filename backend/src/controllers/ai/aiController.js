@@ -6,16 +6,12 @@ import {
   checkAIServiceHealth,
 } from "../../services/ai/aiService.js";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// STRUCTURED LOGGING HELPERS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const LOG_PREFIX = {
-  INFO: "\x1b[36m[AI-CTRL]\x1b[0m", // Cyan
-  SUCCESS: "\x1b[32m[AI-CTRL]\x1b[0m", // Green
-  WARN: "\x1b[33m[AI-CTRL]\x1b[0m", // Yellow
-  ERROR: "\x1b[31m[AI-CTRL]\x1b[0m", // Red
-  DEBUG: "\x1b[35m[AI-CTRL]\x1b[0m", // Magenta
+  INFO: "\x1b[36m[AI-CTRL]\x1b[0m", 
+  SUCCESS: "\x1b[32m[AI-CTRL]\x1b[0m", 
+  WARN: "\x1b[33m[AI-CTRL]\x1b[0m", 
+  ERROR: "\x1b[31m[AI-CTRL]\x1b[0m", 
+  DEBUG: "\x1b[35m[AI-CTRL]\x1b[0m", 
 };
 
 const log = {
@@ -66,10 +62,6 @@ const log = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// HEALTH CHECK ENDPOINT
-// GET /api/ai/health
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getAIHealth = async (req, res) => {
   try {
     log.info("Health check requested");
@@ -92,13 +84,6 @@ export const getAIHealth = async (req, res) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// UNIFIED AI FEEDBACK ENDPOINT
-// POST /api/ai/feedback
-//
-// CRITICAL: This endpoint is called for ALL submissions (accepted, failed, TLE)
-// Progressive hints are returned based on verdict type
-// ═══════════════════════════════════════════════════════════════════════════════
 export const requestAIFeedback = async (req, res) => {
   const startTime = Date.now();
 
@@ -121,7 +106,6 @@ export const requestAIFeedback = async (req, res) => {
       codeLength: code?.length || 0,
     });
 
-    // Validate required fields
     if (!questionId || !code || !language || !verdict) {
       log.warn("Missing required fields", {
         questionId: !!questionId,
@@ -140,7 +124,6 @@ export const requestAIFeedback = async (req, res) => {
       questionId,
     });
 
-    // Get question details for context
     log.debug("Fetching question details", { questionId });
     console.log("📖 Fetching question from MongoDB:", questionId);
 
@@ -159,7 +142,6 @@ export const requestAIFeedback = async (req, res) => {
       difficulty: question.difficulty,
     });
 
-    // Get user's recent submission history for context
     log.debug("Fetching user submission history");
     const recentSubmissions = await Submission.find({ userId })
       .sort({ createdAt: -1 })
@@ -172,13 +154,11 @@ export const requestAIFeedback = async (req, res) => {
       submissionCount: recentSubmissions.length,
     });
 
-    // Get problem category from question tags
     const problemCategory =
       question.tags?.length > 0
         ? question.tags.join(", ")
         : question.difficulty || "General";
 
-    // Call AI service
     log.info("Calling AI Service...", { problemCategory, verdict });
     const aiStartTime = Date.now();
 
@@ -213,7 +193,6 @@ export const requestAIFeedback = async (req, res) => {
     const totalDuration = Date.now() - startTime;
     log.success(`Request completed in ${totalDuration}ms`);
 
-    // Return the structured DTO from AI service
     res.status(200).json({
       success: true,
       data: {
@@ -247,12 +226,6 @@ export const requestAIFeedback = async (req, res) => {
   }
 };
 
-/**
- * Get AI learning summary for accepted submission
- * POST /api/ai/summary
- *
- * Called automatically when submission is accepted
- */
 export const getAILearningSummary = async (req, res) => {
   const startTime = Date.now();
 
@@ -280,7 +253,6 @@ export const getAILearningSummary = async (req, res) => {
 
     log.info("Processing learning summary request");
 
-    // Get question details
     const question = await Question.findById(questionId).lean();
     if (!question) {
       return res.status(404).json({
@@ -289,7 +261,6 @@ export const getAILearningSummary = async (req, res) => {
       });
     }
 
-    // Get user's submission history
     const recentSubmissions = await Submission.find({ userId })
       .sort({ createdAt: -1 })
       .limit(20)
@@ -303,7 +274,6 @@ export const getAILearningSummary = async (req, res) => {
         ? question.tags.join(", ")
         : question.difficulty || "General";
 
-    // Call AI service with "Accepted" verdict for summary
     const aiFeedback = await getAIFeedback({
       userId: userId.toString(),
       problemId: questionId.toString(),
@@ -326,7 +296,6 @@ export const getAILearningSummary = async (req, res) => {
     const totalDuration = Date.now() - startTime;
     log.success(`Learning summary generated in ${totalDuration}ms`);
 
-    // Return learning and report data for accepted submissions
     res.status(200).json({
       success: true,
       data: {

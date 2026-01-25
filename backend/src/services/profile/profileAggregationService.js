@@ -66,7 +66,7 @@ function monthKey(d) {
 function weekStartKey(d) {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = date.getUTCDay();
-  const diff = (day + 6) % 7; // Monday start
+  const diff = (day + 6) % 7; 
   date.setUTCDate(date.getUTCDate() - diff);
   return isoDate(date);
 }
@@ -80,7 +80,6 @@ async function computeArrakisPlatformStats(userId) {
   const since30 = new Date(now);
   since30.setDate(now.getDate() - 30);
 
-  // Accepted (non-run) submissions
   const accepted = await Submission.find({
     userId,
     isRun: false,
@@ -110,7 +109,6 @@ async function computeArrakisPlatformStats(userId) {
     dailyMap.set(key, (dailyMap.get(key) || 0) + 1);
   }
 
-  // Difficulty + skills (based on accepted unique problems)
   const questionIds = Array.from(uniqueSolvedIds);
   const questions = await Question.find({ _id: { $in: questionIds } })
     .select("difficulty tags")
@@ -122,7 +120,6 @@ async function computeArrakisPlatformStats(userId) {
     hard: { solved: 0, attempted: 0 },
   };
 
-  // Attempted difficulty (best-effort by attempted submissions)
   const attemptedQuestionIds = Array.from(new Set(attempted.map((s) => String(s.questionId))));
   const attemptedQuestions = await Question.find({ _id: { $in: attemptedQuestionIds } })
     .select("difficulty")
@@ -151,13 +148,10 @@ async function computeArrakisPlatformStats(userId) {
     }
   }
 
-  // Contests participated (registered)
   const contestsParticipated = await ContestRegistration.countDocuments({ user: userId });
 
-  // avg solved/day over last 30 days
   const avgSolvedPerDay = Number((last30SolvedUnique.size / 30).toFixed(3));
 
-  // finalize skill accuracy/strength (accuracy unknown for tag attempts; keep 0-100 based on solved/attempted)
   for (const [k, v] of skills.entries()) {
     const attemptedCount = v.attempted || v.solved;
     v.attempted = attemptedCount;
@@ -194,7 +188,7 @@ export async function upsertArrakisStats(userId) {
     {
       userId,
       ...stats,
-      // convert Map to plain object for mongoose
+      
       skills: Object.fromEntries(stats.skills),
     },
     { upsert: true, new: true }
@@ -249,7 +243,6 @@ export async function computeAggregatedStats(userId) {
     skills.set(skillName, { solved, accuracy, strengthLevel: level, weak });
   }
 
-  // Daily activity from real submission timestamps (internal DB)
   const now = new Date();
   const since365 = startOfUtcDay(new Date(now));
   since365.setUTCDate(since365.getUTCDate() - 364);
@@ -281,7 +274,6 @@ export async function computeAggregatedStats(userId) {
 
   const avgSolvedPerDay = Number((totalSolved / Math.max(365, 1)).toFixed(3));
 
-  // very simple weighted rating: average of platforms that have rating
   const ratings = platformStats
     .map((p) => p.currentRating)
     .filter((r) => Number.isFinite(r));
@@ -289,7 +281,6 @@ export async function computeAggregatedStats(userId) {
     ? Math.round(ratings.reduce((s, r) => s + r, 0) / ratings.length)
     : null;
 
-  // weekly/monthly trends from daily activity
   const weeklyMap = new Map();
   const monthlyMap = new Map();
   for (const d of dailyActivity) {

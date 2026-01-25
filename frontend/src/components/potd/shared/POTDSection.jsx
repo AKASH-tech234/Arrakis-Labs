@@ -1,8 +1,5 @@
 import React from "react";
 
-/**
- * Section wrapper matching the authenticated app (Arrakis) theme.
- */
 export default function POTDSection({ title, subtitle, right, children }) {
   return (
     <section className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-6 shadow-[0_0_0_1px_rgba(217,119,6,0.06)]">

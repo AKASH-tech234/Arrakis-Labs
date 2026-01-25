@@ -1,29 +1,7 @@
-// src/components/feedback/ConfidenceBadge.jsx
-// Confidence Badge Component - Computed from frontend submission history
-// ❌ No new backend calls | Uses existing submission data
+
 
 import { motion } from "framer-motion";
 
-/**
- * Confidence Badge Display Component
- *
- * Badge Levels:
- * - 🟢 High Confidence → consecutive Accepted
- * - 🟡 Medium Confidence → mixed results
- * - 🔴 Low Confidence → frequent wrong answers
- *
- * Display Locations:
- * - Near problem title
- * - In weekly report header
- * - In learning timeline
- *
- * @param {Object} props
- * @param {Object} props.badge - Badge data from useConfidenceBadge
- * @param {'small'|'medium'|'large'} props.size - Badge size variant
- * @param {boolean} props.showStreak - Whether to show streak count
- * @param {boolean} props.showDescription - Whether to show description
- * @param {string} props.className - Additional CSS classes
- */
 export default function ConfidenceBadge({
   badge,
   size = "medium",
@@ -51,7 +29,7 @@ export default function ConfidenceBadge({
       animate={{ opacity: 1, scale: 1 }}
       className={`inline-flex items-center gap-1.5 ${className}`}
     >
-      {/* Badge Pill */}
+      {}
       <div
         className={`inline-flex items-center gap-1.5 rounded-full border ${sizeClasses[size]} uppercase tracking-wider`}
         style={{
@@ -61,16 +39,16 @@ export default function ConfidenceBadge({
           color: badge.color,
         }}
       >
-        {/* Indicator Dot */}
+        {}
         <span
           className={`rounded-full ${iconSizes[size]}`}
           style={{ backgroundColor: badge.color }}
         />
 
-        {/* Label */}
+        {}
         <span>{badge.label}</span>
 
-        {/* Streak Badge (optional) */}
+        {}
         {showStreak && badge.streak > 0 && (
           <span
             className="ml-1 px-1.5 rounded-full text-[10px]"
@@ -83,7 +61,7 @@ export default function ConfidenceBadge({
         )}
       </div>
 
-      {/* Description (optional) */}
+      {}
       {showDescription && (
         <span
           className="text-[#78716C] text-xs"
@@ -96,10 +74,6 @@ export default function ConfidenceBadge({
   );
 }
 
-/**
- * Inline Confidence Indicator (minimal version)
- * For use in tight spaces like problem titles
- */
 export function ConfidenceIndicator({ badge, className = "" }) {
   if (!badge) return null;
 
@@ -116,10 +90,6 @@ export function ConfidenceIndicator({ badge, className = "" }) {
   );
 }
 
-/**
- * Confidence Stats Card (expanded version)
- * For use in profile/dashboard views
- */
 export function ConfidenceStatsCard({ badge, className = "" }) {
   if (!badge) return null;
 

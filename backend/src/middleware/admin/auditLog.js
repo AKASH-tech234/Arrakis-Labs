@@ -1,9 +1,7 @@
-// backend/src/middleware/auditLog.js
-// Audit logging middleware for admin actions
+
 
 import mongoose from "mongoose";
 
-// Audit Log Schema (define inline or import from models)
 const auditLogSchema = new mongoose.Schema(
   {
     admin: {
@@ -37,9 +35,6 @@ auditLogSchema.index({ action: 1, createdAt: -1 });
 const AuditLog =
   mongoose.models.AuditLog || mongoose.model("AuditLog", auditLogSchema);
 
-/**
- * Create an audit log entry
- */
 export const createAuditEntry = async ({
   adminId,
   action,
@@ -68,24 +63,16 @@ export const createAuditEntry = async ({
     });
   } catch (error) {
     console.error("Failed to create audit log:", error);
-    // Don't throw - audit logging shouldn't break the main operation
+    
   }
 };
 
-/**
- * Middleware to automatically log admin actions
- * Usage: auditLog('problem.create', async (req) => Problem.findById(req.params.id))
- *
- * @param {string} action - The action name (e.g., 'problem.create', 'user.ban')
- * @param {Function} getBeforeState - Optional async function to get state before action
- */
 export const auditLog = (action, getBeforeState = null) => {
   return async (req, res, next) => {
-    // Store original send function
+    
     const originalSend = res.send;
     const originalJson = res.json;
 
-    // Get before state if function provided
     let beforeState = null;
     if (getBeforeState) {
       try {
@@ -98,20 +85,18 @@ export const auditLog = (action, getBeforeState = null) => {
       }
     }
 
-    // Extract target info from route
     const targetType = req.baseUrl.split("/").pop() || "unknown";
     const targetId = req.params.id || null;
 
-    // Override response methods to capture result
     const captureResponse = (method) =>
       function (body) {
-        // Only log on successful responses (2xx status codes)
+        
         if (res.statusCode >= 200 && res.statusCode < 300) {
           let afterState = null;
           try {
             afterState = typeof body === "string" ? JSON.parse(body) : body;
           } catch {
-            // Ignore parse errors
+            
           }
 
           createAuditEntry({
@@ -136,9 +121,6 @@ export const auditLog = (action, getBeforeState = null) => {
   };
 };
 
-/**
- * Query audit logs with filters
- */
 export const queryAuditLogs = async ({
   adminId,
   action,

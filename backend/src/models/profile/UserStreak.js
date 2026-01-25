@@ -1,13 +1,8 @@
 import mongoose from "mongoose";
 
-/**
- * User Streak Schema
- * Dedicated collection for tracking user POTD streaks
- * Separated for performance and easier streak calculations
- */
 const userStreakSchema = new mongoose.Schema(
   {
-    // Reference to the user
+    
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -15,46 +10,46 @@ const userStreakSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    // Current active streak count
+    
     currentStreak: {
       type: Number,
       default: 0,
       min: 0,
     },
-    // Maximum streak ever achieved
+    
     maxStreak: {
       type: Number,
       default: 0,
       min: 0,
     },
-    // Last date the user solved a POTD (for streak calculation)
+    
     lastSolvedDate: {
       type: Date,
       default: null,
     },
-    // Date when current streak started
+    
     streakStartDate: {
       type: Date,
       default: null,
     },
-    // Total POTDs solved all time
+    
     totalPOTDsSolved: {
       type: Number,
       default: 0,
       min: 0,
     },
-    // Total POTDs attempted (started but not necessarily solved)
+    
     totalPOTDsAttempted: {
       type: Number,
       default: 0,
       min: 0,
     },
-    // Streak freeze count (optional feature for future)
+    
     streakFreezes: {
       type: Number,
       default: 0,
     },
-    // History of streak milestones
+    
     milestones: [
       {
         streak: Number,
@@ -67,17 +62,10 @@ const userStreakSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for leaderboard queries
 userStreakSchema.index({ currentStreak: -1 });
 userStreakSchema.index({ maxStreak: -1 });
 userStreakSchema.index({ totalPOTDsSolved: -1 });
 
-/**
- * Update streak when user solves POTD
- * @param {ObjectId} userId - User's ID
- * @param {Date} solvedDate - Date the POTD was solved
- * @returns {Object} Updated streak info
- */
 userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
   const today = new Date(solvedDate);
   today.setUTCHours(0, 0, 0, 0);
@@ -85,7 +73,7 @@ userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
   let streakDoc = await this.findOne({ userId });
 
   if (!streakDoc) {
-    // Create new streak document for user
+    
     streakDoc = new this({
       userId,
       currentStreak: 1,
@@ -105,7 +93,6 @@ userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
     };
   }
 
-  // Check if already solved today (duplicate call protection)
   if (
     streakDoc.lastSolvedDate &&
     streakDoc.lastSolvedDate.getTime() === today.getTime()
@@ -129,25 +116,23 @@ userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
     streakDoc.lastSolvedDate &&
     streakDoc.lastSolvedDate.getTime() === yesterday.getTime()
   ) {
-    // Consecutive day - increase streak
+    
     streakDoc.currentStreak += 1;
     streakIncreased = true;
   } else if (
     !streakDoc.lastSolvedDate ||
     streakDoc.lastSolvedDate.getTime() < yesterday.getTime()
   ) {
-    // Streak broken - reset to 1
+    
     streakDoc.currentStreak = 1;
     streakDoc.streakStartDate = today;
-    streakIncreased = true; // New streak started
+    streakIncreased = true; 
   }
 
-  // Update max streak if current exceeds it
   if (streakDoc.currentStreak > streakDoc.maxStreak) {
     streakDoc.maxStreak = streakDoc.currentStreak;
     isNewRecord = true;
 
-    // Add milestone for significant streaks
     const milestones = [7, 14, 30, 50, 100, 150, 200, 365];
     if (milestones.includes(streakDoc.currentStreak)) {
       streakDoc.milestones.push({
@@ -169,10 +154,6 @@ userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
   };
 };
 
-/**
- * Check and reset streak if user missed yesterday
- * Called when fetching user's streak status
- */
 userStreakSchema.statics.checkAndUpdateStreak = async function (userId) {
   const streakDoc = await this.findOne({ userId });
 
@@ -191,7 +172,6 @@ userStreakSchema.statics.checkAndUpdateStreak = async function (userId) {
   const yesterday = new Date(today);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
 
-  // If last solved date is before yesterday, streak is broken
   if (
     streakDoc.lastSolvedDate &&
     streakDoc.lastSolvedDate.getTime() < yesterday.getTime() &&
@@ -211,9 +191,6 @@ userStreakSchema.statics.checkAndUpdateStreak = async function (userId) {
   };
 };
 
-/**
- * Get streak leaderboard
- */
 userStreakSchema.statics.getLeaderboard = async function (limit = 10) {
   return this.find({ currentStreak: { $gt: 0 } })
     .populate("userId", "name email profileImage")
@@ -221,9 +198,6 @@ userStreakSchema.statics.getLeaderboard = async function (limit = 10) {
     .limit(limit);
 };
 
-/**
- * Record an attempt (for totalPOTDsAttempted)
- */
 userStreakSchema.statics.recordAttempt = async function (userId) {
   await this.findOneAndUpdate(
     { userId },

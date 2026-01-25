@@ -1,5 +1,5 @@
-// src/components/charts/StatsOverview.jsx
-// Stats cards showing problems solved, acceptance rate, and streak
+
+
 import { motion } from "framer-motion";
 
 const StatCard = ({ label, value, unit, accent, delay }) => (
@@ -9,10 +9,10 @@ const StatCard = ({ label, value, unit, accent, delay }) => (
     transition={{ duration: 0.5, delay }}
     className={`group relative overflow-hidden rounded-lg bg-gradient-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm border border-[#D97706]/20 p-6 hover:border-[#D97706]/50 hover:shadow-lg hover:shadow-[#D97706]/15 transition-all duration-300`}
   >
-    {/* Hover gradient background */}
+    {}
     <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-    {/* Top accent line */}
+    {}
     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
     <div className="relative z-10">
@@ -49,7 +49,7 @@ export default function StatsOverview({ stats }) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {/* Problems Solved */}
+      {}
       <StatCard
         label="Solved"
         value={problemsSolved}
@@ -58,7 +58,7 @@ export default function StatsOverview({ stats }) {
         delay={0}
       />
 
-      {/* Acceptance Rate */}
+      {}
       <StatCard
         label="Acceptance"
         value={acceptanceRate}
@@ -67,7 +67,7 @@ export default function StatsOverview({ stats }) {
         delay={0.1}
       />
 
-      {/* Current Streak */}
+      {}
       <StatCard
         label="Current Streak"
         value={currentStreak}
@@ -76,7 +76,7 @@ export default function StatsOverview({ stats }) {
         delay={0.2}
       />
 
-      {/* Max Streak */}
+      {}
       <StatCard
         label="Best Streak"
         value={maxStreak}
@@ -85,17 +85,17 @@ export default function StatsOverview({ stats }) {
         delay={0.3}
       />
 
-      {/* Difficulty Breakdown - spans 2 columns on mobile, full row on desktop */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
         className="col-span-2 md:col-span-4 group relative overflow-hidden rounded-lg bg-gradient-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm border border-[#D97706]/20 p-6 hover:border-[#D97706]/50 hover:shadow-lg hover:shadow-[#D97706]/15 transition-all duration-300"
       >
-        {/* Hover gradient background */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-        {/* Top accent line */}
+        {}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
         <div className="relative z-10">
@@ -106,7 +106,7 @@ export default function StatsOverview({ stats }) {
             Difficulty Breakdown
           </p>
           <div className="flex items-center gap-8 flex-wrap">
-            {/* Easy */}
+            {}
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center gap-3"
@@ -125,7 +125,7 @@ export default function StatsOverview({ stats }) {
               </span>
             </motion.div>
 
-            {/* Medium */}
+            {}
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center gap-3"
@@ -144,7 +144,7 @@ export default function StatsOverview({ stats }) {
               </span>
             </motion.div>
 
-            {/* Hard */}
+            {}
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center gap-3"

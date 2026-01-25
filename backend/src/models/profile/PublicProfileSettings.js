@@ -10,10 +10,8 @@ const publicProfileSettingsSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Master public/private toggle
     isPublic: { type: Boolean, default: false },
 
-    // Public URL slug: /u/{publicUsername}
     publicUsername: {
       type: String,
       default: null,
@@ -22,7 +20,6 @@ const publicProfileSettingsSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Feature visibility toggles (UI can reuse existing sections)
     showPlatforms: { type: Boolean, default: true },
     showDifficulty: { type: Boolean, default: true },
     showSkills: { type: Boolean, default: true },

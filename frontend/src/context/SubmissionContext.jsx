@@ -1,6 +1,4 @@
-// src/context/SubmissionContext.jsx
-// Single source of truth for submission state, AI feedback, and workflow management
-// Implements EXPLICIT AI triggering - never automatic
+
 
 import {
   createContext,
@@ -13,71 +11,51 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// STATE SHAPE
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const initialState = {
-  // Submission data
+  
   currentSubmission: null,
   submissionHistory: [],
 
-  // Execution state
-  executionStatus: "idle", // idle | running | success | error
+  executionStatus: "idle", 
   executionOutput: null,
   executionError: null,
 
-  // AI state - EXPLICIT trigger only
-  aiStatus: "idle", // idle | loading | success | error
+  aiStatus: "idle", 
   aiFeedback: null,
   aiError: null,
-  aiRequestedForSubmissionId: null, // Track which submission AI was requested for
+  aiRequestedForSubmissionId: null, 
 
-  // Progressive disclosure
   revealedHintLevel: 1,
   showFullExplanation: false,
 
-  // UI state
   showAIPanel: false,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ACTION TYPES
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const ActionTypes = {
-  // Execution
+  
   EXECUTION_START: "EXECUTION_START",
   EXECUTION_SUCCESS: "EXECUTION_SUCCESS",
   EXECUTION_ERROR: "EXECUTION_ERROR",
   EXECUTION_RESET: "EXECUTION_RESET",
 
-  // Submission
   SUBMISSION_COMPLETE: "SUBMISSION_COMPLETE",
   SUBMISSION_CLEAR: "SUBMISSION_CLEAR",
 
-  // AI Feedback - EXPLICIT only
   AI_REQUEST_START: "AI_REQUEST_START",
   AI_REQUEST_SUCCESS: "AI_REQUEST_SUCCESS",
   AI_REQUEST_ERROR: "AI_REQUEST_ERROR",
   AI_RESET: "AI_RESET",
 
-  // Progressive disclosure
   REVEAL_NEXT_HINT: "REVEAL_NEXT_HINT",
   TOGGLE_EXPLANATION: "TOGGLE_EXPLANATION",
 
-  // UI
   SHOW_AI_PANEL: "SHOW_AI_PANEL",
   HIDE_AI_PANEL: "HIDE_AI_PANEL",
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// REDUCER
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function submissionReducer(state, action) {
   switch (action.type) {
-    // Execution actions
+    
     case ActionTypes.EXECUTION_START:
       return {
         ...state,
@@ -108,16 +86,15 @@ function submissionReducer(state, action) {
         executionError: null,
       };
 
-    // Submission actions
     case ActionTypes.SUBMISSION_COMPLETE:
       return {
         ...state,
         currentSubmission: action.payload.submission,
         submissionHistory: [
           action.payload.submission,
-          ...state.submissionHistory.slice(0, 9), // Keep last 10
+          ...state.submissionHistory.slice(0, 9), 
         ],
-        // Reset AI state for new submission
+        
         aiStatus: "idle",
         aiFeedback: null,
         aiError: null,
@@ -135,7 +112,6 @@ function submissionReducer(state, action) {
         executionError: null,
       };
 
-    // AI Feedback actions - EXPLICIT trigger only
     case ActionTypes.AI_REQUEST_START:
       return {
         ...state,
@@ -170,7 +146,6 @@ function submissionReducer(state, action) {
         showFullExplanation: false,
       };
 
-    // Progressive disclosure
     case ActionTypes.REVEAL_NEXT_HINT:
       return {
         ...state,
@@ -183,7 +158,6 @@ function submissionReducer(state, action) {
         showFullExplanation: !state.showFullExplanation,
       };
 
-    // UI actions - NEVER trigger backend calls
     case ActionTypes.SHOW_AI_PANEL:
       return { ...state, showAIPanel: true };
 
@@ -195,15 +169,7 @@ function submissionReducer(state, action) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONTEXT
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const SubmissionContext = createContext(null);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function getNextHintLabel(hints, currentLevel) {
   if (!hints || currentLevel >= hints.length) return null;
@@ -220,22 +186,10 @@ function getNextHintLabel(hints, currentLevel) {
   return typeLabels[nextHint?.hint_type] || "Show next hint";
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PROVIDER
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export function SubmissionProvider({ children }) {
   const [state, dispatch] = useReducer(submissionReducer, initialState);
   const abortControllerRef = useRef(null);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SUBMISSION HANDLERS
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Record a completed submission
-   * DOES NOT trigger AI automatically - user must explicitly request
-   */
   const recordSubmission = useCallback((submissionData) => {
     const submission = {
       id:
@@ -253,24 +207,10 @@ export function SubmissionProvider({ children }) {
     return submission;
   }, []);
 
-  /**
-   * Clear current submission
-   */
   const clearSubmission = useCallback(() => {
     dispatch({ type: ActionTypes.SUBMISSION_CLEAR });
   }, []);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // AI FEEDBACK - EXPLICIT TRIGGER ONLY
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * EXPLICITLY request AI feedback
-   * This is the ONLY way to trigger AI - never automatic
-   *
-   * @param {Object} submissionData - The submission to analyze (optional, uses currentSubmission if not provided)
-   * @returns {Promise<Object|null>} The AI feedback or null on error
-   */
   const requestAIFeedback = useCallback(
     async (submissionData = null) => {
       const submission = submissionData || state.currentSubmission;
@@ -280,7 +220,6 @@ export function SubmissionProvider({ children }) {
         return null;
       }
 
-      // Prevent duplicate requests for same submission
       if (
         state.aiRequestedForSubmissionId === submission.id &&
         state.aiStatus === "loading"
@@ -291,7 +230,6 @@ export function SubmissionProvider({ children }) {
         return null;
       }
 
-      // If we already have feedback for this submission, return it
       if (
         state.aiRequestedForSubmissionId === submission.id &&
         state.aiFeedback
@@ -300,7 +238,6 @@ export function SubmissionProvider({ children }) {
         return state.aiFeedback;
       }
 
-      // Cancel any pending request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -336,7 +273,7 @@ export function SubmissionProvider({ children }) {
         const data = await response.json();
 
         if (data.success && data.data) {
-          // Process the feedback to normalize structure
+          
           const processedFeedback = {
             success: true,
             verdict: data.data.verdict,
@@ -383,9 +320,6 @@ export function SubmissionProvider({ children }) {
     ],
   );
 
-  /**
-   * Reset AI state (for retry or new submission)
-   */
   const resetAI = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -393,19 +327,12 @@ export function SubmissionProvider({ children }) {
     dispatch({ type: ActionTypes.AI_RESET });
   }, []);
 
-  /**
-   * Retry AI feedback request
-   */
   const retryAIFeedback = useCallback(async () => {
     resetAI();
-    // Small delay to ensure state is cleared
+    
     await new Promise((resolve) => setTimeout(resolve, 100));
     return requestAIFeedback();
   }, [resetAI, requestAIFeedback]);
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PROGRESSIVE DISCLOSURE
-  // ═══════════════════════════════════════════════════════════════════════════
 
   const revealNextHint = useCallback(() => {
     dispatch({ type: ActionTypes.REVEAL_NEXT_HINT });
@@ -415,22 +342,14 @@ export function SubmissionProvider({ children }) {
     dispatch({ type: ActionTypes.TOGGLE_EXPLANATION });
   }, []);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // UI HANDLERS - NEVER trigger backend calls
-  // ═══════════════════════════════════════════════════════════════════════════
-
   const showAIPanel = useCallback(() => {
-    // CRITICAL: Opening panel NEVER triggers AI request
+    
     dispatch({ type: ActionTypes.SHOW_AI_PANEL });
   }, []);
 
   const hideAIPanel = useCallback(() => {
     dispatch({ type: ActionTypes.HIDE_AI_PANEL });
   }, []);
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // COMPUTED VALUES
-  // ═══════════════════════════════════════════════════════════════════════════
 
   const value = useMemo(() => {
     const visibleHints =
@@ -443,10 +362,9 @@ export function SubmissionProvider({ children }) {
     );
 
     return {
-      // State
+      
       ...state,
 
-      // Computed
       visibleHints,
       hasMoreHints,
       nextHintLabel,
@@ -454,7 +372,6 @@ export function SubmissionProvider({ children }) {
       hasAIFeedback: state.aiStatus === "success" && !!state.aiFeedback,
       hasAIError: state.aiStatus === "error",
 
-      // Actions
       recordSubmission,
       clearSubmission,
       requestAIFeedback,
@@ -484,10 +401,6 @@ export function SubmissionProvider({ children }) {
     </SubmissionContext.Provider>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// HOOK
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export function useSubmission() {
   const context = useContext(SubmissionContext);

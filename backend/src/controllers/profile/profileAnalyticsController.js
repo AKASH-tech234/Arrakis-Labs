@@ -68,13 +68,11 @@ function computeStreaksFromDailyActivity(dailyActivity = []) {
     return { currentStreak: 0, maxStreak: 0 };
   }
 
-  // Expect sorted ascending by date (YYYY-MM-DD)
   const todayKey = isoDate(startOfUtcDay(new Date()));
 
   const indexByDate = new Map(dailyActivity.map((d, idx) => [d.date, idx]));
   const todayIndex = indexByDate.get(todayKey);
 
-  // If today is not present (should be), treat current streak as 0
   let currentStreak = 0;
   if (Number.isInteger(todayIndex)) {
     for (let i = todayIndex; i >= 0; i--) {

@@ -1,5 +1,5 @@
-// src/components/admin/common/ConfirmModal.jsx
-// Confirmation modal for destructive actions - Arrakis Labs Dune theme
+
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,20 +11,18 @@ export default function ConfirmModal({
   message,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "warning", // 'warning' | 'danger' | 'info'
-  requireTyping = false, // For dangerous actions, require typing a phrase
+  variant = "warning", 
+  requireTyping = false, 
   typingPhrase = "",
   loading = false,
 }) {
   const [typedValue, setTypedValue] = useState("");
   const canConfirm = !requireTyping || typedValue === typingPhrase;
 
-  // Reset typed value when modal opens/closes
   useEffect(() => {
     if (!isOpen) setTypedValue("");
   }, [isOpen]);
 
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -60,7 +58,7 @@ export default function ConfirmModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -69,7 +67,7 @@ export default function ConfirmModal({
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
           />
 
-          {/* Modal */}
+          {}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -81,7 +79,7 @@ export default function ConfirmModal({
               className="w-full max-w-md border border-[#1A1814]"
               style={{ backgroundColor: "#0D0D0B" }}
             >
-              {/* Header */}
+              {}
               <div className="flex items-center gap-3 px-6 py-4 border-b border-[#1A1814]">
                 <span className={`text-xl ${style.iconColor}`}>
                   {style.icon}
@@ -94,7 +92,7 @@ export default function ConfirmModal({
                 </h3>
               </div>
 
-              {/* Content */}
+              {}
               <div className="px-6 py-5">
                 <p
                   className="text-[#78716C] text-sm leading-relaxed"
@@ -103,7 +101,7 @@ export default function ConfirmModal({
                   {message}
                 </p>
 
-                {/* Typing confirmation */}
+                {}
                 {requireTyping && (
                   <div className="mt-4">
                     <p
@@ -133,7 +131,7 @@ export default function ConfirmModal({
                 )}
               </div>
 
-              {/* Actions */}
+              {}
               <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#1A1814]">
                 <button
                   onClick={onClose}

@@ -1,12 +1,7 @@
-// src/components/feedback/AILoadingScreen.jsx
-// Arrakis-themed animated loading component for AI feedback requests
+
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const COLORS = {
   bg: "#0A0A08",
@@ -21,10 +16,6 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', 'Orbitron', system-ui, sans-serif";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOADING PHASES CONFIG
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const DEFAULT_PHASES = [
   { text: "Analyzing your approach...", icon: "⟡", duration: 2000 },
   { text: "Identifying patterns...", icon: "◈", duration: 2000 },
@@ -36,10 +27,6 @@ const QUICK_PHASES = [
   { text: "Thinking...", icon: "◈", duration: 1500 },
   { text: "Preparing hint...", icon: "✧", duration: 1500 },
 ];
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SPINNER COMPONENT - ARRAKIS STYLE
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function ArrakisSpinner({ size = "medium" }) {
   const sizeClasses = {
@@ -63,10 +50,6 @@ function ArrakisSpinner({ size = "medium" }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PROGRESS DOTS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function ProgressDots({ phases, currentPhase }) {
   return (
     <div className="flex gap-2 mt-6">
@@ -89,12 +72,8 @@ function ProgressDots({ phases, currentPhase }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export default function AILoadingScreen({
-  variant = "full", // "full" | "compact" | "inline"
+  variant = "full", 
   phases = DEFAULT_PHASES,
   showSpinner = true,
   showProgress = true,
@@ -111,10 +90,6 @@ export default function AILoadingScreen({
 
     return () => clearTimeout(timer);
   }, [currentPhase, phases]);
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // COMPACT VARIANT (for panels)
-  // ═══════════════════════════════════════════════════════════════════════════
 
   if (variant === "compact") {
     return (
@@ -148,10 +123,6 @@ export default function AILoadingScreen({
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // INLINE VARIANT (for buttons/small spaces)
-  // ═══════════════════════════════════════════════════════════════════════════
-
   if (variant === "inline") {
     return (
       <motion.div
@@ -178,10 +149,6 @@ export default function AILoadingScreen({
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FULL VARIANT (default, for pages)
-  // ═══════════════════════════════════════════════════════════════════════════
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -189,14 +156,14 @@ export default function AILoadingScreen({
       exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center py-16"
     >
-      {/* Loading spinner */}
+      {}
       {showSpinner && (
         <div className="mb-8">
           <ArrakisSpinner size="large" />
         </div>
       )}
 
-      {/* Phase text with animation */}
+      {}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentPhase}
@@ -223,12 +190,12 @@ export default function AILoadingScreen({
         </motion.div>
       </AnimatePresence>
 
-      {/* Progress dots */}
+      {}
       {showProgress && (
         <ProgressDots phases={phases} currentPhase={currentPhase} />
       )}
 
-      {/* Subtitle */}
+      {}
       {subtitle && (
         <motion.p
           initial={{ opacity: 0 }}
@@ -244,10 +211,6 @@ export default function AILoadingScreen({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// QUICK LOADING (for hints)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export function AIQuickLoading() {
   return (
     <AILoadingScreen
@@ -258,10 +221,6 @@ export function AIQuickLoading() {
     />
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// OVERLAY LOADING (for modals)
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export function AILoadingOverlay({ isVisible }) {
   return (

@@ -3,10 +3,6 @@ import { Link } from "react-router-dom";
 import { Flame, Clock, Trophy, ChevronRight, Loader2 } from "lucide-react";
 import { getTodaysPOTD } from "../../services/potd/potdApi";
 
-/**
- * POTD Card Component
- * Displays today's Problem of the Day with countdown timer
- */
 export default function POTDCard() {
   const [potd, setPotd] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +16,6 @@ export default function POTDCard() {
   useEffect(() => {
     if (!potd) return;
 
-    // Initial calculation
     const now = new Date();
     const end = new Date(potd.potd.endTime);
     const initial = Math.max(0, end - now);
@@ -34,7 +29,7 @@ export default function POTDCard() {
 
       if (remaining === 0) {
         clearInterval(timer);
-        fetchTodaysPOTD(); // Refresh when POTD expires
+        fetchTodaysPOTD(); 
       }
     }, 1000);
 
@@ -104,7 +99,7 @@ export default function POTDCard() {
 
   return (
     <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-xl p-6 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-300">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Flame className="w-6 h-6 text-orange-500" />
@@ -116,7 +111,7 @@ export default function POTDCard() {
         </div>
       </div>
 
-      {/* Problem Info */}
+      {}
       <div className="mb-4">
         <h4 className="text-xl font-semibold text-white mb-2">{problem.title}</h4>
         <div className="flex items-center gap-3">
@@ -138,7 +133,7 @@ export default function POTDCard() {
         </div>
       </div>
 
-      {/* User Progress */}
+      {}
       {userProgress && (
         <div className="mb-4 p-3 bg-gray-800/50 rounded-lg">
           <div className="flex items-center justify-between">
@@ -157,7 +152,7 @@ export default function POTDCard() {
         </div>
       )}
 
-      {/* CTA Button */}
+      {}
       <Link
         to={`/problems/${problem._id}?potd=true`}
         className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-300"

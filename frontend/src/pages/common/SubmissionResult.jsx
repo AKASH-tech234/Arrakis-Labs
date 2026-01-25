@@ -1,16 +1,10 @@
-// src/pages/SubmissionResult.jsx
-// Submission Results Page - Arrakis Theme
-// Flow: Wrong Answer → Hints → Summary | Accepted → Direct to Summary
+
 
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmission } from "../../context/SubmissionContext";
 import AppHeader from "../../components/layout/AppHeader";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const COLORS = {
   bg: "#0A0A08",
@@ -39,10 +33,6 @@ const HINT_COLORS = {
 };
 
 const fontFamily = "'Rajdhani', 'Orbitron', system-ui, sans-serif";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// VERDICT BADGE
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function VerdictBadge({ verdict, size = "normal" }) {
   const configs = {
@@ -83,10 +73,6 @@ function VerdictBadge({ verdict, size = "normal" }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOADING SCREEN - ARRAKIS THEME
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function LoadingScreen() {
   const [phase, setPhase] = useState(0);
   const phases = [
@@ -110,7 +96,7 @@ function LoadingScreen() {
       exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center py-16"
     >
-      {/* Spinner */}
+      {}
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -121,7 +107,7 @@ function LoadingScreen() {
         }}
       />
 
-      {/* Phase text */}
+      {}
       <AnimatePresence mode="wait">
         <motion.div
           key={phase}
@@ -142,7 +128,7 @@ function LoadingScreen() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Progress dots */}
+      {}
       <div className="flex gap-2 mt-8">
         {phases.map((_, idx) => (
           <motion.div
@@ -159,10 +145,6 @@ function LoadingScreen() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// HINT CARD - ARRAKIS THEME
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function HintCard({ hint, index, isLatest }) {
   const colors = HINT_COLORS[hint.hint_type] || HINT_COLORS.conceptual;
 
@@ -174,7 +156,7 @@ function HintCard({ hint, index, isLatest }) {
       className="border rounded-lg overflow-hidden"
       style={{ borderColor: `${colors.bg}40`, backgroundColor: COLORS.bgCard }}
     >
-      {/* Hint Header */}
+      {}
       <div
         className="px-4 py-2 flex items-center justify-between"
         style={{ backgroundColor: `${colors.bg}10` }}
@@ -195,7 +177,7 @@ function HintCard({ hint, index, isLatest }) {
         </div>
       </div>
 
-      {/* Hint Content */}
+      {}
       <div className="px-4 py-4">
         <p
           className="text-sm leading-relaxed"
@@ -207,10 +189,6 @@ function HintCard({ hint, index, isLatest }) {
     </motion.div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// HINTS VIEW - First step for wrong answers
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function HintsView({
   hints,
@@ -224,7 +202,7 @@ function HintsView({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 mb-4">
           <span style={{ color: COLORS.accent }} className="text-2xl">
@@ -248,7 +226,7 @@ function HintsView({
         </p>
       </div>
 
-      {/* Hints List */}
+      {}
       <div className="space-y-4">
         {visibleHints.map((hint, idx) => (
           <HintCard
@@ -260,7 +238,7 @@ function HintsView({
         ))}
       </div>
 
-      {/* Actions */}
+      {}
       <div className="flex flex-col gap-3 mt-8">
         {hasMore && (
           <motion.button
@@ -300,10 +278,6 @@ function HintsView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SUMMARY VIEW - Full analysis (shown after hints or directly for accepted)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function SummaryView({ feedback, submission, onBackToHints }) {
   const [expandedSections, setExpandedSections] = useState({
     pattern: true,
@@ -321,7 +295,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 mb-4">
           <span
@@ -346,7 +320,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         <VerdictBadge verdict={submission?.verdict} size="large" />
       </div>
 
-      {/* Detected Pattern */}
+      {}
       {feedback?.detectedPattern && (
         <CollapsibleSection
           title="Detected Pattern"
@@ -364,7 +338,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </CollapsibleSection>
       )}
 
-      {/* Explanation */}
+      {}
       {feedback?.explanation && (
         <CollapsibleSection
           title="Detailed Explanation"
@@ -382,7 +356,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </CollapsibleSection>
       )}
 
-      {/* Optimization Tips */}
+      {}
       {feedback?.optimizationTips?.length > 0 && (
         <CollapsibleSection
           title="Optimization Tips"
@@ -407,7 +381,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </CollapsibleSection>
       )}
 
-      {/* Complexity Analysis */}
+      {}
       {feedback?.complexityAnalysis && (
         <CollapsibleSection
           title="Complexity Analysis"
@@ -455,7 +429,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </CollapsibleSection>
       )}
 
-      {/* Edge Cases */}
+      {}
       {feedback?.edgeCases?.length > 0 && (
         <CollapsibleSection
           title="Edge Cases to Consider"
@@ -480,7 +454,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </CollapsibleSection>
       )}
 
-      {/* Back to hints (only for wrong answer) */}
+      {}
       {!isAccepted && onBackToHints && (
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -499,10 +473,6 @@ function SummaryView({ feedback, submission, onBackToHints }) {
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// COLLAPSIBLE SECTION
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function CollapsibleSection({
   title,
@@ -557,13 +527,9 @@ function CollapsibleSection({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export default function SubmissionResult() {
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState("initial"); // initial | hints | summary
+  const [currentView, setCurrentView] = useState("initial"); 
 
   const {
     currentSubmission,
@@ -585,22 +551,19 @@ export default function SubmissionResult() {
   const hasSubmission = !!submission;
   const isAccepted = submission?.verdict === "accepted";
 
-  // Auto-request AI feedback when page loads
   useEffect(() => {
     if (hasSubmission && aiStatus === "idle") {
       requestAIFeedback();
     }
   }, [hasSubmission, aiStatus, requestAIFeedback]);
 
-  // Set initial view based on verdict once feedback is loaded
   useEffect(() => {
     if (hasAIFeedback && currentView === "initial") {
-      // Accepted → Direct to summary | Wrong Answer → Show hints first
+      
       setCurrentView(isAccepted ? "summary" : "hints");
     }
   }, [hasAIFeedback, isAccepted, currentView]);
 
-  // No submission found
   if (!hasSubmission) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: COLORS.bg }}>

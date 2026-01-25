@@ -2,10 +2,6 @@ import PlatformStats from "../../models/profile/PlatformStats.js";
 import PlatformProfile from "../../models/profile/PlatformProfile.js";
 import User from "../../models/auth/User.js";
 
-/**
- * List all PlatformStats records (with optional filters)
- * GET /api/admin/platform-stats
- */
 export async function listPlatformStats(req, res) {
   try {
     const { userId, platform, page = 1, limit = 50 } = req.query;
@@ -42,10 +38,6 @@ export async function listPlatformStats(req, res) {
   }
 }
 
-/**
- * Get single PlatformStats by ID
- * GET /api/admin/platform-stats/:id
- */
 export async function getPlatformStats(req, res) {
   try {
     const stats = await PlatformStats.findById(req.params.id)
@@ -63,18 +55,6 @@ export async function getPlatformStats(req, res) {
   }
 }
 
-/**
- * Update PlatformStats (Admin ingestion endpoint)
- * PUT /api/admin/platform-stats/:id
- * 
- * This is the SAFE, DB-ONLY way to populate PlatformStats.
- * Data must come from:
- * - Admin panel manual entry
- * - Seed scripts
- * - Internal ingestion services
- * 
- * NO external scraping is performed.
- */
 export async function updatePlatformStats(req, res) {
   try {
     const { id } = req.params;
@@ -97,7 +77,6 @@ export async function updatePlatformStats(req, res) {
       return res.status(404).json({ success: false, message: "PlatformStats not found" });
     }
 
-    // Build update object with only provided fields
     const update = {};
 
     if (totalSolved !== undefined) update.totalSolved = Number(totalSolved) || 0;
@@ -141,7 +120,6 @@ export async function updatePlatformStats(req, res) {
       update.dataSource = allowed.includes(dataSource) ? dataSource : "manual";
     }
 
-    // Always update lastSyncedAt when data is ingested
     update.lastSyncedAt = new Date();
 
     const updated = await PlatformStats.findByIdAndUpdate(
@@ -157,12 +135,6 @@ export async function updatePlatformStats(req, res) {
   }
 }
 
-/**
- * Upsert PlatformStats by userId and platform (Admin ingestion endpoint)
- * POST /api/admin/platform-stats/upsert
- * 
- * This allows admin/seed scripts to create or update stats by user and platform.
- */
 export async function upsertPlatformStats(req, res) {
   try {
     const {
@@ -185,13 +157,11 @@ export async function upsertPlatformStats(req, res) {
       return res.status(400).json({ success: false, message: "userId and platform are required" });
     }
 
-    // Validate user exists
     const user = await User.findById(userId).lean();
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Build the update object
     const update = {
       totalSolved: Number(totalSolved) || 0,
       totalAttempted: Number(totalAttempted) || 0,
@@ -238,12 +208,6 @@ export async function upsertPlatformStats(req, res) {
   }
 }
 
-/**
- * Bulk upsert PlatformStats (for seed scripts / batch ingestion)
- * POST /api/admin/platform-stats/bulk-upsert
- * 
- * Accepts an array of stats records to upsert.
- */
 export async function bulkUpsertPlatformStats(req, res) {
   try {
     const { records } = req.body;
@@ -316,10 +280,6 @@ export async function bulkUpsertPlatformStats(req, res) {
   }
 }
 
-/**
- * Delete PlatformStats by ID
- * DELETE /api/admin/platform-stats/:id
- */
 export async function deletePlatformStats(req, res) {
   try {
     const deleted = await PlatformStats.findByIdAndDelete(req.params.id);

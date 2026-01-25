@@ -66,7 +66,6 @@ const QuestionEditor = () => {
     setError(null);
     setSaving(true);
 
-    // Validation
     if (!formData.title.trim()) {
       setError("Title is required");
       setSaving(false);
@@ -80,7 +79,7 @@ const QuestionEditor = () => {
     }
 
     try {
-      // Filter out empty examples
+      
       const cleanedData = {
         ...formData,
         examples: formData.examples.filter(
@@ -158,7 +157,7 @@ const QuestionEditor = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-4 mb-6">
         <Link
           to="/admin/questions"
@@ -171,7 +170,7 @@ const QuestionEditor = () => {
         </h1>
       </div>
 
-      {/* Error */}
+      {}
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-400" />
@@ -179,9 +178,9 @@ const QuestionEditor = () => {
         </div>
       )}
 
-      {/* Form */}
+      {}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
+        {}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Title *
@@ -195,7 +194,7 @@ const QuestionEditor = () => {
           />
         </div>
 
-        {/* Difficulty */}
+        {}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Difficulty *
@@ -222,7 +221,7 @@ const QuestionEditor = () => {
           </div>
         </div>
 
-        {/* Description */}
+        {}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Description *
@@ -236,7 +235,7 @@ const QuestionEditor = () => {
           />
         </div>
 
-        {/* Constraints */}
+        {}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Constraints
@@ -250,7 +249,7 @@ const QuestionEditor = () => {
           />
         </div>
 
-        {/* Tags */}
+        {}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Tags
@@ -282,7 +281,7 @@ const QuestionEditor = () => {
           />
         </div>
 
-        {/* Examples */}
+        {}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-300">
@@ -352,7 +351,7 @@ const QuestionEditor = () => {
           </div>
         </div>
 
-        {/* Submit */}
+        {}
         <div className="flex gap-4 pt-4">
           <Link
             to="/admin/questions"
@@ -380,7 +379,7 @@ const QuestionEditor = () => {
         </div>
       </form>
 
-      {/* Test Cases Note */}
+      {}
       {isEditing && (
         <div className="mt-8 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
           <p className="text-sm text-blue-400">

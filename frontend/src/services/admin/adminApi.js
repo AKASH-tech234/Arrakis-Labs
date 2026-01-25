@@ -3,7 +3,6 @@ import axios from "axios";
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Create axios instance for admin API
 const adminApi = axios.create({
   baseURL: `${API_BASE_URL}/admin`,
   withCredentials: true,
@@ -12,11 +11,9 @@ const adminApi = axios.create({
   },
 });
 
-// Add auth token to requests
 adminApi.interceptors.request.use(
   (config) => {
-    // IMPORTANT: Let the browser set the multipart boundary for FormData.
-    // Setting Content-Type manually can result in req.file being undefined on the server.
+
     if (config.data instanceof FormData) {
       if (typeof config.headers?.delete === "function") {
         config.headers.delete("Content-Type");
@@ -36,28 +33,21 @@ adminApi.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Handle 401 responses (auto-logout)
-// DON'T redirect here - let the components handle it to avoid infinite loops
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only log 401 errors when on admin routes
-    // This prevents confusing 401 errors in console when non-admin users load the app
+
     if (error.response?.status === 401) {
       const isAdminRoute = window.location.pathname.startsWith('/admin');
       if (isAdminRoute) {
         console.warn("[AdminAPI] 401 Unauthorized - auth required");
       }
-      // Don't redirect - just reject the promise
-      // Components will check isAuthenticated and redirect appropriately
+
     }
     return Promise.reject(error);
   },
 );
 
-// ==========================================
-// AUTH
-// ==========================================
 export const adminLogin = async (email, password) => {
   const response = await adminApi.post("/login", { email, password });
   return response.data;
@@ -67,7 +57,7 @@ export const adminLogout = async () => {
   try {
     await adminApi.post("/logout");
   } finally {
-    // cookie-based auth; nothing to clear client-side
+    
   }
 };
 
@@ -76,17 +66,11 @@ export const getAdminProfile = async () => {
   return response.data;
 };
 
-// ==========================================
-// DASHBOARD
-// ==========================================
 export const getDashboardStats = async () => {
   const response = await adminApi.get("/dashboard");
   return response.data;
 };
 
-// ==========================================
-// QUESTIONS
-// ==========================================
 export const getQuestions = async (params = {}) => {
   const response = await adminApi.get("/questions", { params });
   return response.data;
@@ -112,9 +96,6 @@ export const deleteQuestion = async (id) => {
   return response.data;
 };
 
-// ==========================================
-// TEST CASES
-// ==========================================
 export const getTestCases = async (questionId) => {
   const response = await adminApi.get(`/questions/${questionId}/test-cases`);
   return response.data;
@@ -145,9 +126,6 @@ export const toggleTestCaseHidden = async (testCaseId) => {
   return response.data;
 };
 
-// ==========================================
-// CSV UPLOAD
-// ==========================================
 export const previewCSV = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -164,9 +142,6 @@ export const uploadCSV = async (file) => {
   return response.data;
 };
 
-// ==========================================
-// AUDIT LOGS (Super Admin only)
-// ==========================================
 export const getAuditLogs = async (params = {}) => {
   const response = await adminApi.get("/audit-logs", { params });
   return response.data;

@@ -18,20 +18,15 @@ const writeLimiter = rateLimit({
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
 
-// LeetCode-like: problem-scoped discussions (solutions list)
 router.get("/problems/:id/discussions", optionalAuth, listProblemDiscussions);
 router.get("/problems/:id/solutions", optionalAuth, listProblemDiscussions);
 
-// Create solution post (accepted-only enforced on backend)
 router.post("/problems/:id/solutions", protect, writeLimiter, createSolutionPost);
 
-// Thread messages
 router.get("/threads/:threadId/messages", optionalAuth, listThreadMessages);
 
-// Comments
 router.post("/discussions/comment", protect, writeLimiter, postComment);
 
-// Voting
 router.post("/solutions/:solutionPostId/vote", protect, writeLimiter, voteSolution);
 
 export default router;

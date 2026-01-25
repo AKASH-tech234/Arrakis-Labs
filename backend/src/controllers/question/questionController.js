@@ -2,10 +2,6 @@ import Question from "../../models/question/Question.js";
 import TestCase from "../../models/question/TestCase.js";
 import AuditLog from "../../models/admin/AuditLog.js";
 
-/**
- * Get all questions (paginated)
- * GET /api/admin/questions
- */
 export const getAllQuestions = async (req, res) => {
   try {
     const {
@@ -17,7 +13,6 @@ export const getAllQuestions = async (req, res) => {
       sortOrder = "desc",
     } = req.query;
 
-    // Build query
     const query = { isActive: true };
 
     if (difficulty) {
@@ -28,11 +23,9 @@ export const getAllQuestions = async (req, res) => {
       query.$text = { $search: search };
     }
 
-    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortOptions = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
-    // Execute query
     const [questions, total] = await Promise.all([
       Question.find(query)
         .sort(sortOptions)
@@ -43,7 +36,6 @@ export const getAllQuestions = async (req, res) => {
       Question.countDocuments(query),
     ]);
 
-    // Get test case counts for each question
     const questionIds = questions.map(q => q._id);
     const testCaseCounts = await TestCase.aggregate([
       { $match: { questionId: { $in: questionIds }, isActive: true } },
@@ -56,7 +48,6 @@ export const getAllQuestions = async (req, res) => {
       },
     ]);
 
-    // Merge test case counts
     const countMap = testCaseCounts.reduce((acc, curr) => {
       acc[curr._id.toString()] = { total: curr.total, hidden: curr.hidden };
       return acc;
@@ -86,10 +77,6 @@ export const getAllQuestions = async (req, res) => {
   }
 };
 
-/**
- * Get single question by ID
- * GET /api/admin/questions/:id
- */
 export const getQuestionById = async (req, res) => {
   try {
     const question = await Question.findOne({
@@ -104,7 +91,6 @@ export const getQuestionById = async (req, res) => {
       });
     }
 
-    // Get test cases
     const testCases = await TestCase.find({
       questionId: question._id,
       isActive: true,
@@ -126,10 +112,6 @@ export const getQuestionById = async (req, res) => {
   }
 };
 
-/**
- * Update question
- * PUT /api/admin/questions/:id
- */
 export const updateQuestion = async (req, res) => {
   try {
     const { title, description, difficulty, constraints, examples, tags } = req.body;
@@ -146,7 +128,6 @@ export const updateQuestion = async (req, res) => {
       });
     }
 
-    // Update fields
     if (title) question.title = title;
     if (description) question.description = description;
     if (difficulty) question.difficulty = difficulty;
@@ -159,7 +140,6 @@ export const updateQuestion = async (req, res) => {
 
     await question.save();
 
-    // Audit log
     await AuditLog.log({
       adminId: req.admin._id,
       action: "UPDATE_QUESTION",
@@ -184,10 +164,6 @@ export const updateQuestion = async (req, res) => {
   }
 };
 
-/**
- * Delete question (soft delete)
- * DELETE /api/admin/questions/:id
- */
 export const deleteQuestion = async (req, res) => {
   try {
     const question = await Question.findOne({
@@ -202,18 +178,15 @@ export const deleteQuestion = async (req, res) => {
       });
     }
 
-    // Soft delete question
     question.isActive = false;
     question.updatedBy = req.admin._id;
     await question.save();
 
-    // Soft delete associated test cases
     await TestCase.updateMany(
       { questionId: question._id },
       { isActive: false }
     );
 
-    // Audit log
     await AuditLog.log({
       adminId: req.admin._id,
       action: "DELETE_QUESTION",
@@ -236,15 +209,10 @@ export const deleteQuestion = async (req, res) => {
   }
 };
 
-/**
- * Create new question manually
- * POST /api/admin/questions
- */
 export const createQuestion = async (req, res) => {
   try {
     const { title, description, difficulty, constraints, examples, tags } = req.body;
 
-    // Validation
     if (!title || !description || !difficulty) {
       return res.status(400).json({
         success: false,
@@ -263,7 +231,6 @@ export const createQuestion = async (req, res) => {
       updatedBy: req.admin._id,
     });
 
-    // Audit log
     await AuditLog.log({
       adminId: req.admin._id,
       action: "CREATE_QUESTION",

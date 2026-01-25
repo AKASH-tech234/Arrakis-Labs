@@ -119,7 +119,7 @@ export default function SolutionDiscussion({ problemId, lastAcceptedSubmission }
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [problemId, sort, language]);
 
   const openThread = async (post) => {
@@ -199,7 +199,6 @@ export default function SolutionDiscussion({ problemId, lastAcceptedSubmission }
     setCommentText("");
     setReplyTo(null);
 
-    // Refresh thread + bump comment count UI
     await openThread(activePost);
     setPosts((prev) =>
       prev.map((p) =>
@@ -210,7 +209,7 @@ export default function SolutionDiscussion({ problemId, lastAcceptedSubmission }
 
   return (
     <div className="h-full flex flex-col">
-      {/* Filters / Actions */}
+      {}
       <div className="px-6 py-4 border-b border-[#1A1814] bg-[#0F0F0D]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -338,10 +337,10 @@ export default function SolutionDiscussion({ problemId, lastAcceptedSubmission }
         ) : null}
       </div>
 
-      {/* Content */}
+      {}
       <div className="flex-1 overflow-hidden">
         <div className="h-full grid grid-cols-1 lg:grid-cols-2">
-          {/* List */}
+          {}
           <div className="border-r border-[#1A1814] overflow-auto">
             {loading ? (
               <div className="p-6 text-[#A29A8C]">Loading…</div>
@@ -448,7 +447,7 @@ export default function SolutionDiscussion({ problemId, lastAcceptedSubmission }
             )}
           </div>
 
-          {/* Thread */}
+          {}
           <div className="overflow-auto">
             {!activePost ? (
               <div className="p-6 text-[#A29A8C]">Select a solution to view its discussion.</div>

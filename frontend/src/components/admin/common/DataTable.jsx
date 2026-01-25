@@ -1,5 +1,5 @@
-// src/components/admin/common/DataTable.jsx
-// Reusable sortable/filterable table component - Arrakis Labs Dune theme
+
+
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
@@ -17,7 +17,6 @@ export default function DataTable({
 }) {
   const [sortConfig, setSortConfig] = useState(defaultSort);
 
-  // Sort data
   const sortedData = useMemo(() => {
     if (!sortConfig || !sortable) return data;
 
@@ -66,10 +65,10 @@ export default function DataTable({
 
   return (
     <div className="border border-[#1A1814] overflow-hidden">
-      {/* Table */}
+      {}
       <div className="overflow-x-auto">
         <table className="w-full">
-          {/* Header */}
+          {}
           <thead>
             <tr
               className="border-b border-[#1A1814]"
@@ -123,10 +122,10 @@ export default function DataTable({
             </tr>
           </thead>
 
-          {/* Body */}
+          {}
           <tbody>
             {loading ? (
-              // Loading skeleton
+              
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="border-b border-[#1A1814]/50">
                   {selectable && (
@@ -145,7 +144,7 @@ export default function DataTable({
                 </tr>
               ))
             ) : sortedData.length === 0 ? (
-              // Empty state
+              
               <tr>
                 <td
                   colSpan={columns.length + (selectable ? 1 : 0)}
@@ -160,7 +159,7 @@ export default function DataTable({
                 </td>
               </tr>
             ) : (
-              // Data rows
+              
               sortedData.map((row, idx) => (
                 <motion.tr
                   key={row.id}

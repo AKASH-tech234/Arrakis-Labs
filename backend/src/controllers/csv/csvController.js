@@ -7,7 +7,6 @@ import TestCase from "../../models/question/TestCase.js";
 import AuditLog from "../../models/admin/AuditLog.js";
 import { jsonToStdin, outputToStdout } from "../../utils/stdinConverter.js";
 
-// Multer configuration for CSV uploads
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
@@ -24,16 +23,14 @@ const csvUploader = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024, 
   },
 }).single("file");
 
-// Wrap multer to return clean 400 responses instead of generic 500s
 export const uploadCSV = (req, res, next) => {
   csvUploader(req, res, (err) => {
     if (!err) return next();
 
-    // Multer errors (e.g., LIMIT_FILE_SIZE)
     if (err instanceof multer.MulterError) {
       const message =
         err.code === "LIMIT_FILE_SIZE"
@@ -53,29 +50,20 @@ export const uploadCSV = (req, res, next) => {
   });
 };
 
-/**
- * CSV Injection Protection
- * Sanitizes string values to prevent formula injection attacks
- * Dangerous characters: = + - @ | Tab Carriage Return
- */
 function sanitizeCSVValue(value) {
   if (typeof value !== "string") return value;
-  
-  // Check for formula injection characters at the start
+
   const dangerousChars = ["=", "+", "-", "@", "|", "\t", "\r"];
   const trimmedValue = value.trim();
   
   if (dangerousChars.some(char => trimmedValue.startsWith(char))) {
-    // Prefix with single quote to neutralize formula
+    
     return "'" + trimmedValue;
   }
   
   return value;
 }
 
-/**
- * Required CSV columns
- */
 const REQUIRED_COLUMNS = [
   "title",
   "description",
@@ -93,8 +81,6 @@ const OPTIONAL_COLUMNS = [
   "tags",
 ];
 
-// Transactions are great for small imports, but large CSV imports can exceed
-// MongoDB transaction limits (ops/size/time) and get aborted.
 const TRANSACTION_ROW_LIMIT = 50;
 const TRANSACTION_CHUNK_SIZE = 25;
 
@@ -122,17 +108,10 @@ function normalizeDifficulty(value) {
   return null;
 }
 
-/**
- * Validate CSV row
- * @param {Object} row - CSV row object
- * @param {number} index - Row index (0-based)
- * @returns {{ valid: boolean, errors: string[] }}
- */
 function validateRow(row, index) {
   const errors = [];
-  const rowNum = index + 2; // Account for header row and 0-indexing
+  const rowNum = index + 2; 
 
-  // Check required fields
   if (!row.title?.trim()) {
     errors.push(`Row ${rowNum}: Missing title`);
   } else if (row.title.trim().length > 200) {
@@ -156,7 +135,6 @@ function validateRow(row, index) {
     errors.push(`Row ${rowNum}: Invalid date in 'updated_at' field`);
   }
 
-  // Validate examples JSON if provided
   const examplesValue = row.examples || row.example;
   if (examplesValue) {
     try {
@@ -171,7 +149,6 @@ function validateRow(row, index) {
     }
   }
 
-  // Validate test_cases JSON if provided
   if (row.test_cases) {
     try {
       const testCases = JSON.parse(row.test_cases);
@@ -198,11 +175,6 @@ function validateRow(row, index) {
   };
 }
 
-/**
- * Parse CSV buffer to array of rows
- * @param {Buffer} buffer - CSV file buffer
- * @returns {Promise<Object[]>} - Parsed rows
- */
 function parseCSVBuffer(buffer) {
   return new Promise((resolve, reject) => {
     const rows = [];
@@ -212,7 +184,7 @@ function parseCSVBuffer(buffer) {
       .pipe(csv({
         mapHeaders: ({ header }) => normalizeHeader(header),
         mapValues: ({ value }) => {
-          // Sanitize CSV values to prevent formula injection
+          
           const trimmed = value?.trim() || "";
           return sanitizeCSVValue(trimmed);
         },
@@ -223,15 +195,8 @@ function parseCSVBuffer(buffer) {
   });
 }
 
-/**
- * Process and save a single CSV row
- * @param {Object} row - Validated CSV row
- * @param {string} adminId - Admin ID for audit
- * @param {mongoose.ClientSession} session - MongoDB session for transaction
- * @returns {Promise<{ question: Object, testCaseCount: number }>}
- */
 async function processRow(row, adminId, session) {
-  // Parse examples
+  
   let examples = [];
   const examplesValue = row.examples || row.example;
   if (examplesValue) {
@@ -244,7 +209,6 @@ async function processRow(row, adminId, session) {
     }));
   }
 
-  // Parse tags
   let tags = [];
   if (row.tags) {
     try {
@@ -255,7 +219,6 @@ async function processRow(row, adminId, session) {
     }
   }
 
-  // Create question
   const createdAt = row.created_at ? new Date(row.created_at) : undefined;
   const updatedAt = row.updated_at ? new Date(row.updated_at) : undefined;
 
@@ -281,15 +244,13 @@ async function processRow(row, adminId, session) {
   const questionDoc = question[0];
   let testCaseCount = 0;
 
-  // Parse and create test cases
-  // First 2 test cases are VISIBLE (for Run), rest are HIDDEN (for Submit)
   if (row.test_cases) {
     const testCases = JSON.parse(row.test_cases);
     const testCaseDocs = testCases.map((tc, index) => ({
       questionId: questionDoc._id,
       stdin: jsonToStdin(tc.input),
       expectedStdout: outputToStdout(tc.expected_output),
-      // First 2 are visible for "Run", rest hidden for "Submit" (LeetCode-style)
+      
       isHidden: tc.is_hidden !== undefined ? tc.is_hidden : index >= 2,
       label: tc.label || `Test Case ${index + 1}`,
       timeLimit: tc.time_limit || 2000,
@@ -304,10 +265,6 @@ async function processRow(row, adminId, session) {
   return { question: questionDoc, testCaseCount };
 }
 
-/**
- * Upload and process CSV file
- * POST /api/admin/upload-csv
- */
 export const processCSVUpload = async (req, res) => {
   const session = await mongoose.startSession();
   
@@ -319,7 +276,6 @@ export const processCSVUpload = async (req, res) => {
       });
     }
 
-    // Parse CSV
     const rows = await parseCSVBuffer(req.file.buffer);
 
     if (rows.length === 0) {
@@ -329,7 +285,6 @@ export const processCSVUpload = async (req, res) => {
       });
     }
 
-    // Check for required columns
     const columns = Object.keys(rows[0]);
     const missingColumns = REQUIRED_COLUMNS.filter(col => !columns.includes(col));
     
@@ -340,7 +295,6 @@ export const processCSVUpload = async (req, res) => {
       });
     }
 
-    // Validate all rows first
     const validationResults = rows.map((row, index) => ({
       row,
       index,
@@ -359,8 +313,6 @@ export const processCSVUpload = async (req, res) => {
       });
     }
 
-    // Process all rows in a transaction when supported (replica set);
-    // fall back to non-transactional inserts on standalone MongoDB.
     let usedTransaction = false;
     const results = {
       questionsCreated: 0,
@@ -394,7 +346,6 @@ export const processCSVUpload = async (req, res) => {
     try {
       usedTransaction = true;
 
-      // For larger imports, chunk into multiple transactions to avoid txn aborts.
       if (validationResults.length > TRANSACTION_ROW_LIMIT) {
         results.warnings.push(
           `Large import (${validationResults.length} rows): processed in chunks of ${TRANSACTION_CHUNK_SIZE} with separate transactions`
@@ -410,7 +361,7 @@ export const processCSVUpload = async (req, res) => {
             try {
               await session.abortTransaction();
             } catch {
-              // ignore
+              
             }
             throw chunkError;
           }
@@ -421,11 +372,11 @@ export const processCSVUpload = async (req, res) => {
         await session.commitTransaction();
       }
     } catch (txError) {
-      // Abort any in-flight transaction
+      
       try {
         await session.abortTransaction();
       } catch {
-        // ignore
+        
       }
 
       const msg = String(txError?.message || "");
@@ -438,19 +389,17 @@ export const processCSVUpload = async (req, res) => {
         throw txError;
       }
 
-      // Fallback without transaction/session
       usedTransaction = false;
       results.warnings.push(
         "MongoDB transactions are not supported by the current server; import ran without a transaction"
       );
-      // Reset counts in case any partial progress was recorded before the error
+      
       results.questionsCreated = 0;
       results.testCasesCreated = 0;
       results.questions = [];
       await runImport(validationResults, undefined);
     }
 
-    // Log audit
     await AuditLog.log({
       adminId: req.admin._id,
       action: "UPLOAD_CSV",
@@ -474,13 +423,13 @@ export const processCSVUpload = async (req, res) => {
     });
 
   } catch (error) {
-    // Rollback transaction on error (safely)
+    
     try {
       if (session?.inTransaction?.()) {
         await session.abortTransaction();
       }
     } catch (abortErr) {
-      // Never crash the process because abortTransaction failed
+      
       console.error("[CSV Upload Abort Error]:", abortErr?.message || abortErr);
     }
     
@@ -495,10 +444,6 @@ export const processCSVUpload = async (req, res) => {
   }
 };
 
-/**
- * Preview CSV without saving
- * POST /api/admin/preview-csv
- */
 export const previewCSV = async (req, res) => {
   try {
     if (!req.file) {
@@ -517,7 +462,6 @@ export const previewCSV = async (req, res) => {
       });
     }
 
-    // Validate all rows
     const validationResults = rows.map((row, index) => {
       let testCaseCount = 0;
       if (row.test_cases) {
@@ -547,7 +491,7 @@ export const previewCSV = async (req, res) => {
         totalRows: rows.length,
         validRows: validCount,
         invalidRows: invalidCount,
-        rows: validationResults.slice(0, 50), // Limit preview to 50 rows
+        rows: validationResults.slice(0, 50), 
       },
     });
 

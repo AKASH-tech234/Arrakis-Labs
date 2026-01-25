@@ -1,12 +1,8 @@
-// src/services/admin/api.js
-// Admin API service - centralized admin API calls
+
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const ADMIN_BASE = `${API_BASE}/admin`;
 
-/**
- * Base request function for admin API calls
- */
 async function adminRequest(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
 
@@ -34,8 +30,6 @@ async function adminRequest(path, { method = "GET", body, signal } = {}) {
 
   return response.json().catch(() => ({}));
 }
-
-// ============ PROBLEM API ============
 
 export const problemApi = {
   list: (params = {}) => {
@@ -77,7 +71,6 @@ export const problemApi = {
       method: "POST",
     }),
 
-  // Test cases
   getTestCases: (problemId) => adminRequest(`/problems/${problemId}/testcases`),
 
   createTestCase: (problemId, data) =>
@@ -109,8 +102,6 @@ export const problemApi = {
       body: params,
     }),
 };
-
-// ============ CONTEST API ============
 
 export const contestApi = {
   list: (params = {}) => {
@@ -154,7 +145,6 @@ export const contestApi = {
       body: { additionalMinutes },
     }),
 
-  // Contest problems
   getProblems: (contestId) => adminRequest(`/contests/${contestId}/problems`),
 
   addProblem: (contestId, problemId, data) =>
@@ -175,8 +165,6 @@ export const contestApi = {
     }),
 };
 
-// ============ SUBMISSION API ============
-
 export const submissionApi = {
   list: (params = {}) => {
     const query = new URLSearchParams(params).toString();
@@ -196,8 +184,6 @@ export const submissionApi = {
       body: { ids },
     }),
 };
-
-// ============ LEADERBOARD API ============
 
 export const leaderboardApi = {
   get: (contestId) => adminRequest(`/leaderboards/${contestId}`),
@@ -230,8 +216,6 @@ export const leaderboardApi = {
     }),
 };
 
-// ============ PLAGIARISM API ============
-
 export const plagiarismApi = {
   list: (params = {}) => {
     const query = new URLSearchParams(params).toString();
@@ -252,8 +236,6 @@ export const plagiarismApi = {
       body: params,
     }),
 };
-
-// ============ USER API ============
 
 export const userApi = {
   list: (params = {}) => {
@@ -298,8 +280,6 @@ export const userApi = {
     }),
 };
 
-// ============ ROLES API ============
-
 export const rolesApi = {
   list: () => adminRequest("/roles"),
 
@@ -331,8 +311,6 @@ export const rolesApi = {
     }),
 };
 
-// ============ SYSTEM API ============
-
 export const systemApi = {
   getHealth: () => adminRequest("/system/health"),
 
@@ -351,8 +329,6 @@ export const systemApi = {
     }),
 };
 
-// ============ CONFIG API ============
-
 export const configApi = {
   getJudgeConfig: () => adminRequest("/config/judge"),
 
@@ -370,8 +346,6 @@ export const configApi = {
       body: config,
     }),
 };
-
-// ============ AUDIT API ============
 
 export const auditApi = {
   list: (params = {}) => {

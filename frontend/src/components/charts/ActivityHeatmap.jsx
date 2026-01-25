@@ -1,5 +1,5 @@
-// src/components/charts/ActivityHeatmap.jsx
-// GitHub/LeetCode-style activity heatmap with sand-toned colors
+
+
 import { motion } from "framer-motion";
 
 const WEEKS = 52;
@@ -53,7 +53,6 @@ function buildHeatmapData(activity = []) {
   return data;
 }
 
-// Sand-toned color scale
 const levelColors = {
   0: "#121210",
   1: "#1A1814",
@@ -81,7 +80,6 @@ const monthLabels = [
 export default function ActivityHeatmap({ activity }) {
   const activityData = buildHeatmapData(activity);
 
-  // Month label positioning
   const getMonthPositions = () => {
     const positions = [];
     let currentMonth = -1;
@@ -102,7 +100,6 @@ export default function ActivityHeatmap({ activity }) {
   const monthPositions = getMonthPositions();
   const CELL_SIZE = 12;
 
-  // 🔥 NEW: detect month change for spacing (LeetCode-style)
   const isNewMonth = (weekIndex) => {
     if (weekIndex === 0) return false;
 
@@ -114,7 +111,7 @@ export default function ActivityHeatmap({ activity }) {
 
   return (
     <div className="w-full overflow-x-auto">
-      {/* Month Labels */}
+      {}
       <div className="flex gap-[2px] mb-3 ml-8 relative h-5">
         {monthPositions.map(({ month, weekIndex }, index) => {
           const nextWeekIndex = monthPositions[index + 1]?.weekIndex || WEEKS;
@@ -141,7 +138,7 @@ export default function ActivityHeatmap({ activity }) {
       </div>
 
       <div className="flex gap-[2px]">
-        {/* Day Labels */}
+        {}
         <div className="flex flex-col gap-[2px] mr-2 flex-shrink-0">
           {dayLabels.map((label, index) => (
             <span
@@ -154,7 +151,7 @@ export default function ActivityHeatmap({ activity }) {
           ))}
         </div>
 
-        {/* Heatmap Grid */}
+        {}
         <div className="flex relative">
   {activityData.map((week, weekIndex) => {
     const isMonthStart =
@@ -164,7 +161,7 @@ export default function ActivityHeatmap({ activity }) {
 
     return (
       <div key={weekIndex} className="flex">
-        {/* Month separator */}
+        {}
         {isMonthStart && <div className="w-[8px]" />}
 
         <motion.div
@@ -192,7 +189,7 @@ export default function ActivityHeatmap({ activity }) {
 
       </div>
 
-      {/* Legend */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

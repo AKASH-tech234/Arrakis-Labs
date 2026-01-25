@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Submission Schema
- * Tracks user code submissions and results
- */
 const testResultSchema = new mongoose.Schema(
   {
     testCaseId: {
@@ -15,14 +11,14 @@ const testResultSchema = new mongoose.Schema(
       required: true,
     },
     executionTime: {
-      type: Number, // milliseconds
+      type: Number, 
       default: 0,
     },
     memoryUsed: {
-      type: Number, // KB
+      type: Number, 
       default: 0,
     },
-    // Only store for visible test cases or debugging
+    
     actualOutput: {
       type: String,
       default: null,
@@ -49,7 +45,7 @@ const submissionSchema = new mongoose.Schema(
       required: [true, "Question ID is required"],
       index: true,
     },
-    // Code submitted
+    
     code: {
       type: String,
       required: [true, "Code is required"],
@@ -60,7 +56,7 @@ const submissionSchema = new mongoose.Schema(
       required: [true, "Language is required"],
       enum: ["python", "javascript", "java", "cpp"],
     },
-    // Overall result
+    
     status: {
       type: String,
       enum: [
@@ -76,7 +72,7 @@ const submissionSchema = new mongoose.Schema(
       ],
       default: "pending",
     },
-    // Test results summary
+    
     passedCount: {
       type: Number,
       default: 0,
@@ -85,12 +81,12 @@ const submissionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // Detailed results (visible tests only in response)
+    
     testResults: {
       type: [testResultSchema],
       default: [],
     },
-    // Execution metrics
+    
     totalExecutionTime: {
       type: Number,
       default: 0,
@@ -99,15 +95,15 @@ const submissionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // For compilation errors
+    
     compileError: {
       type: String,
       default: null,
     },
-    // Submission type
+    
     isRun: {
       type: Boolean,
-      default: false, // false = submit, true = run (examples only)
+      default: false, 
     },
   },
   {
@@ -115,12 +111,10 @@ const submissionSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
 submissionSchema.index({ userId: 1, questionId: 1, createdAt: -1 });
 submissionSchema.index({ questionId: 1, status: 1 });
 submissionSchema.index({ createdAt: -1 });
 
-// SECURITY: Safe response for users (no hidden test case details)
 submissionSchema.methods.toUserResponse = function () {
   return {
     id: this._id,
@@ -133,7 +127,7 @@ submissionSchema.methods.toUserResponse = function () {
     memoryUsed: this.maxMemoryUsed,
     compileError: this.compileError,
     createdAt: this.createdAt,
-    // DO NOT include code or detailed test results for hidden cases
+    
   };
 };
 

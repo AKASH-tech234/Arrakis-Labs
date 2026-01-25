@@ -13,25 +13,11 @@ function getContestLookup(contestId) {
     : { slug: contestId };
 }
 
-/**
- * Contest Controller
- * Handles public contest operations (list, view, register, join)
- */
-
-// ==========================================
-// PUBLIC ENDPOINTS (Some require auth)
-// ==========================================
-
-/**
- * Get all public contests
- * GET /api/contests
- */
 export const getContests = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const now = new Date();
 
-    // Build query
     const query = { isActive: true, isPublic: true };
 
     if (status) {
@@ -65,7 +51,6 @@ export const getContests = async (req, res) => {
       Contest.countDocuments(query),
     ]);
 
-    // Add computed fields
     let enrichedContests = contests.map((contest) => ({
       ...contest,
       isUpcoming: contest.startTime > now,
@@ -76,7 +61,6 @@ export const getContests = async (req, res) => {
       registration: null,
     }));
 
-    // User-specific registration data (optional auth)
     if (req.user?._id && contests.length > 0) {
       const contestIds = contests.map((c) => c._id);
       const regs = await ContestRegistration.find({
@@ -123,17 +107,12 @@ export const getContests = async (req, res) => {
   }
 };
 
-/**
- * Get single contest details
- * GET /api/contests/:contestId
- */
 export const getContest = async (req, res) => {
   try {
     const { contestId } = req.params;
     const userId = req.user?._id;
     const now = new Date();
 
-    // Find by ID or slug
     const query = mongoose.Types.ObjectId.isValid(contestId)
       ? { _id: contestId }
       : { slug: contestId };
@@ -146,7 +125,6 @@ export const getContest = async (req, res) => {
       return res.status(404).json({ success: false, message: "Contest not found" });
     }
 
-    // Check user registration
     let registration = null;
     if (userId) {
       registration = await ContestRegistration.findOne({
@@ -155,12 +133,10 @@ export const getContest = async (req, res) => {
       }).lean();
     }
 
-    // Compute status
     const isUpcoming = now < contest.startTime;
     const isLive = now >= contest.startTime && now < contest.endTime;
     const hasEnded = now >= contest.endTime;
 
-    // Problems: hide if contest hasn't started (unless registered and joined)
     let problems = [];
     if (!isUpcoming || (registration?.status === "participating")) {
       problems = contest.problems.map((p, idx) => ({
@@ -173,7 +149,6 @@ export const getContest = async (req, res) => {
       }));
     }
 
-    // Get solve counts if live or ended
     let problemStats = {};
     if ((isLive || hasEnded) && problems.length > 0) {
       for (const p of problems) {
@@ -184,7 +159,6 @@ export const getContest = async (req, res) => {
       }
     }
 
-    // Online count
     const onlineCount = wsServer.getOnlineCount(contest._id.toString());
 
     res.status(200).json({
@@ -206,7 +180,7 @@ export const getContest = async (req, res) => {
         scoringRules: contest.scoringRules,
         penaltyRules: contest.penaltyRules,
         stats: contest.stats,
-        // Computed
+        
         isUpcoming,
         isLive,
         hasEnded,
@@ -214,7 +188,7 @@ export const getContest = async (req, res) => {
         remainingTime: Math.max(0, Math.floor((contest.endTime - now) / 1000)),
         serverTime: now.toISOString(),
         onlineCount,
-        // User-specific
+        
         registration: registration
           ? {
               status: registration.status,
@@ -224,10 +198,10 @@ export const getContest = async (req, res) => {
               finalScore: registration.finalScore,
             }
           : null,
-        // Problems (hidden before start)
+        
         problems,
         problemStats,
-        // Editorial (after contest)
+        
         editorial: hasEnded && contest.editorialVisible ? contest.editorial : null,
       },
     });
@@ -237,10 +211,6 @@ export const getContest = async (req, res) => {
   }
 };
 
-/**
- * Register for a contest
- * POST /api/contests/:contestId/register
- */
 export const registerForContest = async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -256,7 +226,6 @@ export const registerForContest = async (req, res) => {
       return res.status(404).json({ success: false, message: "Contest not found" });
     }
 
-    // Check registration window
     if (contest.registrationStart && now < contest.registrationStart) {
       return res.status(400).json({
         success: false,
@@ -271,7 +240,6 @@ export const registerForContest = async (req, res) => {
       });
     }
 
-    // Check if already ended
     if (now >= contest.endTime) {
       return res.status(400).json({
         success: false,
@@ -279,7 +247,6 @@ export const registerForContest = async (req, res) => {
       });
     }
 
-    // Check max participants
     if (contest.maxParticipants > 0) {
       const count = await ContestRegistration.countDocuments({
         contest: contest._id,
@@ -292,7 +259,6 @@ export const registerForContest = async (req, res) => {
       }
     }
 
-    // Check existing registration
     let registration = await ContestRegistration.findOne({
       contest: contest._id,
       user: userId,
@@ -306,7 +272,6 @@ export const registerForContest = async (req, res) => {
       });
     }
 
-    // Create registration
     registration = await ContestRegistration.create({
       contest: contest._id,
       user: userId,
@@ -314,7 +279,6 @@ export const registerForContest = async (req, res) => {
       status: "registered",
     });
 
-    // Update contest stats
     await Contest.findByIdAndUpdate(contest._id, {
       $inc: { "stats.registeredCount": 1 },
     });
@@ -334,10 +298,6 @@ export const registerForContest = async (req, res) => {
   }
 };
 
-/**
- * Join a contest (start participating)
- * POST /api/contests/:contestId/join
- */
 export const joinContest = async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -358,7 +318,6 @@ export const joinContest = async (req, res) => {
       user: userId,
     });
 
-    // Check if contest has started
     if (now < contest.startTime) {
       return res.status(400).json({
         success: false,
@@ -367,7 +326,6 @@ export const joinContest = async (req, res) => {
       });
     }
 
-    // Check if contest has ended
     if (now >= contest.endTime) {
       return res.status(400).json({
         success: false,
@@ -375,7 +333,6 @@ export const joinContest = async (req, res) => {
       });
     }
 
-    // Check late join
     if (!contest.allowLateJoin && now > contest.startTime) {
       return res.status(400).json({
         success: false,
@@ -393,7 +350,6 @@ export const joinContest = async (req, res) => {
       });
     }
 
-    // Create registration if not exists (for contests without required registration)
     let reg = registration;
     if (!reg && !contest.requiresRegistration) {
       reg = await ContestRegistration.create({
@@ -421,16 +377,13 @@ export const joinContest = async (req, res) => {
       });
     }
 
-    // Mark as joined
     if (reg.status === "registered") {
       await reg.markJoined(contest.startTime);
 
-      // Update participated count
       await Contest.findByIdAndUpdate(contest._id, {
         $inc: { "stats.participatedCount": 1 },
       });
 
-      // Initialize in Redis
       await leaderboardService.updateScore(contest._id.toString(), userId.toString(), {
         problemsSolved: 0,
         totalTimeSeconds: 0,
@@ -438,11 +391,9 @@ export const joinContest = async (req, res) => {
       });
     }
 
-    // Calculate remaining time for this user
     const effectiveStart = reg.effectiveStartTime || contest.startTime;
     const remainingTime = Math.max(0, Math.floor((contest.endTime - now) / 1000));
 
-    // Get problems
     const problems = contest.problems.map((p) => ({
       id: p.problem,
       label: p.label,
@@ -467,10 +418,6 @@ export const joinContest = async (req, res) => {
   }
 };
 
-/**
- * Get contest problem details
- * GET /api/contests/:contestId/problems/:problemId
- */
 export const getContestProblem = async (req, res) => {
   try {
     const { contestId, problemId } = req.params;
@@ -490,7 +437,6 @@ export const getContestProblem = async (req, res) => {
       ? await ContestRegistration.findOne({ contest: contest._id, user: userId })
       : null;
 
-    // Check if contest has started or user is participating
     if (now < contest.startTime && registration?.status !== "participating") {
       return res.status(403).json({
         success: false,
@@ -498,7 +444,6 @@ export const getContestProblem = async (req, res) => {
       });
     }
 
-    // Find problem in contest
     const contestProblem = contest.problems.find(
       (p) => p.problem.toString() === problemId
     );
@@ -510,7 +455,6 @@ export const getContestProblem = async (req, res) => {
       });
     }
 
-    // Get problem details
     const problem = await Question.findById(problemId)
       .select("-createdBy -updatedBy -__v")
       .lean();
@@ -519,7 +463,6 @@ export const getContestProblem = async (req, res) => {
       return res.status(404).json({ success: false, message: "Problem not found" });
     }
 
-    // Get visible test cases
     const visibleTestCases = await TestCase.find({
       questionId: problemId,
       isActive: true,
@@ -529,7 +472,6 @@ export const getContestProblem = async (req, res) => {
       .select("stdin expectedStdout label")
       .lean();
 
-    // Get user's submissions for this problem
     let userSubmissions = [];
     if (userId && registration) {
       userSubmissions = await ContestSubmission.find({
@@ -543,7 +485,6 @@ export const getContestProblem = async (req, res) => {
         .lean();
     }
 
-    // Get attempt info from registration
     const attemptInfo = registration?.problemAttempts?.get(problemId) || {
       attempts: 0,
       solved: false,
@@ -552,11 +493,11 @@ export const getContestProblem = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        // Contest context
+        
         contestId: contest._id,
         label: contestProblem.label,
         points: contestProblem.points,
-        // Problem data
+        
         id: problem._id,
         title: problem.title,
         description: problem.description,
@@ -564,13 +505,13 @@ export const getContestProblem = async (req, res) => {
         constraints: problem.constraints,
         examples: problem.examples,
         tags: problem.tags,
-        // Test cases (visible only)
+        
         sampleTestCases: visibleTestCases.map((tc) => ({
           label: tc.label,
           input: tc.stdin,
           expectedOutput: tc.expectedStdout,
         })),
-        // User progress
+        
         attemptInfo,
         recentSubmissions: userSubmissions,
       },
@@ -581,10 +522,6 @@ export const getContestProblem = async (req, res) => {
   }
 };
 
-/**
- * Get contest leaderboard
- * GET /api/contests/:contestId/leaderboard
- */
 export const getLeaderboard = async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -603,7 +540,6 @@ export const getLeaderboard = async (req, res) => {
     const now = new Date();
     const isLive = now >= contest.startTime && now < contest.endTime;
 
-    // Check if leaderboard should be shown
     if (isLive && !contest.showLeaderboardDuringContest) {
       return res.status(403).json({
         success: false,
@@ -611,20 +547,17 @@ export const getLeaderboard = async (req, res) => {
       });
     }
 
-    // Check freeze
     const freezeTime = new Date(
       contest.endTime.getTime() - contest.freezeLeaderboardMinutes * 60 * 1000
     );
     const isFrozen = isLive && now >= freezeTime && contest.freezeLeaderboardMinutes > 0;
 
-    // Get from Redis
     const leaderboardData = await leaderboardService.getLeaderboard(
       contest._id.toString(),
       parseInt(page),
       parseInt(limit)
     );
 
-    // Enrich with user data
     const userIds = leaderboardData.entries.map((e) => e.userId);
     const users = await mongoose.model("User").find(
       { _id: { $in: userIds } },
@@ -646,7 +579,6 @@ export const getLeaderboard = async (req, res) => {
       };
     });
 
-    // Get user's own rank if authenticated
     let userRank = null;
     if (userId) {
       userRank = await leaderboardService.getUserRank(contest._id.toString(), userId.toString());
@@ -670,10 +602,6 @@ export const getLeaderboard = async (req, res) => {
   }
 };
 
-/**
- * Get user's contest standing
- * GET /api/contests/:contestId/standing
- */
 export const getUserStanding = async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -704,10 +632,8 @@ export const getUserStanding = async (req, res) => {
       });
     }
 
-    // Get current rank from Redis
     const rank = await leaderboardService.getUserRank(contest._id.toString(), userId.toString());
 
-    // Get surrounding users
     const context = await leaderboardService.getUserContext(contest._id.toString(), userId.toString(), 3);
 
     res.status(200).json({
@@ -728,10 +654,6 @@ export const getUserStanding = async (req, res) => {
   }
 };
 
-/**
- * Get user's analytics after contest
- * GET /api/contests/:contestId/analytics
- */
 export const getContestAnalytics = async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -772,7 +694,6 @@ export const getContestAnalytics = async (req, res) => {
       });
     }
 
-    // Get all user's submissions
     const submissions = await ContestSubmission.find({
       contest: contest._id,
       user: userId,
@@ -781,7 +702,6 @@ export const getContestAnalytics = async (req, res) => {
       .select("problemLabel verdict testsPassed testsTotal submittedAt timeFromStart language code")
       .lean();
 
-    // Build per-problem analytics
     const problemAnalytics = contest.problems.map((p) => {
       const problemId = p.problem._id.toString();
       const attempt = registration.problemAttempts?.get(problemId) || {};
@@ -830,7 +750,6 @@ export const getContestAnalytics = async (req, res) => {
   }
 };
 
-// Helper function to format time
 function formatTime(seconds) {
   if (!seconds) return "0:00";
   const hrs = Math.floor(seconds / 3600);

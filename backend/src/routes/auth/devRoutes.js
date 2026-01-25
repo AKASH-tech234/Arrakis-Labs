@@ -1,16 +1,14 @@
-// backend/src/routes/devRoutes.js
-// Admin authentication with env credentials
+
+
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 
 const router = Router();
 
-// Admin login with .env credentials
 router.post("/admin-login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Get admin credentials from env
     const adminEmail = process.env.ADMIN_MAIL;
     const adminPassword = process.env.ADMIN_PASS;
 
@@ -20,12 +18,10 @@ router.post("/admin-login", async (req, res) => {
         .json({ message: "Admin credentials not configured" });
     }
 
-    // Validate credentials
     if (email !== adminEmail || password !== adminPassword) {
       return res.status(401).json({ message: "Invalid admin credentials" });
     }
 
-    // Generate admin token
     const token = jwt.sign(
       {
         id: "admin_001",
@@ -54,7 +50,6 @@ router.post("/admin-login", async (req, res) => {
   }
 });
 
-// Verify admin token
 router.get("/admin-verify", (req, res) => {
   try {
     const authHeader = req.headers.authorization;

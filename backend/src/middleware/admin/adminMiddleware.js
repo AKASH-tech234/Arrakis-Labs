@@ -2,15 +2,10 @@ import jwt from "jsonwebtoken";
 import Admin from "../../models/admin/Admin.js";
 import AuditLog from "../../models/admin/AuditLog.js";
 
-/**
- * Verify Admin JWT Token
- * Middleware to protect admin-only routes
- */
 export const verifyAdmin = async (req, res, next) => {
   try {
     let token;
 
-    // Get token from Authorization header
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     } else if (req.cookies?.adminToken) {
@@ -24,10 +19,8 @@ export const verifyAdmin = async (req, res, next) => {
       });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Check if it's an admin token
     if (!decoded.isAdmin) {
       return res.status(403).json({
         success: false,
@@ -35,7 +28,6 @@ export const verifyAdmin = async (req, res, next) => {
       });
     }
 
-    // Find admin
     const admin = await Admin.findById(decoded.id);
 
     if (!admin) {
@@ -52,7 +44,6 @@ export const verifyAdmin = async (req, res, next) => {
       });
     }
 
-    // Attach admin to request
     req.admin = admin;
     next();
   } catch (error) {
@@ -78,10 +69,6 @@ export const verifyAdmin = async (req, res, next) => {
   }
 };
 
-/**
- * Require Super Admin role
- * Use after verifyAdmin middleware
- */
 export const requireSuperAdmin = (req, res, next) => {
   if (req.admin?.role !== "super_admin") {
     return res.status(403).json({
@@ -92,18 +79,13 @@ export const requireSuperAdmin = (req, res, next) => {
   next();
 };
 
-/**
- * Audit logging middleware
- * Logs admin actions for security
- */
 export const auditLog = (action, resourceType) => {
   return async (req, res, next) => {
-    // Store original json method
+    
     const originalJson = res.json.bind(res);
 
-    // Override json to log after successful response
     res.json = async function (data) {
-      // Only log successful operations
+      
       if (data?.success !== false && res.statusCode < 400) {
         try {
           await AuditLog.log({
@@ -130,15 +112,11 @@ export const auditLog = (action, resourceType) => {
   };
 };
 
-/**
- * Remove sensitive data from audit logs
- */
 function sanitizeLogData(data) {
   if (!data) return {};
   
   const sanitized = { ...data };
-  
-  // Remove sensitive fields
+
   const sensitiveFields = ["password", "token", "secret", "stdin", "expectedStdout"];
   sensitiveFields.forEach((field) => {
     if (sanitized[field]) {

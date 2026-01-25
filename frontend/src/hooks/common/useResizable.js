@@ -1,15 +1,6 @@
-// src/hooks/useResizable.js
+
 import { useState, useCallback, useRef, useEffect } from "react";
 
-/**
- * Hook for creating resizable split panels with smooth dragging
- * @param {Object} options - Configuration options
- * @param {number} options.initialSize - Initial size in pixels or percentage
- * @param {number} options.minSize - Minimum size in pixels
- * @param {number} options.maxSize - Maximum size in pixels or percentage of container
- * @param {string} options.direction - 'horizontal' or 'vertical'
- * @returns {Object} - Resize state and handlers
- */
 export function useResizable({
   initialSize = 50,
   minSize = 300,
@@ -48,24 +39,19 @@ export function useResizable({
       ? containerRect.left 
       : containerRect.top;
 
-    // Calculate percentage based on mouse position
     const newSizePercent = ((currentPos - startPos) / containerSize) * 100;
-    
-    // Calculate max size as percentage
+
     const maxSizePercent = typeof maxSize === "number" && maxSize > 100 
       ? (maxSize / containerSize) * 100 
       : maxSize;
-    
-    // Calculate min size as percentage
+
     const minSizePercent = (minSize / containerSize) * 100;
 
-    // Clamp the value
     const clampedSize = Math.min(
       Math.max(newSizePercent, minSizePercent),
       maxSizePercent
     );
 
-    // Use requestAnimationFrame for smooth updates
     requestAnimationFrame(() => {
       setSize(clampedSize);
     });
@@ -77,32 +63,28 @@ export function useResizable({
     document.body.style.userSelect = "";
   }, []);
 
-  // Toggle fullscreen mode for the editor panel
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setPreviousSize(size);
-      setSize(0); // Editor takes full width (problem panel minimized)
+      setSize(0); 
     } else {
       setSize(previousSize);
     }
     setIsFullscreen(!isFullscreen);
   }, [isFullscreen, size, previousSize]);
 
-  // Minimize the editor (problem panel takes full width)
   const minimizeEditor = useCallback(() => {
     if (!isFullscreen) {
       setPreviousSize(size);
     }
-    setSize(100); // Problem panel takes full width
+    setSize(100); 
   }, [isFullscreen, size]);
 
-  // Restore to default size
   const restoreSize = useCallback(() => {
     setSize(previousSize || initialSize);
     setIsFullscreen(false);
   }, [previousSize, initialSize]);
 
-  // Attach/detach mouse event listeners
   useEffect(() => {
     if (isDragging) {
       window.addEventListener("mousemove", handleMouseMove);
@@ -115,7 +97,6 @@ export function useResizable({
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Keyboard support (Esc to exit fullscreen)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && isFullscreen) {

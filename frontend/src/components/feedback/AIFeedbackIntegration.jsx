@@ -1,6 +1,4 @@
-// src/components/feedback/AIFeedbackIntegration.jsx
-// Example integration component showing how to wire up all AI features
-// This demonstrates the recommended pattern for integrating AI feedback
+
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -11,27 +9,6 @@ import WeeklyReportUI, { WeeklyReportButton } from "./WeeklyReportUI";
 import ConfidenceBadge from "./ConfidenceBadge";
 import LearningTimeline from "./LearningTimeline";
 
-/**
- * AI Feedback Integration Example
- *
- * This component demonstrates how to integrate all AI features:
- * 1. AI Feedback Modal with progressive disclosure
- * 2. Weekly Report (on-demand)
- * 3. Confidence Badge (frontend-computed)
- * 4. Learning Timeline
- *
- * Usage in a problem page:
- * ```jsx
- * <AIFeedbackIntegration
- *   questionId={problem.id}
- *   problemCategory={problem.category}
- *   problemConstraints={problem.constraints}
- *   onSubmissionComplete={(result) => {
- *     // Handle submission result
- *   }}
- * />
- * ```
- */
 export default function AIFeedbackIntegration({
   questionId,
   problemCategory = "General",
@@ -40,11 +17,9 @@ export default function AIFeedbackIntegration({
   const { user } = useAuth() || {};
   const userId = user?.id || user?._id;
 
-  // Local submissions state
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
 
-  // Load user submissions for confidence calculation
   useEffect(() => {
     let cancelled = false;
 
@@ -79,16 +54,11 @@ export default function AIFeedbackIntegration({
     };
   }, [userId, questionId]);
 
-  // Initialize enhanced AI feedback hook
   const ai = useAIFeedbackEnhanced({
     userId,
     submissions,
   });
 
-  /**
-   * Handle failed submission - trigger AI feedback
-   * Call this from your submit handler when verdict !== "accepted"
-   */
   const handleFailedSubmission = useCallback(
     ({ code, language, verdict, errorType }) => {
       ai.openFeedbackModal({
@@ -104,28 +74,25 @@ export default function AIFeedbackIntegration({
     [ai, questionId, problemCategory, problemConstraints],
   );
 
-  /**
-   * Handle viewing weekly report
-   */
   const handleViewWeeklyReport = useCallback(() => {
     ai.openWeeklyReport();
   }, [ai]);
 
   return (
     <>
-      {/* Confidence Badge - Display near problem title */}
+      {}
       {!loadingSubmissions && ai.confidenceBadge && (
         <ConfidenceBadge badge={ai.confidenceBadge} size="small" showStreak />
       )}
 
-      {/* Weekly Report Button */}
+      {}
       <WeeklyReportButton
         onClick={handleViewWeeklyReport}
         loading={ai.loadingWeeklyReport}
         variant="secondary"
       />
 
-      {/* AI Feedback Modal with Progressive Disclosure */}
+      {}
       <AIFeedbackModal
         isOpen={ai.showAIModal}
         onClose={ai.closeFeedbackModal}
@@ -136,7 +103,7 @@ export default function AIFeedbackIntegration({
         onViewWeeklyReport={handleViewWeeklyReport}
       />
 
-      {/* Weekly Report Modal */}
+      {}
       <WeeklyReportUI
         isOpen={ai.showWeeklyReport}
         onClose={ai.closeWeeklyReport}
@@ -147,7 +114,7 @@ export default function AIFeedbackIntegration({
         lastFetchedAt={ai.weeklyReport?.generatedAt}
       />
 
-      {/* Learning Timeline (for profile/dashboard) */}
+      {}
       {ai.timeline.length > 0 && (
         <LearningTimeline
           timeline={ai.timeline}
@@ -157,46 +124,12 @@ export default function AIFeedbackIntegration({
         />
       )}
 
-      {/* Export handler for parent component */}
-      {/* Parent should call handleFailedSubmission after failed submissions */}
+      {}
+      {}
     </>
   );
 }
 
-/**
- * Hook for parent components to integrate AI feedback into submission flow
- *
- * Usage:
- * ```jsx
- * function ProblemPage() {
- *   const { triggerAIFeedback, AIComponents } = useAIFeedbackFlow({
- *     userId: user.id,
- *     questionId: problem.id,
- *     problemCategory: problem.category,
- *   });
- *
- *   const handleSubmit = async (code, language) => {
- *     const result = await submitQuestion({ questionId, code, language });
- *
- *     if (result.status !== 'accepted') {
- *       triggerAIFeedback({
- *         code,
- *         language,
- *         verdict: result.status,
- *         errorType: result.errorType,
- *       });
- *     }
- *   };
- *
- *   return (
- *     <div>
- *       {AIComponents}
- *       <button onClick={() => handleSubmit(code, language)}>Submit</button>
- *     </div>
- *   );
- * }
- * ```
- */
 export function useAIFeedbackFlow({
   userId,
   questionId,
@@ -221,7 +154,6 @@ export function useAIFeedbackFlow({
     [ai, questionId, problemCategory, problemConstraints],
   );
 
-  // Render function for AI components
   const AIComponents = (
     <>
       <AIFeedbackModal
@@ -247,13 +179,11 @@ export function useAIFeedbackFlow({
   );
 
   return {
-    // Trigger function
+    
     triggerAIFeedback,
 
-    // Components to render
     AIComponents,
 
-    // Full AI state for advanced use
     ai,
   };
 }

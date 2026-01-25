@@ -1,4 +1,4 @@
-// src/components/problem/ProblemFilters.jsx
+
 export default function ProblemFilters({
   selectedDifficulty,
   setSelectedDifficulty,
@@ -10,7 +10,7 @@ export default function ProblemFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-6 mb-8 p-5">
-      {/* Difficulty Filter */}
+      {}
       <div className="flex items-center gap-4">
         <span
           className="text-[#A29A8C] text-xs uppercase tracking-wider font-semibold"
@@ -36,7 +36,7 @@ export default function ProblemFilters({
         </div>
       </div>
 
-      {/* Category Filter */}
+      {}
       <div className="flex items-center gap-4">
         <span
           className="text-[#A29A8C] text-xs uppercase tracking-wider font-semibold"

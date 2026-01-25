@@ -10,7 +10,6 @@ import POTDSection from "../../components/potd/shared/POTDSection";
 export default function POTDHome() {
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Lightweight refresh when UTC day changes (prevents stale POTD on long sessions)
   useEffect(() => {
     const tick = setInterval(() => {
       const now = new Date();
@@ -18,7 +17,6 @@ export default function POTDHome() {
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0) -
         now.getTime();
 
-      // If we're within the last second before midnight, trigger refresh.
       if (msUntilNextUtcMidnight >= 0 && msUntilNextUtcMidnight < 1200) {
         setRefreshKey((k) => k + 1);
       }

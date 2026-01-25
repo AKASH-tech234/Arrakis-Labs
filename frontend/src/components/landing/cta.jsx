@@ -1,4 +1,4 @@
-// src/components/landing/CTA.jsx - Dune-Inspired
+
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Link } from "react-router-dom";
@@ -22,7 +22,7 @@ export default function CTA() {
           className="relative border border-[#1A1814] p-10 md:p-16 text-center overflow-hidden"
           style={{ backgroundColor: "#0D0D0B" }}
         >
-          {/* Background glow - subtle amber */}
+          {}
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[250px] blur-[100px] -z-10"
             style={{
@@ -31,7 +31,7 @@ export default function CTA() {
             }}
           />
 
-          {/* Logo at top */}
+          {}
           <div className="mb-10">
             <ArrakisLogo size="lg" showWordmark={false} animated={isInView} />
           </div>

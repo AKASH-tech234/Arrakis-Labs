@@ -1,4 +1,4 @@
-// src/components/layout/Header.jsx
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -47,7 +47,7 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Navigation Links */}
+        {}
         <div className="hidden md:flex items-center gap-8">
           <a
             href="#features"
@@ -72,7 +72,7 @@ export default function Header() {
           </a>
         </div>
 
-        {/* Auth Buttons */}
+        {}
         <div className="flex items-center gap-4">
           <Link
             to="/login"

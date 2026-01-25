@@ -1,4 +1,4 @@
-// src/components/editor/CodeEditor.jsx
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const languageOptions = ["Python", "JavaScript", "Java", "C++"];
@@ -31,7 +31,6 @@ int main() {
 }`,
 };
 
-// Icons for toolbar buttons
 const Icons = {
   Format: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -64,32 +63,28 @@ const Icons = {
   ),
 };
 
-// Simple code formatter for different languages
 const formatCode = (code, language) => {
   const lines = code.split("\n");
   let indentLevel = 0;
   const indentSize = 4;
   const indent = () => " ".repeat(indentLevel * indentSize);
-  
-  // Characters that increase indent
+
   const openBrackets = ["{", "(", "["];
   const closeBrackets = ["}", ")", "]"];
   
   const formattedLines = lines.map((line) => {
     let trimmed = line.trim();
     if (!trimmed) return "";
-    
-    // Check if line starts with closing bracket
+
     const startsWithClose = closeBrackets.some(b => trimmed.startsWith(b));
     if (startsWithClose && indentLevel > 0) {
       indentLevel--;
     }
     
     const formattedLine = indent() + trimmed;
-    
-    // Check if line ends with opening bracket (excluding strings/comments)
+
     const endsWithOpen = openBrackets.some(b => trimmed.endsWith(b));
-    // Also check for Python-style colons
+    
     const endsWithColon = language === "Python" && trimmed.endsWith(":");
     
     if (endsWithOpen || endsWithColon) {
@@ -115,11 +110,10 @@ export default function CodeEditor({
   const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Store code for each language to preserve content when switching
   const [codeByLang, setCodeByLang] = useState(() => ({ ...defaultCode }));
 
   const handleLanguageChange = (newLang) => {
-    // Save current code before switching
+    
     setCodeByLang(prev => ({ ...prev, [language]: code }));
     setLanguage(newLang);
     setCode(codeByLang[newLang] || defaultCode[newLang]);
@@ -132,14 +126,12 @@ export default function CodeEditor({
     setCodeByLang(prev => ({ ...prev, [language]: newCode }));
   }, [language]);
 
-  // Format code handler
   const handleFormat = useCallback(() => {
     const formatted = formatCode(code, language);
     setCode(formatted);
     setCodeByLang(prev => ({ ...prev, [language]: formatted }));
   }, [code, language]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -150,16 +142,14 @@ export default function CodeEditor({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle Tab key for indentation and Ctrl+Enter for submit
   const handleKeyDown = useCallback((e) => {
-    // Ctrl + Enter to submit
+    
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       onSubmit?.(code, language);
       return;
     }
-    
-    // Tab for indentation
+
     if (e.key === "Tab") {
       e.preventDefault();
       const textarea = textareaRef.current;
@@ -168,7 +158,7 @@ export default function CodeEditor({
       const newCode = code.substring(0, start) + "    " + code.substring(end);
       setCode(newCode);
       setCodeByLang(prev => ({ ...prev, [language]: newCode }));
-      // Set cursor position after indent
+      
       requestAnimationFrame(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 4;
       });
@@ -177,11 +167,11 @@ export default function CodeEditor({
 
   return (
     <div className="arrakis-editor flex flex-col h-full bg-[#0A0A08] overflow-hidden">
-      {/* Sticky Top Bar */}
+      {}
       <div className="arrakis-editor-header flex items-center justify-between px-3 py-2 bg-[#121210] border-b border-[#1A1814] flex-shrink-0">
-        {/* Left side - Language selector */}
+        {}
         <div className="flex items-center gap-3">
-          {/* Language Dropdown */}
+          {}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowLangDropdown(!showLangDropdown)}
@@ -213,9 +203,9 @@ export default function CodeEditor({
           </div>
         </div>
 
-        {/* Right side - Controls and Action Buttons */}
+        {}
         <div className="flex items-center gap-2">
-          {/* Format Button */}
+          {}
           <button
             onClick={handleFormat}
             className="p-1.5 text-[#78716C] hover:text-[#F59E0B] hover:bg-[#1A1814] transition-colors duration-150"
@@ -224,7 +214,7 @@ export default function CodeEditor({
             <Icons.Format />
           </button>
 
-          {/* Window controls */}
+          {}
           <div className="flex items-center gap-1 mr-2 border-l border-[#1A1814] pl-2">
             {isFullscreen ? (
               <button
@@ -245,7 +235,7 @@ export default function CodeEditor({
             )}
           </div>
 
-          {/* Run Button */}
+          {}
           <button
             onClick={() => onRun?.(code, language)}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9] hover:border-[#78716C] transition-colors duration-150 text-xs uppercase tracking-wider"
@@ -255,7 +245,7 @@ export default function CodeEditor({
             <span>Run</span>
           </button>
 
-          {/* Submit Button */}
+          {}
           <button
             onClick={() => onSubmit?.(code, language)}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-[#92400E] hover:bg-[#D97706] text-[#E8E4D9] transition-colors duration-150 text-xs uppercase tracking-wider"
@@ -266,10 +256,10 @@ export default function CodeEditor({
         </div>
       </div>
 
-      {/* Code Area with Line Numbers */}
+      {}
       <div className="flex-1 relative overflow-hidden">
         <div className="absolute inset-0 flex">
-          {/* Line Numbers */}
+          {}
           <div 
             className="line-numbers flex-shrink-0 bg-[#0A0A08] text-[#3D3D3D] text-right pr-3 pl-3 pt-4 select-none overflow-hidden border-r border-[#1A1814]"
             style={{ 
@@ -284,7 +274,7 @@ export default function CodeEditor({
             ))}
           </div>
 
-          {/* Textarea */}
+          {}
           <textarea
             ref={textareaRef}
             value={code}

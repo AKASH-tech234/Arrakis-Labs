@@ -1,4 +1,4 @@
-// src/components/landing/Footer.jsx
+
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ArrakisLogo from "../ui/ArrakisLogo";
@@ -14,15 +14,15 @@ export default function Footer() {
       className="relative border-t-2 border-[#D97706]/40 py-16"
       style={{ backgroundColor: "#0A0A08" }}
     >
-      {/* Background accent */}
+      {}
       <div className="absolute inset-0 bg-gradient-to-t from-[#D97706]/5 via-transparent to-transparent pointer-events-none"></div>
 
-      {/* Top glow line */}
+      {}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D97706]/60 to-transparent"></div>
 
       <div className="max-w-6xl mx-auto px-6 lg:px-12 relative z-10">
         <div className="flex flex-col items-center gap-12">
-          {/* Logo */}
+          {}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -31,7 +31,7 @@ export default function Footer() {
             <ArrakisLogo size="lg" showWordmark={true} animated={true} />
           </motion.div>
 
-          {/* Links */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +72,7 @@ export default function Footer() {
             </Link>
           </motion.div>
 
-          {/* Divider */}
+          {}
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
@@ -80,7 +80,7 @@ export default function Footer() {
             className="w-32 h-px bg-gradient-to-r from-transparent via-[#D97706] to-transparent"
           />
  
-          {/* Copyright */}
+          {}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

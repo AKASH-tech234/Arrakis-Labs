@@ -23,7 +23,6 @@ async function resolveTargetUserId({ requestingUser, userId, username }) {
 async function canAccessUserContests({ requestingUser, userId, username }) {
   if (requestingUser && String(requestingUser._id) === String(userId)) return true;
 
-  // If accessed by public username, we already enforced isPublic in resolveTargetUserId.
   if (normalizeUsername(username)) return true;
 
   const settings = await PublicProfileSettings.findOne({ userId }).lean();
@@ -65,7 +64,7 @@ function computeBestRank(history) {
 }
 
 function computePlatformCounts(history) {
-  // Internal contests are part of Arrakis; keep the shape platform->count.
+  
   return {
     arrakis: history.length,
   };
@@ -211,7 +210,7 @@ export async function getContestRating(req, res) {
           ratingChange: reg.ratingChange,
         };
       })
-      // Only keep meaningful rating points
+      
       .filter((p) => p.date);
 
     return res.json({ success: true, data: { points } });

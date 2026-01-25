@@ -23,7 +23,6 @@ export function AuthProvider({ children }) {
 
     init();
 
-    // Listen for forced logout (e.g., 401 from API)
     const handleForcedLogout = () => {
       setUser(null);
     };

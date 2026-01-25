@@ -49,10 +49,6 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const app = express();
 const server = createServer(app);
 
-/* ======================================================
-   CORS CONFIG (DEFINED ONCE)
-====================================================== */
-
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:5173",
@@ -82,32 +78,23 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-/* ======================================================
-   SECURITY & MIDDLEWARE
-====================================================== */
-
 app.use(helmet());
 app.use(mongoSanitize());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
-/* ======================================================
-   RATE LIMITERS
-====================================================== */
-
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  skip: () => process.env.NODE_ENV !== "production", // Skip in development
+  skip: () => process.env.NODE_ENV !== "production", 
 });
 app.use("/api", apiLimiter);
 
-// Skip auth rate limiting entirely in development
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  skip: () => process.env.NODE_ENV !== "production", // Skip in development
+  skip: () => process.env.NODE_ENV !== "production", 
   message: {
     status: "error",
     message: "Too many authentication attempts. Please try again later.",
@@ -119,13 +106,9 @@ app.use("/api/auth/signup", authLimiter);
 const codeLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
-  skip: () => process.env.NODE_ENV !== "production", // Skip in development
+  skip: () => process.env.NODE_ENV !== "production", 
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
-
-/* ======================================================
-   DATABASE
-====================================================== */
 
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
@@ -143,17 +126,9 @@ const connectDB = async () => {
   console.log("=".repeat(80) + "\n");
 };
 
-/* ======================================================
-   HEALTH
-====================================================== */
-
 app.get("/api/health", (_, res) =>
   res.json({ status: "ok", timestamp: new Date().toISOString() }),
 );
-
-/* ======================================================
-   ROUTES
-====================================================== */
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -166,7 +141,6 @@ app.use("/api/export", exportRoutes);
 app.use("/api/potd", potdRoutes);
 app.use("/api", discussionRoutes);
 
-// Serve generated exports (PDFs)
 app.use(
   "/exports",
   express.static(path.resolve(__dirname, "../public/exports")),
@@ -179,14 +153,9 @@ app.post("/api/run", codeLimiter, runCode);
 app.post("/api/submit", protect, codeLimiter, submitCode);
 app.get("/api/submissions", protect, getSubmissions);
 
-// AI Feedback routes
 app.get("/api/ai/health", getAIHealth);
 app.post("/api/ai/feedback", protect, requestAIFeedback);
 app.post("/api/ai/summary", protect, getAILearningSummary);
-
-/* ======================================================
-   ERRORS
-====================================================== */
 
 app.use((req, res) =>
   res.status(404).json({ status: "error", message: "Route not found" }),
@@ -199,10 +168,6 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
-
-/* ======================================================
-   SERVER START
-====================================================== */
 
 const PORT = process.env.PORT || 5000;
 

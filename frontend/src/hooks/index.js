@@ -1,5 +1,4 @@
-// src/hooks/index.js
-// Centralized exports for all hooks
+
 
 export { default as useAIFeedback } from "./ai/useAIFeedback";
 export { default as useAIFeedbackEnhanced } from "./ai/useAIFeedbackEnhanced";

@@ -1,4 +1,4 @@
-// src/components/problem/ProblemDescription.jsx
+
 import { formatExampleInput } from "../../utils/formatExampleInput";
 
 export default function ProblemDescription({ problem }) {
@@ -8,7 +8,6 @@ export default function ProblemDescription({ problem }) {
       ? problem.id.slice(0, 6)
       : problem?.id);
 
-  // 🔥 BULLETPROOF CONSTRAINT NORMALIZATION
   let constraints = [];
   const raw = problem?.constraints;
 
@@ -40,7 +39,7 @@ export default function ProblemDescription({ problem }) {
 
   return (
     <div className="p-6 h-full overflow-auto">
-      {/* Title */}
+      {}
       <div className="mb-6">
         <span className="text-[#3D3D3D] text-[10px] uppercase tracking-wider">
           Problem {displayId}
@@ -60,12 +59,12 @@ export default function ProblemDescription({ problem }) {
         </div>
       </div>
 
-      {/* Description */}
+      {}
       <p className="text-[#E8E4D9] text-sm mb-6">
         {problem.description}
       </p>
 
-      {/* Constraints */}
+      {}
       {constraints.length > 0 && (
         <>
           <h3 className="text-[#78716C] text-[10px] uppercase mb-3">
@@ -88,7 +87,7 @@ export default function ProblemDescription({ problem }) {
         </>
       )}
 
-      {/* Examples */}
+      {}
       {examples.length > 0 && (
         <>
           <h3 className="text-[#78716C] text-[10px] uppercase mt-8 mb-3">
