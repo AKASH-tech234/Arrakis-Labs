@@ -149,6 +149,8 @@ def format_mim_section(mim_insights: Optional[Dict[str, Any]]) -> str:
     Format MIM predictions for agent prompts.
     
     Provides structured ML predictions to guide agent analysis.
+    
+    V2.1 Enhancement: Now includes difficulty adjustment and roadmap context.
     """
     if not mim_insights:
         return ""
@@ -161,6 +163,19 @@ def format_mim_section(mim_insights: Optional[Dict[str, Any]]) -> str:
         focus_areas = mim_insights.get("recommended_focus_areas", [])
         is_cold_start = mim_insights.get("is_cold_start", False)
         
+        # V2.1: Difficulty adjustment insights
+        difficulty_adjustment = mim_insights.get("difficulty_adjustment", {})
+        frustration_index = difficulty_adjustment.get("frustration_index", 0)
+        boredom_index = difficulty_adjustment.get("boredom_index", 0)
+        adjustment_direction = difficulty_adjustment.get("adjustment", "maintain")
+        adjustment_reason = difficulty_adjustment.get("reason", "")
+        
+        # V2.1: Roadmap context
+        roadmap_context = mim_insights.get("roadmap_context", {})
+        current_phase = roadmap_context.get("current_phase", "")
+        current_goal = roadmap_context.get("current_goal", "")
+        roadmap_progress = roadmap_context.get("progress", "")
+        
         confidence = root_cause.get("confidence", 0)
         confidence_level = "HIGH" if confidence >= 0.7 else "MEDIUM" if confidence >= 0.5 else "LOW"
         
@@ -169,9 +184,42 @@ def format_mim_section(mim_insights: Optional[Dict[str, Any]]) -> str:
         similar_str = "\n".join([f"   • {m[:100]}..." if len(m) > 100 else f"   • {m}" for m in similar_mistakes[:3]]) if similar_mistakes else "   (No similar mistakes found)"
         focus_str = "\n".join([f"   • {f}" for f in focus_areas[:3]]) if focus_areas else "   (Continue current approach)"
         
+        # V2.1: Format emotional state indicators
+        emotional_state = ""
+        if frustration_index > 0.6:
+            emotional_state = """
+⚠️ USER FRUSTRATION DETECTED (index: {:.0%})
+   - User may be struggling with consecutive failures
+   - Consider: Simpler explanation, more encouragement, smaller steps
+   - Avoid: Complex terminology, multiple simultaneous corrections""".format(frustration_index)
+        elif boredom_index > 0.7:
+            emotional_state = """
+💤 BOREDOM RISK DETECTED (index: {:.0%})
+   - User may need more challenging problems
+   - Consider: Advanced techniques, optimization focus
+   - Avoid: Basic explanations they likely already know""".format(boredom_index)
+        
+        # V2.1: Format roadmap context
+        roadmap_section = ""
+        if current_phase and current_goal:
+            roadmap_section = f"""
+LEARNING JOURNEY:
+   Current Phase: {current_phase}
+   Current Goal: {current_goal}
+   Progress: {roadmap_progress}"""
+        
+        # V2.1: Difficulty recommendation
+        difficulty_section = ""
+        if adjustment_direction and adjustment_reason:
+            direction_emoji = "📈" if adjustment_direction == "increase" else "📉" if adjustment_direction == "decrease" else "➡️"
+            difficulty_section = f"""
+DIFFICULTY RECOMMENDATION:
+   {direction_emoji} Adjustment: {adjustment_direction.upper()}
+   Reason: {adjustment_reason}"""
+        
         return f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  🧠 MIM INTELLIGENCE INSIGHTS (Confidence: {confidence_level})                          ║
+║  🧠 MIM INTELLIGENCE INSIGHTS V2.1 (Confidence: {confidence_level})                     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 {cold_start_note}
 
@@ -185,6 +233,9 @@ USER READINESS:
 PERFORMANCE FORECAST:
    Expected Success (next 5): {performance.get('expected_success_rate', 0.5):.0%}
    Learning Velocity: {performance.get('learning_velocity', 'stable')}
+{roadmap_section}
+{difficulty_section}
+{emotional_state}
 
 SIMILAR PAST MISTAKES:
 {similar_str}
@@ -197,6 +248,8 @@ MIM USAGE INSTRUCTIONS:
 - If confidence >= 70%: Structure feedback around predicted root cause
 - If confidence 50-70%: Consider MIM prediction as strong hypothesis  
 - If confidence < 50%: Use as supplementary signal, investigate independently
+- If frustration detected: Be extra encouraging, break down into smaller steps
+- If boredom detected: Skip basics, focus on advanced concepts/optimizations
 - ALWAYS mention if your analysis agrees/disagrees with MIM prediction
 ═══════════════════════════════════════════════════════════════════════════════
 """
