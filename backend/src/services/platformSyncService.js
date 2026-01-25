@@ -191,16 +191,61 @@ export async function syncPlatformProfile(platformProfileId) {
   await profile.save();
 
   try {
-    // External fetching/scraping is disabled by policy.
-    // This endpoint is kept for API compatibility, but must be DB-read-only.
+    let fetchedData = null;
 
+    // Fetch real data from external platforms
+    if (profile.platform === "leetcode") {
+      fetchedData = await fetchLeetCode(profile.handle);
+    } else if (profile.platform === "codeforces") {
+      fetchedData = await fetchCodeforces(profile.handle);
+    }
+
+    // If we have fetched data, update PlatformStats
+    if (fetchedData) {
+      const updateData = {
+        totalSolved: fetchedData.totalSolved || 0,
+        totalAttempted: fetchedData.totalAttempted || 0,
+        last30DaysSolved: fetchedData.last30DaysSolved || 0,
+        avgSolvedPerDay: fetchedData.avgSolvedPerDay || 0,
+        contestsParticipated: fetchedData.contestsParticipated || 0,
+        currentRating: fetchedData.currentRating,
+        highestRating: fetchedData.highestRating,
+        difficulty: fetchedData.difficulty || {
+          easy: { solved: 0, attempted: 0 },
+          medium: { solved: 0, attempted: 0 },
+          hard: { solved: 0, attempted: 0 },
+        },
+        skills: fetchedData.skills || new Map(),
+        daily: fetchedData.daily || [],
+        dataSource: fetchedData.dataSource || "api",
+        lastSyncedAt: new Date(),
+      };
+
+      await PlatformStats.findOneAndUpdate(
+        { userId: profile.userId, platform: profile.platform },
+        { $set: updateData },
+        { upsert: true, new: true }
+      );
+
+      profile.syncStatus = "success";
+      profile.lastSyncAt = new Date();
+      profile.lastSyncError = null;
+      await profile.save();
+
+      return {
+        skipped: false,
+        platform: profile.platform,
+        reason: "fetched",
+        stats: updateData,
+      };
+    }
+
+    // For unsupported platforms, create empty record if not exists
     let existing = await PlatformStats.findOne({
       userId: profile.userId,
       platform: profile.platform,
     });
 
-    // If no stats exist yet, create an initial empty record.
-    // This is NOT dummy data — it is a real empty record that will be populated later.
     if (!existing) {
       existing = await PlatformStats.create({
         userId: profile.userId,
@@ -224,7 +269,6 @@ export async function syncPlatformProfile(platformProfileId) {
       });
     }
 
-    // Always mark sync as success — stats exist (either found or just created)
     profile.syncStatus = "success";
     profile.lastSyncAt = new Date();
     profile.lastSyncError = null;
@@ -233,7 +277,7 @@ export async function syncPlatformProfile(platformProfileId) {
     return {
       skipped: false,
       platform: profile.platform,
-      reason: "db_only",
+      reason: "unsupported_platform",
       stats: existing.toObject ? existing.toObject() : existing,
     };
   } catch (err) {
