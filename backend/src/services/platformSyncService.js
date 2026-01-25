@@ -163,6 +163,19 @@ async function fetchCodeforces(handle) {
     else difficulty.hard.solved += 1;
   }
 
+  // Build daily activity from accepted submissions
+  const dailyMap = new Map();
+  for (const s of acceptedSubs) {
+    if (!s.creationTimeSeconds) continue;
+    const dt = new Date(s.creationTimeSeconds * 1000);
+    const dateStr = isoDate(dt);
+    dailyMap.set(dateStr, (dailyMap.get(dateStr) || 0) + 1);
+  }
+  const daily = Array.from(dailyMap.entries())
+    .map(([date, solved]) => ({ date, solved }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-370);
+
   return {
     totalSolved: solvedSet.size,
     totalAttempted: attempted,
@@ -173,7 +186,7 @@ async function fetchCodeforces(handle) {
     highestRating: maxRating,
     difficulty,
     skills: {},
-    daily: [],
+    daily,
     dataSource: "api",
   };
 }
