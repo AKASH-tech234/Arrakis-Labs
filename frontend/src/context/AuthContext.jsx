@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getMe, signin, signup, signout, googleAuth } from "../services/api";
+import { getMe, signin, signup, signout, googleAuth } from "../services/common/api";
 
 const AuthContext = createContext(null);
 

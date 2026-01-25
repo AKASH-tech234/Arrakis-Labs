@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import contestApi from '../../services/contestApi';
+import contestApi from '../../services/contest/contestApi';
 import { useAuth } from '../../context/AuthContext';
 
 /**

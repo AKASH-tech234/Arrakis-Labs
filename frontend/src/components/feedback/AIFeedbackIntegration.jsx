@@ -4,8 +4,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { getMySubmissions } from "../../services/api";
-import { useAIFeedbackEnhanced } from "../../hooks/useAIFeedbackEnhanced";
+import { getMySubmissions } from "../../services/common/api";
+import { useAIFeedbackEnhanced } from "../../hooks/ai/useAIFeedbackEnhanced";
 import AIFeedbackModal from "./AIFeedbackModal";
 import WeeklyReportUI, { WeeklyReportButton } from "./WeeklyReportUI";
 import ConfidenceBadge from "./ConfidenceBadge";

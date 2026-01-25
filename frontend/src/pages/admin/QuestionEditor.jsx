@@ -4,7 +4,7 @@ import {
   getQuestionById,
   createQuestion,
   updateQuestion,
-} from "../../services/adminApi";
+} from "../../services/admin/adminApi";
 import {
   ArrowLeft,
   Save,

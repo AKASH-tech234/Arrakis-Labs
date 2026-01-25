@@ -27,9 +27,9 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
-import PlatformStats from "../models/PlatformStats.js";
-import PlatformProfile from "../models/PlatformProfile.js";
-import User from "../models/User.js";
+import PlatformStats from "../models/profile/PlatformStats.js";
+import PlatformProfile from "../models/profile/PlatformProfile.js";
+import User from "../models/auth/User.js";
 
 // Parse command line arguments
 const args = process.argv.slice(2);

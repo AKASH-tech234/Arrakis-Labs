@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
-import { getPOTDHistory } from "../../services/potdApi";
+import { getPOTDHistory } from "../../services/potd/potdApi";
 import POTDHistoryList from "../../components/potd/POTDHistoryList";
 import POTDSection from "../../components/potd/shared/POTDSection";
 import POTDEmptyState from "../../components/potd/shared/POTDEmptyState";

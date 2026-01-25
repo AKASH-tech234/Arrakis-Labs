@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAdminAuth } from "../../context/AdminAuthContext";
-import { getDashboardStats } from "../../services/adminApi";
+import { getDashboardStats } from "../../services/admin/adminApi";
 import {
   LayoutDashboard,
   FileText,

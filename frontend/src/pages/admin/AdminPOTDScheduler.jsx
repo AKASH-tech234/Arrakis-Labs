@@ -21,7 +21,7 @@ import {
   deleteScheduledPOTD,
   forcePublishPOTD,
   getSchedulerStatus,
-} from "../../services/potdApi";
+} from "../../services/potd/potdApi";
 
 /**
  * Admin POTD Scheduler

@@ -10,16 +10,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
 
-import authRoutes from "./routes/authRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";
-import contestRoutes from "./routes/contestRoutes.js";
-import adminContestRoutes from "./routes/adminContestRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
-import publicRoutes from "./routes/publicRoutes.js";
-import exportRoutes from "./routes/exportRoutes.js";
-import potdRoutes from "./routes/potdRoutes.js";
-import adminPOTDRoutes from "./routes/adminPOTDRoutes.js";
-import discussionRoutes from "./routes/discussionRoutes.js";
+import authRoutes from "./routes/auth/authRoutes.js";
+import adminRoutes from "./routes/admin/adminRoutes.js";
+import contestRoutes from "./routes/contest/contestRoutes.js";
+import adminContestRoutes from "./routes/admin/adminContestRoutes.js";
+import profileRoutes from "./routes/profile/profileRoutes.js";
+import publicRoutes from "./routes/profile/publicRoutes.js";
+import exportRoutes from "./routes/profile/exportRoutes.js";
+import potdRoutes from "./routes/potd/potdRoutes.js";
+import adminPOTDRoutes from "./routes/admin/adminPOTDRoutes.js";
+import discussionRoutes from "./routes/discussion/discussionRoutes.js";
 
 import {
   runCode,
@@ -27,19 +27,19 @@ import {
   getSubmissions,
   getPublicQuestions,
   getPublicQuestion,
-} from "./controllers/judgeController.js";
+} from "./controllers/judge/judgeController.js";
 
 import {
   requestAIFeedback,
   getAILearningSummary,
   getAIHealth,
-} from "./controllers/aiController.js";
+} from "./controllers/ai/aiController.js";
 
-import { protect } from "./middleware/authMiddleware.js";
-import leaderboardService from "./services/leaderboardService.js";
-import wsServer from "./services/websocketServer.js";
-import contestScheduler from "./services/contestScheduler.js";
-import potdScheduler from "./services/potdScheduler.js";
+import { protect } from "./middleware/auth/authMiddleware.js";
+import leaderboardService from "./services/contest/leaderboardService.js";
+import wsServer from "./services/contest/websocketServer.js";
+import contestScheduler from "./services/contest/contestScheduler.js";
+import potdScheduler from "./services/potd/potdScheduler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Flame, Trophy, TrendingUp, Calendar } from "lucide-react";
-import { getUserStreak } from "../../services/potdApi";
+import { getUserStreak } from "../../services/potd/potdApi";
 
 /**
  * Streak Display Widget

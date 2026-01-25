@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
-import adminApi from '../../../services/adminApi';
+import adminApi from '../../../services/admin/adminApi';
 
 /**
  * Admin Contest List Page

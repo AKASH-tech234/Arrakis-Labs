@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getQuestions, deleteQuestion } from "../../services/adminApi";
+import { getQuestions, deleteQuestion } from "../../services/admin/adminApi";
 import {
   FileText,
   Plus,

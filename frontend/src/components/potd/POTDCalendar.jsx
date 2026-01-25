@@ -7,7 +7,7 @@ import {
   Flame,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { getUserPOTDCalendar } from "../../services/potdApi";
+import { getUserPOTDCalendar } from "../../services/potd/potdApi";
 
 /**
  * POTD Calendar Component

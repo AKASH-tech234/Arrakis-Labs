@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import contestApi from '../../services/contestApi';
+import contestApi from '../../services/contest/contestApi';
 import { useAuth } from '../../context/AuthContext';
-import { useContestTimer, useCountdownTimer } from '../../hooks/useContestTimer';
-import useContestWebSocket from '../../hooks/useContestWebSocket';
+import { useContestTimer, useCountdownTimer } from '../../hooks/contest/useContestTimer';
+import useContestWebSocket from '../../hooks/contest/useContestWebSocket';
 
 /**
  * Contest Detail/Lobby Page
