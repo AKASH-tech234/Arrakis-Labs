@@ -2,12 +2,13 @@
 MIM Model - Machine Learning Models for Predictions
 ====================================================
 
-Phase 1: Sklearn-based models (RandomForest, GradientBoosting)
-- Root Cause Classifier: Predicts failure type
-- Readiness Classifier: Predicts success probability per difficulty
-- Performance Regressor: Forecasts future success rate
+V2.0: LightGBM-based models for better accuracy
+- Root Cause Classifier: Predicts failure type (LightGBM multiclass)
+- Readiness Classifier: Predicts success probability per difficulty (LightGBM binary)
+- Performance Regressor: Forecasts future success rate (LightGBM regressor)
 
 Model versioning and persistence handled via joblib.
+Training: Batch only (online learning deferred to v3)
 """
 
 from typing import Dict, List, Optional, Tuple, Any
@@ -16,7 +17,14 @@ import logging
 import os
 from datetime import datetime
 
-# Sklearn imports
+# LightGBM for better accuracy with feature interactions
+try:
+    import lightgbm as lgb
+    LIGHTGBM_AVAILABLE = True
+except ImportError:
+    LIGHTGBM_AVAILABLE = False
+    
+# Sklearn imports (fallback and utilities)
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler, LabelEncoder
@@ -30,7 +38,7 @@ logger = logging.getLogger("mim.model")
 # ═══════════════════════════════════════════════════════════════════════════════
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
-CURRENT_MODEL_VERSION = "v1.0"
+CURRENT_MODEL_VERSION = "v2.0"  # V2.0: LightGBM upgrade
 
 # Ensure models directory exists
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -107,47 +115,111 @@ class MIMModel:
     # ═══════════════════════════════════════════════════════════════════════════
     
     def _initialize_models(self):
-        """Initialize fresh model instances."""
-        # Root cause classifier (calibrated for better probabilities)
-        base_rf = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=12,
-            min_samples_split=5,
-            min_samples_leaf=2,
-            class_weight="balanced",  # Handle imbalanced classes
-            random_state=42,
-            n_jobs=-1,
-        )
-        self.root_cause_model = CalibratedClassifierCV(
-            base_rf,
-            method="isotonic",
-            cv=3,
-        )
+        """Initialize fresh model instances with LightGBM (or sklearn fallback)."""
         
-        # Readiness model (gradient boosting for better calibration)
-        self.readiness_model = GradientBoostingClassifier(
-            n_estimators=50,
-            learning_rate=0.1,
-            max_depth=5,
-            min_samples_split=10,
-            random_state=42,
-        )
+        if LIGHTGBM_AVAILABLE:
+            logger.info("Using LightGBM models for better accuracy")
+            
+            # Root cause classifier (LightGBM multiclass)
+            # LightGBM handles feature interactions better than RandomForest
+            self.root_cause_model = lgb.LGBMClassifier(
+                objective='multiclass',
+                num_class=len(ROOT_CAUSE_CATEGORIES),
+                n_estimators=300,          # More trees for better accuracy
+                max_depth=10,              # Prevent overfitting
+                num_leaves=31,             # Default, good balance
+                learning_rate=0.05,        # Lower rate, more stable
+                min_child_samples=20,      # Minimum samples per leaf
+                subsample=0.8,             # Stochastic gradient boosting
+                colsample_bytree=0.8,      # Feature subsampling
+                reg_alpha=0.1,             # L1 regularization
+                reg_lambda=0.1,            # L2 regularization
+                class_weight='balanced',   # Handle imbalanced classes
+                random_state=42,
+                n_jobs=-1,
+                verbose=-1,                # Suppress warnings
+            )
+            
+            # Readiness model (LightGBM binary classifier)
+            self.readiness_model = lgb.LGBMClassifier(
+                objective='binary',
+                n_estimators=200,
+                max_depth=8,
+                num_leaves=31,
+                learning_rate=0.05,
+                min_child_samples=20,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                reg_alpha=0.1,
+                reg_lambda=0.1,
+                class_weight='balanced',
+                random_state=42,
+                n_jobs=-1,
+                verbose=-1,
+            )
+            
+            # Performance forecaster (LightGBM binary for probability)
+            self.performance_model = lgb.LGBMClassifier(
+                objective='binary',
+                n_estimators=150,
+                max_depth=6,
+                num_leaves=31,
+                learning_rate=0.05,
+                min_child_samples=20,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                random_state=42,
+                n_jobs=-1,
+                verbose=-1,
+            )
+        else:
+            logger.warning("LightGBM not available, falling back to sklearn models")
+            
+            # Fallback: Root cause classifier (calibrated for better probabilities)
+            base_rf = RandomForestClassifier(
+                n_estimators=200,
+                max_depth=15,
+                min_samples_split=3,
+                min_samples_leaf=1,
+                max_features='sqrt',
+                class_weight="balanced",
+                random_state=42,
+                n_jobs=-1,
+            )
+            self.root_cause_model = CalibratedClassifierCV(
+                base_rf,
+                method="sigmoid",
+                cv=5,
+            )
+            
+            # Readiness model (gradient boosting)
+            self.readiness_model = GradientBoostingClassifier(
+                n_estimators=100,
+                learning_rate=0.05,
+                max_depth=6,
+                min_samples_split=5,
+                min_samples_leaf=2,
+                subsample=0.8,
+                random_state=42,
+            )
+            
+            # Performance forecaster
+            self.performance_model = LogisticRegression(
+                max_iter=2000,
+                C=0.5,
+                class_weight="balanced",
+                solver='lbfgs',
+                random_state=42,
+            )
         
-        # Performance forecaster (logistic regression for simplicity)
-        self.performance_model = LogisticRegression(
-            max_iter=1000,
-            class_weight="balanced",
-            random_state=42,
-        )
-        
-        # Scaler
+        # Scaler (StandardScaler for numerical stability)
         self.scaler = StandardScaler()
         
         # Label encoder for root causes
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(ROOT_CAUSE_CATEGORIES)
         
-        logger.debug("Models initialized with default configurations")
+        logger.debug(f"Models initialized | LightGBM={LIGHTGBM_AVAILABLE}")
     
     # ═══════════════════════════════════════════════════════════════════════════
     # TRAINING
@@ -172,9 +244,16 @@ class MIMModel:
         Returns:
             Dictionary of training metrics
         """
+        import warnings
+        
         logger.info(f"Starting MIM training | samples={len(X)}")
         
         self._initialize_models()
+        
+        # Ensure X is numpy array without feature names
+        if hasattr(X, 'values'):
+            X = X.values
+        X = np.asarray(X)
         
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
@@ -182,17 +261,21 @@ class MIMModel:
         # Encode root cause labels
         y_root_encoded = self.label_encoder.transform(y_root_cause)
         
-        # Train root cause model
-        logger.debug("Training root cause classifier...")
-        self.root_cause_model.fit(X_scaled, y_root_encoded)
-        
-        # Train readiness model (predict success on different difficulties)
-        logger.debug("Training readiness model...")
-        self.readiness_model.fit(X_scaled, y_success)
-        
-        # Train performance model
-        logger.debug("Training performance forecaster...")
-        self.performance_model.fit(X_scaled, y_success)
+        # Suppress sklearn feature name warnings during training
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*feature names.*")
+            
+            # Train root cause model
+            logger.debug("Training root cause classifier...")
+            self.root_cause_model.fit(X_scaled, y_root_encoded)
+            
+            # Train readiness model (predict success on different difficulties)
+            logger.debug("Training readiness model...")
+            self.readiness_model.fit(X_scaled, y_success)
+            
+            # Train performance model
+            logger.debug("Training performance forecaster...")
+            self.performance_model.fit(X_scaled, y_success)
         
         self.is_fitted = True
         self.training_date = datetime.now()
@@ -249,6 +332,8 @@ class MIMModel:
                 "alternatives": [{"cause": "...", "confidence": 0.15}, ...]
             }
         """
+        import warnings
+        
         if not self.is_fitted:
             return self._fallback_root_cause(features)
         
@@ -256,11 +341,19 @@ class MIMModel:
         if features.ndim == 1:
             features = features.reshape(1, -1)
         
+        # Ensure numpy array
+        features = np.asarray(features)
+        
         # Scale
         features_scaled = self.scaler.transform(features)
         
-        # Get probabilities
-        probas = self.root_cause_model.predict_proba(features_scaled)[0]
+        # Suppress sklearn feature name warnings during prediction
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*feature names.*")
+            
+            # Get probabilities
+            probas = self.root_cause_model.predict_proba(features_scaled)[0]
+        
         classes = self.label_encoder.classes_
         
         # Get top prediction
@@ -299,6 +392,8 @@ class MIMModel:
                 "recommended_difficulty": "Medium"
             }
         """
+        import warnings
+        
         if not self.is_fitted:
             return self._fallback_readiness(features)
         
@@ -306,11 +401,18 @@ class MIMModel:
         if features.ndim == 1:
             features = features.reshape(1, -1)
         
+        # Ensure numpy array
+        features = np.asarray(features)
+        
         # Scale
         features_scaled = self.scaler.transform(features)
         
-        # Get base success probability
-        base_prob = self.readiness_model.predict_proba(features_scaled)[0][1]
+        # Suppress sklearn feature name warnings during prediction
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*feature names.*")
+            
+            # Get base success probability
+            base_prob = self.readiness_model.predict_proba(features_scaled)[0][1]
         
         # Adjust for different difficulties (heuristic multipliers)
         easy_readiness = min(base_prob * 1.3, 0.95)

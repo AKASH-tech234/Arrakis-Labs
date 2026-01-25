@@ -425,7 +425,8 @@ class MIMFeatureExtractor:
         
         features[0] = DIFFICULTY_ENCODING.get(difficulty, 0.5)
         
-        # Topic one-hot encoding (partial)
+        # Topic one-hot encoding (partial) - MAX 11 topics to fit in features[1-11]
+        # Features layout: [0]=difficulty, [1-11]=topics (11 slots), [12-14]=constraints
         tags = []
         if problem_context:
             tags = problem_context.get("tags", [])
@@ -436,7 +437,9 @@ class MIMFeatureExtractor:
         
         for topic in all_topics:
             for topic_key, idx in TOPIC_INDICES.items():
-                if topic_key in topic:
+                # FIX: Cap at index 10 to prevent overflow (features[1+10]=features[11] is max)
+                # This leaves features[12-14] for constraint features
+                if topic_key in topic and idx <= 10:
                     features[1 + idx] = 1.0  # features[1-11] are topics
                     break
         
