@@ -2,14 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Check,
-  X,
-  Flame,
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { getUserPOTDCalendar } from "../../services/potd/potdApi";
 
-export default function POTDCalendar() {
+export default function POTDCalendar({ compact = false }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -80,36 +77,37 @@ export default function POTDCalendar() {
       month === today.getUTCMonth() &&
       year === today.getUTCFullYear();
 
-    let bgColor = "bg-gray-800/30";
-    let icon = null;
-    let textColor = "text-gray-400";
+    // Base styles
+    let cellBg = "bg-[#0A0A08]";
+    let textColor = "text-[#4A4A45]";
+    let indicator = null;
 
     if (status === "solved") {
-      bgColor = "bg-green-500/20 border border-green-500/50";
-      icon = <Check className="w-3 h-3 text-green-400" />;
+      cellBg = "bg-green-500/15";
       textColor = "text-green-400";
+      indicator = <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400"></div>;
     } else if (status === "missed") {
-      bgColor = "bg-red-500/10 border border-red-500/30";
-      icon = <X className="w-3 h-3 text-red-400" />;
-      textColor = "text-red-400";
+      cellBg = "bg-red-500/10";
+      textColor = "text-red-400/70";
+      indicator = <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red-400"></div>;
     } else if (status === "active") {
-      bgColor = "bg-orange-500/20 border-2 border-orange-500";
-      icon = <Flame className="w-3 h-3 text-orange-400" />;
-      textColor = "text-orange-400";
+      cellBg = "bg-[#D97706]/20";
+      textColor = "text-[#D97706]";
+      indicator = <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse"></div>;
     }
 
-    if (isToday && status !== "active") {
-      bgColor += " ring-2 ring-blue-500/50";
-    }
+    const todayRing = isToday ? "ring-1 ring-[#D97706]" : "";
+    const cellSize = compact ? "w-7 h-7" : "w-8 h-8";
+    const fontSize = compact ? "text-[11px]" : "text-xs";
 
     return (
       <div
         key={day}
-        className={`aspect-square flex flex-col items-center justify-center rounded-lg ${bgColor} transition-all duration-200 hover:scale-105 cursor-pointer`}
+        className={`relative ${cellSize} flex items-center justify-center rounded-lg ${cellBg} ${todayRing} hover:bg-[#1A1814] transition-colors cursor-pointer`}
         title={status ? `${status.charAt(0).toUpperCase() + status.slice(1)}` : "No POTD"}
       >
-        <span className={`text-sm font-medium ${textColor}`}>{day}</span>
-        {icon && <div className="mt-1">{icon}</div>}
+        <span className={`${fontSize} font-medium ${textColor}`}>{day}</span>
+        {indicator}
       </div>
     );
   };
@@ -119,97 +117,102 @@ export default function POTDCalendar() {
     "July", "August", "September", "October", "November", "December",
   ];
 
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
   return (
-    <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-      {}
-      <div className="flex items-center justify-between mb-6">
+    <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-orange-500" />
-          <h3 className="text-lg font-semibold text-white">POTD Calendar</h3>
+          <CalendarIcon className="w-4 h-4 text-[#D97706]" />
+          <h3 
+            className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-wider"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            {compact ? "Calendar" : "POTD Calendar"}
+          </h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5 bg-[#0A0A08] rounded-lg p-0.5">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-[#1A1814] rounded-md transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-400" />
+            <ChevronLeft className="w-3.5 h-3.5 text-[#78716C]" />
           </button>
-          <span className="text-white font-medium min-w-[140px] text-center">
-            {monthNames[month]} {year}
+          <span className="text-[#E8E4D9] font-medium text-xs min-w-[80px] text-center px-1">
+            {monthNames[month].slice(0, 3)} {year}
           </span>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-[#1A1814] rounded-md transition-colors"
           >
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight className="w-3.5 h-3.5 text-[#78716C]" />
           </button>
         </div>
       </div>
 
-      {}
-      <div className="flex items-center gap-4 mb-4 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-green-500/50"></div>
-          <span className="text-gray-400">Solved</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-red-500/30"></div>
-          <span className="text-gray-400">Missed</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-orange-500/50"></div>
-          <span className="text-gray-400">Active</span>
-        </div>
-      </div>
-
-      {}
+      {/* Calendar Grid */}
       {loading ? (
-        <div className="h-64 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        <div className="h-48 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#1A1814] border-t-[#D97706]"></div>
         </div>
       ) : (
-        <>
-          {}
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            {dayNames.map((day) => (
+        <div className="space-y-2">
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-1">
+            {dayNames.map((day, i) => (
               <div
-                key={day}
-                className="text-center text-xs font-medium text-gray-500 py-2"
+                key={i}
+                className="text-center text-[10px] font-medium text-[#4A4A45] py-1"
               >
                 {day}
               </div>
             ))}
           </div>
 
-          {}
-          <div className="grid grid-cols-7 gap-2">
-            {}
+          {/* Days Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Empty cells */}
             {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-              <div key={`empty-${index}`} className="aspect-square"></div>
+              <div key={`empty-${index}`} className={compact ? "w-7 h-7" : "w-8 h-8"}></div>
             ))}
 
-            {}
+            {/* Day cells */}
             {Array.from({ length: daysInMonth }).map((_, index) => renderDay(index + 1))}
           </div>
-        </>
+        </div>
       )}
 
-      {}
-      {summary && (
-        <div className="mt-6 pt-4 border-t border-gray-700 grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-green-400">{summary.solvedDays}</div>
-            <div className="text-xs text-gray-400">Solved</div>
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-[#1A1814]">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-400"></div>
+          <span className="text-[10px] text-[#78716C]">Solved</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-400"></div>
+          <span className="text-[10px] text-[#78716C]">Missed</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-[#D97706]"></div>
+          <span className="text-[10px] text-[#78716C]">Today</span>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      {summary && !compact && (
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
+            <div className="text-base font-bold text-green-400">{summary.solvedDays}</div>
+            <div className="text-[9px] text-[#78716C] uppercase">Solved</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-red-400">{summary.missedDays}</div>
-            <div className="text-xs text-gray-400">Missed</div>
+          <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
+            <div className="text-base font-bold text-red-400">{summary.missedDays}</div>
+            <div className="text-[9px] text-[#78716C] uppercase">Missed</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-white">{summary.totalDays}</div>
-            <div className="text-xs text-gray-400">Total</div>
+          <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
+            <div className="text-base font-bold text-[#E8E4D9]">{summary.totalDays}</div>
+            <div className="text-[9px] text-[#78716C] uppercase">Total</div>
           </div>
         </div>
       )}

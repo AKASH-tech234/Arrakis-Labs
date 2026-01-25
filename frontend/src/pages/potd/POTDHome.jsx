@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { History, Trophy, Flame } from "lucide-react";
 import AppHeader from "../../components/layout/AppHeader";
 import POTDCard from "../../components/potd/POTDCard";
 import StreakWidget from "../../components/potd/StreakWidget";
 import POTDCalendar from "../../components/potd/POTDCalendar";
-import POTDSection from "../../components/potd/shared/POTDSection";
 
 export default function POTDHome() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -29,69 +29,73 @@ export default function POTDHome() {
     <div className="min-h-screen bg-[#0A0A08]">
       <AppHeader />
 
-      <main className="pt-14">
-        <div className="max-w-6xl mx-auto px-6 lg:px-12 py-12 space-y-10">
+      <main className="pt-16">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+          {/* Compact Header */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="relative overflow-hidden rounded-2xl border border-[#1A1814] bg-[#0F0F0D]"
+            transition={{ duration: 0.3 }}
+            className="flex items-center justify-between gap-4 flex-wrap"
           >
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background:
-                "radial-gradient(900px 400px at 20% 20%, rgba(217,119,6,0.20), transparent 60%), radial-gradient(800px 400px at 80% 60%, rgba(245,158,11,0.12), transparent 60%)",
-            }} />
-            <div className="relative p-8 md:p-10 flex items-end justify-between gap-6 flex-wrap">
-              <div className="max-w-2xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[#D97706]/10 border border-[#D97706]/20">
+                <Flame className="w-5 h-5 text-[#D97706]" />
+              </div>
+              <div>
                 <h1
-                  className="text-[#E8E4D9] text-3xl md:text-4xl font-bold tracking-[0.15em] uppercase"
-                  style={{ fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif" }}
+                  className="text-[#E8E4D9] text-xl font-bold tracking-wider uppercase"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Problem of the Day
                 </h1>
                 <p
-                  className="text-[#A29A8C] text-base tracking-wider mt-3"
+                  className="text-[#78716C] text-xs"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
-                  A single curated challenge, refreshed daily at <span className="text-[#E8E4D9]">00:00 UTC</span>. Submit an
-                  accepted solution to maintain your streak.
+                  Daily challenge • Refreshes at 00:00 UTC
                 </p>
               </div>
+            </div>
 
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/potd/history"
-                  className="px-4 py-2 rounded border border-[#2A2A24] bg-[#0A0A08] text-[#E8E4D9] hover:border-[#D97706]/50 hover:shadow-[0_0_0_1px_rgba(217,119,6,0.25)] transition-all text-xs tracking-[0.2em] uppercase"
-                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-                >
-                  History
-                </Link>
-                <Link
-                  to="/potd/leaderboard"
-                  className="px-4 py-2 rounded border border-[#2A2A24] bg-[#0A0A08] text-[#E8E4D9] hover:border-[#D97706]/50 hover:shadow-[0_0_0_1px_rgba(217,119,6,0.25)] transition-all text-xs tracking-[0.2em] uppercase"
-                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-                >
-                  Leaderboard
-                </Link>
-              </div>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/potd/history"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] hover:border-[#D97706]/40 transition-all text-xs"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                <History className="w-3.5 h-3.5" />
+                History
+              </Link>
+              <Link
+                to="/potd/leaderboard"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] hover:border-[#D97706]/40 transition-all text-xs"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                Leaderboard
+              </Link>
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2" key={refreshKey}>
+          {/* Main Grid - POTD Card + Streak */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" key={refreshKey}>
+            <div className="lg:col-span-2">
               <POTDCard />
             </div>
             <div>
-              <StreakWidget />
+              <StreakWidget compact />
             </div>
           </div>
 
-          <POTDSection
-            title="Your Calendar"
-            subtitle="Solved, missed, and active days (UTC)."
+          {/* Calendar - Compact */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <POTDCalendar />
-          </POTDSection>
+            <POTDCalendar compact />
+          </motion.div>
         </div>
       </main>
     </div>

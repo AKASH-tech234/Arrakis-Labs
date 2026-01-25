@@ -1,10 +1,11 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
 import ProfileHeader from "../../components/charts/ProfileHeader";
 import ActivityHeatmap from "../../components/charts/ActivityHeatmap";
 import CodingProfileModal from "../../components/profile/CodingProfileModal";
+import { StatCard } from "../../components/ui/shared";
+import { Trophy, TrendingUp, ExternalLink } from "lucide-react";
 import {
   addCodingProfile,
   deleteCodingProfile,
@@ -39,18 +40,15 @@ function formatPlatformName(platform) {
   }
 }
 
-function StatCard({ label, value }) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-      <p className="text-xs uppercase tracking-widest text-[#78716C]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-        {label}
-      </p>
-      <p className="text-2xl font-bold text-[#E8E4D9] mt-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-        {value}
-      </p>
-    </div>
-  );
-}
+const platformLogos = {
+  leetcode: "🟧",
+  codeforces: "🔵",
+  codechef: "⭐",
+  atcoder: "🔷",
+  hackerrank: "🟢",
+  arrakis: "🏛️",
+  custom: "🔗"
+};
 
 export default function CodingProfile() {
   const [loading, setLoading] = useState(true);
@@ -239,50 +237,32 @@ export default function CodingProfile() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#0A0A08" }}>
-      {}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl"></div>
-        {}
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#92400E]/5 rounded-full blur-3xl"></div>
-        {}
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-[#D97706]/3 rounded-full blur-3xl"></div>
-      </div>
-
-      {}
-      <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-5"
-        style={{
-          backgroundImage: `linear-gradient(to right, #D97706 1px, transparent 1px), linear-gradient(to bottom, #D97706 1px, transparent 1px)`,
-          backgroundSize: "50px 50px",
-        }}
-      ></div>
-
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
       <AppHeader />
 
-      <main className="pt-20 relative z-10">
-        <div className="max-w-5xl mx-auto px-6 lg:px-12 py-12">
+      <main className="pt-16">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+          {/* Header Card */}
           <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="mb-16 relative bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/40 transition-colors"
           >
-            <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+            <div className="absolute top-4 right-4 z-20">
               <button
                 type="button"
                 onClick={openAdd}
-                className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors"
+                className="px-3 py-1.5 text-xs rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-[#0A0A08] font-semibold transition-colors"
               >
                 Add Profile
               </button>
             </div>
 
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
               <h2
-                className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Coding Profile
@@ -290,28 +270,25 @@ export default function CodingProfile() {
             </div>
 
             {loading ? (
-              <p className="text-[#78716C]">Loading…</p>
+              <p className="text-[#78716C] text-sm">Loading…</p>
             ) : error ? (
-              <p className="text-red-400">{error}</p>
+              <p className="text-red-400 text-sm">{error}</p>
             ) : (
-              <>
-                <ProfileHeader user={{ ...(summarySafe?.user || {}), descriptor: "Coding profile" }} />
-              </>
+              <ProfileHeader user={{ ...(summarySafe?.user || {}), descriptor: "Coding profile" }} />
             )}
           </motion.div>
 
           {!loading && !error && (
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="mb-16"
+              transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
                   <h2
-                    className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                    className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
                     Overview
@@ -322,10 +299,10 @@ export default function CodingProfile() {
                   <button
                     type="button"
                     onClick={() => setView(VIEW.combined)}
-                    className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                    className={`px-2.5 py-1.5 text-xs rounded-md border transition-colors ${
                       view === VIEW.combined
-                        ? "bg-white/10 text-white border-white/20"
-                        : "bg-white/5 text-[#E8E4D9] border-white/10 hover:bg-white/10"
+                        ? "bg-[#D97706]/10 text-[#D97706] border-[#D97706]/30"
+                        : "bg-[#1A1814] text-[#E8E4D9] border-[#1A1814] hover:border-[#D97706]/30"
                     }`}
                   >
                     Combined
@@ -333,10 +310,10 @@ export default function CodingProfile() {
                   <button
                     type="button"
                     onClick={() => setView(VIEW.platform)}
-                    className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                    className={`px-2.5 py-1.5 text-xs rounded-md border transition-colors ${
                       view === VIEW.platform
-                        ? "bg-white/10 text-white border-white/20"
-                        : "bg-white/5 text-[#E8E4D9] border-white/10 hover:bg-white/10"
+                        ? "bg-[#D97706]/10 text-[#D97706] border-[#D97706]/30"
+                        : "bg-[#1A1814] text-[#E8E4D9] border-[#1A1814] hover:border-[#D97706]/30"
                     }`}
                   >
                     Platform
@@ -345,14 +322,14 @@ export default function CodingProfile() {
               </div>
 
               {view === VIEW.platform && (
-                <div className="mb-6">
-                  <label className="block text-xs uppercase tracking-widest text-[#78716C] mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                <div className="mb-4">
+                  <label className="block text-[10px] uppercase tracking-widest text-[#78716C] mb-1.5" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
                     Select platform
                   </label>
                   <select
                     value={selectedPlatform}
                     onChange={(e) => setSelectedPlatform(e.target.value)}
-                    className="w-full sm:w-80 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[#E8E4D9]"
+                    className="w-full sm:w-64 bg-[#0A0A08] border border-[#1A1814] rounded-lg px-3 py-2 text-sm text-[#E8E4D9]"
                   >
                     {connectedPlatforms.map((p) => (
                       <option key={p.platform} value={p.platform}>
@@ -363,17 +340,15 @@ export default function CodingProfile() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                <StatCard label="Total Solved" value={statsForSelected.totalSolved ?? 0} />
-                <StatCard label={view === VIEW.combined ? "Best Rating" : "Rating"} value={statsForSelected.rating ?? "—"} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <StatCard label="Total Solved" value={statsForSelected.totalSolved ?? 0} icon={Trophy} />
+                <StatCard label={view === VIEW.combined ? "Best Rating" : "Rating"} value={statsForSelected.rating ?? "—"} icon={TrendingUp} />
               </div>
 
-              <div className="bg-gradient-to-br from-[#1A1814]/30 to-[#0A0A08]/40 border border-[#D97706]/10 rounded-xl p-6">
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <h3 className="text-[#E8E4D9] text-sm uppercase tracking-widest" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                    Activity
-                  </h3>
-                </div>
+              <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4">
+                <h3 className="text-[#E8E4D9] text-xs uppercase tracking-widest mb-3" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                  Activity
+                </h3>
                 <ActivityHeatmap activity={activity} />
               </div>
             </motion.section>
@@ -381,16 +356,15 @@ export default function CodingProfile() {
 
           {!loading && !error && (
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="mb-16"
+              transition={{ duration: 0.4, delay: 0.15 }}
             >
-              <div className="flex items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
                   <h2
-                    className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                    className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
                     Platforms
@@ -400,72 +374,94 @@ export default function CodingProfile() {
                 <button
                   type="button"
                   onClick={openAdd}
-                  className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+                  className="px-2.5 py-1.5 text-xs rounded-md bg-[#1A1814] hover:bg-[#D97706]/10 text-[#E8E4D9] transition-colors"
                 >
                   Add Profile
                 </button>
               </div>
 
-              <div className="space-y-3">
+              {/* Platform Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {platforms.length === 0 ? (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-[#78716C]">
+                  <div className="col-span-full rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 text-[#78716C] text-sm">
                     No external profiles added yet.
                   </div>
                 ) : (
                   platforms.map((p) => (
-                      <div key={p?.id || p?._id || `${p?.platform || "platform"}:${p?.profileUrl || ""}`} className="bg-white/5 border border-white/10 rounded-xl p-5">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                          <p className="text-[#E8E4D9] font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                            {formatPlatformName(p.platform)}
-                            <span className="text-[#78716C] font-normal">{p.handle ? ` • ${p.handle}` : ""}</span>
-                          </p>
+                    <div 
+                      key={p?.id || p?._id || `${p?.platform || "platform"}:${p?.profileUrl || ""}`} 
+                      className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{platformLogos[p.platform?.toLowerCase()] || platformLogos.custom}</span>
+                          <div>
+                            <p className="text-sm font-semibold text-[#E8E4D9]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                              {formatPlatformName(p.platform)}
+                            </p>
+                            {p.handle && <p className="text-xs text-[#78716C]">{p.handle}</p>}
+                          </div>
+                        </div>
+                        {p.profileUrl && (
                           <a
                             href={p.profileUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-sm text-[#D97706] hover:underline break-all"
+                            className="p-1.5 rounded-md bg-[#1A1814] hover:bg-[#D97706]/10 text-[#78716C] hover:text-[#D97706] transition-colors"
                           >
-                            {p.profileUrl}
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
-                          <div className="mt-2 text-xs text-[#78716C]">
-                            Status: <span className="text-[#E8E4D9]">{p.syncStatus || "—"}</span>
-                            {p.lastSyncError ? (
-                              <span className="text-red-400"> • {p.lastSyncError}</span>
-                            ) : null}
-                          </div>
-                        </div>
+                        )}
+                      </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="px-3 py-2 text-sm rounded-md bg-black/20 border border-white/10 text-[#E8E4D9]">
-                            Solved: {p.stats?.totalSolved ?? "—"}
-                          </div>
-                          <div className="px-3 py-2 text-sm rounded-md bg-black/20 border border-white/10 text-[#E8E4D9]">
-                            Rating: {p.stats?.rating ?? "—"}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => openEdit(p)}
-                            className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSync(p)}
-                            className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
-                          >
-                            Sync
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(p)}
-                            className="px-3 py-2 text-sm rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-200 border border-red-500/20 transition-colors"
-                          >
-                            Delete
-                          </button>
+                      {/* Stats */}
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-[#0A0A08] rounded-lg p-2.5">
+                          <p className="text-[9px] uppercase tracking-wider text-[#78716C]">Solved</p>
+                          <p className="text-sm font-bold text-[#E8E4D9]">{p.stats?.totalSolved ?? "—"}</p>
                         </div>
+                        <div className="bg-[#0A0A08] rounded-lg p-2.5">
+                          <p className="text-[9px] uppercase tracking-wider text-[#78716C]">Rating</p>
+                          <p className="text-sm font-bold text-[#E8E4D9]">{p.stats?.rating ?? "—"}</p>
+                        </div>
+                      </div>
+
+                      {/* Sync Status */}
+                      {p.syncStatus && (
+                        <div className="flex items-center gap-1.5 mb-3">
+                          <div className={`w-1.5 h-1.5 rounded-full ${
+                            p.syncStatus === 'synced' ? 'bg-green-400' : 
+                            p.syncStatus === 'pending' ? 'bg-yellow-400' : 
+                            p.lastSyncError ? 'bg-red-400' : 'bg-[#78716C]'
+                          }`}></div>
+                          <span className="text-[10px] text-[#78716C]">{p.syncStatus}</span>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-[#1A1814]">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(p)}
+                          className="flex-1 px-2 py-1.5 text-[10px] rounded-md bg-[#1A1814] hover:bg-[#D97706]/10 text-[#E8E4D9] transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSync(p)}
+                          className="flex-1 px-2 py-1.5 text-[10px] rounded-md bg-[#1A1814] hover:bg-[#D97706]/10 text-[#E8E4D9] transition-colors"
+                        >
+                          Sync
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p)}
+                          className="flex-1 px-2 py-1.5 text-[10px] rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-300 transition-colors"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))
@@ -473,18 +469,18 @@ export default function CodingProfile() {
               </div>
 
               {view === VIEW.combined && contributions.length > 0 && (
-                <div className="mt-10 bg-gradient-to-br from-[#1A1814]/30 to-[#0A0A08]/40 border border-[#D97706]/10 rounded-xl p-6">
-                  <h3 className="text-[#E8E4D9] text-sm uppercase tracking-widest mb-4" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                <div className="mt-4 rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4">
+                  <h3 className="text-[#E8E4D9] text-xs uppercase tracking-widest mb-3" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
                     Contributions
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {contributions.map((c) => (
-                      <div key={c?.platform || "platform"} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                        <p className="text-[#E8E4D9] font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                      <div key={c?.platform || "platform"} className="bg-[#0A0A08] rounded-lg p-3">
+                        <p className="text-xs font-semibold text-[#E8E4D9]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
                           {formatPlatformName(c.platform)}
                         </p>
-                        <div className="mt-2 text-sm text-[#E8E4D9]">
-                          Solved: {c.totalSolved ?? "—"} • Rating: {c.rating ?? "—"}
+                        <div className="mt-1.5 text-[10px] text-[#78716C]">
+                          {c.totalSolved ?? 0} solved • {c.rating ?? "—"}
                         </div>
                       </div>
                     ))}

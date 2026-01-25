@@ -75,9 +75,9 @@ export default function POTDCard() {
 
   if (loading) {
     return (
-      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+      <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5">
+        <div className="flex items-center justify-center h-24">
+          <Loader2 className="w-6 h-6 animate-spin text-[#D97706]" />
         </div>
       </div>
     );
@@ -85,10 +85,10 @@ export default function POTDCard() {
 
   if (error || !potd) {
     return (
-      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-        <div className="text-center text-gray-400">
-          <p>No Problem of the Day available</p>
-          <p className="text-sm mt-2">Check back later!</p>
+      <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5">
+        <div className="text-center text-[#78716C]">
+          <p className="text-sm">No Problem of the Day available</p>
+          <p className="text-xs mt-1">Check back later!</p>
         </div>
       </div>
     );
@@ -98,68 +98,76 @@ export default function POTDCard() {
   const userProgress = potd.userProgress;
 
   return (
-    <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-xl p-6 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-300">
-      {}
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] hover:border-[#D97706]/40 transition-all duration-200">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-[#1A1814]">
         <div className="flex items-center gap-2">
-          <Flame className="w-6 h-6 text-orange-500" />
-          <h3 className="text-lg font-bold text-white">Problem of the Day</h3>
+          <Flame className="w-5 h-5 text-[#D97706]" />
+          <span
+            className="text-[#E8E4D9] text-sm font-semibold uppercase tracking-wider"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Today's Challenge
+          </span>
         </div>
-        <div className="flex items-center gap-2 text-gray-400">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm font-mono">{formatTime(timeRemaining)}</span>
+        <div className="flex items-center gap-1.5 text-[#78716C]">
+          <Clock className="w-3.5 h-3.5" />
+          <span className="text-xs font-mono">{formatTime(timeRemaining)}</span>
         </div>
       </div>
 
-      {}
-      <div className="mb-4">
-        <h4 className="text-xl font-semibold text-white mb-2">{problem.title}</h4>
-        <div className="flex items-center gap-3">
+      {/* Content */}
+      <div className="p-4">
+        <h4
+          className="text-lg font-semibold text-[#E8E4D9] mb-3"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          {problem.title}
+        </h4>
+        
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
-              problem.difficulty
-            )}`}
+            className={`px-2 py-0.5 rounded text-xs font-medium ${getDifficultyColor(problem.difficulty)}`}
           >
             {problem.difficulty}
           </span>
-          {problem.tags?.slice(0, 3).map((tag) => (
+          {problem.tags?.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-300"
+              className="px-2 py-0.5 rounded text-xs bg-[#1A1814] text-[#78716C]"
             >
               {tag}
             </span>
           ))}
         </div>
-      </div>
 
-      {}
-      {userProgress && (
-        <div className="mb-4 p-3 bg-gray-800/50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">Your Progress</span>
+        {/* Progress */}
+        {userProgress && (
+          <div className="flex items-center justify-between p-2.5 bg-[#0A0A08] rounded-lg mb-4">
+            <span className="text-xs text-[#78716C]">Your Progress</span>
             {userProgress.solved ? (
-              <span className="flex items-center gap-1 text-green-400 text-sm">
-                <Trophy className="w-4 h-4" />
-                Solved!
+              <span className="flex items-center gap-1 text-green-400 text-xs font-medium">
+                <Trophy className="w-3.5 h-3.5" />
+                Solved
               </span>
             ) : (
-              <span className="text-gray-400 text-sm">
+              <span className="text-[#78716C] text-xs">
                 {userProgress.attempts} attempt{userProgress.attempts !== 1 ? "s" : ""}
               </span>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {}
-      <Link
-        to={`/problems/${problem._id}?potd=true`}
-        className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-300"
-      >
-        {userProgress?.solved ? "View Solution" : "Solve Now"}
-        <ChevronRight className="w-4 h-4" />
-      </Link>
+        {/* CTA */}
+        <Link
+          to={`/problems/${problem._id}?potd=true`}
+          className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#D97706] hover:bg-[#F59E0B] text-[#0A0A08] font-semibold text-sm rounded-lg transition-colors duration-200"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          {userProgress?.solved ? "View Solution" : "Solve Now"}
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
     </div>
   );
 }

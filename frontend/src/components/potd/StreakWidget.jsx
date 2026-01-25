@@ -25,8 +25,8 @@ export default function StreakWidget({ compact = false }) {
 
   if (loading) {
     return (
-      <div className={`bg-gray-800/50 rounded-xl ${compact ? "p-4" : "p-6"} animate-pulse`}>
-        <div className="h-20 bg-gray-700/50 rounded"></div>
+      <div className={`rounded-xl border border-[#1A1814] bg-[#0F0F0D] ${compact ? "p-3" : "p-4"} animate-pulse`}>
+        <div className="h-16 bg-[#1A1814] rounded"></div>
       </div>
     );
   }
@@ -38,11 +38,11 @@ export default function StreakWidget({ compact = false }) {
   const { currentStreak, maxStreak, totalPOTDsSolved, lastSolvedDate } = streakData;
 
   const getFlameColor = (streak) => {
-    if (streak >= 30) return "text-purple-500";
-    if (streak >= 14) return "text-orange-500";
-    if (streak >= 7) return "text-yellow-500";
-    if (streak >= 1) return "text-red-500";
-    return "text-gray-500";
+    if (streak >= 30) return "text-purple-400";
+    if (streak >= 14) return "text-[#D97706]";
+    if (streak >= 7) return "text-yellow-400";
+    if (streak >= 1) return "text-orange-400";
+    return "text-[#78716C]";
   };
 
   const getStreakMessage = (streak) => {
@@ -58,90 +58,140 @@ export default function StreakWidget({ compact = false }) {
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-4 py-2">
-        <Flame className={`w-5 h-5 ${getFlameColor(currentStreak)}`} />
-        <div>
-          <span className="text-2xl font-bold text-white">{currentStreak}</span>
-          <span className="text-sm text-gray-400 ml-1">day streak</span>
+      <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Flame className={`w-4 h-4 ${getFlameColor(currentStreak)}`} />
+            <span 
+              className="text-xs font-semibold text-[#E8E4D9] uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Streak
+            </span>
+          </div>
+          <span className="text-[10px] text-[#78716C]">{getStreakMessage(currentStreak)}</span>
+        </div>
+
+        {/* Current Streak */}
+        <div className="flex items-baseline gap-1 mb-3">
+          <span 
+            className="text-3xl font-bold text-[#E8E4D9]"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            {currentStreak}
+          </span>
+          <span className="text-xs text-[#78716C]">days</span>
+        </div>
+
+        {/* Mini Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
+            <Trophy className="w-3 h-3 text-yellow-400 mx-auto mb-0.5" />
+            <div className="text-sm font-bold text-[#E8E4D9]">{maxStreak}</div>
+            <div className="text-[8px] text-[#78716C] uppercase">Best</div>
+          </div>
+          <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
+            <TrendingUp className="w-3 h-3 text-green-400 mx-auto mb-0.5" />
+            <div className="text-sm font-bold text-[#E8E4D9]">{totalPOTDsSolved}</div>
+            <div className="text-[8px] text-[#78716C] uppercase">Total</div>
+          </div>
+          <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
+            <Calendar className="w-3 h-3 text-blue-400 mx-auto mb-0.5" />
+            <div className="text-sm font-bold text-[#E8E4D9]">
+              {lastSolvedDate
+                ? new Date(lastSolvedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                : "—"}
+            </div>
+            <div className="text-[8px] text-[#78716C] uppercase">Last</div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700">
-      {}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Flame className={`w-5 h-5 ${getFlameColor(currentStreak)}`} />
+    <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 
+          className="text-sm font-semibold text-[#E8E4D9] flex items-center gap-2 uppercase tracking-wider"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          <Flame className={`w-4 h-4 ${getFlameColor(currentStreak)}`} />
           Your Streak
         </h3>
-        <span className="text-sm text-gray-400">{getStreakMessage(currentStreak)}</span>
+        <span className="text-[10px] text-[#78716C]">{getStreakMessage(currentStreak)}</span>
       </div>
 
-      {}
-      <div className="flex items-center justify-center mb-6">
+      {/* Streak Circle */}
+      <div className="flex items-center justify-center mb-4">
         <div className="relative">
           <div
-            className={`w-32 h-32 rounded-full flex items-center justify-center bg-gradient-to-br ${
+            className={`w-20 h-20 rounded-full flex items-center justify-center ${
               currentStreak > 0
-                ? "from-orange-500/20 to-red-500/20 border-2 border-orange-500/50"
-                : "from-gray-700/50 to-gray-800/50 border-2 border-gray-600"
+                ? "bg-[#D97706]/10 border border-[#D97706]/30"
+                : "bg-[#1A1814] border border-[#1A1814]"
             }`}
           >
             <div className="text-center">
-              <div className="text-4xl font-bold text-white">{currentStreak}</div>
-              <div className="text-xs text-gray-400 uppercase tracking-wide">
+              <div 
+                className="text-2xl font-bold text-[#E8E4D9]"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {currentStreak}
+              </div>
+              <div className="text-[9px] text-[#78716C] uppercase tracking-wide">
                 {currentStreak === 1 ? "Day" : "Days"}
               </div>
             </div>
           </div>
           {currentStreak > 0 && (
             <Flame
-              className={`absolute -top-2 -right-2 w-8 h-8 ${getFlameColor(currentStreak)} animate-pulse`}
+              className={`absolute -top-1 -right-1 w-5 h-5 ${getFlameColor(currentStreak)} animate-pulse`}
             />
           )}
         </div>
       </div>
 
-      {}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-          <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
-          <div className="text-xl font-bold text-white">{maxStreak}</div>
-          <div className="text-xs text-gray-400">Best Streak</div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="text-center p-2 bg-[#0A0A08] rounded-lg">
+          <Trophy className="w-3.5 h-3.5 text-yellow-400 mx-auto mb-1" />
+          <div className="text-base font-bold text-[#E8E4D9]">{maxStreak}</div>
+          <div className="text-[9px] text-[#78716C] uppercase">Best</div>
         </div>
-        <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-          <TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-1" />
-          <div className="text-xl font-bold text-white">{totalPOTDsSolved}</div>
-          <div className="text-xs text-gray-400">Total Solved</div>
+        <div className="text-center p-2 bg-[#0A0A08] rounded-lg">
+          <TrendingUp className="w-3.5 h-3.5 text-green-400 mx-auto mb-1" />
+          <div className="text-base font-bold text-[#E8E4D9]">{totalPOTDsSolved}</div>
+          <div className="text-[9px] text-[#78716C] uppercase">Total</div>
         </div>
-        <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-          <Calendar className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-          <div className="text-xl font-bold text-white">
+        <div className="text-center p-2 bg-[#0A0A08] rounded-lg">
+          <Calendar className="w-3.5 h-3.5 text-blue-400 mx-auto mb-1" />
+          <div className="text-base font-bold text-[#E8E4D9]">
             {lastSolvedDate
               ? new Date(lastSolvedDate).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })
-              : "-"}
+              : "—"}
           </div>
-          <div className="text-xs text-gray-400">Last Solved</div>
+          <div className="text-[9px] text-[#78716C] uppercase">Last</div>
         </div>
       </div>
 
-      {}
+      {/* Tips */}
       {currentStreak === 0 && (
-        <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-          <p className="text-sm text-orange-300">
+        <div className="mt-3 p-2.5 bg-[#D97706]/10 border border-[#D97706]/20 rounded-lg">
+          <p className="text-xs text-[#D97706]">
             💡 Solve today's POTD to start your streak!
           </p>
         </div>
       )}
 
       {currentStreak > 0 && currentStreak < 7 && (
-        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-          <p className="text-sm text-blue-300">
+        <div className="mt-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <p className="text-xs text-blue-300">
             🎯 {7 - currentStreak} more day{7 - currentStreak !== 1 ? "s" : ""} to reach a 7-day streak!
           </p>
         </div>
