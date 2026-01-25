@@ -611,11 +611,18 @@ export const submitCode = async (req, res) => {
         // Include AI feedback if available
         aiFeedback: aiFeedback
           ? {
+              hints: aiFeedback.hints || [],
               explanation: aiFeedback.explanation,
               improvementHint: aiFeedback.improvement_hint,
               detectedPattern: aiFeedback.detected_pattern,
+              feedbackType: aiFeedback.feedback_type || "error_feedback",
               learningRecommendation: aiFeedback.learning_recommendation,
               difficultyAdjustment: aiFeedback.difficulty_adjustment,
+              optimizationTips: aiFeedback.optimization_tips || [],
+              complexityAnalysis: aiFeedback.complexity_analysis,
+              edgeCases: aiFeedback.edge_cases || [],
+              // MIM insights from AI service (ML-based predictions)
+              mimInsights: aiFeedback.mim_insights || null,
             }
           : null,
       },

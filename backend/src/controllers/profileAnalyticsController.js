@@ -21,7 +21,9 @@ function isoDate(d) {
 }
 
 function startOfUtcDay(d) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
 }
 
 function pickCategoriesFromTags(tags = []) {
@@ -33,7 +35,8 @@ function pickCategoriesFromTags(tags = []) {
     if (tag.includes("string")) matches.add("Strings");
     if (tag.includes("math")) matches.add("Math");
     if (tag.includes("linked")) matches.add("Linked List");
-    if (tag.includes("binary search") || tag.includes("binary")) matches.add("Binary Search");
+    if (tag.includes("binary search") || tag.includes("binary"))
+      matches.add("Binary Search");
     if (tag.includes("recursion")) matches.add("Recursion");
   }
 
@@ -104,11 +107,16 @@ async function resolveUserForRequest({ requestingUser, username, userId }) {
   }
 
   if (username) {
-    const settings = await PublicProfileSettings.findOne({ publicUsername: username.toLowerCase() }).lean();
+    const settings = await PublicProfileSettings.findOne({
+      publicUsername: username.toLowerCase(),
+    }).lean();
     if (!settings?.userId) return null;
 
     if (!settings.isPublic) {
-      if (requestingUser && String(requestingUser._id) === String(settings.userId)) {
+      if (
+        requestingUser &&
+        String(requestingUser._id) === String(settings.userId)
+      ) {
         const user = await User.findById(settings.userId).lean();
         if (!user) return null;
         return { user, settings };
@@ -135,9 +143,19 @@ export async function getProfileAnalytics(req, res) {
     const username = req.query?.username;
     const userId = req.query?.userId;
 
-    const resolved = await resolveUserForRequest({ requestingUser: req.user, username, userId });
-    if (!resolved) return res.status(404).json({ success: false, message: "User not found" });
-    if (resolved?.forbidden) return res.status(403).json({ success: false, message: "Profile is private" });
+    const resolved = await resolveUserForRequest({
+      requestingUser: req.user,
+      username,
+      userId,
+    });
+    if (!resolved)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    if (resolved?.forbidden)
+      return res
+        .status(403)
+        .json({ success: false, message: "Profile is private" });
 
     const user = resolved.user || resolved;
 
@@ -167,7 +185,8 @@ export async function getProfileAnalytics(req, res) {
 
     const totalSubs = counts?.total || 0;
     const acceptedSubs = counts?.accepted || 0;
-    const acceptanceRate = totalSubs > 0 ? Number(((acceptedSubs / totalSubs) * 100).toFixed(1)) : 0;
+    const acceptanceRate =
+      totalSubs > 0 ? Number(((acceptedSubs / totalSubs) * 100).toFixed(1)) : 0;
 
     const solvedIds = await Submission.distinct("questionId", {
       userId: user._id,
@@ -175,20 +194,34 @@ export async function getProfileAnalytics(req, res) {
       status: "accepted",
     });
 
-    const solvedQuestions = await Question.find({ _id: { $in: solvedIds } }).select("difficulty tags").lean();
+    const solvedQuestions = await Question.find({ _id: { $in: solvedIds } })
+      .select("difficulty tags")
+      .lean();
 
-    const easyCount = solvedQuestions.filter((q) => q.difficulty === "Easy").length;
-    const mediumCount = solvedQuestions.filter((q) => q.difficulty === "Medium").length;
-    const hardCount = solvedQuestions.filter((q) => q.difficulty === "Hard").length;
+    const easyCount = solvedQuestions.filter(
+      (q) => q.difficulty === "Easy",
+    ).length;
+    const mediumCount = solvedQuestions.filter(
+      (q) => q.difficulty === "Medium",
+    ).length;
+    const hardCount = solvedQuestions.filter(
+      (q) => q.difficulty === "Hard",
+    ).length;
 
     const attemptedIds = await Submission.distinct("questionId", {
       userId: user._id,
       isRun: false,
     });
 
-    const attemptedQuestions = await Question.find({ _id: { $in: attemptedIds } }).select("tags").lean();
+    const attemptedQuestions = await Question.find({
+      _id: { $in: attemptedIds },
+    })
+      .select("tags")
+      .lean();
 
-    const categoryAgg = new Map(CATEGORY_ORDER.map((c) => [c, { solved: 0, total: 0 }]));
+    const categoryAgg = new Map(
+      CATEGORY_ORDER.map((c) => [c, { solved: 0, total: 0 }]),
+    );
 
     for (const q of attemptedQuestions) {
       for (const c of pickCategoriesFromTags(q.tags || [])) {
@@ -206,7 +239,10 @@ export async function getProfileAnalytics(req, res) {
       }
     }
 
-    const categories = CATEGORY_ORDER.map((name) => ({ name, ...categoryAgg.get(name) }));
+    const categories = CATEGORY_ORDER.map((name) => ({
+      name,
+      ...categoryAgg.get(name),
+    }));
 
     const recent = await Submission.find({ userId: user._id, isRun: false })
       .sort({ createdAt: -1 })
@@ -222,15 +258,22 @@ export async function getProfileAnalytics(req, res) {
       executionTime: s.totalExecutionTime,
     }));
 
-    const { currentStreak, maxStreak } = computeStreaksFromDailyActivity(agg?.dailyActivity || []);
+    const { currentStreak, maxStreak } = computeStreaksFromDailyActivity(
+      agg?.dailyActivity || [],
+    );
 
     const settings =
-      resolved.settings || (await PublicProfileSettings.findOne({ userId: user._id }).lean());
+      resolved.settings ||
+      (await PublicProfileSettings.findOne({ userId: user._id }).lean());
 
     const publicUsername = settings?.publicUsername || null;
-    const usernameDerived = publicUsername || String(user.email || "").split("@")[0] || String(user._id);
+    const usernameDerived =
+      publicUsername ||
+      String(user.email || "").split("@")[0] ||
+      String(user._id);
 
-    const descriptor = currentStreak > 0 ? `On a ${currentStreak}-day streak` : "No streak yet";
+    const descriptor =
+      currentStreak > 0 ? `On a ${currentStreak}-day streak` : "No streak yet";
 
     const platforms = await PlatformProfile.find({ userId: user._id }).lean();
     const platformStats = await PlatformStats.find({ userId: user._id }).lean();
@@ -245,11 +288,14 @@ export async function getProfileAnalytics(req, res) {
       success: true,
       data: {
         user: {
+          _id: String(user._id), // Include user ID for MIM components
           name: user.name,
           username: usernameDerived,
           profileImage: user.profileImage,
           descriptor,
-          memberSince: user.createdAt ? String(new Date(user.createdAt).getFullYear()) : "-",
+          memberSince: user.createdAt
+            ? String(new Date(user.createdAt).getFullYear())
+            : "-",
         },
         overview: {
           problemsSolved: solvedIds.length,
@@ -270,6 +316,8 @@ export async function getProfileAnalytics(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message || "Failed" });
+    return res
+      .status(500)
+      .json({ success: false, message: err.message || "Failed" });
   }
 }
