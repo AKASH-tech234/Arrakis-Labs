@@ -7,110 +7,107 @@ logger = logging.getLogger("learning_agent")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# REWRITTEN: PERSONALIZED LEARNING RECOMMENDATION PROMPT
+# v3.0: MIM-INSTRUCTED LEARNING RECOMMENDATION PROMPT (RATIONALE ONLY)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-LEARNING_SYSTEM_PROMPT = """You are a personalized learning advisor for competitive programming.
+LEARNING_SYSTEM_PROMPT = """You are a learning advisor for competitive programming.
 
 ═══════════════════════════════════════════════════════════════════════════════
-YOUR TASK
+YOUR ROLE (v3.0 - MIM-Instructed)
 ═══════════════════════════════════════════════════════════════════════════════
-Recommend 2-3 specific learning topics based on:
-1. The mistake in THIS submission
-2. User's historical WEAK TOPICS
-3. The gap between user's approach and EXPECTED APPROACH
+MIM has ALREADY selected the focus areas. Your job is to explain WHY.
 
-═══════════════════════════════════════════════════════════════════════════════
-RECOMMENDATION ALGORITHM
-═══════════════════════════════════════════════════════════════════════════════
-STEP 1: Identify the SKILL GAP in this submission
-        → What concept/technique did user need but didn't apply?
-
-STEP 2: Check USER'S WEAK TOPICS
-        → If this submission's gap overlaps, PRIORITIZE fundamentals
-
-STEP 3: Check EXPECTED APPROACH for the problem
-        → If user didn't use expected technique, recommend it
-
-STEP 4: Generate 2-3 specific topics (not vague categories)
+You are NOT selecting topics - MIM already did that.
+You are providing the educational rationale for MIM's selections.
 
 ═══════════════════════════════════════════════════════════════════════════════
-TOPIC SPECIFICITY GUIDE
+WHAT YOU RECEIVE
 ═══════════════════════════════════════════════════════════════════════════════
-❌ TOO VAGUE (don't recommend):
-- "Arrays"
-- "Algorithms"
-- "Data Structures"
-- "Practice more"
-
-✓ SPECIFIC (recommend these):
-- "Two Pointer Technique for Sorted Arrays"
-- "Binary Search Edge Case Handling"
-- "DP State Transition Design"
-- "Hash Map Collision Strategies"
-- "Monotonic Stack for Range Queries"
+1. FOCUS AREAS: MIM-selected topics (USE THESE EXACTLY)
+2. SKILL GAP: The specific weakness identified
+3. WEAK TOPIC CONNECTION: If this relates to user's known weak area
 
 ═══════════════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT (JSON)
 ═══════════════════════════════════════════════════════════════════════════════
 {{
-  "focus_areas": ["Specific Topic 1", "Specific Topic 2", "Specific Topic 3"],
-  "rationale": "1-2 sentence explanation connecting the recommendation to the mistake and user history"
+  "focus_areas": ["Use MIM's areas EXACTLY - do not modify"],
+  "rationale": "1-2 sentences explaining WHY these areas matter for THIS mistake and this user"
 }}
 
 ═══════════════════════════════════════════════════════════════════════════════
-EXAMPLES
+RATIONALE WRITING GUIDE
 ═══════════════════════════════════════════════════════════════════════════════
-EXAMPLE 1 (matches weak topic):
-User weak topics: ["Binary Search"]
-Current mistake: Off-by-one in binary search
-→ focus_areas: ["Binary Search Loop Invariants", "Boundary Condition Verification"]
-→ rationale: "Your off-by-one error in binary search matches a recurring weak area. Focus on loop invariants first."
+GOOD RATIONALE:
+"Your off-by-one error suggests you'd benefit from Loop Invariant Analysis. 
+This is especially important since arrays are a recurring weak area for you."
 
-EXAMPLE 2 (new skill gap):
-User weak topics: ["Recursion"]
-Current mistake: Used O(n²) brute force, expected O(n log n)
-→ focus_areas: ["Divide and Conquer Patterns", "Merge Sort Applications"]
-→ rationale: "This problem requires divide and conquer, which is new for you. Start with merge sort then generalize."
+BAD RATIONALE:
+"You should study these topics."
+"These are important areas."
+→ Too generic, no connection to mistake or user
 
 ═══════════════════════════════════════════════════════════════════════════════
 RULES
 ═══════════════════════════════════════════════════════════════════════════════
-✓ ALWAYS recommend specific techniques, not vague categories
-✓ ALWAYS connect to user's weak topics if relevant
-✓ ALWAYS explain WHY these topics matter for THIS mistake
-✗ NEVER recommend more than 3 topics (focus > breadth)"""
+✓ USE the focus areas MIM provides EXACTLY
+✓ Explain the connection between focus area and the mistake
+✓ Mention weak topic connection if provided
+✗ NEVER change or add to MIM's focus areas
+✗ NEVER be generic - connect to THIS mistake"""
 
 
-def learning_agent(context: str, payload: dict) -> LearningRecommendation:
-    logger.debug(f"📨 learning_agent called")
+def learning_agent(context: str, payload: dict, mim_decision=None) -> LearningRecommendation:
+    """
+    Generate learning recommendations using MIM instructions.
     
-    # Extract structured data
-    problem = payload.get("problem", {})
-    user_profile = payload.get("user_profile", {})
+    v3.0: MIM provides focus areas, agent adds rationale only.
     
+    Args:
+        context: Assembled context string
+        payload: Submission data
+        mim_decision: MIMDecision with learning instructions (optional)
+    """
+    logger.debug(f"📨 learning_agent v3.0 called | has_mim={mim_decision is not None}")
+    
+    # Build context based on MIM availability
+    if mim_decision:
+        # Use MIM's pre-computed learning context
+        enhanced_context = mim_decision.get_learning_context()
+        enhanced_context += f"\n\n{context}"
+        
+        logger.debug(f"   └─ MIM focus areas: {mim_decision.learning_instruction.focus_areas}")
+        logger.debug(f"   └─ Skill gap: {mim_decision.learning_instruction.skill_gap}")
+    else:
+        enhanced_context = context
+    
+    # Cache key
     cache_key = build_cache_key(
-        "learning_agent", 
+        "learning_agent_v3", 
         {
-            **payload,
-            # Include user's weak topics for personalization
-            "weak_topics_hash": hash(tuple(user_profile.get("weak_topics", []))),
-            # Include problem category
-            "problem_tags": tuple(problem.get("tags", [])),
+            "mim_focus": tuple(mim_decision.learning_instruction.focus_areas) if mim_decision else (),
+            "skill_gap": mim_decision.learning_instruction.skill_gap if mim_decision else "none",
         }
     )
-    logger.debug(f"   └─ Cache key generated: {cache_key[:16]}...")
-    logger.debug(f"   └─ User weak topics: {user_profile.get('weak_topics', [])}")
-    logger.debug(f"   └─ Problem tags: {problem.get('tags', [])}")
+    
+    # If we have MIM decision, use its focus areas in fallback
+    fallback_areas = (
+        mim_decision.learning_instruction.focus_areas 
+        if mim_decision else ["Fundamentals"]
+    )
+    fallback_rationale = (
+        f"Focus on {mim_decision.learning_instruction.skill_gap} to address this mistake."
+        if mim_decision else "Review core concepts for this problem category."
+    )
     
     return run_json_agent(
         agent_name="learning_agent",
-        context=context,
+        context=enhanced_context,
         cache_key=cache_key,
         schema=LearningRecommendation,
         system_prompt=LEARNING_SYSTEM_PROMPT,
         fallback=LearningRecommendation(
-            focus_areas=["Fundamentals"],
-            rationale="Review core concepts for this problem category."
+            focus_areas=fallback_areas,
+            rationale=fallback_rationale
         )
     )

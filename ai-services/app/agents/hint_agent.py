@@ -1,134 +1,140 @@
+"""
+Hint Agent v3.0 - MIM-Instructed
+================================
+
+PHILOSOPHY: Agent compresses MIM's hint direction into 20 words.
+
+This agent receives:
+1. Hint direction from MIM (what to point toward)
+2. Avoid list (concepts that would reveal the solution)
+3. User weak topic info (for encouraging tone if relevant)
+
+The agent's ONLY job is linguistic compression - not deciding what to hint.
+"""
+
 import logging
 from app.schemas.hint import CompressedHint
 from app.agents.base_json_agent import run_json_agent
 from app.cache.cache_key import build_cache_key
 
-logger = logging.getLogger("hint_compression_agent")
+logger = logging.getLogger("hint_agent")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# REWRITTEN: PROBLEM-AWARE HINT GENERATION PROMPT
+# v3.0: MIM-INSTRUCTED HINT COMPRESSION PROMPT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-HINT_SYSTEM_PROMPT = """You are a hint generator for competitive programming.
+HINT_SYSTEM_PROMPT = """You are a hint compressor for competitive programming.
 
 ═══════════════════════════════════════════════════════════════════════════════
-YOUR TASK
+YOUR ROLE (v3.0 - MIM-Instructed)
 ═══════════════════════════════════════════════════════════════════════════════
-Generate ONE short, actionable hint that guides the user toward the solution
-WITHOUT revealing it.
+MIM has decided WHAT to hint at. Your job is to compress it into 20 words.
+
+You are NOT deciding the hint direction - MIM already did that.
+You are making MIM's hint direction into a crisp, actionable sentence.
 
 ═══════════════════════════════════════════════════════════════════════════════
-HINT GENERATION RULES
+WHAT YOU RECEIVE
 ═══════════════════════════════════════════════════════════════════════════════
-LENGTH: Maximum 20 words
-TONE: Encouraging but direct
-STYLE: Use action verbs ("Consider...", "Check...", "Think about...")
-
-═══════════════════════════════════════════════════════════════════════════════
-HINT QUALITY SPECTRUM
-═══════════════════════════════════════════════════════════════════════════════
-🎯 PERFECT HINT (what we want):
-   "Consider what happens when your input array has duplicate elements"
-   → Specific to the problem
-   → Points to the issue without solving it
-   → Actionable
-
-⚠️ TOO VAGUE (avoid):
-   "Check your logic"
-   "Debug your code"
-   "Review edge cases"
-   → Not actionable
-   → Doesn't help
-
-❌ TOO REVEALING (never do):
-   "Use a HashMap with O(1) lookup"
-   "Sort the array first, then use binary search"
-   → Gives away the solution
-
-═══════════════════════════════════════════════════════════════════════════════
-CONTEXT TO USE
-═══════════════════════════════════════════════════════════════════════════════
-1. EXPECTED APPROACH: Point TOWARD it without naming it
-2. USER'S WEAK TOPICS: If this problem touches a weak area, be encouraging
-3. KNOWN PITFALLS: Reference if user likely hit one
+1. HINT DIRECTION: The specific thing to point the user toward
+2. AVOID LIST: Words/concepts that would reveal too much
+3. WEAK TOPIC NOTE: If this touches user's weak area (be encouraging)
 
 ═══════════════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT (JSON)
 ═══════════════════════════════════════════════════════════════════════════════
 {{
-  "hint": "Your 20-word-max hint here"
+  "hint": "Your 20-word-max compressed hint"
 }}
 
 ═══════════════════════════════════════════════════════════════════════════════
-EXAMPLES BY VERDICT
+COMPRESSION RULES
 ═══════════════════════════════════════════════════════════════════════════════
-WRONG ANSWER:
-- "Consider what your algorithm returns when all elements are equal"
-- "Check if your solution handles the case when n=1"
+✓ Start with an action verb: "Consider...", "Check...", "Think about..."
+✓ Maximum 20 words (HARD LIMIT)
+✓ Point toward MIM's direction without using avoid words
+✓ Be encouraging if user's weak topic is mentioned
 
-TIME LIMIT EXCEEDED:
-- "Think about whether you can avoid checking every pair"
-- "Consider if there's a way to remember previous computations"
-
-RUNTIME ERROR:
-- "Check what happens when the input array is empty"
-- "Verify your index doesn't exceed array bounds in the loop"
+✗ NEVER use words from the AVOID list
+✗ NEVER exceed 20 words
+✗ NEVER reveal algorithms or data structures by name
 
 ═══════════════════════════════════════════════════════════════════════════════
-RULES
+COMPRESSION EXAMPLES
 ═══════════════════════════════════════════════════════════════════════════════
-✗ NEVER give the solution algorithm name
-✗ NEVER mention specific data structures to use
-✗ NEVER be generic ("fix your code")
-✓ ALWAYS be specific to THIS problem
-✓ ALWAYS use action verbs
-✓ ALWAYS under 20 words"""
+Direction: "Consider what happens when input is empty or has one element"
+Compressed: "Consider the simplest possible inputs - what would your code return?"
+
+Direction: "Think about whether you can avoid checking every pair"
+Compressed: "Think about whether there's a way to reduce repeated comparisons."
+
+Direction: "Check loop bounds for first and last iteration"
+Compressed: "Trace through your loop for the first and last elements carefully."
+"""
 
 
-def hint_agent(raw_hint: str, payload: dict) -> CompressedHint:
-    logger.debug("✂️ hint_compression_agent called")
-
-    # Extract problem and user context
-    problem = payload.get("problem", {})
-    user_profile = payload.get("user_profile", {})
+def hint_agent(raw_hint: str, payload: dict, mim_decision=None) -> CompressedHint:
+    """
+    Compress hint using MIM instructions.
     
-    # Build context with problem awareness
-    augmented_context = f"""
+    v3.0: Receives MIMDecision with pre-computed hint direction.
+    Agent's job is to compress into 20 words, NOT to decide direction.
+    
+    Args:
+        raw_hint: Improvement hint from feedback (backward compat)
+        payload: Submission data
+        mim_decision: MIMDecision with hint instructions (optional)
+    """
+    logger.debug(f"✂️ hint_agent v3.0 called | has_mim={mim_decision is not None}")
+
+    # Build context based on MIM availability
+    if mim_decision:
+        # Use MIM's pre-computed hint context
+        augmented_context = mim_decision.get_hint_context()
+        
+        # Also include the raw hint as additional context
+        augmented_context += f"\n\nADDITIONAL CONTEXT FROM FEEDBACK:\n{raw_hint}"
+        
+        logger.debug(f"   └─ MIM direction: {mim_decision.hint_instruction.hint_direction[:50]}...")
+        logger.debug(f"   └─ Avoid: {mim_decision.hint_instruction.avoid_revealing}")
+    else:
+        # Fallback: use raw hint (backward compatibility)
+        problem = payload.get("problem", {})
+        user_profile = payload.get("user_profile", {})
+        
+        augmented_context = f"""
 RAW IMPROVEMENT HINT:
 {raw_hint}
 
 PROBLEM CONTEXT:
 - Difficulty: {problem.get('difficulty', 'Unknown')}
 - Expected Approach: {problem.get('expected_approach', 'Not specified')}
-- Common Mistakes: {', '.join(problem.get('common_mistakes', [])[:2]) or 'None listed'}
 
 USER CONTEXT:
 - Weak Topics: {', '.join(user_profile.get('weak_topics', [])[:2]) or 'None identified'}
-- Recurring Mistakes: {', '.join(user_profile.get('common_mistakes', [])[:2]) or 'None identified'}
 
 INSTRUCTIONS:
-- Rewrite into ONE short actionable sentence (max 20 words)
-- Point toward expected approach WITHOUT revealing it
-- If user mistake matches their weak area, be encouraging
-- No explanations, just the hint
+Compress into ONE actionable sentence (max 20 words).
 """
 
+    # Cache key
     cache_key = build_cache_key(
-        "hint_compression_agent", 
+        "hint_agent_v3", 
         {
-            **payload,
-            "expected_approach": problem.get("expected_approach", ""),
+            "hint_hash": hash(raw_hint) if raw_hint else 0,
+            "mim_direction": mim_decision.hint_instruction.hint_direction[:50] if mim_decision else "none",
         }
     )
 
     return run_json_agent(
-        agent_name="hint_compression_agent",
+        agent_name="hint_agent",
         context=augmented_context,
         cache_key=cache_key,
         schema=CompressedHint,
         system_prompt=HINT_SYSTEM_PROMPT,
         fallback=CompressedHint(
-            hint=raw_hint.split(".")[0][:120] if raw_hint else "Review your approach carefully."
+            hint=mim_decision.hint_instruction.hint_direction[:100] if mim_decision 
+                 else (raw_hint.split(".")[0][:100] if raw_hint else "Review your approach carefully.")
         )
     )
