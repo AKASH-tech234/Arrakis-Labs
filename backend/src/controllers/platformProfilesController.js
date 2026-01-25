@@ -1,6 +1,7 @@
 import PlatformProfile from "../models/PlatformProfile.js";
 import PlatformStats from "../models/PlatformStats.js";
 import PublicProfileSettings from "../models/PublicProfileSettings.js";
+import { syncPlatformProfile } from "../services/platformSyncService.js";
 
 const PLATFORMS = [
   "leetcode",
@@ -187,6 +188,12 @@ export async function addPlatformProfile(req, res) {
       },
       { upsert: true, new: true }
     );
+
+    // Trigger sync immediately after adding profile (non-blocking)
+    // This fetches real data from external platforms
+    syncPlatformProfile(doc._id).catch((err) => {
+      console.error(`[Platform Sync Error] ${platform}/${handle}:`, err.message);
+    });
 
     return res.status(201).json({ success: true, data: doc });
   } catch (err) {
