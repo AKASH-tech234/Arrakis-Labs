@@ -128,5 +128,20 @@
     "agent": "learning_agent",
     "elapsed_seconds": 1.74,
     "timestamp": 1769340124
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 2.18,
+    "timestamp": 1769346837
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.56,
+    "timestamp": 1769346839
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 1.9,
+    "timestamp": 1769346841
   }
 ]
