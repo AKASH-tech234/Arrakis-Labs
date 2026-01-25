@@ -12,6 +12,7 @@ import ProblemLibrary from "./pages/problem";
 import ProblemDetail from "./pages/problemdetail";
 import SubmissionResult from "./pages/SubmissionResult";
 import Profile from "./pages/profile";
+import CodingProfile from "./pages/codingProfile";
 import POTDHome from "./pages/potd/POTDHome";
 import POTDHistory from "./pages/potd/POTDHistory";
 import POTDLeaderboard from "./pages/potd/POTDLeaderboard";
@@ -126,6 +127,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/coding-profile"
+                element={
+                  <ProtectedRoute>
+                    <CodingProfile />
                   </ProtectedRoute>
                 }
               />

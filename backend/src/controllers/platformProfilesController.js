@@ -1,5 +1,7 @@
 import PlatformProfile from "../models/PlatformProfile.js";
+import PlatformStats from "../models/PlatformStats.js";
 import PublicProfileSettings from "../models/PublicProfileSettings.js";
+import { syncPlatformProfile } from "../services/platformSyncService.js";
 
 const PLATFORMS = [
   "leetcode",
@@ -156,6 +158,41 @@ export async function addPlatformProfile(req, res) {
       isEnabled: true,
       visibility: "private",
       syncStatus: "pending",
+    });
+
+    // Create an initial empty PlatformStats record for this platform.
+    // This is NOT dummy data — it is a real empty record that will be populated later.
+    await PlatformStats.findOneAndUpdate(
+      { userId, platform },
+      {
+        $setOnInsert: {
+          userId,
+          platform,
+          totalSolved: 0,
+          totalAttempted: 0,
+          last30DaysSolved: 0,
+          avgSolvedPerDay: 0,
+          contestsParticipated: 0,
+          currentRating: null,
+          highestRating: null,
+          difficulty: {
+            easy: { solved: 0, attempted: 0 },
+            medium: { solved: 0, attempted: 0 },
+            hard: { solved: 0, attempted: 0 },
+          },
+          skills: new Map(),
+          daily: [],
+          dataSource: "internal",
+          lastSyncedAt: new Date(),
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    // Trigger sync immediately after adding profile (non-blocking)
+    // This fetches real data from external platforms
+    syncPlatformProfile(doc._id).catch((err) => {
+      console.error(`[Platform Sync Error] ${platform}/${handle}:`, err.message);
     });
 
     return res.status(201).json({ success: true, data: doc });

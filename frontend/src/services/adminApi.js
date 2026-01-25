@@ -41,12 +41,15 @@ adminApi.interceptors.request.use(
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only redirect for 401 on protected endpoints, NOT on /profile check
-    // The AdminLayout/AdminLogin components will handle auth redirects
+    // Only log 401 errors when on admin routes
+    // This prevents confusing 401 errors in console when non-admin users load the app
     if (error.response?.status === 401) {
+      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      if (isAdminRoute) {
+        console.warn("[AdminAPI] 401 Unauthorized - auth required");
+      }
       // Don't redirect - just reject the promise
       // Components will check isAuthenticated and redirect appropriately
-      console.warn("[AdminAPI] 401 Unauthorized - auth required");
     }
     return Promise.reject(error);
   },

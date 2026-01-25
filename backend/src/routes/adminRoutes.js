@@ -25,6 +25,14 @@ import {
   processCSVUpload,
   previewCSV,
 } from "../controllers/csvController.js";
+import {
+  listPlatformStats,
+  getPlatformStats,
+  updatePlatformStats,
+  upsertPlatformStats,
+  bulkUpsertPlatformStats,
+  deletePlatformStats,
+} from "../controllers/adminPlatformStatsController.js";
 
 const router = express.Router();
 
@@ -104,6 +112,33 @@ router.post(
   "/preview-csv",
   uploadCSV,
   previewCSV
+);
+
+// ==========================================
+// PLATFORM STATS CRUD (Admin ingestion)
+// Safe, DB-only way to populate PlatformStats
+// ==========================================
+router.get("/platform-stats", listPlatformStats);
+router.get("/platform-stats/:id", getPlatformStats);
+router.put(
+  "/platform-stats/:id",
+  auditLog("UPDATE_PLATFORM_STATS"),
+  updatePlatformStats
+);
+router.post(
+  "/platform-stats/upsert",
+  auditLog("UPSERT_PLATFORM_STATS"),
+  upsertPlatformStats
+);
+router.post(
+  "/platform-stats/bulk-upsert",
+  auditLog("BULK_UPSERT_PLATFORM_STATS"),
+  bulkUpsertPlatformStats
+);
+router.delete(
+  "/platform-stats/:id",
+  auditLog("DELETE_PLATFORM_STATS"),
+  deletePlatformStats
 );
 
 // ==========================================
