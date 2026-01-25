@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Question Schema
- * Stores problem statements with visible examples
- */
 const exampleSchema = new mongoose.Schema(
   {
     input: {
@@ -26,7 +22,7 @@ const exampleSchema = new mongoose.Schema(
 
 const questionSchema = new mongoose.Schema(
   {
-    // External ID from CSV (optional, for reference)
+    
     externalId: {
       type: String,
       sparse: true,
@@ -53,28 +49,28 @@ const questionSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
-    // Visible examples (shown to users)
+    
     examples: {
       type: [exampleSchema],
       default: [],
       validate: {
         validator: function (v) {
-          return v.length <= 10; // Max 10 examples
+          return v.length <= 10; 
         },
         message: "Cannot have more than 10 examples",
       },
     },
-    // Tags for categorization
+    
     tags: {
       type: [String],
       default: [],
     },
-    // For optimistic concurrency control
+    
     version: {
       type: Number,
       default: 1,
     },
-    // Statistics
+    
     totalSubmissions: {
       type: Number,
       default: 0,
@@ -83,12 +79,12 @@ const questionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // Soft delete
+    
     isActive: {
       type: Boolean,
       default: true,
     },
-    // Admin who created/last modified
+    
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",
@@ -103,23 +99,19 @@ const questionSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for efficient queries
 questionSchema.index({ title: "text", description: "text" });
 questionSchema.index({ difficulty: 1, isActive: 1 });
 questionSchema.index({ tags: 1 });
 
-// Virtual for acceptance rate
 questionSchema.virtual("acceptanceRate").get(function () {
   if (this.totalSubmissions === 0) return 0;
   return ((this.acceptedSubmissions / this.totalSubmissions) * 100).toFixed(1);
 });
 
-// Increment version on update
 questionSchema.pre("findOneAndUpdate", function () {
   this.set({ version: this.get("version") + 1 || 1 });
 });
 
-// Ensure virtuals are included in JSON
 questionSchema.set("toJSON", { virtuals: true });
 questionSchema.set("toObject", { virtuals: true });
 

@@ -1,32 +1,27 @@
-// src/components/feedback/WeeklyReportUI.jsx
-// Weekly Report UI Component - ON-DEMAND fetching only
-// ❌ No auto-fetch | ❌ No polling | ❌ No automatic display after submission
+
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfidenceBadge from "./ConfidenceBadge";
 
-/**
- * Loading Skeleton for Weekly Report
- */
 function ReportSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      {/* Summary skeleton */}
+      {}
       <div className="space-y-2">
         <div className="h-3 w-24 bg-[#1A1814] rounded"></div>
         <div className="h-4 w-full bg-[#1A1814] rounded"></div>
         <div className="h-4 w-3/4 bg-[#1A1814] rounded"></div>
       </div>
 
-      {/* Strengths skeleton */}
+      {}
       <div className="space-y-2">
         <div className="h-3 w-20 bg-[#1A1814] rounded"></div>
         <div className="h-4 w-5/6 bg-[#1A1814] rounded"></div>
         <div className="h-4 w-4/6 bg-[#1A1814] rounded"></div>
       </div>
 
-      {/* Improvement areas skeleton */}
+      {}
       <div className="space-y-2">
         <div className="h-3 w-32 bg-[#1A1814] rounded"></div>
         <div className="h-4 w-full bg-[#1A1814] rounded"></div>
@@ -36,9 +31,6 @@ function ReportSkeleton() {
   );
 }
 
-/**
- * Section Header Component
- */
 function SectionHeader({ title, icon, color = "#D97706" }) {
   return (
     <div className="flex items-center gap-2 mb-3">
@@ -60,9 +52,6 @@ function SectionHeader({ title, icon, color = "#D97706" }) {
   );
 }
 
-/**
- * List Item Component
- */
 function ListItem({ children, icon = "→", color = "#E8E4D9" }) {
   return (
     <li
@@ -75,12 +64,6 @@ function ListItem({ children, icon = "→", color = "#E8E4D9" }) {
   );
 }
 
-/**
- * Weekly Report Display Component
- *
- * @param {Object} props
- * @param {Object} props.report - Weekly report data
- */
 function WeeklyReportContent({ report }) {
   if (!report) return null;
 
@@ -90,7 +73,7 @@ function WeeklyReportContent({ report }) {
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
-      {/* Summary */}
+      {}
       <div>
         <SectionHeader title="Weekly Summary" color="#D97706" />
         <p
@@ -101,7 +84,7 @@ function WeeklyReportContent({ report }) {
         </p>
       </div>
 
-      {/* Strengths */}
+      {}
       {report.strengths?.length > 0 && (
         <div>
           <SectionHeader title="Strengths" color="#22C55E" />
@@ -115,7 +98,7 @@ function WeeklyReportContent({ report }) {
         </div>
       )}
 
-      {/* Improvement Areas */}
+      {}
       {report.improvement_areas?.length > 0 && (
         <div>
           <SectionHeader title="Areas for Improvement" color="#F59E0B" />
@@ -129,7 +112,7 @@ function WeeklyReportContent({ report }) {
         </div>
       )}
 
-      {/* Recurring Patterns */}
+      {}
       {report.recurring_patterns?.length > 0 && (
         <div>
           <SectionHeader title="Recurring Patterns" color="#EF4444" />
@@ -154,17 +137,6 @@ function WeeklyReportContent({ report }) {
   );
 }
 
-/**
- * Weekly Report Button Component
- *
- * Trigger for on-demand report fetching.
- * Visible in: Dashboard, Profile page, AI feedback modal (optional)
- *
- * @param {Object} props
- * @param {Function} props.onClick - Click handler
- * @param {boolean} props.loading - Loading state
- * @param {string} props.variant - Button variant (primary, secondary, text)
- */
 export function WeeklyReportButton({
   onClick,
   loading = false,
@@ -215,24 +187,6 @@ export function WeeklyReportButton({
   );
 }
 
-/**
- * Weekly Report Modal Component
- *
- * RULES:
- * - ❌ Do NOT auto-fetch
- * - ❌ Do NOT poll
- * - ❌ Do NOT show weekly report after submission automatically
- * - Trigger: User clicks "View Weekly Report" button
- *
- * @param {Object} props
- * @param {boolean} props.isOpen - Modal visibility
- * @param {Function} props.onClose - Close handler
- * @param {boolean} props.loading - Loading state
- * @param {string} props.error - Error message
- * @param {Object} props.report - Weekly report data
- * @param {Object} props.confidenceBadge - Confidence badge data
- * @param {Date} props.lastFetchedAt - Last fetch timestamp
- */
 export default function WeeklyReportUI({
   isOpen,
   onClose,
@@ -263,7 +217,7 @@ export default function WeeklyReportUI({
           style={{ backgroundColor: "#0A0A08" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
+          {}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1A1814] sticky top-0 bg-[#0A0A08] z-10">
             <div className="flex items-center gap-3">
               <svg
@@ -309,12 +263,12 @@ export default function WeeklyReportUI({
             </button>
           </div>
 
-          {/* Content */}
+          {}
           <div className="p-6">
-            {/* Loading State */}
+            {}
             {loading && <ReportSkeleton />}
 
-            {/* Error State */}
+            {}
             {!loading && error && (
               <div className="py-8">
                 <div className="border border-[#92400E]/30 bg-[#92400E]/5 p-4 rounded">
@@ -334,12 +288,12 @@ export default function WeeklyReportUI({
               </div>
             )}
 
-            {/* Report Content */}
+            {}
             {!loading && !error && report && (
               <>
                 <WeeklyReportContent report={report} />
 
-                {/* Last Updated */}
+                {}
                 {lastFetchedAt && (
                   <div className="mt-6 pt-4 border-t border-[#1A1814]">
                     <p
@@ -355,7 +309,7 @@ export default function WeeklyReportUI({
               </>
             )}
 
-            {/* Empty State (before first fetch) */}
+            {}
             {!loading && !error && !report && (
               <div className="py-12 text-center">
                 <svg

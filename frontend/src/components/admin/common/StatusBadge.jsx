@@ -1,8 +1,7 @@
-// src/components/admin/common/StatusBadge.jsx
-// Colored status indicator badges - Arrakis Labs Dune theme
+
 
 const statusStyles = {
-  // Problem/Contest statuses
+  
   draft: { bg: "bg-[#1A1814]", text: "text-[#78716C]", label: "Draft" },
   review: { bg: "bg-[#92400E]/20", text: "text-[#D97706]", label: "Review" },
   published: {
@@ -12,7 +11,6 @@ const statusStyles = {
   },
   hidden: { bg: "bg-[#1A1814]", text: "text-[#3D3D3D]", label: "Hidden" },
 
-  // Contest lifecycle
   scheduled: {
     bg: "bg-blue-900/20",
     text: "text-blue-400",
@@ -23,7 +21,6 @@ const statusStyles = {
   archived: { bg: "bg-[#1A1814]", text: "text-[#3D3D3D]", label: "Archived" },
   cancelled: { bg: "bg-red-900/20", text: "text-red-400", label: "Cancelled" },
 
-  // Submission verdicts
   accepted: {
     bg: "bg-green-900/20",
     text: "text-green-500",
@@ -53,7 +50,6 @@ const statusStyles = {
   pending: { bg: "bg-[#1A1814]", text: "text-[#78716C]", label: "Pending" },
   running: { bg: "bg-blue-900/20", text: "text-blue-400", label: "Running" },
 
-  // User statuses
   active: { bg: "bg-green-900/20", text: "text-green-500", label: "Active" },
   warned: { bg: "bg-[#D97706]/20", text: "text-[#D97706]", label: "Warned" },
   suspended: {
@@ -63,7 +59,6 @@ const statusStyles = {
   },
   banned: { bg: "bg-red-900/20", text: "text-red-400", label: "Banned" },
 
-  // Plagiarism statuses
   cleared: { bg: "bg-green-900/20", text: "text-green-500", label: "Cleared" },
   flagged: { bg: "bg-red-900/20", text: "text-red-400", label: "Flagged" },
   reviewing: {
@@ -77,12 +72,10 @@ const statusStyles = {
     label: "Escalated",
   },
 
-  // Difficulty
   easy: { bg: "bg-green-900/20", text: "text-green-500", label: "Easy" },
   medium: { bg: "bg-[#D97706]/20", text: "text-[#D97706]", label: "Medium" },
   hard: { bg: "bg-red-900/20", text: "text-red-400", label: "Hard" },
 
-  // System statuses
   healthy: { bg: "bg-green-900/20", text: "text-green-500", label: "Healthy" },
   degraded: {
     bg: "bg-[#D97706]/20",
@@ -123,7 +116,6 @@ export default function StatusBadge({
   );
 }
 
-// Verdict badge with icon
 export function VerdictBadge({ verdict, showIcon = true }) {
   const icons = {
     accepted: "✓",
@@ -152,7 +144,6 @@ export function VerdictBadge({ verdict, showIcon = true }) {
   );
 }
 
-// Difficulty badge with specific styling
 export function DifficultyBadge({ difficulty }) {
   return <StatusBadge status={difficulty} />;
 }

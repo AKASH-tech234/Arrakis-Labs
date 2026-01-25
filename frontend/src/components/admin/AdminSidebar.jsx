@@ -54,7 +54,6 @@ const AdminSidebar = () => {
     },
   ];
 
-  // Super admin only items
   if (isSuperAdmin) {
     navItems.push({
       to: "/admin/audit-logs",
@@ -85,7 +84,7 @@ const AdminSidebar = () => {
         collapsed ? "w-16" : "w-64"
       }`}
     >
-      {/* Logo */}
+      {}
       <div className="p-4 border-b border-gray-700 flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center gap-2">
@@ -109,16 +108,16 @@ const AdminSidebar = () => {
         </button>
       </div>
 
-      {/* Navigation */}
+      {}
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
       </nav>
 
-      {/* User Section */}
+      {}
       <div className="p-3 border-t border-gray-700">
-        {/* Admin Info */}
+        {}
         {!collapsed && (
           <div className="px-3 py-2 mb-2">
             <p className="text-sm text-white font-medium truncate">{admin?.email}</p>
@@ -126,7 +125,7 @@ const AdminSidebar = () => {
           </div>
         )}
 
-        {/* Logout Button */}
+        {}
         <button
           onClick={handleLogout}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors ${

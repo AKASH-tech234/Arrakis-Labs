@@ -3,12 +3,10 @@ import { leetCodeConstraints } from "../../lib/leetcodeConstraints";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Cookie-based auth
 const clearToken = () => {
   window.dispatchEvent(new CustomEvent("auth:logout"));
 };
 
-// Axios client
 const apiClient = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
@@ -49,10 +47,6 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
   return response.json().catch(() => ({}));
 }
-
-/* ======================================================
-   QUESTIONS (🔥 LEETCODE CONSTRAINTS APPLIED HERE)
-====================================================== */
 
 export async function getPublicQuestions({
   page = 1,
@@ -100,7 +94,6 @@ export async function getPublicQuestion(questionId) {
 
   const data = await request(`/questions/${questionId}`);
 
-  // Safely parse constraints for single question
   let constraintsOut = data.data?.constraints || [];
   try {
     if (Array.isArray(data.data?.constraints)) {
@@ -118,10 +111,6 @@ export async function getPublicQuestion(questionId) {
     constraints: constraintsOut,
   };
 }
-
-/* ======================================================
-   RUN / SUBMIT
-====================================================== */
 
 export async function runQuestion({ questionId, code, language, signal }) {
   const data = await request("/run", {

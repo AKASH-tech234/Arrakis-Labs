@@ -3,11 +3,6 @@ import { Link } from 'react-router-dom';
 import contestApi from '../../services/contest/contestApi';
 import { useAuth } from '../../context/AuthContext';
 
-/**
- * Contest List Page
- * Shows upcoming, live, and past contests
- */
-
 function ContestCard({ contest }) {
   const now = new Date();
   const startTime = new Date(contest.startTime);
@@ -183,7 +178,6 @@ export default function ContestList() {
           past: pastRes.data || [],
         });
 
-        // Auto-select tab based on available contests
         if (liveRes.data?.length > 0) {
           setActiveTab('live');
         } else if (upcomingRes.data?.length > 0) {
@@ -221,7 +215,7 @@ export default function ContestList() {
   return (
     <div className="min-h-screen bg-gray-900 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Coding Contests</h1>
           <p className="text-gray-400">
@@ -229,7 +223,7 @@ export default function ContestList() {
           </p>
         </div>
 
-        {/* Featured Live Contest */}
+        {}
         {contests.live.length > 0 && (
           <div className="mb-8 p-6 bg-gradient-to-r from-green-900/50 to-blue-900/50 rounded-lg border border-green-500/30">
             <div className="flex items-center gap-2 mb-4">
@@ -249,7 +243,7 @@ export default function ContestList() {
           </div>
         )}
 
-        {/* Tabs */}
+        {}
         <div className="flex gap-2 mb-6 border-b border-gray-700">
           {tabs.map((tab) => (
             <button
@@ -278,14 +272,14 @@ export default function ContestList() {
           ))}
         </div>
 
-        {/* Error */}
+        {}
         {error && (
           <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 mb-6">
             {error}
           </div>
         )}
 
-        {/* Contest Grid */}
+        {}
         {currentContests.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentContests.map((contest) => (
@@ -308,7 +302,7 @@ export default function ContestList() {
           </div>
         )}
 
-        {/* Next upcoming contest countdown */}
+        {}
         {activeTab === 'upcoming' && contests.upcoming.length > 0 && (
           <div className="mt-8 p-6 bg-gray-800 rounded-lg border border-gray-700">
             <h3 className="text-lg font-medium text-white mb-4">

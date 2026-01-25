@@ -2,22 +2,12 @@ import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-/**
- * POTD API Service
- * Handles all Problem of the Day related API calls
- */
-
-// Axios client with credentials
 const apiClient = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
-/**
- * Get today's Problem of the Day
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const getTodaysPOTD = async () => {
   try {
     const response = await apiClient.get("/potd/today");
@@ -34,10 +24,6 @@ export const getTodaysPOTD = async () => {
   }
 };
 
-/**
- * Get user's current streak information
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const getUserStreak = async () => {
   try {
     const response = await apiClient.get("/potd/streak");
@@ -54,17 +40,9 @@ export const getUserStreak = async () => {
   }
 };
 
-/**
- * Get user's POTD calendar (solved/missed days)
- * @param {number} year - Optional year filter
- * @param {number} month - Optional month filter (1-12)
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const getUserPOTDCalendar = async (year, month) => {
   try {
-    // Back-compat:
-    // - getUserPOTDCalendar(year:number, month:number)
-    // - getUserPOTDCalendar(startDate:string, endDate:string)
+
     const params = {};
     const arg1IsDateLike = typeof year === "string";
     const arg2IsDateLike = typeof month === "string";
@@ -90,12 +68,6 @@ export const getUserPOTDCalendar = async (year, month) => {
     };
   }
 };
-
-// ==========================
-// ADMIN POTD API
-// Base path: /api/admin/potd
-// Requires adminToken cookie (withCredentials: true)
-// ==========================
 
 export const getScheduledPOTDs = async ({ month, year, startDate, endDate } = {}) => {
   try {
@@ -195,12 +167,6 @@ export const forcePublishPOTD = async () => {
   }
 };
 
-/**
- * Record an attempt on today's POTD
- * @param {string} potdId - The POTD ID
- * @param {string} submissionId - The submission ID
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const recordPOTDAttempt = async (potdId, submissionId) => {
   try {
     const response = await apiClient.post("/potd/attempt", {
@@ -220,12 +186,6 @@ export const recordPOTDAttempt = async (potdId, submissionId) => {
   }
 };
 
-/**
- * Mark POTD as solved
- * @param {string} potdId - The POTD ID
- * @param {string} submissionId - The successful submission ID
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const solvePOTD = async (potdId, submissionId) => {
   try {
     const response = await apiClient.post("/potd/solve", {
@@ -245,12 +205,6 @@ export const solvePOTD = async (potdId, submissionId) => {
   }
 };
 
-/**
- * Get POTD history (past problems)
- * @param {number} limit - Number of past POTDs to fetch
- * @param {number} page - Page number for pagination
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const getPOTDHistory = async (limit = 30, page = 1) => {
   try {
     const response = await apiClient.get("/potd/history", {
@@ -269,11 +223,6 @@ export const getPOTDHistory = async (limit = 30, page = 1) => {
   }
 };
 
-/**
- * Get streak leaderboard
- * @param {number} limit - Number of users to fetch
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const getStreakLeaderboard = async (limit = 10) => {
   try {
     const response = await apiClient.get("/potd/leaderboard", {
@@ -292,13 +241,9 @@ export const getStreakLeaderboard = async (limit = 10) => {
   }
 };
 
-/**
- * Get POTD scheduler status (debug)
- * @returns {Promise<{success: boolean, data: object}>}
- */
 export const getSchedulerStatus = async () => {
   try {
-    // Admin-only: use /api/admin/potd/scheduler-status
+    
     const response = await apiClient.get("/admin/potd/scheduler-status");
     return {
       success: true,

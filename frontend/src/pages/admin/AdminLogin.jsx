@@ -12,7 +12,6 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -50,7 +49,7 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="w-full max-w-md px-6">
-        {/* Logo/Header */}
+        {}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/20 mb-4">
             <Shield className="h-8 w-8 text-orange-500" />
@@ -59,7 +58,7 @@ const AdminLogin = () => {
           <p className="text-gray-400 mt-2">Arrakis Labs Management Console</p>
         </div>
 
-        {/* Login Form */}
+        {}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -128,7 +127,7 @@ const AdminLogin = () => {
           </div>
         </div>
 
-        {/* Back to main site */}
+        {}
         <div className="mt-6 text-center">
           <a
             href="/"

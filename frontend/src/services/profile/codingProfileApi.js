@@ -1,4 +1,4 @@
-// src/services/codingProfileApi.js
+
 import apiClient from "../common/api";
 
 export async function getCodingProfiles() {

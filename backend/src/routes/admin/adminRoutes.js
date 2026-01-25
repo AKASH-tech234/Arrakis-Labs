@@ -36,26 +36,15 @@ import {
 
 const router = express.Router();
 
-// ==========================================
-// PUBLIC ADMIN AUTH ROUTES (no middleware)
-// ==========================================
 router.post("/login", adminLogin);
 
-// ==========================================
-// PROTECTED ADMIN ROUTES (require verifyAdmin)
-// ==========================================
 router.use(verifyAdmin);
 
-// Admin Profile
 router.get("/profile", getAdminProfile);
 router.post("/logout", adminLogout);
 
-// Dashboard
 router.get("/dashboard", getDashboardStats);
 
-// ==========================================
-// QUESTIONS CRUD
-// ==========================================
 router.get("/questions", getAllQuestions);
 router.get("/questions/:id", getQuestionById);
 router.post(
@@ -74,9 +63,6 @@ router.delete(
   deleteQuestion
 );
 
-// ==========================================
-// TEST CASES CRUD
-// ==========================================
 router.get("/questions/:id/test-cases", getTestCases);
 router.post(
   "/questions/:id/test-cases",
@@ -99,9 +85,6 @@ router.patch(
   toggleHidden
 );
 
-// ==========================================
-// CSV UPLOAD (multer middleware inline)
-// ==========================================
 router.post(
   "/upload-csv",
   uploadCSV,
@@ -114,10 +97,6 @@ router.post(
   previewCSV
 );
 
-// ==========================================
-// PLATFORM STATS CRUD (Admin ingestion)
-// Safe, DB-only way to populate PlatformStats
-// ==========================================
 router.get("/platform-stats", listPlatformStats);
 router.get("/platform-stats/:id", getPlatformStats);
 router.put(
@@ -141,10 +120,6 @@ router.delete(
   deletePlatformStats
 );
 
-// ==========================================
-// SUPER ADMIN ONLY ROUTES
-// ==========================================
-// Audit logs are restricted to super admins
 router.get(
   "/audit-logs",
   requireSuperAdmin,

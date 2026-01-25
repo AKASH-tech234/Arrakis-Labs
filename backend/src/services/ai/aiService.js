@@ -1,23 +1,14 @@
 import axios from "axios";
 
-/**
- * AI Service Client
- * Handles communication with the FastAPI AI service
- */
-
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
-const AI_TIMEOUT_MS = 90000; // 90 seconds for AI processing
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// STRUCTURED LOGGING
-// ═══════════════════════════════════════════════════════════════════════════════
+const AI_TIMEOUT_MS = 90000; 
 
 const LOG_PREFIX = {
-  INFO: "\x1b[36m[AI-SVC]\x1b[0m", // Cyan
-  SUCCESS: "\x1b[32m[AI-SVC]\x1b[0m", // Green
-  WARN: "\x1b[33m[AI-SVC]\x1b[0m", // Yellow
-  ERROR: "\x1b[31m[AI-SVC]\x1b[0m", // Red
-  HTTP: "\x1b[35m[AI-SVC]\x1b[0m", // Magenta
+  INFO: "\x1b[36m[AI-SVC]\x1b[0m", 
+  SUCCESS: "\x1b[32m[AI-SVC]\x1b[0m", 
+  WARN: "\x1b[33m[AI-SVC]\x1b[0m", 
+  ERROR: "\x1b[31m[AI-SVC]\x1b[0m", 
+  HTTP: "\x1b[35m[AI-SVC]\x1b[0m", 
 };
 
 const log = {
@@ -50,9 +41,6 @@ const log = {
   },
 };
 
-/**
- * Map backend verdict status to AI service expected format
- */
 const VERDICT_MAP = {
   accepted: "Accepted",
   wrong_answer: "Wrong Answer",
@@ -65,9 +53,6 @@ const VERDICT_MAP = {
   running: "Running",
 };
 
-/**
- * Map backend status to error_type for AI service
- */
 const ERROR_TYPE_MAP = {
   wrong_answer: "Wrong Answer",
   time_limit_exceeded: "TLE",
@@ -76,11 +61,6 @@ const ERROR_TYPE_MAP = {
   compile_error: "Compile Error",
 };
 
-/**
- * Build user history summary from submission history
- * @param {Array} submissions - Recent submissions for the user
- * @returns {string|null} - Summary string or null
- */
 export function buildUserHistorySummary(submissions) {
   if (!submissions || submissions.length === 0) {
     return null;
@@ -101,7 +81,6 @@ export function buildUserHistorySummary(submissions) {
     (s) => s.status === "compile_error",
   ).length;
 
-  // Find common problem categories/tags from failed submissions
   const failedSubmissions = submissions.filter((s) => s.status !== "accepted");
 
   let summary = `Recent ${total} submissions: ${accepted} accepted, ${total - accepted} failed.`;
@@ -114,19 +93,6 @@ export function buildUserHistorySummary(submissions) {
   return summary;
 }
 
-/**
- * Request AI feedback for a submission
- * @param {Object} params - Submission context
- * @param {string} params.userId - User ID
- * @param {string} params.problemId - Question/Problem ID
- * @param {string} params.problemCategory - Category/tags of the problem
- * @param {string} params.constraints - Problem constraints
- * @param {string} params.code - Submitted code
- * @param {string} params.language - Programming language
- * @param {string} params.verdict - Submission verdict (backend format)
- * @param {string|null} params.userHistorySummary - User's submission history summary
- * @returns {Promise<Object|null>} - AI feedback response or null on failure
- */
 export async function getAIFeedback({
   userId,
   problemId,
@@ -149,7 +115,6 @@ export async function getAIFeedback({
       codeLength: code?.length,
     });
 
-    // Build the payload matching SubmissionContext schema
     const payload = {
       user_id: userId,
       problem_id: problemId,
@@ -187,7 +152,6 @@ export async function getAIFeedback({
   } catch (error) {
     const duration = Date.now() - startTime;
 
-    // Detailed error logging
     if (error.response) {
       log.http("POST", "/ai/feedback", error.response.status, duration);
       log.error("AI Service error response", {
@@ -215,10 +179,6 @@ export async function getAIFeedback({
   }
 }
 
-/**
- * Check if AI service is healthy
- * @returns {Promise<boolean>}
- */
 export async function checkAIServiceHealth() {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/health`;

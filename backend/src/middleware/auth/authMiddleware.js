@@ -1,18 +1,16 @@
 import jwt from "jsonwebtoken";
 import User from "../../models/auth/User.js";
 
-// Protect routes - verify JWT
 export const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Get token from header or cookie (userToken for users)
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     } else if (req.cookies.userToken) {
       token = req.cookies.userToken;
     } else if (req.cookies.token) {
-      // Fallback for legacy cookie name
+      
       token = req.cookies.token;
     }
 
@@ -23,7 +21,6 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.user = await User.findById(decoded.id);
@@ -51,7 +48,6 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Authorize specific roles
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
@@ -64,18 +60,16 @@ export const authorize = (...roles) => {
   };
 };
 
-// Optional auth - populates req.user if token exists, but doesn't require it
 export const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    // Get token from header or cookie (userToken for users)
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     } else if (req.cookies.userToken) {
       token = req.cookies.userToken;
     } else if (req.cookies.token) {
-      // Fallback for legacy cookie name
+      
       token = req.cookies.token;
     }
 
@@ -86,7 +80,7 @@ export const optionalAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    // Token invalid - continue without user
+    
     next();
   }
 };

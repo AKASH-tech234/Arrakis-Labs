@@ -26,7 +26,7 @@ function clampString(value, { maxLen, trim = true } = {}) {
 
 function rejectIfUnsafeMarkdown(md) {
   const s = String(md || "").toLowerCase();
-  // Defense-in-depth: frontend skips raw HTML, but we still reject obvious script/link vectors.
+  
   if (s.includes("<script")) return "Markdown contains forbidden script tags";
   if (s.includes("javascript:")) return "Markdown contains forbidden javascript: links";
   if (s.includes("data:text/html")) return "Markdown contains forbidden data:text/html links";
@@ -40,7 +40,7 @@ export const listProblemDiscussions = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid problem id" });
     }
 
-    const sort = String(req.query.sort || "top"); // top | new
+    const sort = String(req.query.sort || "top"); 
     const language = req.query.language ? String(req.query.language) : null;
     const page = Math.max(1, parseIntSafe(req.query.page, 1));
     const limit = Math.min(50, Math.max(1, parseIntSafe(req.query.limit, 20)));
@@ -173,7 +173,6 @@ export const createSolutionPost = async (req, res) => {
 
     const question = await Question.findById(problemId).select("title").lean();
 
-    // Best-effort: prevent spam duplicates for same accepted submission
     const existing = await SolutionPost.findOne({ submissionId }).select("_id").lean();
     if (existing) {
       return res.status(200).json({

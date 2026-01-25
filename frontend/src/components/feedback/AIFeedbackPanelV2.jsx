@@ -1,11 +1,8 @@
-// src/components/feedback/AIFeedbackPanelV2.jsx
-// Progressive Hint Disclosure Panel - No raw JSON, beautified UI
+
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-/**
- * Hint Type Badge Colors
- */
 const HINT_COLORS = {
   conceptual: { bg: "#3B82F6", text: "#DBEAFE", label: "Conceptual" },
   specific: { bg: "#F59E0B", text: "#FEF3C7", label: "Specific" },
@@ -15,9 +12,6 @@ const HINT_COLORS = {
   pattern: { bg: "#EC4899", text: "#FCE7F3", label: "Pattern" },
 };
 
-/**
- * Verdict Badge Component
- */
 function VerdictBadge({ verdict }) {
   const configs = {
     accepted: { bg: "#22C55E", text: "Accepted", icon: "✓" },
@@ -53,9 +47,6 @@ function VerdictBadge({ verdict }) {
   );
 }
 
-/**
- * Single Hint Card Component
- */
 function HintCard({ hint, index, isLatest }) {
   const colors = HINT_COLORS[hint.hint_type] || HINT_COLORS.conceptual;
 
@@ -67,7 +58,7 @@ function HintCard({ hint, index, isLatest }) {
       className="border rounded-lg overflow-hidden"
       style={{ borderColor: `${colors.bg}40` }}
     >
-      {/* Hint Header */}
+      {}
       <div
         className="px-3 py-2 flex items-center justify-between"
         style={{ backgroundColor: `${colors.bg}10` }}
@@ -91,7 +82,7 @@ function HintCard({ hint, index, isLatest }) {
         </div>
       </div>
 
-      {/* Hint Content */}
+      {}
       <div className="px-4 py-3">
         <p
           className="text-[#E8E4D9] text-sm leading-relaxed"
@@ -104,9 +95,6 @@ function HintCard({ hint, index, isLatest }) {
   );
 }
 
-/**
- * Reveal Button Component
- */
 function RevealButton({ label, onClick, variant = "primary" }) {
   const variants = {
     primary: "border-[#D97706]/50 text-[#D97706] hover:bg-[#D97706]/10",
@@ -141,29 +129,19 @@ function RevealButton({ label, onClick, variant = "primary" }) {
   );
 }
 
-/**
- * AI Feedback Panel V2 - Progressive Hint Disclosure
- *
- * Features:
- * - NO raw JSON rendering
- * - Beautified cards and accordions
- * - Step-by-step hint reveal
- * - Initial state: Only Hint 1 visible
- * - Buttons: "Show next hint", "Show approach", "Show solution"
- */
 export default function AIFeedbackPanelV2({
   isVisible,
   onClose,
   loading = false,
   error = null,
   feedback = null,
-  // Progressive disclosure controls
+  
   onRevealNextHint,
   hasMoreHints = false,
   nextHintLabel = "Show next hint",
   onToggleExplanation,
   showFullExplanation = false,
-  // Retry handler
+  
   onRetry,
 }) {
   const [showPattern, setShowPattern] = useState(false);
@@ -179,7 +157,7 @@ export default function AIFeedbackPanelV2({
           className="border-l border-[#1A1814] h-full overflow-auto"
           style={{ backgroundColor: "#0A0A08" }}
         >
-          {/* Panel Header */}
+          {}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1A1814] sticky top-0 bg-[#0A0A08] z-10">
             <div className="flex items-center gap-3">
               <span
@@ -210,9 +188,9 @@ export default function AIFeedbackPanelV2({
             </button>
           </div>
 
-          {/* Content */}
+          {}
           <div className="p-4 space-y-4">
-            {/* Loading State */}
+            {}
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <motion.div
@@ -239,7 +217,7 @@ export default function AIFeedbackPanelV2({
               </div>
             )}
 
-            {/* Error State with Retry */}
+            {}
             {!loading && error && (
               <div className="py-6 space-y-4">
                 <div className="border border-[#EF4444]/30 bg-[#EF4444]/5 p-4 rounded-lg">
@@ -275,7 +253,7 @@ export default function AIFeedbackPanelV2({
               </div>
             )}
 
-            {/* Empty State */}
+            {}
             {!loading && !error && !feedback && (
               <div className="flex flex-col items-center justify-center py-12">
                 <svg
@@ -300,10 +278,10 @@ export default function AIFeedbackPanelV2({
               </div>
             )}
 
-            {/* Feedback Content - Progressive Disclosure */}
+            {}
             {!loading && !error && feedback && (
               <div className="space-y-4">
-                {/* Feedback Type Indicator */}
+                {}
                 {feedback.feedbackType === "success_feedback" && (
                   <div className="border border-[#22C55E]/30 bg-[#22C55E]/5 p-3 rounded-lg">
                     <p
@@ -317,7 +295,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Progressive Hints */}
+                {}
                 <div className="space-y-3">
                   <h4
                     className="text-[#78716C] text-[10px] uppercase tracking-wider flex items-center gap-2"
@@ -338,7 +316,7 @@ export default function AIFeedbackPanelV2({
                   ))}
                 </div>
 
-                {/* Reveal Next Hint Button */}
+                {}
                 {hasMoreHints && (
                   <RevealButton
                     label={nextHintLabel}
@@ -347,7 +325,7 @@ export default function AIFeedbackPanelV2({
                   />
                 )}
 
-                {/* Pattern Detection (collapsible) */}
+                {}
                 {feedback.detectedPattern && (
                   <div className="pt-2">
                     <button
@@ -402,7 +380,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Full Explanation Toggle */}
+                {}
                 {feedback.hasExplanation && !hasMoreHints && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <RevealButton
@@ -447,7 +425,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Optimization Tips (for accepted) */}
+                {}
                 {feedback.optimizationTips?.length > 0 && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <h4

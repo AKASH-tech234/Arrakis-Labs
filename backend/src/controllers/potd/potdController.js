@@ -7,16 +7,6 @@ import mongoose from "mongoose";
 import Submission from "../../models/profile/Submission.js";
 import potdScheduler from "../../services/potd/potdScheduler.js";
 
-/**
- * POTD Controller
- * Handles all POTD-related operations for users
- */
-
-/**
- * Get today's Problem of the Day
- * @route GET /api/potd/today
- * @access Public
- */
 export const getTodaysPOTD = async (req, res) => {
   try {
     const potd = await PublishedPOTD.getToday();
@@ -29,7 +19,6 @@ export const getTodaysPOTD = async (req, res) => {
       });
     }
 
-    // Get user's tracking data if authenticated
     let userTracking = null;
     if (req.user) {
       userTracking = await UserPOTDTracking.findOne({
@@ -38,7 +27,6 @@ export const getTodaysPOTD = async (req, res) => {
       });
     }
 
-    // Calculate time remaining
     const now = new Date();
     const timeRemaining = Math.max(0, potd.endTime - now);
 
@@ -74,11 +62,6 @@ export const getTodaysPOTD = async (req, res) => {
   }
 };
 
-/**
- * Get user's POTD streak information
- * @route GET /api/potd/streak
- * @access Private
- */
 export const getUserStreak = async (req, res) => {
   try {
     const streakInfo = await UserStreak.checkAndUpdateStreak(req.user._id);
@@ -103,11 +86,6 @@ export const getUserStreak = async (req, res) => {
   }
 };
 
-/**
- * Get user's POTD calendar (solved/missed history)
- * @route GET /api/potd/calendar
- * @access Private
- */
 export const getUserPOTDCalendar = async (req, res) => {
   try {
     const { startDate, endDate, year, month } = req.query;
@@ -138,17 +116,15 @@ export const getUserPOTDCalendar = async (req, res) => {
         });
       }
     } else {
-      // Default to current month in UTC
+      
       const now = new Date();
       start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
       end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
     }
 
-    // Normalize to UTC day boundaries
     start.setUTCHours(0, 0, 0, 0);
     end.setUTCHours(23, 59, 59, 999);
 
-    // Get user's POTD tracking records
     const userTracking = await UserPOTDTracking.getUserCalendar(
       req.user._id,
       start,
@@ -159,12 +135,10 @@ export const getUserPOTDCalendar = async (req, res) => {
       userTracking.map((t) => [t.potdId.toString(), t])
     );
 
-    // Get all published POTDs in the date range
     const publishedPOTDs = await PublishedPOTD.find({
       activeDate: { $gte: start, $lte: end },
     }).sort({ activeDate: -1 });
 
-    // Build calendar data
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
@@ -217,11 +191,6 @@ export const getUserPOTDCalendar = async (req, res) => {
   }
 };
 
-/**
- * Record user's POTD attempt
- * @route POST /api/potd/attempt
- * @access Private
- */
 export const recordPOTDAttempt = async (req, res) => {
   try {
     const { potdId } = req.body;
@@ -234,7 +203,6 @@ export const recordPOTDAttempt = async (req, res) => {
       });
     }
 
-    // Check if POTD is still active
     const now = new Date();
     if (now < potd.startTime || now > potd.endTime) {
       return res.status(400).json({
@@ -243,7 +211,6 @@ export const recordPOTDAttempt = async (req, res) => {
       });
     }
 
-    // Optional client-provided potdId guard
     if (potdId && potdId.toString() !== potd._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -251,7 +218,6 @@ export const recordPOTDAttempt = async (req, res) => {
       });
     }
 
-    // Get or create tracking entry
     let tracking = await UserPOTDTracking.getOrCreate(
       req.user._id,
       potd._id,
@@ -259,7 +225,6 @@ export const recordPOTDAttempt = async (req, res) => {
       potd.activeDate
     );
 
-    // Update attempt count
     const isFirstAttemptForThisPOTD = tracking.attempts === 0;
     if (!tracking.firstAttemptAt) {
       tracking.firstAttemptAt = now;
@@ -268,12 +233,10 @@ export const recordPOTDAttempt = async (req, res) => {
     tracking.attempts += 1;
     await tracking.save();
 
-    // Update POTD stats
     await PublishedPOTD.findByIdAndUpdate(potd._id, {
       $inc: { "stats.totalAttempts": 1 },
     });
 
-    // Record attempt in streak once per POTD/day
     if (isFirstAttemptForThisPOTD) {
       await UserStreak.recordAttempt(req.user._id);
     }
@@ -295,11 +258,6 @@ export const recordPOTDAttempt = async (req, res) => {
   }
 };
 
-/**
- * Mark POTD as solved
- * @route POST /api/potd/solve
- * @access Private
- */
 export const solvePOTD = async (req, res) => {
   try {
     const { submissionId, language, potdId } = req.body;
@@ -313,7 +271,6 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Check if POTD is still active
     const now = new Date();
     if (now < potd.startTime || now > potd.endTime) {
       return res.status(400).json({
@@ -322,7 +279,6 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Optional client-provided potdId guard
     if (potdId && potdId.toString() !== potd._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -330,7 +286,6 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Validate submission (prevents marking as solved without an accepted submission)
     if (!submissionId || !mongoose.Types.ObjectId.isValid(submissionId)) {
       return res.status(400).json({
         success: false,
@@ -354,7 +309,6 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Get or create tracking entry
     let tracking = await UserPOTDTracking.getOrCreate(
       req.user._id,
       potd._id,
@@ -362,7 +316,6 @@ export const solvePOTD = async (req, res) => {
       potd.activeDate
     );
 
-    // Fast path: already solved
     if (tracking.solved) {
       return res.json({
         success: true,
@@ -374,7 +327,6 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Atomically mark as solved to prevent duplicate stats/streak updates under concurrency.
     const timeSpent = tracking.firstAttemptAt
       ? Math.floor((now - tracking.firstAttemptAt) / 1000)
       : 0;
@@ -394,7 +346,7 @@ export const solvePOTD = async (req, res) => {
     );
 
     if (!updatedTracking) {
-      // Another request solved it first.
+      
       return res.json({
         success: true,
         data: {
@@ -405,12 +357,10 @@ export const solvePOTD = async (req, res) => {
       });
     }
 
-    // Update POTD stats
     await PublishedPOTD.findByIdAndUpdate(potd._id, {
       $inc: { "stats.totalSolved": 1, "stats.uniqueUsers": 1 },
     });
 
-    // Update user streak
     const streakResult = await UserStreak.updateStreak(
       req.user._id,
       potd.activeDate
@@ -440,11 +390,6 @@ export const solvePOTD = async (req, res) => {
   }
 };
 
-/**
- * Get POTD history (past problems)
- * @route GET /api/potd/history
- * @access Public
- */
 export const getPOTDHistory = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -465,7 +410,6 @@ export const getPOTDHistory = async (req, res) => {
       activeDate: { $lt: today },
     });
 
-    // If user is authenticated, get their solve status
     let userSolveStatus = {};
     if (req.user) {
       const potdIds = history.map((h) => h._id);
@@ -509,11 +453,6 @@ export const getPOTDHistory = async (req, res) => {
   }
 };
 
-/**
- * Get streak leaderboard
- * @route GET /api/potd/leaderboard
- * @access Public
- */
 export const getStreakLeaderboard = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
@@ -548,11 +487,6 @@ export const getStreakLeaderboard = async (req, res) => {
   }
 };
 
-/**
- * Get POTD scheduler status (admin debug)
- * @route GET /api/potd/status
- * @access Private (Admin)
- */
 export const getSchedulerStatus = async (req, res) => {
   try {
     const status = potdScheduler.getStatus();
@@ -570,7 +504,6 @@ export const getSchedulerStatus = async (req, res) => {
   }
 };
 
-// Helper function to format time remaining
 function formatTimeRemaining(ms) {
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));

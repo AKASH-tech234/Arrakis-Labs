@@ -1,4 +1,4 @@
-// src/components/landing/Features.jsx
+
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
@@ -59,7 +59,7 @@ export default function Features() {
   return (
     <section id="features" className="bg-black py-24 md:py-32">
       <div className="max-w-6xl mx-auto px-6 lg:px-12">
-        {/* Section Header */}
+        {}
         <motion.div
           ref={headerRef}
           initial={{ opacity: 0, y: 20 }}
@@ -82,7 +82,7 @@ export default function Features() {
           </p>
         </motion.div>
 
-        {/* Features Grid */}
+        {}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <FeatureCard key={feature.title} feature={feature} index={index} />

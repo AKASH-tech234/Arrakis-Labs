@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Contest Registration Schema
- * Tracks user registration and participation in contests
- */
 const contestRegistrationSchema = new mongoose.Schema(
   {
     contest: {
@@ -19,32 +15,27 @@ const contestRegistrationSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Registration time
     registeredAt: {
       type: Date,
       default: Date.now,
     },
 
-    // When user actually joined (started the contest)
     joinedAt: {
       type: Date,
       default: null,
     },
 
-    // User's effective start time (max of joinedAt and contest startTime)
     effectiveStartTime: {
       type: Date,
       default: null,
     },
 
-    // Participation status
     status: {
       type: String,
       enum: ["registered", "participating", "completed", "disqualified"],
       default: "registered",
     },
 
-    // Final stats (computed at end)
     finalRank: {
       type: Number,
       default: null,
@@ -59,14 +50,13 @@ const contestRegistrationSchema = new mongoose.Schema(
     },
     totalPenalty: {
       type: Number,
-      default: 0, // Total penalty time in minutes
+      default: 0, 
     },
     totalTime: {
       type: Number,
-      default: 0, // Total solve time in seconds
+      default: 0, 
     },
 
-    // Per-problem tracking
     problemAttempts: {
       type: Map,
       of: new mongoose.Schema(
@@ -74,8 +64,8 @@ const contestRegistrationSchema = new mongoose.Schema(
           attempts: { type: Number, default: 0 },
           solved: { type: Boolean, default: false },
           solvedAt: { type: Date, default: null },
-          solveTime: { type: Number, default: 0 }, // Seconds from start
-          penalty: { type: Number, default: 0 }, // Wrong attempts before AC
+          solveTime: { type: Number, default: 0 }, 
+          penalty: { type: Number, default: 0 }, 
           score: { type: Number, default: 0 },
           bestSubmission: { type: mongoose.Schema.Types.ObjectId, ref: "ContestSubmission" },
         },
@@ -84,7 +74,6 @@ const contestRegistrationSchema = new mongoose.Schema(
       default: new Map(),
     },
 
-    // Disqualification info
     disqualifiedReason: {
       type: String,
       default: null,
@@ -99,7 +88,6 @@ const contestRegistrationSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Rating change (post-contest)
     ratingBefore: {
       type: Number,
       default: null,
@@ -118,14 +106,11 @@ const contestRegistrationSchema = new mongoose.Schema(
   }
 );
 
-// Compound unique index: user can only register once per contest
 contestRegistrationSchema.index({ contest: 1, user: 1 }, { unique: true });
 
-// Index for leaderboard queries
 contestRegistrationSchema.index({ contest: 1, finalScore: -1, totalTime: 1 });
 contestRegistrationSchema.index({ contest: 1, problemsSolved: -1, totalPenalty: 1 });
 
-// Method: Mark user as joined
 contestRegistrationSchema.methods.markJoined = async function (contestStartTime) {
   const now = new Date();
   this.joinedAt = now;
@@ -134,7 +119,6 @@ contestRegistrationSchema.methods.markJoined = async function (contestStartTime)
   return this.save();
 };
 
-// Method: Record a submission attempt
 contestRegistrationSchema.methods.recordAttempt = async function (
   problemId,
   isAccepted,
@@ -145,8 +129,7 @@ contestRegistrationSchema.methods.recordAttempt = async function (
 ) {
   const problemKey = problemId.toString();
   const currentTime = new Date();
-  
-  // Get or create problem attempt record
+
   let attempt = this.problemAttempts.get(problemKey) || {
     attempts: 0,
     solved: false,
@@ -163,16 +146,13 @@ contestRegistrationSchema.methods.recordAttempt = async function (
     attempt.solved = true;
     attempt.solvedAt = currentTime;
     attempt.bestSubmission = submissionId;
-    
-    // Calculate solve time from effective start
+
     const effectiveStart = this.effectiveStartTime || contestStartTime;
     attempt.solveTime = Math.floor((currentTime - effectiveStart) / 1000);
-    
-    // Penalty = (wrong attempts) * penalty minutes
+
     attempt.penalty = (attempt.attempts - 1) * penaltyMinutes;
     attempt.score = pointsPerProblem;
 
-    // Update totals
     this.problemsSolved += 1;
     this.totalTime += attempt.solveTime;
     this.totalPenalty += attempt.penalty;
@@ -183,7 +163,6 @@ contestRegistrationSchema.methods.recordAttempt = async function (
   return this.save();
 };
 
-// Static: Get leaderboard for contest (LeetCode style)
 contestRegistrationSchema.statics.getLeaderboard = async function (
   contestId,
   options = {}
@@ -199,24 +178,22 @@ contestRegistrationSchema.statics.getLeaderboard = async function (
 
   const registrations = await this.find(query)
     .sort({ 
-      finalScore: -1,      // Higher score first
-      problemsSolved: -1,  // More problems solved
-      totalTime: 1,        // Less time first
-      totalPenalty: 1,     // Less penalty first
+      finalScore: -1,      
+      problemsSolved: -1,  
+      totalTime: 1,        
+      totalPenalty: 1,     
     })
     .skip(skip)
     .limit(limit)
     .populate("user", "name email profileImage")
     .lean();
 
-  // Assign ranks
   return registrations.map((reg, index) => ({
     ...reg,
     rank: skip + index + 1,
   }));
 };
 
-// Static: Get user's registration for a contest
 contestRegistrationSchema.statics.getUserRegistration = function (contestId, userId) {
   return this.findOne({ contest: contestId, user: userId })
     .populate("user", "name email profileImage");

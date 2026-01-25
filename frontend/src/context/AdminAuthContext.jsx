@@ -16,11 +16,8 @@ export const AdminAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check for existing admin session on mount - only on admin routes
   useEffect(() => {
     const checkAdminAuth = async () => {
-      // Only check admin auth if we're on an admin route
-      // This prevents 401 errors from showing in console on non-admin pages
       const isAdminRoute = window.location.pathname.startsWith('/admin');
       if (!isAdminRoute) {
         setLoading(false);
@@ -28,7 +25,6 @@ export const AdminAuthProvider = ({ children }) => {
       }
       
       try {
-        // Cookie-based session; backend sets HttpOnly adminToken cookie on login
         const response = await getAdminProfile();
         if (response.success) setAdmin(response.admin);
       } catch {
@@ -65,7 +61,6 @@ export const AdminAuthProvider = ({ children }) => {
     try {
       await apiAdminLogout();
     } catch (err) {
-      // Ignore logout errors
     } finally {
       setAdmin(null);
     }

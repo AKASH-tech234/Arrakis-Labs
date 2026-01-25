@@ -6,19 +6,6 @@ import leaderboardService from "../../services/contest/leaderboardService.js";
 import wsServer from "../../services/contest/websocketServer.js";
 import mongoose from "mongoose";
 
-/**
- * Admin Contest Controller
- * Full CRUD operations for contests (admin only)
- */
-
-// ==========================================
-// CONTEST CRUD
-// ==========================================
-
-/**
- * Get all contests (admin view with more details)
- * GET /api/admin/contests
- */
 export const getAllContests = async (req, res) => {
   try {
     const { status, page = 1, limit = 20, search } = req.query;
@@ -60,10 +47,6 @@ export const getAllContests = async (req, res) => {
   }
 };
 
-/**
- * Get single contest with full details (admin)
- * GET /api/admin/contests/:id
- */
 export const getContestById = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id)
@@ -76,12 +59,10 @@ export const getContestById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Contest not found" });
     }
 
-    // Get registration count
     const registrationCount = await ContestRegistration.countDocuments({
       contest: contest._id,
     });
 
-    // Get submission count
     const submissionCount = await ContestSubmission.countDocuments({
       contest: contest._id,
     });
@@ -100,10 +81,6 @@ export const getContestById = async (req, res) => {
   }
 };
 
-/**
- * Create new contest
- * POST /api/admin/contests
- */
 export const createContest = async (req, res) => {
   try {
     const {
@@ -124,7 +101,6 @@ export const createContest = async (req, res) => {
       freezeLeaderboardMinutes,
     } = req.body;
 
-    // Validate required fields
     if (!name || !startTime || !duration) {
       return res.status(400).json({
         success: false,
@@ -132,7 +108,6 @@ export const createContest = async (req, res) => {
       });
     }
 
-    // Validate start time is a valid date
     const start = new Date(startTime);
     if (Number.isNaN(start.getTime())) {
       return res.status(400).json({
@@ -141,10 +116,9 @@ export const createContest = async (req, res) => {
       });
     }
 
-    // Validate problems if provided
     let contestProblems = [];
     if (problems && problems.length > 0) {
-      // Verify all problems exist
+      
       const problemIds = problems.map((p) => p.problemId);
       const existingProblems = await Question.find({
         _id: { $in: problemIds },
@@ -162,11 +136,10 @@ export const createContest = async (req, res) => {
         }
       }
 
-      // Build contest problems array
       contestProblems = problems.map((p, idx) => ({
         problem: p.problemId,
         order: p.order ?? idx,
-        label: p.label || String.fromCharCode(65 + idx), // A, B, C...
+        label: p.label || String.fromCharCode(65 + idx), 
         points: p.points ?? 100,
       }));
     }
@@ -202,10 +175,6 @@ export const createContest = async (req, res) => {
   }
 };
 
-/**
- * Update contest
- * PUT /api/admin/contests/:id
- */
 export const updateContest = async (req, res) => {
   try {
     const contestId = req.params.id;
@@ -217,7 +186,6 @@ export const updateContest = async (req, res) => {
       return res.status(404).json({ success: false, message: "Contest not found" });
     }
 
-    // Can't update live/ended contests (except certain fields)
     if (contest.status === "live" || contest.status === "ended") {
       const allowedUpdates = ["description", "editorial", "editorialVisible"];
       const updateKeys = Object.keys(updates);
@@ -231,7 +199,6 @@ export const updateContest = async (req, res) => {
       }
     }
 
-    // Handle problems update
     if (updates.problems && Array.isArray(updates.problems)) {
       const problemIds = updates.problems.map((p) => p.problemId || p.problem);
       const existingProblems = await Question.find({
@@ -255,7 +222,6 @@ export const updateContest = async (req, res) => {
       });
     }
 
-    // Update fields
     Object.keys(updates).forEach((key) => {
       if (key !== "_id" && key !== "createdBy") {
         contest[key] = updates[key];
@@ -276,10 +242,6 @@ export const updateContest = async (req, res) => {
   }
 };
 
-/**
- * Delete contest (soft delete)
- * DELETE /api/admin/contests/:id
- */
 export const deleteContest = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id);
@@ -309,14 +271,6 @@ export const deleteContest = async (req, res) => {
   }
 };
 
-// ==========================================
-// CONTEST LIFECYCLE MANAGEMENT
-// ==========================================
-
-/**
- * Publish contest (draft -> scheduled)
- * POST /api/admin/contests/:id/publish
- */
 export const publishContest = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id);
@@ -332,7 +286,6 @@ export const publishContest = async (req, res) => {
       });
     }
 
-    // Validate contest is ready
     if (contest.problems.length === 0) {
       return res.status(400).json({
         success: false,
@@ -346,7 +299,6 @@ export const publishContest = async (req, res) => {
       ? new Date(contest.endTime)
       : new Date(startTime.getTime() + contest.duration * 60 * 1000);
 
-    // If the contest would already be over, don't allow publishing.
     if (now >= endTime) {
       return res.status(400).json({
         success: false,
@@ -354,12 +306,10 @@ export const publishContest = async (req, res) => {
       });
     }
 
-    // If the contest has already started, publish it as live for immediate participation.
     contest.status = now >= startTime ? "live" : "scheduled";
     contest.updatedBy = req.admin._id;
     await contest.save();
 
-    // Initialize Redis leaderboard
     await leaderboardService.initializeContest(contest._id.toString(), contest.duration);
 
     res.status(200).json({
@@ -373,10 +323,6 @@ export const publishContest = async (req, res) => {
   }
 };
 
-/**
- * Cancel contest
- * POST /api/admin/contests/:id/cancel
- */
 export const cancelContest = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id);
@@ -396,7 +342,6 @@ export const cancelContest = async (req, res) => {
     contest.updatedBy = req.admin._id;
     await contest.save();
 
-    // Notify participants
     wsServer.notifyContestStatus(contest._id.toString(), "cancelled", {
       message: req.body.reason || "Contest has been cancelled by admin",
     });
@@ -411,10 +356,6 @@ export const cancelContest = async (req, res) => {
   }
 };
 
-/**
- * Manually start contest (for testing)
- * POST /api/admin/contests/:id/start
- */
 export const startContest = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id);
@@ -430,7 +371,6 @@ export const startContest = async (req, res) => {
       });
     }
 
-    // Update start time to now
     const now = new Date();
     contest.startTime = now;
     contest.endTime = new Date(now.getTime() + contest.duration * 60 * 1000);
@@ -438,7 +378,6 @@ export const startContest = async (req, res) => {
     contest.updatedBy = req.admin._id;
     await contest.save();
 
-    // Notify participants
     wsServer.notifyContestStart(contest._id.toString(), contest.endTime);
 
     res.status(200).json({
@@ -455,10 +394,6 @@ export const startContest = async (req, res) => {
   }
 };
 
-/**
- * Manually end contest
- * POST /api/admin/contests/:id/end
- */
 export const endContest = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id);
@@ -479,13 +414,10 @@ export const endContest = async (req, res) => {
     contest.updatedBy = req.admin._id;
     await contest.save();
 
-    // Freeze leaderboard
     await leaderboardService.freezeLeaderboard(contest._id.toString());
 
-    // Notify participants
     wsServer.notifyContestEnd(contest._id.toString());
 
-    // Calculate final ranks
     await calculateFinalRanks(contest._id);
 
     res.status(200).json({
@@ -498,14 +430,6 @@ export const endContest = async (req, res) => {
   }
 };
 
-// ==========================================
-// PARTICIPANT MANAGEMENT
-// ==========================================
-
-/**
- * Get contest registrations
- * GET /api/admin/contests/:id/registrations
- */
 export const getRegistrations = async (req, res) => {
   try {
     const { page = 1, limit = 50, status } = req.query;
@@ -526,7 +450,6 @@ export const getRegistrations = async (req, res) => {
       ContestRegistration.countDocuments(query),
     ]);
 
-    // Add ranks
     const ranked = registrations.map((reg, idx) => ({
       ...reg,
       rank: skip + idx + 1,
@@ -548,10 +471,6 @@ export const getRegistrations = async (req, res) => {
   }
 };
 
-/**
- * Disqualify a participant
- * POST /api/admin/contests/:id/disqualify/:userId
- */
 export const disqualifyParticipant = async (req, res) => {
   try {
     const { id: contestId, userId } = req.params;
@@ -585,14 +504,6 @@ export const disqualifyParticipant = async (req, res) => {
   }
 };
 
-// ==========================================
-// SUBMISSIONS MANAGEMENT
-// ==========================================
-
-/**
- * Get all contest submissions (admin view)
- * GET /api/admin/contests/:id/submissions
- */
 export const getContestSubmissions = async (req, res) => {
   try {
     const { page = 1, limit = 50, verdict, problemId, userId } = req.query;
@@ -633,10 +544,6 @@ export const getContestSubmissions = async (req, res) => {
   }
 };
 
-/**
- * Get submission code (admin only)
- * GET /api/admin/contests/:id/submissions/:submissionId/code
- */
 export const getSubmissionCode = async (req, res) => {
   try {
     const { submissionId } = req.params;
@@ -669,13 +576,6 @@ export const getSubmissionCode = async (req, res) => {
   }
 };
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
-/**
- * Calculate and store final ranks after contest ends
- */
 async function calculateFinalRanks(contestId) {
   try {
     const registrations = await ContestRegistration.find({
@@ -695,7 +595,6 @@ async function calculateFinalRanks(contestId) {
       await reg.save();
     }
 
-    // Update contest stats
     await Contest.findByIdAndUpdate(contestId, {
       "stats.participatedCount": registrations.length,
     });
@@ -706,10 +605,6 @@ async function calculateFinalRanks(contestId) {
   }
 }
 
-/**
- * Send announcement to contest participants
- * POST /api/admin/contests/:id/announce
- */
 export const sendAnnouncement = async (req, res) => {
   try {
     const { id: contestId } = req.params;

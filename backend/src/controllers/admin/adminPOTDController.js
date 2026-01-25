@@ -3,21 +3,10 @@ import PublishedPOTD from "../../models/potd/PublishedPOTD.js";
 import Question from "../../models/question/Question.js";
 import potdScheduler from "../../services/potd/potdScheduler.js";
 
-/**
- * Admin POTD Controller
- * Handles POTD scheduling operations for administrators
- */
-
-/**
- * Schedule a problem as POTD for a specific date
- * @route POST /api/admin/potd/schedule
- * @access Admin
- */
 export const schedulePOTD = async (req, res) => {
   try {
     const { problemId, scheduledDate, notes } = req.body;
 
-    // Validate required fields
     if (!problemId || !scheduledDate) {
       return res.status(400).json({
         success: false,
@@ -25,14 +14,12 @@ export const schedulePOTD = async (req, res) => {
       });
     }
 
-    // Parse and validate date
     const date = new Date(scheduledDate);
     date.setUTCHours(0, 0, 0, 0);
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    // Cannot schedule for past dates
     if (date < today) {
       return res.status(400).json({
         success: false,
@@ -40,7 +27,6 @@ export const schedulePOTD = async (req, res) => {
       });
     }
 
-    // Check if problem exists
     const problem = await Question.findById(problemId);
     if (!problem) {
       return res.status(404).json({
@@ -56,11 +42,10 @@ export const schedulePOTD = async (req, res) => {
       });
     }
 
-    // Check if date already has a POTD scheduled
     const existingSchedule = await POTDCalendar.findOne({ scheduledDate: date });
 
     if (existingSchedule) {
-      // Check if it's already published (locked)
+      
       if (existingSchedule.isPublished) {
         return res.status(400).json({
           success: false,
@@ -68,7 +53,6 @@ export const schedulePOTD = async (req, res) => {
         });
       }
 
-      // Check if it's today (also locked)
       if (date.getTime() === today.getTime()) {
         return res.status(400).json({
           success: false,
@@ -76,7 +60,6 @@ export const schedulePOTD = async (req, res) => {
         });
       }
 
-      // Update existing schedule
       existingSchedule.problemId = problemId;
       existingSchedule.scheduledBy = req.admin._id;
       existingSchedule.notes = notes || "";
@@ -89,7 +72,6 @@ export const schedulePOTD = async (req, res) => {
       });
     }
 
-    // Create new schedule
     const newSchedule = await POTDCalendar.create({
       scheduledDate: date,
       problemId,
@@ -97,9 +79,8 @@ export const schedulePOTD = async (req, res) => {
       notes: notes || "",
     });
 
-    // Auto-publish if scheduling for today
     if (date.getTime() === today.getTime()) {
-      // Publish via scheduler for consistent behavior + correct schema fields
+      
       await potdScheduler.checkAndPublishTodaysPOTD();
     }
 
@@ -120,11 +101,6 @@ export const schedulePOTD = async (req, res) => {
   }
 };
 
-/**
- * Get scheduled POTDs for a date range (calendar view)
- * @route GET /api/admin/potd/schedule
- * @access Admin
- */
 export const getScheduledPOTDs = async (req, res) => {
   try {
     const { startDate, endDate, month, year } = req.query;
@@ -132,14 +108,14 @@ export const getScheduledPOTDs = async (req, res) => {
     let start, end;
 
     if (month && year) {
-      // Get schedule for a specific month
+      
       start = new Date(Date.UTC(year, month - 1, 1));
       end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
     } else if (startDate && endDate) {
       start = new Date(startDate);
       end = new Date(endDate);
     } else {
-      // Default to current month
+      
       const now = new Date();
       start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
       end = new Date(
@@ -149,7 +125,6 @@ export const getScheduledPOTDs = async (req, res) => {
 
     const schedules = await POTDCalendar.getScheduleRange(start, end);
 
-    // Get today's date for status determination
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
@@ -161,7 +136,7 @@ export const getScheduledPOTDs = async (req, res) => {
       if (schedule.isPublished) {
         status = "published";
       } else if (scheduleDate < today) {
-        status = "missed"; // Was scheduled but never published
+        status = "missed"; 
       } else if (scheduleDate.getTime() === today.getTime()) {
         status = "today";
       } else {
@@ -201,11 +176,6 @@ export const getScheduledPOTDs = async (req, res) => {
   }
 };
 
-/**
- * Delete a scheduled POTD (only if not locked)
- * @route DELETE /api/admin/potd/schedule/:id
- * @access Admin
- */
 export const deleteScheduledPOTD = async (req, res) => {
   try {
     const { id } = req.params;
@@ -219,7 +189,6 @@ export const deleteScheduledPOTD = async (req, res) => {
       });
     }
 
-    // Check if locked
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const scheduleDate = new Date(schedule.scheduledDate);
@@ -248,11 +217,6 @@ export const deleteScheduledPOTD = async (req, res) => {
   }
 };
 
-/**
- * Get available problems for POTD selection
- * @route GET /api/admin/potd/available-problems
- * @access Admin
- */
 export const getAvailableProblems = async (req, res) => {
   try {
     const { search, difficulty, tags, page = 1, limit = 20 } = req.query;
@@ -284,7 +248,6 @@ export const getAvailableProblems = async (req, res) => {
 
     const total = await Question.countDocuments(query);
 
-    // Get dates where these problems were used as POTD
     const problemIds = problems.map((p) => p._id);
     const usageHistory = await POTDCalendar.find({
       problemId: { $in: problemIds },
@@ -329,11 +292,6 @@ export const getAvailableProblems = async (req, res) => {
   }
 };
 
-/**
- * Force publish today's POTD (emergency use)
- * @route POST /api/admin/potd/force-publish
- * @access Super Admin
- */
 export const forcePublishPOTD = async (req, res) => {
   try {
     const result = await potdScheduler.forcePublishToday();
@@ -360,11 +318,6 @@ export const forcePublishPOTD = async (req, res) => {
   }
 };
 
-/**
- * Get POTD analytics/statistics
- * @route GET /api/admin/potd/analytics
- * @access Admin
- */
 export const getPOTDAnalytics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -372,14 +325,12 @@ export const getPOTDAnalytics = async (req, res) => {
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
 
-    // Get published POTDs in range
     const potds = await PublishedPOTD.find({
       activeDate: { $gte: start, $lte: end },
     })
       .populate("problemId", "title difficulty")
       .sort({ activeDate: -1 });
 
-    // Calculate aggregate stats
     const totalPOTDs = potds.length;
     const totalAttempts = potds.reduce((sum, p) => sum + p.stats.totalAttempts, 0);
     const totalSolved = potds.reduce((sum, p) => sum + p.stats.totalSolved, 0);
@@ -387,7 +338,6 @@ export const getPOTDAnalytics = async (req, res) => {
     const averageSolveRate =
       totalAttempts > 0 ? ((totalSolved / totalAttempts) * 100).toFixed(2) : 0;
 
-    // Difficulty distribution
     const difficultyStats = {
       Easy: { count: 0, solved: 0, attempts: 0 },
       Medium: { count: 0, solved: 0, attempts: 0 },
@@ -435,11 +385,6 @@ export const getPOTDAnalytics = async (req, res) => {
   }
 };
 
-/**
- * Get scheduler status
- * @route GET /api/admin/potd/scheduler-status
- * @access Admin
- */
 export const getSchedulerStatus = async (req, res) => {
   try {
     const status = potdScheduler.getStatus();

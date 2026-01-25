@@ -1,5 +1,5 @@
-// src/components/admin/layout/AdminSidebar.jsx
-// Collapsible sidebar navigation following Arrakis Labs Dune theme
+
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const navSections = [
   {
     id: "dashboard",
-    title: null, // No section header for dashboard
+    title: null, 
     items: [{ path: "/admin", label: "Dashboard", icon: "◈", exact: true }],
   },
   {
@@ -77,7 +77,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
       }`}
       style={{ backgroundColor: "#0A0A08" }}
     >
-      {/* Collapse Toggle */}
+      {}
       <button
         onClick={onToggle}
         className="absolute -right-3 top-6 w-6 h-6 border border-[#1A1814] bg-[#0D0D0B] 
@@ -88,11 +88,11 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         {collapsed ? "›" : "‹"}
       </button>
 
-      {/* Navigation */}
+      {}
       <nav className="h-full overflow-y-auto py-4 px-2">
         {navSections.map((section) => (
           <div key={section.id} className="mb-4">
-            {/* Section Header */}
+            {}
             {section.title && !collapsed && (
               <button
                 onClick={() => toggleSection(section.id)}
@@ -111,7 +111,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
               </button>
             )}
 
-            {/* Section Items */}
+            {}
             <AnimatePresence initial={false}>
               {(expandedSections.includes(section.id) || collapsed) && (
                 <motion.div
@@ -152,7 +152,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
                           {item.label}
                         </span>
                       )}
-                      {/* Active indicator */}
+                      {}
                       {isActive(item.path, item.exact) && (
                         <span className="ml-auto w-1 h-4 bg-[#F59E0B]" />
                       )}
@@ -164,7 +164,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
           </div>
         ))}
 
-        {/* Danger Zone - At Bottom */}
+        {}
         {!collapsed && (
           <div className="mt-8 pt-4 border-t border-[#1A1814]/50">
             <span

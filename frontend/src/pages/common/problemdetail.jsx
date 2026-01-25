@@ -1,4 +1,4 @@
-// src/pages/problemdetail.jsx - Problem Detail + Code Editor Page
+
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -21,7 +21,6 @@ import { recordPOTDAttempt, solvePOTD } from "../../services/potd/potdApi";
 import { useAIFeedback, checkAIHealth } from "../../hooks/ai/useAIFeedback";
 import { useSubmission } from "../../context/SubmissionContext";
 
-// Map UI language names to Piston runtime identifiers
 const languageMap = {
   Python: "python",
   JavaScript: "javascript",
@@ -134,7 +133,6 @@ export default function ProblemDetail() {
     };
   }, [id]);
 
-  // ✅ FIXED: DO NOT REFORMAT CONSTRAINTS
   const problem = useMemo(() => {
     if (!problemRaw) return defaultProblem;
 
@@ -151,7 +149,6 @@ export default function ProblemDetail() {
       category,
       description: problemRaw.description,
 
-      // 🔥 LeetCode-style constraints (already formatted in API layer)
       constraints: Array.isArray(problemRaw.constraints)
         ? problemRaw.constraints
         : [],
@@ -214,20 +211,19 @@ export default function ProblemDetail() {
       setStatus(isAccepted ? "success" : "error");
 
       if (isSubmit) {
-        // Best-effort POTD tracking (UTC day semantics enforced server-side).
-        // We avoid sending potdId unless we have it; undefined is omitted by JSON.
+
         if (isPOTD && data?.submissionId) {
           try {
             await recordPOTDAttempt(undefined, data.submissionId);
           } catch {
-            // ignore
+            
           }
 
           if (data.status === "accepted") {
             try {
               await solvePOTD(undefined, data.submissionId);
             } catch {
-              // ignore
+              
             }
           }
         }
@@ -244,13 +240,11 @@ export default function ProblemDetail() {
           backendSubmissionId: data.submissionId || null,
         };
 
-        // Record submission in context (DOES NOT auto-trigger AI)
         const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-        // Navigate to results page where user can EXPLICITLY request AI feedback
         navigate(`/submissions/${submission.id}`);
       }
     } catch (err) {
@@ -270,19 +264,16 @@ export default function ProblemDetail() {
   const handleRun = (code, language) => runOrSubmit(code, language, false);
   const handleSubmit = (code, language) => runOrSubmit(code, language, true);
 
-  // Resizable panel state
-  const [panelWidth, setPanelWidth] = useState(50); // percentage
+  const [panelWidth, setPanelWidth] = useState(50); 
   const [isDragging, setIsDragging] = useState(false);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [previousWidth, setPreviousWidth] = useState(50);
   const containerRef = useRef(null);
 
-  // Output panel vertical resize state
-  const [outputHeight, setOutputHeight] = useState(180); // pixels
+  const [outputHeight, setOutputHeight] = useState(180); 
   const [isOutputDragging, setIsOutputDragging] = useState(false);
   const editorPanelRef = useRef(null);
 
-  // Handle resize drag
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -298,7 +289,6 @@ export default function ProblemDetail() {
       const rect = container.getBoundingClientRect();
       const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
 
-      // Clamp between 20% and 80%
       const clampedWidth = Math.min(Math.max(newWidth, 20), 80);
 
       requestAnimationFrame(() => {
@@ -314,7 +304,6 @@ export default function ProblemDetail() {
     document.body.style.userSelect = "";
   }, []);
 
-  // Attach mouse listeners for dragging
   useEffect(() => {
     if (isDragging) {
       window.addEventListener("mousemove", handleMouseMove);
@@ -326,7 +315,6 @@ export default function ProblemDetail() {
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Editor fullscreen controls
   const handleToggleFullscreen = useCallback(() => {
     if (!isEditorFullscreen) {
       setPreviousWidth(panelWidth);
@@ -342,7 +330,6 @@ export default function ProblemDetail() {
     setIsEditorFullscreen(false);
   }, [previousWidth]);
 
-  // Keyboard shortcut: Esc to exit fullscreen
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && isEditorFullscreen) {
@@ -353,7 +340,6 @@ export default function ProblemDetail() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isEditorFullscreen, handleRestoreEditor]);
 
-  // Output panel vertical resize handlers
   const handleOutputResizeStart = useCallback((e) => {
     e.preventDefault();
     setIsOutputDragging(true);
@@ -369,7 +355,6 @@ export default function ProblemDetail() {
       const rect = panel.getBoundingClientRect();
       const newHeight = rect.bottom - e.clientY;
 
-      // Clamp between 100px and 400px
       const clampedHeight = Math.min(Math.max(newHeight, 100), 400);
 
       requestAnimationFrame(() => {
@@ -385,7 +370,6 @@ export default function ProblemDetail() {
     document.body.style.userSelect = "";
   }, []);
 
-  // Attach mouse listeners for output panel dragging
   useEffect(() => {
     if (isOutputDragging) {
       window.addEventListener("mousemove", handleOutputResizeMove);
@@ -428,7 +412,7 @@ export default function ProblemDetail() {
             </button>
           </div>
 
-          {/* Problem Panel */}
+          {}
           <div
             className="overflow-auto bg-[#0A0A08] transition-all duration-200 ease-out"
             style={{
@@ -492,7 +476,7 @@ export default function ProblemDetail() {
             )}
           </div>
 
-          {/* Resizable Divider */}
+          {}
           <div
             onMouseDown={handleMouseDown}
             className={`arrakis-divider w-1 cursor-col-resize flex-shrink-0 relative group transition-colors duration-150 ${
@@ -502,11 +486,11 @@ export default function ProblemDetail() {
               display: panelWidth < 5 || panelWidth > 95 ? "none" : "block",
             }}
           >
-            {/* Drag handle indicator */}
+            {}
             <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[#F59E0B]/10" />
           </div>
 
-          {/* Editor Panel */}
+          {}
           <div
             ref={editorPanelRef}
             className="flex flex-col overflow-hidden bg-[#0A0A08] transition-all duration-200 ease-out"

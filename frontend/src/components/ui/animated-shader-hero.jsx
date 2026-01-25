@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from "react";
 
-// Default shader source
 const defaultShaderSource = `#version 300 es
 precision highp float;
 out vec4 O;
@@ -60,7 +59,6 @@ void main(void) {
   O=vec4(col,1);
 }`;
 
-// WebGL Renderer class
 class WebGLRenderer {
   constructor(canvas, scale) {
     this.canvas = canvas;
@@ -223,7 +221,6 @@ void main(){gl_Position=position;}`;
   }
 }
 
-// Pointer Handler class
 class PointerHandler {
   constructor(element, scale) {
     this.scale = scale;
@@ -293,7 +290,6 @@ class PointerHandler {
   }
 }
 
-// Reusable Shader Background Hook
 const useShaderBackground = () => {
   const canvasRef = useRef(null);
   const animationFrameRef = useRef();
@@ -356,7 +352,6 @@ const useShaderBackground = () => {
   return canvasRef;
 };
 
-// Reusable Hero Component - Dune-Inspired
 const AnimatedShaderHero = ({
   trustBadge,
   headline,
@@ -426,7 +421,7 @@ const AnimatedShaderHero = ({
         style={{ background: "#0A0A08" }}
       />
 
-      {/* Subtle gradient overlay for better text readability */}
+      {}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -435,9 +430,9 @@ const AnimatedShaderHero = ({
         }}
       />
 
-      {/* Hero Content Overlay */}
+      {}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center">
-        {/* Trust Badge */}
+        {}
         {trustBadge && (
           <div className="mb-10 animate-fade-in-down">
             <div
@@ -454,7 +449,7 @@ const AnimatedShaderHero = ({
         )}
 
         <div className="text-center space-y-8 max-w-5xl mx-auto px-6">
-          {/* Main Heading with Dune Typography */}
+          {}
           <div className="space-y-2">
             <h1
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium animate-fade-in-up animation-delay-200"
@@ -478,7 +473,7 @@ const AnimatedShaderHero = ({
             </h1>
           </div>
 
-          {/* Subtitle */}
+          {}
           <div className="max-w-2xl mx-auto animate-fade-in-up animation-delay-600">
             <p
               className="text-sm sm:text-base md:text-lg leading-relaxed"
@@ -492,7 +487,7 @@ const AnimatedShaderHero = ({
             </p>
           </div>
 
-          {/* CTA Buttons - Angular, no rounded corners */}
+          {}
           {buttons && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12 animate-fade-in-up animation-delay-800">
               {buttons.primary && (
@@ -517,7 +512,7 @@ const AnimatedShaderHero = ({
           )}
         </div>
 
-        {/* Scroll indicator */}
+        {}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-fade-in-up animation-delay-800">
           <div className="flex flex-col items-center gap-3">
             <span

@@ -1,15 +1,5 @@
 import Redis from "ioredis";
 
-/**
- * Redis Leaderboard Service
- * High-performance real-time leaderboard using Redis sorted sets
- * 
- * Architecture:
- * - Uses Redis Sorted Sets for O(log N) rank operations
- * - Composite score for multi-criteria ranking
- * - Pub/Sub for real-time updates
- */
-
 class LeaderboardService {
   constructor() {
     this.redis = null;
@@ -17,13 +7,9 @@ class LeaderboardService {
     this.isConnected = false;
   }
 
-  /**
-   * Initialize Redis connection
-   */
   async connect() {
     const redisUrl = process.env.REDIS_URL;
 
-    // Redis is optional. If not configured, don't attempt to connect/retry.
     if (!redisUrl) {
       this.isConnected = false;
       console.warn("⚠ Redis not configured (REDIS_URL missing) - leaderboard will use fallback");
@@ -43,9 +29,6 @@ class LeaderboardService {
         lazyConnect: true,
       });
 
-      // IMPORTANT: attach error listeners BEFORE connecting.
-      // ioredis will emit 'error' during connection attempts; without a listener,
-      // Node treats it as an unhandled error event and crashes/spams logs.
       const onRedisError = (label) => (err) => {
         console.error(`[Redis:${label}] Error:`, err?.message || err);
         this.isConnected = false;
@@ -72,17 +55,10 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Check if Redis is available
-   */
   isAvailable() {
     return this.isConnected && this.redis?.status === "ready";
   }
 
-  // ==========================================
-  // KEY GENERATORS
-  // ==========================================
-  
   getLeaderboardKey(contestId) {
     return `contest:${contestId}:leaderboard`;
   }
@@ -95,43 +71,19 @@ class LeaderboardService {
     return `contest:${contestId}:updates`;
   }
 
-  // ==========================================
-  // COMPOSITE SCORE CALCULATION
-  // ==========================================
-  
-  /**
-   * Calculate composite score for Redis sorted set
-   * Format: PPPPPPTTTTTT (Problems * 10^6 + inverse time)
-   * Higher problems = higher rank
-   * Same problems = lower time wins
-   * 
-   * @param {number} problemsSolved - Number of problems solved
-   * @param {number} totalTimeSeconds - Total time in seconds
-   * @param {number} penaltyMinutes - Penalty minutes
-   * @returns {number} Composite score
-   */
   calculateCompositeScore(problemsSolved, totalTimeSeconds, penaltyMinutes = 0) {
-    // Max contest duration: 12 hours = 43200 seconds
-    // Max penalty: ~1000 minutes = 60000 seconds
-    // Total max time component: ~100000 seconds
-    const MAX_TIME = 1000000; // 1 million for safety
-    
-    // Total time including penalty
+
+    const MAX_TIME = 1000000; 
+
     const totalTime = totalTimeSeconds + (penaltyMinutes * 60);
-    
-    // Invert time so lower time = higher score
+
     const timeComponent = MAX_TIME - Math.min(totalTime, MAX_TIME - 1);
-    
-    // Problems solved is primary, time is secondary
-    // Multiply problems by 10^7 to ensure it dominates
+
     const score = (problemsSolved * 10000000) + timeComponent;
     
     return score;
   }
 
-  /**
-   * Decode composite score back to components
-   */
   decodeCompositeScore(compositeScore) {
     const MAX_TIME = 1000000;
     const problemsSolved = Math.floor(compositeScore / 10000000);
@@ -141,16 +93,6 @@ class LeaderboardService {
     return { problemsSolved, totalTimeSeconds };
   }
 
-  // ==========================================
-  // LEADERBOARD OPERATIONS
-  // ==========================================
-
-  /**
-   * Update user's score in leaderboard
-   * @param {string} contestId 
-   * @param {string} userId 
-   * @param {object} data - { problemsSolved, totalTimeSeconds, penaltyMinutes }
-   */
   async updateScore(contestId, userId, data) {
     if (!this.isAvailable()) {
       console.warn("[Leaderboard] Redis not available, skipping update");
@@ -164,13 +106,11 @@ class LeaderboardService {
     const userDataKey = this.getUserDataKey(contestId, userId);
 
     try {
-      // Use pipeline for atomic operations
+      
       const pipeline = this.redis.pipeline();
-      
-      // Update sorted set score
+
       pipeline.zadd(leaderboardKey, score, userId);
-      
-      // Store user metadata
+
       pipeline.hset(userDataKey, {
         problemsSolved: problemsSolved.toString(),
         totalTimeSeconds: totalTimeSeconds.toString(),
@@ -179,13 +119,11 @@ class LeaderboardService {
         updatedAt: Date.now().toString(),
       });
 
-      // Set expiration (24 hours after contest)
       pipeline.expire(leaderboardKey, 86400);
       pipeline.expire(userDataKey, 86400);
 
       await pipeline.exec();
 
-      // Publish update for real-time subscribers
       await this.publishUpdate(contestId, {
         type: "score_update",
         userId,
@@ -201,15 +139,12 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Get user's current rank (1-indexed)
-   */
   async getUserRank(contestId, userId) {
     if (!this.isAvailable()) return null;
 
     try {
       const leaderboardKey = this.getLeaderboardKey(contestId);
-      // ZREVRANK returns 0-indexed rank (highest score = rank 0)
+      
       const rank = await this.redis.zrevrank(leaderboardKey, userId);
       return rank !== null ? rank + 1 : null;
     } catch (error) {
@@ -218,12 +153,6 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Get leaderboard page
-   * @param {string} contestId 
-   * @param {number} page - 1-indexed page number
-   * @param {number} pageSize - Number of entries per page
-   */
   async getLeaderboard(contestId, page = 1, pageSize = 50) {
     if (!this.isAvailable()) {
       return { entries: [], total: 0, page, pageSize };
@@ -234,7 +163,6 @@ class LeaderboardService {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
-      // Get entries with scores (highest first)
       const results = await this.redis.zrevrange(
         leaderboardKey,
         start,
@@ -242,10 +170,8 @@ class LeaderboardService {
         "WITHSCORES"
       );
 
-      // Get total count
       const total = await this.redis.zcard(leaderboardKey);
 
-      // Parse results (alternating userId, score)
       const entries = [];
       for (let i = 0; i < results.length; i += 2) {
         const userId = results[i];
@@ -268,16 +194,10 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Get top N entries
-   */
   async getTopN(contestId, n = 10) {
     return this.getLeaderboard(contestId, 1, n);
   }
 
-  /**
-   * Get user's position with surrounding entries
-   */
   async getUserContext(contestId, userId, surrounding = 5) {
     if (!this.isAvailable()) return null;
 
@@ -318,24 +238,15 @@ class LeaderboardService {
     }
   }
 
-  // ==========================================
-  // PROBLEM-SPECIFIC TRACKING
-  // ==========================================
-
-  /**
-   * Record that a user solved a problem
-   */
   async recordSolve(contestId, userId, problemId, solveTimeSeconds) {
     if (!this.isAvailable()) return false;
 
     try {
       const problemKey = `contest:${contestId}:problem:${problemId}:solves`;
-      
-      // Store solve with time as score
+
       await this.redis.zadd(problemKey, solveTimeSeconds, userId);
       await this.redis.expire(problemKey, 86400);
 
-      // Publish solve event
       await this.publishUpdate(contestId, {
         type: "problem_solved",
         userId,
@@ -350,9 +261,6 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Get solve count for a problem
-   */
   async getProblemSolveCount(contestId, problemId) {
     if (!this.isAvailable()) return 0;
 
@@ -364,13 +272,6 @@ class LeaderboardService {
     }
   }
 
-  // ==========================================
-  // REAL-TIME UPDATES (Pub/Sub)
-  // ==========================================
-
-  /**
-   * Publish update to contest channel
-   */
   async publishUpdate(contestId, data) {
     if (!this.isAvailable()) return false;
 
@@ -387,12 +288,6 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Subscribe to contest updates
-   * @param {string} contestId 
-   * @param {function} callback - Called with parsed message
-   * @returns {function} Unsubscribe function
-   */
   subscribeToContest(contestId, callback) {
     if (!this.subscriber) {
       console.warn("[Leaderboard] Subscriber not available");
@@ -414,26 +309,18 @@ class LeaderboardService {
     this.subscriber.subscribe(channel);
     this.subscriber.on("message", messageHandler);
 
-    // Return unsubscribe function
     return () => {
       this.subscriber.unsubscribe(channel);
       this.subscriber.off("message", messageHandler);
     };
   }
 
-  // ==========================================
-  // CONTEST LIFECYCLE
-  // ==========================================
-
-  /**
-   * Initialize leaderboard for a contest
-   */
   async initializeContest(contestId, durationMinutes) {
     if (!this.isAvailable()) return false;
 
     try {
       const leaderboardKey = this.getLeaderboardKey(contestId);
-      const expireSeconds = (durationMinutes + 1440) * 60; // Duration + 24 hours
+      const expireSeconds = (durationMinutes + 1440) * 60; 
       
       await this.redis.expire(leaderboardKey, expireSeconds);
       
@@ -445,19 +332,15 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Freeze leaderboard (copy to frozen key)
-   */
   async freezeLeaderboard(contestId) {
     if (!this.isAvailable()) return false;
 
     try {
       const leaderboardKey = this.getLeaderboardKey(contestId);
       const frozenKey = `${leaderboardKey}:frozen`;
-      
-      // Copy current leaderboard
+
       await this.redis.copy(leaderboardKey, frozenKey, "REPLACE");
-      await this.redis.expire(frozenKey, 86400 * 7); // Keep for 7 days
+      await this.redis.expire(frozenKey, 86400 * 7); 
       
       console.log(`[Leaderboard] Frozen contest ${contestId}`);
       return true;
@@ -467,9 +350,6 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Get final leaderboard (for export/display)
-   */
   async getFinalLeaderboard(contestId) {
     if (!this.isAvailable()) return [];
 
@@ -498,9 +378,6 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Clean up contest data
-   */
   async cleanupContest(contestId) {
     if (!this.isAvailable()) return false;
 
@@ -520,9 +397,6 @@ class LeaderboardService {
     }
   }
 
-  /**
-   * Disconnect from Redis
-   */
   async disconnect() {
     try {
       if (this.subscriber) {
@@ -539,7 +413,6 @@ class LeaderboardService {
   }
 }
 
-// Singleton instance
 const leaderboardService = new LeaderboardService();
 
 export default leaderboardService;

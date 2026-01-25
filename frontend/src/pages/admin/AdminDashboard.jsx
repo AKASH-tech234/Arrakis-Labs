@@ -98,13 +98,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {}
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <p className="text-gray-400 mt-1">Welcome back, {admin?.email}</p>
       </div>
 
-      {/* Quick Actions */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           to="/admin/upload"
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
         </Link>
       </div>
 
-      {/* Stats Cards */}
+      {}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
           <div
@@ -189,9 +189,9 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Breakdowns */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Difficulty Breakdown */}
+        {}
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Questions by Difficulty</h3>
           <div className="space-y-3">
@@ -214,7 +214,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Submission Status Breakdown */}
+        {}
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Submissions by Status</h3>
           <div className="space-y-3">

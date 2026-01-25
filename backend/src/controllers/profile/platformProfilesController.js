@@ -37,7 +37,7 @@ function inferHandleFromProfileUrl({ platform, profileUrl }) {
 
   if (platform === "leetcode") {
     if (!host.includes("leetcode.com")) return null;
-    // /u/<handle>/ or /<handle>/
+    
     const parts = pathname.split("/").filter(Boolean);
     if (parts[0] === "u" && parts[1]) return parts[1];
     if (parts[0]) return parts[0];
@@ -160,8 +160,6 @@ export async function addPlatformProfile(req, res) {
       syncStatus: "pending",
     });
 
-    // Create an initial empty PlatformStats record for this platform.
-    // This is NOT dummy data — it is a real empty record that will be populated later.
     await PlatformStats.findOneAndUpdate(
       { userId, platform },
       {
@@ -189,8 +187,6 @@ export async function addPlatformProfile(req, res) {
       { upsert: true, new: true }
     );
 
-    // Trigger sync immediately after adding profile (non-blocking)
-    // This fetches real data from external platforms
     syncPlatformProfile(doc._id).catch((err) => {
       console.error(`[Platform Sync Error] ${platform}/${handle}:`, err.message);
     });
@@ -220,7 +216,6 @@ export async function updatePlatformProfile(req, res) {
       validateProfileUrlForPlatform({ platform: existing.platform, profileUrl: nextUrl });
       patch.profileUrl = nextUrl;
 
-      // If handle isn't explicitly provided, infer from URL.
       if (req.body?.handle === undefined) {
         const inferred = inferHandleFromProfileUrl({ platform: existing.platform, profileUrl: nextUrl });
         if (inferred) patch.handle = inferred;

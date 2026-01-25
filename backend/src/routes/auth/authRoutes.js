@@ -13,13 +13,11 @@ import { protect } from "../../middleware/auth/authMiddleware.js";
 
 const router = express.Router();
 
-// Public routes
 router.post("/signup", signup);
 router.post("/signin", signin);
 router.post("/google", googleAuth);
 router.post("/github", githubAuth);
 
-// Protected routes
 router.post("/logout", protect, logout);
 router.get("/me", protect, getMe);
 router.put("/update-profile", protect, updateProfile);

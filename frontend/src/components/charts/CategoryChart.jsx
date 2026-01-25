@@ -1,5 +1,4 @@
-// src/components/charts/CategoryChart.jsx
-// Simple bar chart showing performance by category
+
 
 export default function CategoryChart({ categories }) {
   const data = Array.isArray(categories) ? categories : [];
@@ -15,7 +14,7 @@ export default function CategoryChart({ categories }) {
 
         return (
           <div key={category.name} className="space-y-1">
-            {/* Category Label */}
+            {}
             <div className="flex items-center justify-between">
               <span
                 className="text-[#78716C] text-xs uppercase tracking-wider"
@@ -31,7 +30,7 @@ export default function CategoryChart({ categories }) {
               </span>
             </div>
 
-            {/* Progress Bar */}
+            {}
             <div
               className="h-1 bg-[#121210] relative"
               style={{ width: `${barWidth}%` }}

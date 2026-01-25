@@ -3,10 +3,6 @@ import Question from "../../models/question/Question.js";
 import AuditLog from "../../models/admin/AuditLog.js";
 import { jsonToStdin, outputToStdout } from "../../utils/stdinConverter.js";
 
-/**
- * Get test cases for a question
- * GET /api/admin/questions/:id/test-cases
- */
 export const getTestCases = async (req, res) => {
   try {
     const question = await Question.findOne({
@@ -26,7 +22,6 @@ export const getTestCases = async (req, res) => {
       isActive: true,
     }).sort({ order: 1 });
 
-    // Return full details for admin (including hidden test case content)
     res.status(200).json({
       success: true,
       data: testCases.map(tc => ({
@@ -51,10 +46,6 @@ export const getTestCases = async (req, res) => {
   }
 };
 
-/**
- * Create test case for a question
- * POST /api/admin/questions/:id/test-cases
- */
 export const createTestCase = async (req, res) => {
   try {
     const question = await Question.findOne({
@@ -80,15 +71,14 @@ export const createTestCase = async (req, res) => {
       memoryLimit = 256,
     } = req.body;
 
-    // Support both JSON input and raw stdin formats
     let finalStdin, finalExpectedStdout;
 
     if (stdin !== undefined) {
-      // Raw stdin format
+      
       finalStdin = stdin;
       finalExpectedStdout = expectedStdout;
     } else if (input !== undefined) {
-      // JSON format - convert
+      
       finalStdin = jsonToStdin(input);
       finalExpectedStdout = outputToStdout(expectedOutput);
     } else {
@@ -105,7 +95,6 @@ export const createTestCase = async (req, res) => {
       });
     }
 
-    // Get current max order
     const maxOrder = await TestCase.findOne({ questionId: req.params.id })
       .sort({ order: -1 })
       .select("order");
@@ -121,7 +110,6 @@ export const createTestCase = async (req, res) => {
       order: (maxOrder?.order || 0) + 1,
     });
 
-    // Audit log (don't log actual test case content)
     await AuditLog.log({
       adminId: req.admin._id,
       action: "CREATE_TEST_CASE",
@@ -156,10 +144,6 @@ export const createTestCase = async (req, res) => {
   }
 };
 
-/**
- * Update test case
- * PUT /api/admin/test-cases/:id
- */
 export const updateTestCase = async (req, res) => {
   try {
     const testCase = await TestCase.findOne({
@@ -186,7 +170,6 @@ export const updateTestCase = async (req, res) => {
       order,
     } = req.body;
 
-    // Update stdin/stdout
     if (stdin !== undefined) {
       testCase.stdin = stdin;
     } else if (input !== undefined) {
@@ -199,7 +182,6 @@ export const updateTestCase = async (req, res) => {
       testCase.expectedStdout = outputToStdout(expectedOutput);
     }
 
-    // Update other fields
     if (isHidden !== undefined) testCase.isHidden = isHidden;
     if (label !== undefined) testCase.label = label;
     if (timeLimit !== undefined) testCase.timeLimit = timeLimit;
@@ -208,7 +190,6 @@ export const updateTestCase = async (req, res) => {
 
     await testCase.save();
 
-    // Audit log
     await AuditLog.log({
       adminId: req.admin._id,
       action: "UPDATE_TEST_CASE",
@@ -239,10 +220,6 @@ export const updateTestCase = async (req, res) => {
   }
 };
 
-/**
- * Delete test case
- * DELETE /api/admin/test-cases/:id
- */
 export const deleteTestCase = async (req, res) => {
   try {
     const testCase = await TestCase.findOne({
@@ -257,11 +234,9 @@ export const deleteTestCase = async (req, res) => {
       });
     }
 
-    // Soft delete
     testCase.isActive = false;
     await testCase.save();
 
-    // Audit log
     await AuditLog.log({
       adminId: req.admin._id,
       action: "DELETE_TEST_CASE",
@@ -285,10 +260,6 @@ export const deleteTestCase = async (req, res) => {
   }
 };
 
-/**
- * Toggle test case hidden status
- * PATCH /api/admin/test-cases/:id/toggle-hidden
- */
 export const toggleHidden = async (req, res) => {
   try {
     const testCase = await TestCase.findOne({
@@ -306,7 +277,6 @@ export const toggleHidden = async (req, res) => {
     testCase.isHidden = !testCase.isHidden;
     await testCase.save();
 
-    // Audit log
     await AuditLog.log({
       adminId: req.admin._id,
       action: "TOGGLE_HIDDEN",

@@ -1,5 +1,5 @@
-// src/pages/admin/problems/ProblemList.jsx
-// Problem management list page - Arrakis Labs Dune theme
+
+
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,7 +10,6 @@ import StatusBadge, {
 import Pagination from "../../../components/admin/common/Pagination";
 import ConfirmModal from "../../../components/admin/common/ConfirmModal";
 
-// Mock data - replace with API calls
 const mockProblems = [
   {
     id: "p001",
@@ -170,7 +169,6 @@ export default function ProblemList() {
 
   const itemsPerPage = 10;
 
-  // Filter data
   const filteredProblems = useMemo(() => {
     return mockProblems.filter((p) => {
       const matchesSearch =
@@ -184,7 +182,6 @@ export default function ProblemList() {
     });
   }, [searchQuery, statusFilter, difficultyFilter]);
 
-  // Paginate
   const paginatedProblems = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredProblems.slice(start, start + itemsPerPage);
@@ -197,7 +194,7 @@ export default function ProblemList() {
   };
 
   const handleDelete = () => {
-    // API call to delete
+    
     console.log("Deleting problem:", deleteModal.problem?.slug);
     setDeleteModal({ open: false, problem: null });
   };
@@ -209,7 +206,7 @@ export default function ProblemList() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {}
       <div className="flex items-center justify-between">
         <div>
           <h1
@@ -236,12 +233,12 @@ export default function ProblemList() {
         </Link>
       </div>
 
-      {/* Filters */}
+      {}
       <div
         className="flex flex-wrap items-center gap-4 p-4 border border-[#1A1814]"
         style={{ backgroundColor: "#0D0D0B" }}
       >
-        {/* Search */}
+        {}
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
@@ -255,7 +252,7 @@ export default function ProblemList() {
           />
         </div>
 
-        {/* Status Filter */}
+        {}
         <div className="flex items-center gap-2">
           <span
             className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
@@ -278,7 +275,7 @@ export default function ProblemList() {
           </select>
         </div>
 
-        {/* Difficulty Filter */}
+        {}
         <div className="flex items-center gap-2">
           <span
             className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
@@ -301,7 +298,7 @@ export default function ProblemList() {
         </div>
       </div>
 
-      {/* Bulk Actions Bar */}
+      {}
       {selectedIds.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -335,7 +332,7 @@ export default function ProblemList() {
         </motion.div>
       )}
 
-      {/* Data Table */}
+      {}
       <DataTable
         columns={columns}
         data={paginatedProblems}
@@ -346,7 +343,7 @@ export default function ProblemList() {
         emptyMessage="No problems match your filters"
       />
 
-      {/* Pagination */}
+      {}
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
@@ -357,7 +354,7 @@ export default function ProblemList() {
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      {}
       <ConfirmModal
         isOpen={deleteModal.open}
         onClose={() => setDeleteModal({ open: false, problem: null })}

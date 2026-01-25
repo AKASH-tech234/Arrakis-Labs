@@ -1,11 +1,9 @@
-// Arrakis Labs - Features Section
-// Dune-inspired neural constellation with floating nodes and animated connections
+
 
 import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import ArrakisLogo from "./ArrakisLogo";
 
-// Node data - DO NOT RENAME these labels
 const sourceNodes = [
   { id: "memory", label: "Memory", x: 15, y: 12 },
   { id: "adapt", label: "Adapt", x: 38, y: 8 },
@@ -25,7 +23,6 @@ const outputNodes = [
   { id: "feedback", label: "Real-time Feedback", x: 68, y: 72 },
 ];
 
-// Floating animation for nodes
 const floatAnimation = (index) => ({
   y: [0, -6, 0, 4, 0],
   x: [0, 2, -1.5, 1, 0],
@@ -37,7 +34,6 @@ const floatAnimation = (index) => ({
   },
 });
 
-// Glow pulse animation
 const glowPulse = {
   opacity: [0.4, 0.7, 0.4],
   scale: [1, 1.15, 1],
@@ -48,7 +44,6 @@ const glowPulse = {
   },
 };
 
-// Connection path generator
 const getConnectionPath = (from, to, curveOffset = 0) => {
   const midY = (from.y + to.y) / 2 + curveOffset;
   return `M ${from.x} ${from.y} Q ${from.x + (to.x - from.x) * 0.3} ${midY}, ${
@@ -56,7 +51,6 @@ const getConnectionPath = (from, to, curveOffset = 0) => {
   } ${to.y}`;
 };
 
-// Energy particle component
 const EnergyParticle = ({ pathData, delay, duration, index }) => {
   return (
     <motion.circle
@@ -83,7 +77,6 @@ const EnergyParticle = ({ pathData, delay, duration, index }) => {
   );
 };
 
-// Feature Node component
 const FeatureNode = ({ node, type, index, isInView }) => {
   const sizes = {
     source: { glow: 8, inner: 1.5, fontSize: 2.2 },
@@ -99,7 +92,7 @@ const FeatureNode = ({ node, type, index, isInView }) => {
       animate={isInView ? { opacity: 1, scale: 1 } : {}}
       transition={{ duration: 0.8, delay: index * 0.12 + 0.3 }}
     >
-      {/* Outer glow */}
+      {}
       <motion.circle
         cx={node.x}
         cy={node.y}
@@ -109,7 +102,7 @@ const FeatureNode = ({ node, type, index, isInView }) => {
         style={{ filter: "blur(3px)" }}
       />
 
-      {/* Inner core ring */}
+      {}
       <motion.circle
         cx={node.x}
         cy={node.y}
@@ -120,7 +113,7 @@ const FeatureNode = ({ node, type, index, isInView }) => {
         animate={floatAnimation(index)}
       />
 
-      {/* Center dot */}
+      {}
       <motion.circle
         cx={node.x}
         cy={node.y}
@@ -137,7 +130,7 @@ const FeatureNode = ({ node, type, index, isInView }) => {
         }}
       />
 
-      {/* Label */}
+      {}
       <motion.text
         x={node.x}
         y={
@@ -162,7 +155,6 @@ const FeatureNode = ({ node, type, index, isInView }) => {
   );
 };
 
-// Central node concentric rings
 const CentralNodeRings = ({ node, isInView }) => {
   return (
     <g>
@@ -196,13 +188,12 @@ const CentralNodeRings = ({ node, isInView }) => {
   );
 };
 
-// Connection line with energy flow
 const ConnectionLine = ({ from, to, index, isInView, curveOffset = 0 }) => {
   const pathData = getConnectionPath(from, to, curveOffset);
 
   return (
     <g>
-      {/* Base connection line */}
+      {}
       <motion.path
         d={pathData}
         fill="none"
@@ -214,7 +205,7 @@ const ConnectionLine = ({ from, to, index, isInView, curveOffset = 0 }) => {
         transition={{ duration: 1.5, delay: index * 0.1, ease: "easeOut" }}
       />
 
-      {/* Energy particles */}
+      {}
       {isInView && (
         <>
           <EnergyParticle
@@ -251,7 +242,7 @@ export default function Features() {
         `,
       }}
     >
-      {/* Section Header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -283,7 +274,7 @@ export default function Features() {
         </p>
       </motion.div>
 
-      {/* Neural Constellation SVG */}
+      {}
       <div className="relative max-w-4xl mx-auto px-6">
         <svg
           viewBox="0 0 100 95"
@@ -292,7 +283,7 @@ export default function Features() {
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
-            {/* Amber gradient */}
+            {}
             <linearGradient
               id="amber-gradient"
               x1="0%"
@@ -305,14 +296,14 @@ export default function Features() {
               <stop offset="100%" stopColor="#F59E0B" />
             </linearGradient>
 
-            {/* Node glow gradient */}
+            {}
             <radialGradient id="node-glow-gradient" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.5" />
               <stop offset="50%" stopColor="#D97706" stopOpacity="0.2" />
               <stop offset="100%" stopColor="transparent" stopOpacity="0" />
             </radialGradient>
 
-            {/* Particle glow filter */}
+            {}
             <filter
               id="particle-glow"
               x="-100%"
@@ -328,7 +319,7 @@ export default function Features() {
             </filter>
           </defs>
 
-          {/* Connection lines: source → central */}
+          {}
           {sourceNodes.map((node, index) => (
             <ConnectionLine
               key={`src-${node.id}`}
@@ -340,7 +331,7 @@ export default function Features() {
             />
           ))}
 
-          {/* Connection lines: central → output */}
+          {}
           {outputNodes.map((node, index) => (
             <ConnectionLine
               key={`out-${node.id}`}
@@ -352,7 +343,7 @@ export default function Features() {
             />
           ))}
 
-          {/* Connection lines: output → logo anchor */}
+          {}
           <ConnectionLine
             from={outputNodes[0]}
             to={{ x: 50, y: 88 }}
@@ -368,10 +359,10 @@ export default function Features() {
             curveOffset={-2}
           />
 
-          {/* Central node expanding rings */}
+          {}
           <CentralNodeRings node={centralNode} isInView={isInView} />
 
-          {/* Source nodes */}
+          {}
           {sourceNodes.map((node, index) => (
             <FeatureNode
               key={node.id}
@@ -382,7 +373,7 @@ export default function Features() {
             />
           ))}
 
-          {/* Central node */}
+          {}
           <FeatureNode
             node={centralNode}
             type="central"
@@ -390,7 +381,7 @@ export default function Features() {
             isInView={isInView}
           />
 
-          {/* Output nodes */}
+          {}
           {outputNodes.map((node, index) => (
             <FeatureNode
               key={node.id}
@@ -402,7 +393,7 @@ export default function Features() {
           ))}
         </svg>
 
-        {/* Logo anchor at bottom */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}

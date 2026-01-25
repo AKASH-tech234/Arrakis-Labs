@@ -26,7 +26,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
     weightedAvgRating: { type: Number, default: null },
     bestPlatform: { type: String, default: null },
 
-    consistencyScore: { type: Number, default: 0 }, // 0-100
+    consistencyScore: { type: Number, default: 0 }, 
 
     difficulty: {
       easy: { type: difficultySchema, default: () => ({}) },
@@ -34,7 +34,6 @@ const aggregatedStatsSchema = new mongoose.Schema(
       hard: { type: difficultySchema, default: () => ({}) },
     },
 
-    // skill -> { solved, accuracy, strengthLevel }
     skills: {
       type: Map,
       of: new mongoose.Schema(
@@ -57,7 +56,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            weekStart: { type: String, required: true }, // YYYY-MM-DD
+            weekStart: { type: String, required: true }, 
             solved: { type: Number, default: 0 },
           },
           { _id: false }
@@ -70,7 +69,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            month: { type: String, required: true }, // YYYY-MM
+            month: { type: String, required: true }, 
             solved: { type: Number, default: 0 },
           },
           { _id: false }
@@ -79,12 +78,11 @@ const aggregatedStatsSchema = new mongoose.Schema(
       default: [],
     },
 
-    // Daily activity (submission counts) for heatmaps/graphs
     dailyActivity: {
       type: [
         new mongoose.Schema(
           {
-            date: { type: String, required: true }, // YYYY-MM-DD
+            date: { type: String, required: true }, 
             count: { type: Number, default: 0 },
           },
           { _id: false }

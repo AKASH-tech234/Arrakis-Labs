@@ -3,24 +3,13 @@ import jwt from "jsonwebtoken";
 import cookie from "cookie";
 import leaderboardService from "./leaderboardService.js";
 
-/**
- * WebSocket Server for Real-time Contest Updates
- * 
- * Features:
- * - Contest-specific rooms
- * - Real-time leaderboard updates
- * - Submission status updates
- * - Contest timer synchronization
- * - Heartbeat for connection health
- */
-
 class ContestWebSocketServer {
   constructor() {
     this.wss = null;
-    this.rooms = new Map(); // contestId -> Set of WebSocket clients
-    this.clientData = new WeakMap(); // WebSocket -> { userId, contestId, etc }
+    this.rooms = new Map(); 
+    this.clientData = new WeakMap(); 
     this.heartbeatInterval = null;
-    this.redisContestSubscriptions = new Map(); // contestId -> unsubscribe()
+    this.redisContestSubscriptions = new Map(); 
   }
 
   ensureRedisSubscription(contestId) {
@@ -30,7 +19,7 @@ class ContestWebSocketServer {
       contestId,
       async (event) => {
         try {
-          // Re-fetch to guarantee clients always receive a full, correct ordering.
+          
           const leaderboard = await leaderboardService.getTopN(contestId, 50);
           this.notifyLeaderboardUpdate(contestId, {
             entries: leaderboard.entries,
@@ -64,15 +53,11 @@ class ContestWebSocketServer {
     this.redisContestSubscriptions.delete(contestId);
   }
 
-  /**
-   * Initialize WebSocket server
-   * @param {http.Server} server - HTTP server instance
-   */
   initialize(server) {
     this.wss = new WebSocketServer({ 
       server,
       path: "/ws/contest",
-      // Verify origin for security
+      
       verifyClient: ({ origin, req }, callback) => {
         const allowedOrigins = [
           process.env.FRONTEND_URL,
@@ -80,7 +65,6 @@ class ContestWebSocketServer {
           "http://localhost:5174",
         ].filter(Boolean);
 
-        // Allow connections without origin (non-browser clients)
         if (!origin) {
           callback(true);
           return;
@@ -95,14 +79,12 @@ class ContestWebSocketServer {
       },
     });
 
-    // Prevent process crashes due to unhandled 'error' events.
     this.wss.on("error", (error) => {
       console.error("[WS] Server error:", error?.message || error);
     });
 
     this.wss.on("connection", this.handleConnection.bind(this));
-    
-    // Start heartbeat
+
     this.heartbeatInterval = setInterval(() => {
       this.wss.clients.forEach((ws) => {
         const data = this.clientData.get(ws);
@@ -118,11 +100,8 @@ class ContestWebSocketServer {
     console.log("✓ Contest WebSocket Server initialized");
   }
 
-  /**
-   * Handle new WebSocket connection
-   */
   handleConnection(ws, req) {
-    // Initialize client data
+    
     this.clientData.set(ws, {
       isAlive: true,
       userId: null,
@@ -131,33 +110,27 @@ class ContestWebSocketServer {
       connectedAt: Date.now(),
     });
 
-    // Try auto-auth from cookie
     this.tryAuthFromCookie(ws, req);
 
-    // Handle pong (heartbeat response)
     ws.on("pong", () => {
       const data = this.clientData.get(ws);
       if (data) data.isAlive = true;
     });
 
-    // Handle messages
     ws.on("message", (message) => {
       this.handleMessage(ws, message);
     });
 
-    // Handle close
     ws.on("close", () => {
       this.removeFromRoom(ws);
       this.clientData.delete(ws);
     });
 
-    // Handle error
     ws.on("error", (error) => {
       console.error("[WS] Client error:", error.message);
       this.removeFromRoom(ws);
     });
 
-    // Send connection acknowledgment
     this.send(ws, {
       type: "connected",
       message: "Connected to contest server",
@@ -165,9 +138,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Handle incoming message
-   */
   async handleMessage(ws, rawMessage) {
     try {
       const message = JSON.parse(rawMessage.toString());
@@ -201,9 +171,6 @@ class ContestWebSocketServer {
     }
   }
 
-  /**
-   * Handle authentication - supports both explicit token and cookie-based auth
-   */
   async handleAuthenticate(ws, payload) {
     const { token } = payload || {};
     
@@ -228,16 +195,13 @@ class ContestWebSocketServer {
     }
   }
 
-  /**
-   * Try to auto-authenticate from cookie on connection
-   */
   tryAuthFromCookie(ws, req) {
     try {
       const cookieHeader = req.headers.cookie;
       if (!cookieHeader) return false;
 
       const cookies = cookie.parse(cookieHeader);
-      // Try userToken first, then legacy token name
+      
       const token = cookies.userToken || cookies.token;
       if (!token) return false;
 
@@ -259,9 +223,6 @@ class ContestWebSocketServer {
     }
   }
 
-  /**
-   * Handle joining a contest room
-   */
   async handleJoinContest(ws, payload) {
     const { contestId } = payload || {};
     const data = this.clientData.get(ws);
@@ -271,22 +232,18 @@ class ContestWebSocketServer {
       return;
     }
 
-    // Remove from previous room if any
     if (data.contestId) {
       this.removeFromRoom(ws);
     }
 
-    // Add to new room
     if (!this.rooms.has(contestId)) {
       this.rooms.set(contestId, new Set());
     }
     this.rooms.get(contestId).add(ws);
     data.contestId = contestId;
 
-    // Bridge Redis Pub/Sub updates into the contest WebSocket room.
     this.ensureRedisSubscription(contestId);
 
-    // Send confirmation with initial leaderboard
     const leaderboard = await leaderboardService.getTopN(contestId, 20);
     
     this.send(ws, {
@@ -296,24 +253,17 @@ class ContestWebSocketServer {
       leaderboard: leaderboard.entries,
     });
 
-    // Broadcast participant count update
     this.broadcastToContest(contestId, {
       type: "participant_count",
       count: this.rooms.get(contestId).size,
     }, ws);
   }
 
-  /**
-   * Handle leaving a contest room
-   */
   handleLeaveContest(ws) {
     this.removeFromRoom(ws);
     this.send(ws, { type: "left_contest" });
   }
 
-  /**
-   * Handle leaderboard request
-   */
   async handleGetLeaderboard(ws, payload) {
     const data = this.clientData.get(ws);
     const { page = 1, pageSize = 50 } = payload || {};
@@ -335,9 +285,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Handle time sync request
-   */
   handleGetTime(ws) {
     this.send(ws, {
       type: "server_time",
@@ -345,9 +292,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Remove client from their current room
-   */
   removeFromRoom(ws) {
     const data = this.clientData.get(ws);
     if (!data?.contestId) return;
@@ -361,7 +305,7 @@ class ContestWebSocketServer {
         this.rooms.delete(contestId);
         this.cleanupRedisSubscription(contestId);
       } else {
-        // Broadcast updated count
+        
         this.broadcastToContest(contestId, {
           type: "participant_count",
           count: room.size,
@@ -371,18 +315,12 @@ class ContestWebSocketServer {
     data.contestId = null;
   }
 
-  /**
-   * Send message to a client
-   */
   send(ws, data) {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(data));
     }
   }
 
-  /**
-   * Broadcast to all clients in a contest room
-   */
   broadcastToContest(contestId, data, exclude = null) {
     const room = this.rooms.get(contestId);
     if (!room) return;
@@ -395,9 +333,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Broadcast to all connected clients
-   */
   broadcast(data) {
     const message = JSON.stringify(data);
     this.wss.clients.forEach((client) => {
@@ -407,13 +342,6 @@ class ContestWebSocketServer {
     });
   }
 
-  // ==========================================
-  // PUBLIC METHODS FOR EXTERNAL USE
-  // ==========================================
-
-  /**
-   * Notify leaderboard update
-   */
   notifyLeaderboardUpdate(contestId, update) {
     this.broadcastToContest(contestId, {
       type: "leaderboard_update",
@@ -422,14 +350,10 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Notify submission result
-   */
   notifySubmissionResult(contestId, userId, result) {
     const room = this.rooms.get(contestId);
     if (!room) return;
 
-    // Find user's socket
     room.forEach((client) => {
       const data = this.clientData.get(client);
       if (data?.userId === userId) {
@@ -441,7 +365,6 @@ class ContestWebSocketServer {
       }
     });
 
-    // Broadcast general update (without user-specific data)
     if (result.verdict === "accepted") {
       this.broadcastToContest(contestId, {
         type: "solve_notification",
@@ -452,9 +375,6 @@ class ContestWebSocketServer {
     }
   }
 
-  /**
-   * Notify contest status change
-   */
   notifyContestStatus(contestId, status, data = {}) {
     this.broadcastToContest(contestId, {
       type: "contest_status",
@@ -464,9 +384,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Notify contest start
-   */
   notifyContestStart(contestId, endTime) {
     this.broadcastToContest(contestId, {
       type: "contest_started",
@@ -475,9 +392,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Notify contest end
-   */
   notifyContestEnd(contestId) {
     this.broadcastToContest(contestId, {
       type: "contest_ended",
@@ -485,9 +399,6 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Send announcement to contest
-   */
   sendAnnouncement(contestId, message, priority = "normal") {
     this.broadcastToContest(contestId, {
       type: "announcement",
@@ -497,17 +408,11 @@ class ContestWebSocketServer {
     });
   }
 
-  /**
-   * Get online participant count for a contest
-   */
   getOnlineCount(contestId) {
     const room = this.rooms.get(contestId);
     return room ? room.size : 0;
   }
 
-  /**
-   * Clean up and close server
-   */
   close() {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
@@ -519,7 +424,6 @@ class ContestWebSocketServer {
   }
 }
 
-// Singleton instance
 const wsServer = new ContestWebSocketServer();
 
 export default wsServer;

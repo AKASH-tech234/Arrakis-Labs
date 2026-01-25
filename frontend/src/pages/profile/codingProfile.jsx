@@ -1,4 +1,4 @@
-// src/pages/codingProfile.jsx - Coding Profile Page
+
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
@@ -130,8 +130,7 @@ export default function CodingProfile() {
       const data = await getCodingProfileSummary();
 
       if (import.meta.env.DEV) {
-        // Temporary verification logging
-        // eslint-disable-next-line no-console
+
         console.log("[CodingProfile] /profile/coding-summary ->", data);
       }
 
@@ -145,7 +144,7 @@ export default function CodingProfile() {
 
   useEffect(() => {
     reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, []);
 
   const connectedPlatforms = useMemo(() => {
@@ -241,17 +240,17 @@ export default function CodingProfile() {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#0A0A08" }}>
-      {/* Background Effects */}
+      {}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Top right glow */}
+        {}
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl"></div>
-        {/* Bottom left glow */}
+        {}
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#92400E]/5 rounded-full blur-3xl"></div>
-        {/* Center accent */}
+        {}
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-[#D97706]/3 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Grid Pattern Overlay */}
+      {}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-5"
         style={{

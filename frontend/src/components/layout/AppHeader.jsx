@@ -1,5 +1,5 @@
-// src/components/layout/AppHeader.jsx
-// Persistent header for authenticated pages (Problems, Profile)
+
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +23,7 @@ export default function AppHeader() {
       style={{ backgroundColor: "#0A0A08" }}
     >
       <nav className="max-w-7xl mx-auto px-6 lg:px-12 h-14 flex items-center justify-between">
-        {/* Brand */}
+        {}
         <Link to="/problems" className="flex items-center gap-3">
           <div className="flex flex-col">
             <span
@@ -35,7 +35,7 @@ export default function AppHeader() {
           </div>
         </Link>
 
-        {/* Center Navigation */}
+        {}
         <div className="flex items-center gap-8">
           <Link
             to="/problems"
@@ -61,7 +61,7 @@ export default function AppHeader() {
           </Link>
         </div>
 
-        {/* Profile Section */}
+        {}
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
@@ -83,7 +83,7 @@ export default function AppHeader() {
             </div>
           </button>
 
-          {/* Profile Dropdown */}
+          {}
           <AnimatePresence>
             {profileOpen && (
               <motion.div

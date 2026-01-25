@@ -14,7 +14,6 @@ const MAX_CODE_SIZE = 65536;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 
-// Language mapping for Piston
 const LANGUAGE_MAP = {
   javascript: { language: "javascript", version: "18.15.0" },
   python: { language: "python", version: "3.10.0" },
@@ -34,9 +33,6 @@ function getContestLookup(contestId) {
     : { slug: contestId };
 }
 
-/**
- * Execute code with Piston API (with retry)
- */
 async function executePiston(code, language, stdin, timeLimit = 2000) {
   const langConfig = LANGUAGE_MAP[language.toLowerCase()];
 
@@ -72,7 +68,6 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
 
       const { run, compile } = response.data;
 
-      // Check for compile error
       if (compile && compile.stderr) {
         return {
           stdout: "",
@@ -114,17 +109,13 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
   throw new Error("Code execution service temporarily unavailable");
 }
 
-/**
- * Validate contest submission eligibility
- */
 async function validateContestSubmission(contest, registration, problemId, userId) {
   const now = new Date();
 
-  // Check contest is active
   if (contest.status !== "live" && contest.status !== "scheduled") {
-    // Check if it should be live
+    
     if (now >= contest.startTime && now < contest.endTime) {
-      // Auto-update status
+      
       contest.status = "live";
       await contest.save();
     } else if (now >= contest.endTime) {
@@ -134,22 +125,18 @@ async function validateContestSubmission(contest, registration, problemId, userI
     }
   }
 
-  // Check if within time bounds
   if (now >= contest.endTime) {
     return { valid: false, error: "Contest has ended" };
   }
 
-  // Check registration status
   if (!registration || registration.status === "disqualified") {
     return { valid: false, error: "You are not registered or have been disqualified" };
   }
 
-  // Check if user has joined
   if (registration.status === "registered" && !registration.joinedAt) {
     return { valid: false, error: "Please join the contest first" };
   }
 
-  // Check if problem is in contest
   const problemInContest = contest.problems.find(
     (p) => p.problem.toString() === problemId.toString()
   );
@@ -160,17 +147,12 @@ async function validateContestSubmission(contest, registration, problemId, userI
   return { valid: true, problemData: problemInContest };
 }
 
-/**
- * CONTEST RUN - Test with visible test cases only
- * POST /api/contest/:contestId/run
- */
 export const contestRun = async (req, res) => {
   try {
     const { contestId } = req.params;
     const { problemId, code, language } = req.body;
     const userId = req.user?._id;
 
-    // Input validation
     if (!problemId || !code || !language) {
       return res.status(400).json({
         success: false,
@@ -192,7 +174,6 @@ export const contestRun = async (req, res) => {
       });
     }
 
-    // Get contest and registration (contestId can be id or slug)
     const contest = await Contest.findOne({
       ...getContestLookup(contestId),
       isActive: true,
@@ -207,7 +188,6 @@ export const contestRun = async (req, res) => {
       user: userId,
     });
 
-    // Validate submission
     const validation = await validateContestSubmission(
       contest,
       registration,
@@ -219,7 +199,6 @@ export const contestRun = async (req, res) => {
       return res.status(400).json({ success: false, message: validation.error });
     }
 
-    // Get VISIBLE test cases only
     const visibleTestCases = await TestCase.find({
       questionId: problemId,
       isActive: true,
@@ -233,7 +212,6 @@ export const contestRun = async (req, res) => {
       });
     }
 
-    // Execute against visible test cases
     const results = [];
 
     for (const tc of visibleTestCases) {
@@ -289,17 +267,12 @@ export const contestRun = async (req, res) => {
   }
 };
 
-/**
- * CONTEST SUBMIT - Test with ALL test cases (including hidden)
- * POST /api/contest/:contestId/submit
- */
 export const contestSubmit = async (req, res) => {
   try {
     const { contestId } = req.params;
     const { problemId, code, language } = req.body;
     const userId = req.user?._id;
 
-    // Input validation
     if (!problemId || !code || !language) {
       return res.status(400).json({
         success: false,
@@ -321,7 +294,6 @@ export const contestSubmit = async (req, res) => {
       });
     }
 
-    // Get contest and registration (contestId can be id or slug)
     const contest = await Contest.findOne({
       ...getContestLookup(contestId),
       isActive: true,
@@ -336,7 +308,6 @@ export const contestSubmit = async (req, res) => {
       user: userId,
     });
 
-    // Validate submission
     const validation = await validateContestSubmission(
       contest,
       registration,
@@ -350,11 +321,9 @@ export const contestSubmit = async (req, res) => {
 
     const { problemData } = validation;
 
-    // Calculate time from start
     const effectiveStart = registration.effectiveStartTime || contest.startTime;
     const timeFromStart = Math.floor((Date.now() - effectiveStart.getTime()) / 1000);
 
-    // Create submission record (pending)
     const submission = await ContestSubmission.create({
       contest: contest._id,
       user: userId,
@@ -370,7 +339,6 @@ export const contestSubmit = async (req, res) => {
       userAgent: req.get("user-agent"),
     });
 
-    // Get ALL test cases (visible + hidden)
     const allTestCases = await TestCase.find({
       questionId: problemId,
       isActive: true,
@@ -386,7 +354,6 @@ export const contestSubmit = async (req, res) => {
       });
     }
 
-    // Execute against all test cases
     let testsPassed = 0;
     let firstFailedTest = null;
     let verdict = "accepted";
@@ -447,7 +414,6 @@ export const contestSubmit = async (req, res) => {
       }
     }
 
-    // Update submission
     submission.verdict = verdict;
     submission.testsPassed = testsPassed;
     submission.testsTotal = allTestCases.length;
@@ -458,7 +424,6 @@ export const contestSubmit = async (req, res) => {
     submission.score = verdict === "accepted" ? problemData.points : 0;
     await submission.save();
 
-    // Update registration with attempt
     const isAccepted = verdict === "accepted";
     await registration.recordAttempt(
       problemId,
@@ -469,7 +434,6 @@ export const contestSubmit = async (req, res) => {
       contest.penaltyRules.wrongSubmissionPenalty
     );
 
-    // Update Redis leaderboard
     if (isAccepted) {
       const contestKeyId = contest._id.toString();
 
@@ -479,7 +443,6 @@ export const contestSubmit = async (req, res) => {
         penaltyMinutes: registration.totalPenalty,
       });
 
-      // Record solve for problem stats
       await leaderboardService.recordSolve(
         contestKeyId,
         userId.toString(),
@@ -487,13 +450,11 @@ export const contestSubmit = async (req, res) => {
         timeFromStart
       );
 
-      // Get solve count for notification
       const solveCount = await leaderboardService.getProblemSolveCount(
         contestKeyId,
         problemId.toString()
       );
 
-      // Send WebSocket notification
         wsServer.notifySubmissionResult(contest._id.toString(), userId.toString(), {
         submissionId: submission._id,
         problemLabel: problemData.label,
@@ -503,7 +464,7 @@ export const contestSubmit = async (req, res) => {
         solveCount,
       });
     } else {
-      // Notify user of result
+      
       wsServer.notifySubmissionResult(contest._id.toString(), userId.toString(), {
         submissionId: submission._id,
         problemLabel: problemData.label,
@@ -514,7 +475,6 @@ export const contestSubmit = async (req, res) => {
       });
     }
 
-    // Response (safe, no hidden data)
     res.status(200).json({
       success: true,
       data: submission.toUserResponse(true),
@@ -525,10 +485,6 @@ export const contestSubmit = async (req, res) => {
   }
 };
 
-/**
- * Get user's submissions for a contest problem
- * GET /api/contest/:contestId/submissions
- */
 export const getContestSubmissions = async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -565,10 +521,6 @@ export const getContestSubmissions = async (req, res) => {
   }
 };
 
-/**
- * Get specific submission details
- * GET /api/contest/:contestId/submissions/:submissionId
- */
 export const getSubmissionDetails = async (req, res) => {
   try {
     const { contestId, submissionId } = req.params;
@@ -593,7 +545,6 @@ export const getSubmissionDetails = async (req, res) => {
       return res.status(404).json({ success: false, message: "Submission not found" });
     }
 
-    // Check if contest is still active
     const isContestActive = contest && new Date() < new Date(contest.endTime);
 
     res.status(200).json({

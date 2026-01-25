@@ -1,5 +1,5 @@
-// src/components/admin/common/Drawer.jsx
-// Slide-out drawer panel - Arrakis Labs Dune theme
+
+
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,12 +9,12 @@ export default function Drawer({
   title,
   subtitle,
   children,
-  width = "md", // 'sm' | 'md' | 'lg' | 'xl' | 'full'
-  side = "right", // 'left' | 'right'
+  width = "md", 
+  side = "right", 
   showOverlay = true,
   footer,
 }) {
-  // Handle escape key
+  
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -23,7 +23,6 @@ export default function Drawer({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -60,7 +59,7 @@ export default function Drawer({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {}
           {showOverlay && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -71,7 +70,7 @@ export default function Drawer({
             />
           )}
 
-          {/* Drawer Panel */}
+          {}
           <motion.div
             initial={slideVariants[side].initial}
             animate={slideVariants[side].animate}
@@ -82,7 +81,7 @@ export default function Drawer({
                         border-[#1A1814] z-50 flex flex-col`}
             style={{ backgroundColor: "#0A0A08" }}
           >
-            {/* Header */}
+            {}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#1A1814]">
               <div>
                 <h2
@@ -109,10 +108,10 @@ export default function Drawer({
               </button>
             </div>
 
-            {/* Content */}
+            {}
             <div className="flex-1 overflow-y-auto p-6">{children}</div>
 
-            {/* Footer */}
+            {}
             {footer && (
               <div className="px-6 py-4 border-t border-[#1A1814]">
                 {footer}

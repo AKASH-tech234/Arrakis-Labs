@@ -1,4 +1,4 @@
-// src/pages/problem.jsx - Problem Library Page
+
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
@@ -75,7 +75,7 @@ export default function ProblemLibrary() {
 
       <main className="pt-14">
         <div className="max-w-5xl mx-auto px-6 lg:px-12 py-12">
-          {/* Page Header */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -96,7 +96,7 @@ export default function ProblemLibrary() {
             </p>
           </motion.div>
 
-          {/* Filters */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,7 +111,7 @@ export default function ProblemLibrary() {
             />
           </motion.div>
 
-          {/* POTD Banner */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -120,7 +120,7 @@ export default function ProblemLibrary() {
             <POTDBanner />
           </motion.div>
 
-          {/* Problem List */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

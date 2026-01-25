@@ -23,17 +23,12 @@ import {
   getSchedulerStatus,
 } from "../../services/potd/potdApi";
 
-/**
- * Admin POTD Scheduler
- * Calendar-based interface for scheduling Problem of the Day
- */
 export default function AdminPOTDScheduler() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [schedulerStatus, setSchedulerStatus] = useState(null);
 
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [problems, setProblems] = useState([]);
@@ -132,14 +127,13 @@ export default function AdminPOTDScheduler() {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    // Check if date is in the past
     if (clickedDate < today) {
-      return; // Cannot schedule for past dates
+      return; 
     }
 
     const existingSchedule = scheduleMap[day];
     if (existingSchedule?.isLocked) {
-      return; // Cannot modify locked schedules
+      return; 
     }
 
     setSelectedDate(clickedDate);
@@ -162,8 +156,7 @@ export default function AdminPOTDScheduler() {
       if (response.success) {
         setShowModal(false);
         fetchSchedules();
-        
-        // Check if this was scheduled for today
+
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
         const schedDate = new Date(selectedDate);
@@ -326,7 +319,7 @@ export default function AdminPOTDScheduler() {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -338,7 +331,7 @@ export default function AdminPOTDScheduler() {
           </p>
         </div>
 
-        {/* Scheduler Status */}
+        {}
         <div className="flex items-center gap-4">
           {schedulerStatus && (
             <div className="text-sm text-gray-400">
@@ -368,7 +361,7 @@ export default function AdminPOTDScheduler() {
         </div>
       </div>
 
-      {/* Legend */}
+      {}
       <div className="flex items-center gap-6 mb-6 text-xs">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-500/30 border border-green-500/50"></div>
@@ -392,7 +385,7 @@ export default function AdminPOTDScheduler() {
         </div>
       </div>
 
-      {/* Calendar Navigation */}
+      {}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrevMonth}
@@ -411,14 +404,14 @@ export default function AdminPOTDScheduler() {
         </button>
       </div>
 
-      {/* Calendar Grid */}
+      {}
       {loading ? (
         <div className="h-96 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
         </div>
       ) : (
         <>
-          {/* Day Headers */}
+          {}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {dayNames.map((day) => (
               <div
@@ -430,7 +423,7 @@ export default function AdminPOTDScheduler() {
             ))}
           </div>
 
-          {/* Calendar Days */}
+          {}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: firstDayOfMonth }).map((_, index) => (
               <div key={`empty-${index}`} className="min-h-[100px]"></div>
@@ -442,11 +435,11 @@ export default function AdminPOTDScheduler() {
         </>
       )}
 
-      {/* Schedule Modal */}
+      {}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
+            {}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">
                 Schedule POTD for{" "}
@@ -465,7 +458,7 @@ export default function AdminPOTDScheduler() {
               </button>
             </div>
 
-            {/* Search & Filter */}
+            {}
             <div className="flex gap-3 mb-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -489,7 +482,7 @@ export default function AdminPOTDScheduler() {
               </select>
             </div>
 
-            {/* Problems List */}
+            {}
             <div className="flex-1 overflow-y-auto space-y-2 mb-4">
               {problemsLoading ? (
                 <div className="flex items-center justify-center py-8">
@@ -543,7 +536,7 @@ export default function AdminPOTDScheduler() {
               )}
             </div>
 
-            {/* Notes */}
+            {}
             <div className="mb-4">
               <label className="block text-sm text-gray-400 mb-1">
                 Notes (optional)
@@ -557,7 +550,7 @@ export default function AdminPOTDScheduler() {
               />
             </div>
 
-            {/* Actions */}
+            {}
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowModal(false)}

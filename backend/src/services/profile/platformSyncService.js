@@ -78,7 +78,7 @@ async function fetchLeetCode(handle) {
         daily.push({ date: isoDate(dt), solved: Number(solved) || 0 });
       }
     } catch {
-      // ignore
+      
     }
   }
 
@@ -123,7 +123,6 @@ async function fetchCodeforces(handle) {
   const rating = info.rating ?? null;
   const maxRating = info.maxRating ?? null;
 
-  // lightweight submission history (recent only) to compute last 30 days accepted
   const statusRes = await axios.get(
     `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=2000`,
     { timeout: 15000 }
@@ -154,7 +153,6 @@ async function fetchCodeforces(handle) {
 
   const difficulty = emptyDifficulty();
 
-  // map CF rating to difficulty buckets (approx)
   for (const s of acceptedSubs) {
     const r = s.problem?.rating;
     if (!r) continue;
@@ -163,7 +161,6 @@ async function fetchCodeforces(handle) {
     else difficulty.hard.solved += 1;
   }
 
-  // Build daily activity from accepted submissions
   const dailyMap = new Map();
   for (const s of acceptedSubs) {
     if (!s.creationTimeSeconds) continue;
@@ -206,14 +203,12 @@ export async function syncPlatformProfile(platformProfileId) {
   try {
     let fetchedData = null;
 
-    // Fetch real data from external platforms
     if (profile.platform === "leetcode") {
       fetchedData = await fetchLeetCode(profile.handle);
     } else if (profile.platform === "codeforces") {
       fetchedData = await fetchCodeforces(profile.handle);
     }
 
-    // If we have fetched data, update PlatformStats
     if (fetchedData) {
       const updateData = {
         totalSolved: fetchedData.totalSolved || 0,
@@ -253,7 +248,6 @@ export async function syncPlatformProfile(platformProfileId) {
       };
     }
 
-    // For unsupported platforms, create empty record if not exists
     let existing = await PlatformStats.findOne({
       userId: profile.userId,
       platform: profile.platform,

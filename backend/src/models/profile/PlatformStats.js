@@ -47,7 +47,6 @@ const platformStatsSchema = new mongoose.Schema(
       hard: { type: difficultySchema, default: () => ({}) },
     },
 
-    // skill -> { solved, attempted, accuracy, strengthLevel }
     skills: {
       type: Map,
       of: new mongoose.Schema(
@@ -66,12 +65,11 @@ const platformStatsSchema = new mongoose.Schema(
       default: () => new Map(),
     },
 
-    // Optional per-day solved series for trend charts (usually accepted unique problems)
     daily: {
       type: [
         new mongoose.Schema(
           {
-            date: { type: String, required: true }, // YYYY-MM-DD
+            date: { type: String, required: true }, 
             solved: { type: Number, default: 0 },
           },
           { _id: false }

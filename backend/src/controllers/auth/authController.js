@@ -4,18 +4,15 @@ import crypto from "crypto";
 import axios from "axios";
 import { OAuth2Client } from "google-auth-library";
 
-// Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRY || "7d",
   });
 };
 
-// Send Token Response
 const sendTokenResponse = (user, statusCode, res, message = "Success") => {
   const token = generateToken(user._id);
 
-  // Cookie options - use unique path to avoid conflicts with adminToken
   const cookieOptions = {
     expires: new Date(
       Date.now() + (process.env.JWT_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
@@ -40,14 +37,10 @@ const sendTokenResponse = (user, statusCode, res, message = "Success") => {
   });
 };
 
-// @desc    Register/Signup User
-// @route   POST /api/auth/signup
-// @access  Public
 export const signup = async (req, res) => {
   try {
     const { name, email, password, passwordConfirm } = req.body;
 
-    // Validation
     if (!name || !email || !password || !passwordConfirm) {
       return res.status(400).json({
         success: false,
@@ -55,7 +48,6 @@ export const signup = async (req, res) => {
       });
     }
 
-    // Check if passwords match
     if (password !== passwordConfirm) {
       return res.status(400).json({
         success: false,
@@ -63,7 +55,6 @@ export const signup = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
@@ -72,7 +63,6 @@ export const signup = async (req, res) => {
       });
     }
 
-    // Create new user
     const user = await User.create({
       name,
       email,
@@ -80,7 +70,6 @@ export const signup = async (req, res) => {
       isEmailVerified: false,
     });
 
-    // Send token response
     sendTokenResponse(user, 201, res, "User registered successfully");
   } catch (error) {
     console.error(`[Auth Error] Signup: ${error.message}`);
@@ -91,14 +80,10 @@ export const signup = async (req, res) => {
   }
 };
 
-// @desc    Login User
-// @route   POST /api/auth/signin
-// @access  Public
 export const signin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -106,7 +91,6 @@ export const signin = async (req, res) => {
       });
     }
 
-    // Find user and select password field
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -116,7 +100,6 @@ export const signin = async (req, res) => {
       });
     }
 
-    // Check if user is active
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
@@ -124,7 +107,6 @@ export const signin = async (req, res) => {
       });
     }
 
-    // Compare passwords
     const isPasswordMatch = await user.matchPassword(password);
 
     if (!isPasswordMatch) {
@@ -134,11 +116,9 @@ export const signin = async (req, res) => {
       });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Send token response
     sendTokenResponse(user, 200, res, "Logged in successfully");
   } catch (error) {
     console.error(`[Auth Error] Signin: ${error.message}`);
@@ -149,9 +129,6 @@ export const signin = async (req, res) => {
   }
 };
 
-// @desc    Google OAuth Callback
-// @route   POST /api/auth/google
-// @access  Public
 export const googleAuth = async (req, res) => {
   try {
     const { token } = req.body;
@@ -163,7 +140,6 @@ export const googleAuth = async (req, res) => {
       });
     }
 
-    // Verify token with Google using OAuth2Client
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     
     let payload;
@@ -190,21 +166,19 @@ export const googleAuth = async (req, res) => {
       });
     }
 
-    // Check if user exists with googleId
     let user = await User.findOne({ googleId: id });
 
     if (user) {
-      // User exists, update last login
+      
       user.lastLogin = new Date();
       await user.save();
       return sendTokenResponse(user, 200, res, "Logged in with Google");
     }
 
-    // Check if user exists with email
     user = await User.findOne({ email });
 
     if (user) {
-      // Link Google account to existing user
+      
       user.googleId = id;
       user.profileImage = picture || user.profileImage;
       user.lastLogin = new Date();
@@ -212,7 +186,6 @@ export const googleAuth = async (req, res) => {
       return sendTokenResponse(user, 200, res, "Google account linked");
     }
 
-    // Create new user
     user = await User.create({
       name: name || email.split("@")[0],
       email,
@@ -232,9 +205,6 @@ export const googleAuth = async (req, res) => {
   }
 };
 
-// @desc    GitHub OAuth Callback
-// @route   POST /api/auth/github
-// @access  Public
 export const githubAuth = async (req, res) => {
   try {
     const { token } = req.body;
@@ -246,7 +216,6 @@ export const githubAuth = async (req, res) => {
       });
     }
 
-    // Verify token with GitHub
     const userResponse = await axios.get("https://api.github.com/user", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -255,7 +224,6 @@ export const githubAuth = async (req, res) => {
 
     const { id, login, name, avatar_url } = userResponse.data;
 
-    // Get email from GitHub
     const emailResponse = await axios.get("https://api.github.com/user/emails", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -271,7 +239,6 @@ export const githubAuth = async (req, res) => {
       });
     }
 
-    // Check if user exists with githubId
     let user = await User.findOne({ githubId: id });
 
     if (user) {
@@ -280,7 +247,6 @@ export const githubAuth = async (req, res) => {
       return sendTokenResponse(user, 200, res, "Logged in with GitHub");
     }
 
-    // Check if user exists with email
     user = await User.findOne({ email: primaryEmail });
 
     if (user) {
@@ -291,7 +257,6 @@ export const githubAuth = async (req, res) => {
       return sendTokenResponse(user, 200, res, "GitHub account linked");
     }
 
-    // Create new user
     user = await User.create({
       name: name || login,
       email: primaryEmail,
@@ -311,12 +276,9 @@ export const githubAuth = async (req, res) => {
   }
 };
 
-// @desc    Logout User
-// @route   POST /api/auth/logout
-// @access  Private
 export const logout = async (req, res) => {
   try {
-    // Clear userToken cookie with matching options
+    
     res.clearCookie("userToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -337,9 +299,6 @@ export const logout = async (req, res) => {
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user?.id);
@@ -372,9 +331,6 @@ export const getMe = async (req, res) => {
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/auth/update-profile
-// @access  Private
 export const updateProfile = async (req, res) => {
   try {
     const { name, profileImage, preferences } = req.body;
@@ -416,9 +372,6 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Change password
-// @route   PUT /api/auth/change-password
-// @access  Private
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, passwordConfirm } = req.body;
@@ -446,7 +399,6 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // Verify current password
     const isMatch = await user.matchPassword(currentPassword);
 
     if (!isMatch) {

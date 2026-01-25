@@ -1,4 +1,4 @@
-// src/pages/Landing.jsx
+
 import Header from "../../components/layout/Header";
 import Hero from "../../components/landing/HERO3D";
 import Features from "../../components/ui/features-section";

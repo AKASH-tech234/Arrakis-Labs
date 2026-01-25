@@ -1,13 +1,8 @@
 import mongoose from "mongoose";
 
-/**
- * Contest Submission Schema
- * Tracks submissions made during contests with enhanced security
- * Extends base submission with contest-specific fields
- */
 const contestSubmissionSchema = new mongoose.Schema(
   {
-    // Core references
+    
     contest: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Contest",
@@ -32,13 +27,11 @@ const contestSubmissionSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Problem label in contest (A, B, C...)
     problemLabel: {
       type: String,
       required: true,
     },
 
-    // Code submitted (encrypted at rest in production)
     code: {
       type: String,
       required: [true, "Code is required"],
@@ -49,20 +42,18 @@ const contestSubmissionSchema = new mongoose.Schema(
       required: [true, "Language is required"],
       enum: ["python", "javascript", "java", "cpp", "c", "typescript", "go", "rust"],
     },
-    
-    // Submission timing
+
     submittedAt: {
       type: Date,
       default: Date.now,
       index: true,
     },
-    // Time from user's effective start (seconds)
+    
     timeFromStart: {
       type: Number,
       required: true,
     },
 
-    // Verdict
     verdict: {
       type: String,
       enum: [
@@ -80,7 +71,6 @@ const contestSubmissionSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Test results (detailed for admin, summary for user)
     testsPassed: {
       type: Number,
       default: 0,
@@ -89,7 +79,7 @@ const contestSubmissionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // For partial scoring
+    
     score: {
       type: Number,
       default: 0,
@@ -99,17 +89,15 @@ const contestSubmissionSchema = new mongoose.Schema(
       default: 100,
     },
 
-    // Execution metrics
     executionTime: {
-      type: Number, // Max execution time in ms
+      type: Number, 
       default: 0,
     },
     memoryUsed: {
-      type: Number, // Max memory in KB
+      type: Number, 
       default: 0,
     },
 
-    // Error information (sanitized - no test case data)
     errorType: {
       type: String,
       default: null,
@@ -119,24 +107,22 @@ const contestSubmissionSchema = new mongoose.Schema(
       default: null,
       maxlength: 1000,
     },
-    // First failed test number (1-indexed, no details)
+    
     firstFailedTest: {
       type: Number,
       default: null,
     },
 
-    // Detailed test results (NEVER sent to frontend during contest)
     testResults: [
       {
         testIndex: Number,
         passed: Boolean,
         executionTime: Number,
         memoryUsed: Number,
-        // NO input/output stored here - reference test case if needed
+        
       },
     ],
 
-    // Anti-cheat flags
     flags: {
       possiblePlagiarism: { type: Boolean, default: false },
       similarSubmissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "ContestSubmission" }],
@@ -145,7 +131,6 @@ const contestSubmissionSchema = new mongoose.Schema(
       reviewNotes: { type: String, default: "" },
     },
 
-    // IP and fingerprint for security
     clientIP: {
       type: String,
       default: null,
@@ -160,18 +145,15 @@ const contestSubmissionSchema = new mongoose.Schema(
   }
 );
 
-// Compound indexes for efficient queries
 contestSubmissionSchema.index({ contest: 1, user: 1, problem: 1, submittedAt: -1 });
 contestSubmissionSchema.index({ contest: 1, problem: 1, verdict: 1 });
 contestSubmissionSchema.index({ contest: 1, verdict: 1, submittedAt: 1 });
 contestSubmissionSchema.index({ user: 1, contest: 1, submittedAt: -1 });
 
-// Virtual: Is this an accepted submission?
 contestSubmissionSchema.virtual("isAccepted").get(function () {
   return this.verdict === "accepted";
 });
 
-// Method: Safe response for user (no hidden test data)
 contestSubmissionSchema.methods.toUserResponse = function (isContestActive = true) {
   const response = {
     id: this._id,
@@ -184,13 +166,12 @@ contestSubmissionSchema.methods.toUserResponse = function (isContestActive = tru
     memoryUsed: this.memoryUsed,
   };
 
-  // During contest: minimal info
   if (isContestActive) {
     if (this.verdict === "accepted") {
       response.testsPassed = this.testsTotal;
       response.testsTotal = this.testsTotal;
     } else if (this.verdict !== "pending" && this.verdict !== "judging") {
-      // Show which test failed (number only)
+      
       response.firstFailedTest = this.firstFailedTest;
       response.testsPassed = this.testsPassed;
       response.testsTotal = this.testsTotal;
@@ -199,7 +180,7 @@ contestSubmissionSchema.methods.toUserResponse = function (isContestActive = tru
       response.errorMessage = this.errorMessage;
     }
   } else {
-    // After contest: can show more details
+    
     response.testsPassed = this.testsPassed;
     response.testsTotal = this.testsTotal;
     response.code = this.code;
@@ -209,7 +190,6 @@ contestSubmissionSchema.methods.toUserResponse = function (isContestActive = tru
   return response;
 };
 
-// Static: Get user's submissions for a contest problem
 contestSubmissionSchema.statics.getUserSubmissionsForProblem = function (
   contestId,
   userId,
@@ -226,7 +206,6 @@ contestSubmissionSchema.statics.getUserSubmissionsForProblem = function (
     .select("-testResults -code -clientIP -userAgent -flags");
 };
 
-// Static: Get all submissions for a contest (admin)
 contestSubmissionSchema.statics.getContestSubmissions = function (
   contestId,
   options = {}
@@ -247,7 +226,6 @@ contestSubmissionSchema.statics.getContestSubmissions = function (
     .select("-testResults");
 };
 
-// Static: Count submissions per verdict for contest
 contestSubmissionSchema.statics.getVerdictStats = async function (contestId) {
   return this.aggregate([
     { $match: { contest: new mongoose.Types.ObjectId(contestId) } },

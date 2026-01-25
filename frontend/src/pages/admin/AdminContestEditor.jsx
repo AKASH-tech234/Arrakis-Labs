@@ -2,13 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import adminContestApi from '../../services/admin/adminContestApi';
 
-/**
- * Admin Contest Editor Page
- * - Create or edit a contest
- * - Problem selection
- * - Scoring and penalty configuration
- */
-
 const EMPTY_CONTEST = {
   title: '',
   description: '',
@@ -42,7 +35,7 @@ function ProblemSelector({ selected, onChange }) {
     
     try {
       setLoading(true);
-      // Using existing question API
+      
       const response = await fetch(`/api/questions?search=${query}&limit=20`);
       const data = await response.json();
       setProblems(data.questions || []);
@@ -61,7 +54,7 @@ function ProblemSelector({ selected, onChange }) {
   const addProblem = (problem) => {
     if (selected.find((p) => p.questionId === problem._id)) return;
     
-    const label = String.fromCharCode(65 + selected.length); // A, B, C...
+    const label = String.fromCharCode(65 + selected.length); 
     onChange([
       ...selected,
       {
@@ -78,7 +71,7 @@ function ProblemSelector({ selected, onChange }) {
 
   const removeProblem = (index) => {
     const updated = selected.filter((_, i) => i !== index);
-    // Re-label
+    
     onChange(updated.map((p, i) => ({ ...p, label: String.fromCharCode(65 + i) })));
   };
 
@@ -94,7 +87,7 @@ function ProblemSelector({ selected, onChange }) {
         Problems
       </label>
 
-      {/* Search */}
+      {}
       <div className="relative">
         <input
           type="text"
@@ -104,7 +97,7 @@ function ProblemSelector({ selected, onChange }) {
           className="w-full bg-gray-700 text-white px-3 py-2 rounded"
         />
         
-        {/* Search Results */}
+        {}
         {problems.length > 0 && (
           <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded shadow-lg max-h-60 overflow-y-auto">
             {problems.map((problem) => (
@@ -132,7 +125,7 @@ function ProblemSelector({ selected, onChange }) {
         )}
       </div>
 
-      {/* Selected Problems */}
+      {}
       {selected.length > 0 ? (
         <div className="space-y-2">
           {selected.map((problem, index) => (
@@ -189,7 +182,6 @@ export default function AdminContestEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // Format datetime for input
   const formatDateTimeLocal = (date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -243,8 +235,7 @@ export default function AdminContestEditor() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
+
     if (!contest.title.trim()) {
       setError('Title is required');
       return;
@@ -310,7 +301,7 @@ export default function AdminContestEditor() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
+        {}
         <div className="bg-gray-800 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-medium text-white mb-4">Basic Information</h2>
           
@@ -427,7 +418,7 @@ export default function AdminContestEditor() {
           </div>
         </div>
 
-        {/* Scoring Rules */}
+        {}
         <div className="bg-gray-800 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-medium text-white mb-4">Scoring Rules</h2>
 
@@ -474,7 +465,7 @@ export default function AdminContestEditor() {
           </label>
         </div>
 
-        {/* Penalty Rules */}
+        {}
         <div className="bg-gray-800 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-medium text-white mb-4">Penalty Rules</h2>
 
@@ -520,7 +511,7 @@ export default function AdminContestEditor() {
           </label>
         </div>
 
-        {/* Problems */}
+        {}
         <div className="bg-gray-800 rounded-lg p-6">
           <ProblemSelector
             selected={contest.problems}
@@ -528,7 +519,7 @@ export default function AdminContestEditor() {
           />
         </div>
 
-        {/* Actions */}
+        {}
         <div className="flex justify-end gap-4">
           <button
             type="button"

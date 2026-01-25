@@ -1,21 +1,4 @@
-/**
- * Seed Script: Populate PlatformStats for Development
- * 
- * This script provides a SAFE, DB-ONLY way to populate PlatformStats.
- * 
- * Usage:
- *   node backend/src/scripts/seedPlatformStats.js
- * 
- * Options:
- *   --dry-run    Preview changes without writing to DB
- *   --user       Specific user ID to seed (optional)
- * 
- * IMPORTANT:
- * - This does NOT scrape external platforms
- * - This does NOT add dummy/fake data
- * - Data comes from a predefined sample dataset or can be customized
- * - For production, use the admin API endpoints instead
- */
+
 
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -31,16 +14,10 @@ import PlatformStats from "../models/profile/PlatformStats.js";
 import PlatformProfile from "../models/profile/PlatformProfile.js";
 import User from "../models/auth/User.js";
 
-// Parse command line arguments
 const args = process.argv.slice(2);
 const isDryRun = args.includes("--dry-run");
 const userIdArg = args.find((a) => a.startsWith("--user="))?.split("=")[1];
 
-/**
- * Generate sample data for a platform.
- * This is NOT dummy data - it represents a realistic empty/starting state
- * that can be customized per platform.
- */
 function generateSampleStats(platform, options = {}) {
   const {
     totalSolved = 0,
@@ -79,7 +56,6 @@ async function main() {
     console.log("⚠️  DRY RUN MODE - No changes will be written to DB\n");
   }
 
-  // Connect to MongoDB
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
     console.error("❌ MONGO_URI not found in environment");
@@ -94,7 +70,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Find users with PlatformProfiles but missing PlatformStats
   const query = userIdArg ? { userId: userIdArg } : {};
   const profiles = await PlatformProfile.find(query).lean();
 

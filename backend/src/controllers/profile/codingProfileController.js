@@ -36,7 +36,6 @@ function toHeatmapSeries({ internalDailyActivity, externalDailySeriesByPlatform 
     }
   }
 
-  // Keep a stable 365-day window ending today.
   const today = new Date();
   const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   start.setUTCDate(start.getUTCDate() - 364);
@@ -60,7 +59,7 @@ function pickRating(stats) {
 
 function toDailyCountSeries(stats) {
   const daily = Array.isArray(stats?.daily) ? stats.daily : [];
-  // PlatformStats.daily stores { date, solved }
+  
   return daily
     .filter((d) => d?.date)
     .map((d) => ({ date: d.date, count: d.solved || 0 }));
@@ -76,7 +75,6 @@ export async function deletePlatformProfile(req, res) {
       return res.status(404).json({ success: false, message: "Platform profile not found" });
     }
 
-    // Optionally remove stats as well for that platform.
     await PlatformStats.deleteOne({ userId, platform: deleted.platform });
 
     return res.json({ success: true });
@@ -106,7 +104,6 @@ export async function getCodingProfileSummary(req, res) {
   try {
     const userId = req.user._id;
 
-    // Ensure internal aggregation exists/updated. This uses DB only.
     const agg = await computeAggregatedStats(userId);
 
     const user = await User.findById(userId).lean();
@@ -156,7 +153,6 @@ export async function getCodingProfileSummary(req, res) {
       activity: Array.isArray(agg?.dailyActivity) ? agg.dailyActivity.slice(-365) : [],
     };
 
-    // Include all platforms in totals (even those with 0 solved)
     const combinedPlatformsForTotals = [internal, ...platforms]
       .map((p) => ({ platform: p.platform, stats: p.stats }))
       .filter((p) => p.stats);
@@ -171,7 +167,6 @@ export async function getCodingProfileSummary(req, res) {
       .filter((r) => Number.isFinite(r));
     const bestRating = ratings.length ? Math.max(...ratings) : null;
 
-    // Include all platforms in contributions (even those with 0 solved)
     const contributions = [internal, ...platforms]
       .filter((p) => p.stats)
       .map((p) => ({

@@ -6,14 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useContestTimer } from '../../hooks/contest/useContestTimer';
 import useContestWebSocket from '../../hooks/contest/useContestWebSocket';
 
-/**
- * Contest Problem Page
- * - Problem description
- * - Code editor (Monaco)
- * - Run/Submit with results
- * - Submission history
- */
-
 const LANGUAGES = [
   { id: 'python', name: 'Python 3', extension: 'py' },
   { id: 'javascript', name: 'JavaScript', extension: 'js' },
@@ -75,7 +67,7 @@ function TestCasePanel({ testCases, results, isRunning }) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Tabs */}
+      {}
       <div className="flex border-b border-gray-700 overflow-x-auto">
         {testCases.map((tc, idx) => {
           const result = results?.[idx];
@@ -103,7 +95,7 @@ function TestCasePanel({ testCases, results, isRunning }) {
         })}
       </div>
 
-      {/* Content */}
+      {}
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {isRunning ? (
           <div className="flex items-center justify-center h-32">
@@ -264,11 +256,10 @@ export default function ContestProblem() {
   const [runResults, setRunResults] = useState(null);
   const [submitResult, setSubmitResult] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [activePanel, setActivePanel] = useState('testcases'); // testcases | result | submissions
+  const [activePanel, setActivePanel] = useState('testcases'); 
 
   const editorRef = useRef(null);
 
-  // WebSocket for real-time updates (use real contest id, not slug)
   const { serverTime } = useContestWebSocket(contest?.id || null, {
     token,
     onSubmissionResult: (result) => {
@@ -278,13 +269,12 @@ export default function ContestProblem() {
     },
   });
 
-  // Timer
   const { timeLeft, isEnded, formattedTime } = useContestTimer(
     contest?.endTime,
     {
       serverTime,
       onEnd: () => {
-        // Contest ended - disable submissions
+        
         setError('Contest has ended. Submissions are no longer accepted.');
       },
     }
@@ -320,7 +310,6 @@ export default function ContestProblem() {
     fetchSubmissions();
   }, [fetchProblem, fetchSubmissions]);
 
-  // Set default code when language changes
   useEffect(() => {
     if (!code || code === DEFAULT_CODE[Object.keys(DEFAULT_CODE).find(k => k !== language)]) {
       setCode(DEFAULT_CODE[language] || '');
@@ -412,14 +401,14 @@ export default function ContestProblem() {
   }
 
   const getTimerColor = () => {
-    if (timeLeft <= 300) return 'text-red-400'; // 5 min
-    if (timeLeft <= 900) return 'text-yellow-400'; // 15 min
+    if (timeLeft <= 300) return 'text-red-400'; 
+    if (timeLeft <= 900) return 'text-yellow-400'; 
     return 'text-white';
   };
 
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
-      {/* Header */}
+      {}
       <header className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -435,7 +424,7 @@ export default function ContestProblem() {
         </div>
 
         <div className="flex items-center gap-6">
-          {/* Timer */}
+          {}
           <div className="text-center">
             <span className="text-gray-500 text-xs">Time Left</span>
             <p className={`font-mono font-bold ${getTimerColor()}`}>
@@ -443,7 +432,7 @@ export default function ContestProblem() {
             </p>
           </div>
 
-          {/* Problem navigation */}
+          {}
           {contest?.problems && (
             <div className="flex gap-1">
               {contest.problems.map((p) => {
@@ -470,12 +459,12 @@ export default function ContestProblem() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {}
       <div className="flex-1 flex overflow-hidden">
-        {/* Problem Description */}
+        {}
         <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
           <div className="p-6">
-            {/* Difficulty & Points */}
+            {}
             <div className="flex items-center gap-3 mb-4">
               <span className={`px-2 py-1 rounded text-sm ${
                 problem?.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
@@ -487,7 +476,7 @@ export default function ContestProblem() {
               <span className="text-gray-400">{problem?.points} points</span>
             </div>
 
-            {/* Description */}
+            {}
             <div className="prose prose-invert max-w-none">
               <div className="text-gray-300 whitespace-pre-wrap">
                 {problem?.description}
@@ -529,9 +518,9 @@ export default function ContestProblem() {
           </div>
         </div>
 
-        {/* Editor & Results */}
+        {}
         <div className="w-1/2 flex flex-col">
-          {/* Editor Header */}
+          {}
           <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
             <select
               value={language}
@@ -563,7 +552,7 @@ export default function ContestProblem() {
             </div>
           </div>
 
-          {/* Monaco Editor */}
+          {}
           <div className="flex-1 min-h-0">
             <Editor
               height="100%"
@@ -585,9 +574,9 @@ export default function ContestProblem() {
             />
           </div>
 
-          {/* Results Panel */}
+          {}
           <div className="h-64 border-t border-gray-700 bg-gray-800 flex flex-col">
-            {/* Panel Tabs */}
+            {}
             <div className="flex border-b border-gray-700">
               {['testcases', 'result', 'submissions'].map((tab) => (
                 <button
@@ -604,7 +593,7 @@ export default function ContestProblem() {
               ))}
             </div>
 
-            {/* Panel Content */}
+            {}
             <div className="flex-1 overflow-hidden">
               {activePanel === 'testcases' && (
                 <TestCasePanel
@@ -631,7 +620,7 @@ export default function ContestProblem() {
                 <SubmissionHistory
                   submissions={submissions}
                   onSelect={(sub) => {
-                    // Could load submission code here
+                    
                   }}
                 />
               )}
@@ -640,7 +629,7 @@ export default function ContestProblem() {
         </div>
       </div>
 
-      {/* Error Toast */}
+      {}
       {error && (
         <div className="fixed bottom-4 right-4 bg-red-500/90 text-white px-4 py-3 rounded-lg shadow-lg max-w-md">
           <div className="flex items-center justify-between">

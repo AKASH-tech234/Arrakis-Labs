@@ -1,24 +1,9 @@
-// src/components/feedback/AIFeedbackModal.jsx
-// AI Feedback Modal with Progressive Hint Disclosure
-// Anti-spoiler pattern: reveal information step-by-step
+
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfidenceBadge from "./ConfidenceBadge";
 
-/**
- * Progressive Hint Disclosure Component
- *
- * UI Flow:
- * 1. Show: Explanation only
- * 2. User clicks "Show Hint" → Reveal: improvement_hint
- * 3. User clicks "Why?" → Reveal: detected_pattern (if present)
- *
- * RULES:
- * - Never reveal everything at once
- * - Maintain user agency
- * - No additional AI calls
- */
 function ProgressiveHintDisclosure({
   feedback,
   showHint,
@@ -30,7 +15,7 @@ function ProgressiveHintDisclosure({
 
   return (
     <div className="space-y-4">
-      {/* Level 1: Always visible - Explanation */}
+      {}
       <div className="space-y-2">
         <h4
           className="text-[#78716C] text-[10px] uppercase tracking-wider flex items-center gap-2"
@@ -49,7 +34,7 @@ function ProgressiveHintDisclosure({
         </motion.p>
       </div>
 
-      {/* Level 2: Improvement Hint (revealed on demand) */}
+      {}
       {!showHint && feedback.improvement_hint && (
         <motion.button
           initial={{ opacity: 0, y: 10 }}
@@ -98,7 +83,7 @@ function ProgressiveHintDisclosure({
             </p>
           </div>
 
-          {/* Additional hint from hint_agent (if present) */}
+          {}
           {feedback.hint && (
             <div className="border-l-2 border-[#78716C]/40 pl-4 py-2 mt-2">
               <p
@@ -112,7 +97,7 @@ function ProgressiveHintDisclosure({
         </motion.div>
       )}
 
-      {/* Level 3: Pattern Detection (revealed on demand) */}
+      {}
       {showHint && !showPattern && feedback.detected_pattern && (
         <motion.button
           initial={{ opacity: 0, y: 10 }}
@@ -173,24 +158,6 @@ function ProgressiveHintDisclosure({
   );
 }
 
-/**
- * AI Feedback Modal Component
- *
- * Features:
- * - Progressive hint disclosure (anti-spoiler)
- * - Confidence badge integration
- * - Loading/error states
- * - Graceful degradation on AI failures
- *
- * @param {Object} props
- * @param {boolean} props.isOpen - Modal visibility
- * @param {Function} props.onClose - Close handler
- * @param {boolean} props.loading - Loading state
- * @param {string} props.error - Error message
- * @param {Object} props.feedback - AI feedback response
- * @param {Object} props.confidenceBadge - Confidence badge data
- * @param {Function} props.onViewWeeklyReport - Handler to view weekly report
- */
 export default function AIFeedbackModal({
   isOpen,
   onClose,
@@ -200,11 +167,10 @@ export default function AIFeedbackModal({
   confidenceBadge = null,
   onViewWeeklyReport = null,
 }) {
-  // Progressive disclosure state
+  
   const [showHint, setShowHint] = useState(false);
   const [showPattern, setShowPattern] = useState(false);
 
-  // Reset disclosure state when feedback changes
   const handleClose = useCallback(() => {
     setShowHint(false);
     setShowPattern(false);
@@ -232,7 +198,7 @@ export default function AIFeedbackModal({
           style={{ backgroundColor: "#0A0A08" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
+          {}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1A1814] sticky top-0 bg-[#0A0A08] z-10">
             <div className="flex items-center gap-3">
               <span
@@ -265,9 +231,9 @@ export default function AIFeedbackModal({
             </button>
           </div>
 
-          {/* Content */}
+          {}
           <div className="p-6">
-            {/* Loading State */}
+            {}
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <motion.div
@@ -294,7 +260,7 @@ export default function AIFeedbackModal({
               </div>
             )}
 
-            {/* Error State - Graceful Degradation */}
+            {}
             {!loading && error && (
               <div className="py-8">
                 <div className="border border-[#92400E]/30 bg-[#92400E]/5 p-4 rounded">
@@ -321,7 +287,7 @@ export default function AIFeedbackModal({
               </div>
             )}
 
-            {/* Empty State */}
+            {}
             {!loading && !error && !feedback && (
               <div className="flex flex-col items-center justify-center py-12">
                 <p
@@ -333,7 +299,7 @@ export default function AIFeedbackModal({
               </div>
             )}
 
-            {/* Feedback Content with Progressive Disclosure */}
+            {}
             {!loading && !error && feedback && (
               <div className="space-y-6">
                 <ProgressiveHintDisclosure
@@ -344,7 +310,7 @@ export default function AIFeedbackModal({
                   onShowPattern={() => setShowPattern(true)}
                 />
 
-                {/* Weekly Report CTA (optional) */}
+                {}
                 {onViewWeeklyReport && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <button

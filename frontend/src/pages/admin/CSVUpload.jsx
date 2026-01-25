@@ -38,7 +38,7 @@ const CSVUpload = () => {
       "text/csv": [".csv"],
     },
     maxFiles: 1,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 5 * 1024 * 1024, 
   });
 
   const handlePreview = async () => {
@@ -101,7 +101,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">CSV Upload</h1>
@@ -116,7 +116,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         </button>
       </div>
 
-      {/* Upload Zone */}
+      {}
       <div
         {...getRootProps()}
         className={`p-8 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
@@ -154,7 +154,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         </div>
       </div>
 
-      {/* Error Display */}
+      {}
       {error && (
         <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
           <div className="flex items-start gap-3">
@@ -166,7 +166,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         </div>
       )}
 
-      {/* Actions */}
+      {}
       {file && !result && (
         <div className="flex gap-4">
           <button
@@ -196,7 +196,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         </div>
       )}
 
-      {/* Preview Results */}
+      {}
       {preview && !result && (
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Preview</h3>
@@ -215,7 +215,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
             </div>
           </div>
 
-          {/* Row Details */}
+          {}
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {preview.rows?.map((row, index) => (
               <div
@@ -248,7 +248,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         </div>
       )}
 
-      {/* Upload Success */}
+      {}
       {result && (
         <div className="p-6 rounded-xl bg-green-500/10 border border-green-500/20">
           <div className="flex items-center gap-3 mb-4">
@@ -283,7 +283,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         </div>
       )}
 
-      {/* CSV Format Guide */}
+      {}
       <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
         <h3 className="text-lg font-semibold text-white mb-4">CSV Format Guide</h3>
         <div className="space-y-3 text-sm">

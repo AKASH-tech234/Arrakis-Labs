@@ -1,16 +1,6 @@
-// src/components/feedback/AIFeedbackPanel.jsx
+
 import { motion, AnimatePresence } from "framer-motion";
 
-/**
- * AI Feedback Panel - LeetCode-style slide-in panel for AI feedback
- *
- * @param {Object} props
- * @param {boolean} props.isVisible - Controls panel visibility
- * @param {Function} props.onClose - Called when close button is clicked
- * @param {boolean} props.loading - Whether feedback is being fetched
- * @param {string} props.error - Error message if fetch failed
- * @param {Object} props.feedback - The AI feedback data
- */
 export default function AIFeedbackPanel({
   isVisible,
   onClose,
@@ -29,7 +19,7 @@ export default function AIFeedbackPanel({
           className="border-l border-[#1A1814] h-full overflow-auto"
           style={{ backgroundColor: "#0A0A08" }}
         >
-          {/* Panel Header */}
+          {}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1A1814] sticky top-0 bg-[#0A0A08] z-10">
             <span
               className="text-[#E8E4D9] text-xs uppercase tracking-wider"
@@ -45,9 +35,9 @@ export default function AIFeedbackPanel({
             </button>
           </div>
 
-          {/* Content */}
+          {}
           <div className="p-4">
-            {/* Loading State */}
+            {}
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <motion.div
@@ -74,7 +64,7 @@ export default function AIFeedbackPanel({
               </div>
             )}
 
-            {/* Error State */}
+            {}
             {!loading && error && (
               <div className="py-8">
                 <div className="border border-[#92400E]/30 bg-[#92400E]/5 p-4 rounded">
@@ -94,7 +84,7 @@ export default function AIFeedbackPanel({
               </div>
             )}
 
-            {/* Empty State */}
+            {}
             {!loading && !error && !feedback && (
               <div className="flex flex-col items-center justify-center py-12">
                 <p
@@ -106,25 +96,25 @@ export default function AIFeedbackPanel({
               </div>
             )}
 
-            {/* Feedback Content */}
+            {}
             {!loading && !error && feedback && (
               <div className="space-y-6">
-                {/* Feedback Summary */}
+                {}
                 {feedback.feedback && (
                   <FeedbackSection feedback={feedback.feedback} />
                 )}
 
-                {/* Difficulty Analysis */}
+                {}
                 {feedback.difficulty && (
                   <DifficultySection difficulty={feedback.difficulty} />
                 )}
 
-                {/* Learning Insights */}
+                {}
                 {feedback.learning && (
                   <LearningSection learning={feedback.learning} />
                 )}
 
-                {/* Report/Summary */}
+                {}
                 {feedback.report && <ReportSection report={feedback.report} />}
               </div>
             )}
@@ -135,13 +125,10 @@ export default function AIFeedbackPanel({
   );
 }
 
-/**
- * Feedback Section - Main feedback with hints and analysis
- */
 function FeedbackSection({ feedback }) {
   return (
     <div className="space-y-4">
-      {/* Summary */}
+      {}
       {feedback.summary && (
         <div>
           <p
@@ -153,7 +140,7 @@ function FeedbackSection({ feedback }) {
         </div>
       )}
 
-      {/* Error Type Badge */}
+      {}
       {feedback.error_type && (
         <div className="inline-block px-2 py-1 border border-[#92400E]/30 bg-[#92400E]/10">
           <span
@@ -165,7 +152,7 @@ function FeedbackSection({ feedback }) {
         </div>
       )}
 
-      {/* Hints */}
+      {}
       {feedback.hints && feedback.hints.length > 0 && (
         <div className="space-y-3">
           <h4
@@ -191,7 +178,7 @@ function FeedbackSection({ feedback }) {
         </div>
       )}
 
-      {/* Code Suggestion */}
+      {}
       {feedback.code_suggestion && (
         <div>
           <h4
@@ -213,7 +200,7 @@ function FeedbackSection({ feedback }) {
         </div>
       )}
 
-      {/* Next Steps */}
+      {}
       {feedback.next_steps && feedback.next_steps.length > 0 && (
         <div className="space-y-2">
           <h4
@@ -240,9 +227,6 @@ function FeedbackSection({ feedback }) {
   );
 }
 
-/**
- * Difficulty Section - Problem difficulty analysis
- */
 function DifficultySection({ difficulty }) {
   const getDifficultyColor = (level) => {
     const colors = {
@@ -262,7 +246,7 @@ function DifficultySection({ difficulty }) {
         Difficulty Analysis
       </h4>
 
-      {/* Difficulty Level */}
+      {}
       {difficulty.level && (
         <div className="flex items-center gap-2">
           <span
@@ -277,7 +261,7 @@ function DifficultySection({ difficulty }) {
         </div>
       )}
 
-      {/* Reasoning */}
+      {}
       {difficulty.reasoning && (
         <p
           className="text-[#E8E4D9] text-xs leading-relaxed"
@@ -287,7 +271,7 @@ function DifficultySection({ difficulty }) {
         </p>
       )}
 
-      {/* Key Concepts */}
+      {}
       {difficulty.key_concepts && difficulty.key_concepts.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {difficulty.key_concepts.map((concept, index) => (
@@ -302,7 +286,7 @@ function DifficultySection({ difficulty }) {
         </div>
       )}
 
-      {/* Prerequisites */}
+      {}
       {difficulty.prerequisites && difficulty.prerequisites.length > 0 && (
         <div>
           <span
@@ -323,9 +307,6 @@ function DifficultySection({ difficulty }) {
   );
 }
 
-/**
- * Learning Section - Educational insights
- */
 function LearningSection({ learning }) {
   return (
     <div className="border-t border-[#1A1814] pt-4 space-y-3">
@@ -336,7 +317,7 @@ function LearningSection({ learning }) {
         Learning Insights
       </h4>
 
-      {/* Strengths */}
+      {}
       {learning.strengths && learning.strengths.length > 0 && (
         <div className="space-y-2">
           <span
@@ -360,7 +341,7 @@ function LearningSection({ learning }) {
         </div>
       )}
 
-      {/* Weaknesses / Areas to Improve */}
+      {}
       {learning.weaknesses && learning.weaknesses.length > 0 && (
         <div className="space-y-2">
           <span
@@ -384,7 +365,7 @@ function LearningSection({ learning }) {
         </div>
       )}
 
-      {/* Recommendations */}
+      {}
       {learning.recommendations && learning.recommendations.length > 0 && (
         <div className="space-y-2">
           <span
@@ -408,7 +389,7 @@ function LearningSection({ learning }) {
         </div>
       )}
 
-      {/* Similar Problems */}
+      {}
       {learning.similar_problems && learning.similar_problems.length > 0 && (
         <div className="space-y-2">
           <span
@@ -434,9 +415,6 @@ function LearningSection({ learning }) {
   );
 }
 
-/**
- * Report Section - Summary and progress tracking
- */
 function ReportSection({ report }) {
   return (
     <div className="border-t border-[#1A1814] pt-4 space-y-3">
@@ -447,7 +425,7 @@ function ReportSection({ report }) {
         Session Summary
       </h4>
 
-      {/* Summary Text */}
+      {}
       {report.summary && (
         <p
           className="text-[#E8E4D9] text-xs leading-relaxed"
@@ -457,7 +435,7 @@ function ReportSection({ report }) {
         </p>
       )}
 
-      {/* Progress */}
+      {}
       {report.progress && (
         <div className="flex items-center gap-2">
           <span
@@ -475,7 +453,7 @@ function ReportSection({ report }) {
         </div>
       )}
 
-      {/* Topics Covered */}
+      {}
       {report.topics_covered && report.topics_covered.length > 0 && (
         <div className="space-y-1">
           <span
@@ -498,7 +476,7 @@ function ReportSection({ report }) {
         </div>
       )}
 
-      {/* Encouragement */}
+      {}
       {report.encouragement && (
         <div className="border border-[#22C55E]/20 bg-[#22C55E]/5 p-3 rounded mt-4">
           <p
