@@ -5,14 +5,14 @@ import {
   Route,
   useParams,
 } from "react-router-dom";
-import Landing from "./pages/landing";
-import Login from "./pages/login";
-import Signup from "./pages/signup";
-import ProblemLibrary from "./pages/problem";
-import ProblemDetail from "./pages/problemdetail";
-import SubmissionResult from "./pages/SubmissionResult";
-import Profile from "./pages/profile";
-import CodingProfile from "./pages/codingProfile";
+import Landing from "./pages/common/landing";
+import Login from "./pages/auth/login";
+import Signup from "./pages/auth/signup";
+import ProblemLibrary from "./pages/common/problem";
+import ProblemDetail from "./pages/common/problemdetail";
+import SubmissionResult from "./pages/common/SubmissionResult";
+import Profile from "./pages/profile/profile";
+import CodingProfile from "./pages/profile/codingProfile";
 import POTDHome from "./pages/potd/POTDHome";
 import POTDHistory from "./pages/potd/POTDHistory";
 import POTDLeaderboard from "./pages/potd/POTDLeaderboard";

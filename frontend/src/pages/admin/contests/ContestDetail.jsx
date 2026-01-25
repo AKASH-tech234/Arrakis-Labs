@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import adminApi from '../../../services/adminApi';
+import adminApi from '../../../services/admin/adminApi';
 
 /**
  * Admin Contest Detail View

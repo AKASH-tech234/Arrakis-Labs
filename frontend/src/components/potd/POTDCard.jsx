@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Flame, Clock, Trophy, ChevronRight, Loader2 } from "lucide-react";
-import { getTodaysPOTD } from "../../services/potdApi";
+import { getTodaysPOTD } from "../../services/potd/potdApi";
 
 /**
  * POTD Card Component

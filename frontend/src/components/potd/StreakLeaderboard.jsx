@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Flame, User } from "lucide-react";
-import { getStreakLeaderboard } from "../../services/potdApi";
+import { getStreakLeaderboard } from "../../services/potd/potdApi";
 
 /**
  * Streak Leaderboard Component

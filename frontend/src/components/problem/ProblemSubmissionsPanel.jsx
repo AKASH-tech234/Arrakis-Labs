@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getMySubmissions } from "../../services/api";
+import { getMySubmissions } from "../../services/common/api";
 
 function formatDate(iso) {
   try {

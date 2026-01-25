@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
-import { previewCSV, uploadCSV } from "../../services/adminApi";
+import { previewCSV, uploadCSV } from "../../services/admin/adminApi";
 import {
   Upload,
   FileSpreadsheet,

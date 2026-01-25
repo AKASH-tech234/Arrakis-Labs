@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
-import contestApi from '../../services/contestApi';
+import contestApi from '../../services/contest/contestApi';
 import { useAuth } from '../../context/AuthContext';
-import { useContestTimer } from '../../hooks/useContestTimer';
-import useContestWebSocket from '../../hooks/useContestWebSocket';
+import { useContestTimer } from '../../hooks/contest/useContestTimer';
+import useContestWebSocket from '../../hooks/contest/useContestWebSocket';
 
 /**
  * Contest Problem Page

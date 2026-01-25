@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { adminLogin as apiAdminLogin, adminLogout as apiAdminLogout, getAdminProfile } from "../services/adminApi";
+import { adminLogin as apiAdminLogin, adminLogout as apiAdminLogout, getAdminProfile } from "../services/admin/adminApi";
 
 const AdminAuthContext = createContext(null);
 

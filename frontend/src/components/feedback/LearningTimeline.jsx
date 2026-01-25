@@ -4,7 +4,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { TIMELINE_EVENT_TYPES } from "../../hooks/useLearningTimeline";
+import { TIMELINE_EVENT_TYPES } from "../../hooks/profile/useLearningTimeline";
 
 /**
  * Event Icon Component

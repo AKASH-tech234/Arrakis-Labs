@@ -12,7 +12,7 @@ import {
   postComment,
   postSolution,
   voteSolution,
-} from "../../services/discussApi";
+} from "../../services/common/discussApi";
 import MarkdownRenderer from "./MarkdownRenderer";
 
 function formatDate(iso) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Flame, Clock, ChevronRight, Trophy } from "lucide-react";
-import { getTodaysPOTD } from "../../services/potdApi";
+import { getTodaysPOTD } from "../../services/potd/potdApi";
 
 /**
  * Compact POTD Banner for Problem Listing Page

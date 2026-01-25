@@ -7,7 +7,7 @@ import {
   updateTestCase,
   deleteTestCase,
   toggleTestCaseHidden,
-} from "../../services/adminApi";
+} from "../../services/admin/adminApi";
 import {
   ArrowLeft,
   Plus,
