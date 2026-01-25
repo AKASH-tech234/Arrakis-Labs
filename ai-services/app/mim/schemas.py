@@ -505,7 +505,7 @@ class MIMStatus(BaseModel):
         description="Whether the model has been trained"
     )
     model_version: str = Field(
-        default="v1.0",
+        default="v2.1",
         description="Current model version"
     )
     
@@ -559,7 +559,121 @@ class MIMStatus(BaseModel):
             "root_cause_classifier": False,
             "readiness_predictor": False,
             "recommender": False,
+            "difficulty_engine": True,  # Always available (rule-based)
+            "roadmap_generator": True,  # Always available (rule-based)
             "feature_extractor": True,  # Always available
         },
         description="Status of individual MIM components"
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEARNING ROADMAP SCHEMAS (NEW V2.1)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class RoadmapStep(BaseModel):
+    """Single step in the micro-roadmap."""
+    step_number: int = Field(ge=1, le=5, description="Position in 5-step roadmap")
+    goal: str = Field(description="Learning goal for this step")
+    target_problems: int = Field(default=2, description="Number of problems to complete")
+    completed_problems: int = Field(default=0, description="Problems completed so far")
+    focus_topics: List[str] = Field(default_factory=list, description="Topics to focus on")
+    target_difficulty: Literal["Easy", "Medium", "Hard"] = Field(default="Medium")
+    status: Literal["pending", "in_progress", "completed"] = Field(default="pending")
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+
+class Milestone(BaseModel):
+    """Learning milestone achievement."""
+    name: str = Field(description="Milestone name")
+    description: str = Field(description="What was achieved")
+    achieved_at: datetime = Field(description="When achieved")
+    evidence: str = Field(description="Evidence of achievement")
+
+
+class LearningRoadmap(BaseModel):
+    """
+    Complete learning roadmap for a user.
+    
+    This is what makes Arrakis unique:
+    - LeetCode: Static difficulty buckets
+    - Codeforces: Elo-based rating
+    - Arrakis + MIM: Cognitive trajectory modeling
+    """
+    user_id: str
+    current_phase: Literal[
+        "foundation", "skill_building", "consolidation", "advancement", "mastery"
+    ] = Field(default="foundation", description="Current learning phase")
+    
+    # 5-step micro roadmap
+    steps: List[RoadmapStep] = Field(
+        default_factory=list,
+        description="5-step immediate action plan"
+    )
+    
+    # Topic dependencies (derived from co-occurrence)
+    topic_dependencies: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Topic -> prerequisite topics mapping"
+    )
+    
+    # Milestones
+    milestones: List[Milestone] = Field(
+        default_factory=list,
+        description="Achievements unlocked"
+    )
+    
+    # Long-term goals
+    target_level: Literal["Beginner", "Easy", "Medium", "Hard", "Expert"] = Field(
+        default="Medium"
+    )
+    estimated_weeks_to_target: Optional[int] = Field(
+        default=None,
+        description="Estimated weeks to reach target"
+    )
+    
+    # Difficulty state
+    difficulty_adjustment: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Current difficulty adjustment state"
+    )
+    
+    # Metadata
+    generated_at: datetime = Field(default_factory=datetime.now)
+    last_updated: Optional[datetime] = None
+    version: str = Field(default="v2.1")
+
+
+class EnhancedRecommendation(BaseModel):
+    """
+    Problem recommendation with full explanation.
+    
+    Includes WHY this problem is recommended and expected outcome.
+    """
+    problem_id: str
+    title: str
+    difficulty: str
+    tags: List[str] = Field(default_factory=list)
+    
+    # Scoring (multi-factor)
+    total_score: float = Field(ge=0.0, le=1.0, description="Combined recommendation score")
+    score_breakdown: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Individual factor scores"
+    )
+    
+    # Explanation
+    why: str = Field(description="Why this problem is recommended")
+    expected_outcome: str = Field(description="What user will learn/improve")
+    
+    # Fit assessment
+    difficulty_fit: Literal["perfect", "slightly_easy", "slightly_hard", "challenging"] = Field(
+        default="perfect"
+    )
+    concept_relevance: float = Field(ge=0.0, le=1.0, default=0.5)
+    
+    # Source
+    recommendation_source: Literal["mim_model", "fallback_rule", "cold_start", "roadmap"] = Field(
+        default="mim_model"
     )

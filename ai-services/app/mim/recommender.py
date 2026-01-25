@@ -462,6 +462,178 @@ class MIMRecommender:
         return "; ".join(reasons) if reasons else "General recommendation"
     
     # ═══════════════════════════════════════════════════════════════════════════
+    # ENHANCED MULTI-FACTOR SCORING (V2.1)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def compute_enhanced_score(
+        self,
+        user_profile: Dict[str, Any],
+        problem: Dict[str, Any],
+        user_history: List[Dict[str, Any]],
+        recently_solved_problems: set = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute enhanced multi-factor recommendation score.
+        
+        Score = (Concept Relevance × 0.35)
+              + (Difficulty Fit × 0.30)
+              + (Learning Gap Coverage × 0.20)
+              + (Recency/Spacing × 0.10)
+              + (Exploration Bonus × 0.05)
+        
+        Returns dict with total_score, breakdown, why, and expected_outcome.
+        """
+        if recently_solved_problems is None:
+            recently_solved_problems = set()
+            for h in user_history[:20]:
+                if h.get("verdict", h.get("status", "")).lower() == "accepted":
+                    recently_solved_problems.add(h.get("problem_id", ""))
+        
+        # 1. Concept Relevance (0.35)
+        weak_topics = set(t.lower() for t in user_profile.get("weak_topics", user_profile.get("weakTopics", [])))
+        strong_topics = set(t.lower() for t in user_profile.get("strong_topics", user_profile.get("strongTopics", [])))
+        problem_tags = set(t.lower() for t in problem.get("tags", []))
+        
+        # Score higher for weak topics, lower for already mastered topics
+        weak_overlap = len(weak_topics & problem_tags) / max(len(weak_topics), 1)
+        strong_overlap = len(strong_topics & problem_tags) / max(len(strong_topics), 1)
+        concept_relevance = weak_overlap * 0.8 + (1 - strong_overlap) * 0.2
+        concept_relevance = min(1.0, concept_relevance)
+        
+        # 2. Difficulty Fit (0.30)
+        user_readiness = user_profile.get("difficultyReadiness", user_profile.get("difficulty_readiness", {}))
+        if isinstance(user_readiness, dict):
+            easy_ready = user_readiness.get("easy", 1.0)
+            medium_ready = user_readiness.get("medium", 0.5)
+            hard_ready = user_readiness.get("hard", 0.2)
+        else:
+            easy_ready, medium_ready, hard_ready = 1.0, 0.5, 0.2
+        
+        problem_diff = problem.get("difficulty", "Medium").lower()
+        readiness_map = {"easy": easy_ready, "medium": medium_ready, "hard": hard_ready}
+        user_readiness_for_diff = readiness_map.get(problem_diff, 0.5)
+        
+        # Optimal zone: 40-70% readiness (not too easy, not too hard)
+        if 0.4 <= user_readiness_for_diff <= 0.7:
+            difficulty_fit = 1.0
+        elif user_readiness_for_diff > 0.7:
+            difficulty_fit = 0.7 + (1.0 - user_readiness_for_diff)  # Slightly penalize too easy
+        else:
+            difficulty_fit = user_readiness_for_diff / 0.4  # Scale up from 0
+        
+        # 3. Learning Gap Coverage (0.20)
+        # Check if problem covers a topic user hasn't practiced recently
+        recent_categories = set(
+            (h.get("category", h.get("problemCategory", "")).lower())
+            for h in user_history[:10]
+        )
+        problem_topic = problem.get("topic", problem_tags.pop() if problem_tags else "general").lower()
+        
+        gap_coverage = 0.0
+        if problem_topic not in recent_categories:
+            gap_coverage = 0.8  # High value for unexplored topic
+        if problem_topic in weak_topics:
+            gap_coverage = 1.0  # Maximum for weak + not recent
+        
+        # 4. Recency/Spacing (0.10)
+        # Apply spaced repetition: problems not seen for a while get bonus
+        problem_id = problem.get("id", problem.get("problem_id", ""))
+        days_since_attempt = self._get_days_since_problem(user_history, problem_id)
+        
+        if days_since_attempt is None:
+            spacing_score = 0.5  # Never attempted - neutral
+        elif days_since_attempt < 1:
+            spacing_score = 0.0  # Just attempted - skip
+        elif days_since_attempt < 7:
+            spacing_score = 0.3
+        elif days_since_attempt < 30:
+            spacing_score = 0.7
+        else:
+            spacing_score = 1.0  # Long time - good for review
+        
+        # 5. Exploration Bonus (0.05)
+        # Bonus for trying new topics/patterns
+        all_attempted_tags = set()
+        for h in user_history:
+            all_attempted_tags.update(t.lower() for t in h.get("tags", h.get("problemTags", [])))
+        
+        new_tags = problem_tags - all_attempted_tags
+        exploration_bonus = min(len(new_tags) / 3, 1.0)  # Max at 3 new tags
+        
+        # Weighted total
+        total_score = (
+            concept_relevance * 0.35 +
+            difficulty_fit * 0.30 +
+            gap_coverage * 0.20 +
+            spacing_score * 0.10 +
+            exploration_bonus * 0.05
+        )
+        
+        # Determine fit assessment
+        if 0.85 <= difficulty_fit <= 1.0:
+            difficulty_fit_label = "perfect"
+        elif difficulty_fit > 0.7:
+            difficulty_fit_label = "slightly_easy" if user_readiness_for_diff > 0.7 else "slightly_hard"
+        else:
+            difficulty_fit_label = "challenging"
+        
+        # Generate explanation
+        why_parts = []
+        if concept_relevance > 0.6:
+            matching = weak_topics & problem_tags
+            if matching:
+                why_parts.append(f"Reinforces weak area: {', '.join(list(matching)[:2])}")
+        if difficulty_fit >= 0.8:
+            why_parts.append(f"Optimal {problem_diff} challenge for your level")
+        if gap_coverage > 0.5:
+            why_parts.append("Covers learning gap")
+        if exploration_bonus > 0.3:
+            why_parts.append("Introduces new concepts")
+        
+        why = "; ".join(why_parts) if why_parts else "Balanced recommendation"
+        
+        # Expected outcome
+        if concept_relevance > 0.6 and difficulty_fit > 0.6:
+            expected = f"Improve {', '.join(list(weak_topics & problem_tags)[:2]) or problem_diff} skills"
+        elif exploration_bonus > 0.5:
+            expected = "Expand problem-solving repertoire"
+        else:
+            expected = "Maintain momentum and practice consistency"
+        
+        return {
+            "total_score": round(total_score, 3),
+            "score_breakdown": {
+                "concept_relevance": round(concept_relevance, 3),
+                "difficulty_fit": round(difficulty_fit, 3),
+                "learning_gap": round(gap_coverage, 3),
+                "spacing": round(spacing_score, 3),
+                "exploration": round(exploration_bonus, 3),
+            },
+            "why": why,
+            "expected_outcome": expected,
+            "difficulty_fit_label": difficulty_fit_label,
+        }
+    
+    def _get_days_since_problem(self, history: List[Dict], problem_id: str) -> Optional[int]:
+        """Get days since user last attempted this specific problem."""
+        if not problem_id:
+            return None
+        
+        for sub in history:
+            sub_problem_id = sub.get("problem_id", sub.get("problemId", ""))
+            if sub_problem_id == problem_id:
+                created = sub.get("created_at", sub.get("createdAt"))
+                if created:
+                    try:
+                        if isinstance(created, str):
+                            from dateutil.parser import parse
+                            created = parse(created)
+                        return max(0, (datetime.now() - created).days)
+                    except:
+                        pass
+        return None  # Never attempted
+    
+    # ═══════════════════════════════════════════════════════════════════════════
     # PERSISTENCE
     # ═══════════════════════════════════════════════════════════════════════════
     
