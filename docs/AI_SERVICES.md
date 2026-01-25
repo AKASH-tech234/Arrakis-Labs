@@ -1,137 +1,22 @@
 # AI Services Documentation
 
+> **FastAPI + LangGraph** - Intelligent feedback generation with ML-powered insights and personalized learning.
+
+---
+
 ## Overview
 
-The **AI Services** module is the core AI-powered backend for the Mentat Trials coding platform. It provides **intelligence-first**, in-depth feedback, pattern detection, learning recommendations, and difficulty adjustment for user code submissions using LangChain and Google's Gemini AI.
+The AI Services microservice is the intelligence layer of Mentat Trials, providing:
 
-**Philosophy**: Quality over speed. All agents must complete successfully with full context to maximize learning value and pedagogical effectiveness.
+- **LangGraph Agents**: Orchestrated AI feedback generation
+- **RAG System**: Memory-based context retrieval from past submissions
+- **MIM (Mistake Inference Model)**: ML predictions and recommendations
+- **Caching**: Efficient response caching to reduce LLM calls
 
-## Table of Contents
-
-1. [Architecture Overview](#architecture-overview)
-2. [Key Metrics & Capabilities](#key-metrics--capabilities)
-3. [Intelligence-First Architecture (v2.0)](#intelligence-first-architecture-v20)
-4. [Directory Structure](#directory-structure)
-5. [Core Components](#core-components)
-6. [API Endpoints](#api-endpoints)
-7. [Agent System](#agent-system)
-8. [Agent Coordination](#agent-coordination-v20)
-9. [Caching Strategy](#caching-strategy)
-10. [RAG (Retrieval-Augmented Generation)](#rag-retrieval-augmented-generation)
-11. [Workflows](#workflows)
-12. [Configuration](#configuration)
-13. [Testing](#testing)
-14. [Deployment](#deployment)
-15. [API Usage Examples](#api-usage-examples)
-16. [Troubleshooting](#troubleshooting)
-17. [Contributing](#contributing)
-18. [Version History](#version-history)
-
----
-
-## Key Metrics & Capabilities
-
-### Performance Profile (v2.0)
-
-| Metric                  | Value       | Notes                                   |
-| ----------------------- | ----------- | --------------------------------------- |
-| **Response Time**       | 45-55s      | Intelligence-first design               |
-| **Test Coverage**       | 102/102 ✅  | Core functionality fully tested         |
-| **RAG Context**         | 7 documents | Up from 3 for richer analysis           |
-| **Code Truncation**     | None        | Full code with line numbers             |
-| **Agent Success Rate**  | 100%        | All agents complete, fallback on errors |
-| **Concurrent Requests** | Async-ready | FastAPI with background tasks           |
-
-### Intelligent Features
-
-✅ **Comprehensive Feedback**
-
-- Step-by-step reasoning
-- Conceptual explanations
-- Line-specific code references
-
-✅ **Pattern Recognition**
-
-- Recurring mistake detection
-- Confidence scoring
-- Historical pattern matching
-
-✅ **Personalized Learning**
-
-- User-specific recommendations
-- Skill gap identification
-- Progressive difficulty adjustment
-
-✅ **Rich Context**
-
-- Full problem constraints
-- User history (7 most relevant)
-- Complete code analysis
-
-✅ **Progressive Hints**
-
-- 3-level hint system
-- Conceptual → Specific → Concrete
-- Never reveals full solutions
-
----
-
-## Architecture Overview
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              FRONTEND (React/Vite)                            │
-└────────────────────────────────────┬─────────────────────────────────────────┘
-                                     │ HTTP POST /ai/feedback
-                                     ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           FastAPI Application (main.py)                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐   │
-│  │  CORS Middleware│  │ Tracing Middleware│  │    Request Validation     │   │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘   │
-└────────────────────────────────────┬─────────────────────────────────────────┘
-                                     │
-                                     ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            API Routes (routes.py)                             │
-│  ┌──────────────┐  ┌────────────────────┐  ┌─────────────────────────────┐   │
-│  │ /health      │  │ /ai/feedback       │  │ /ai/weekly-report           │   │
-│  └──────────────┘  └────────────────────┘  └─────────────────────────────┘   │
-└────────────────────────────────────┬─────────────────────────────────────────┘
-                                     │
-                    ┌────────────────┴────────────────┐
-                    ▼                                 ▼
-┌───────────────────────────────┐    ┌───────────────────────────────────────┐
-│     SYNC WORKFLOW             │    │          ASYNC WORKFLOW               │
-│  (User-facing, fast)          │    │     (Background processing)           │
-│  ┌─────────────────────────┐  │    │  ┌─────────────────────────────────┐  │
-│  │ • Memory Retrieval      │  │    │  │ • Learning Recommendations      │  │
-│  │ • Problem Context       │  │    │  │ • Difficulty Adjustment         │  │
-│  │ • User Profile          │  │    │  │ • Weekly Reports                │  │
-│  │ • Feedback Generation   │  │    │  │ • Memory Storage                │  │
-│  │ • Pattern Detection     │  │    │  └─────────────────────────────────┘  │
-│  │ • Hint Generation       │  │    └───────────────────────────────────────┘
-│  └─────────────────────────┘  │
-└───────────────────────────────┘
-                    │
-                    ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           AGENTS (LangChain + Gemini)                         │
-│  ┌─────────────┐ ┌────────────────┐ ┌──────────────┐ ┌─────────────────────┐ │
-│  │  Feedback   │ │ Pattern Detect │ │  Hint Agent  │ │  Learning Agent     │ │
-│  └─────────────┘ └────────────────┘ └──────────────┘ └─────────────────────┘ │
-│  ┌─────────────┐ ┌────────────────┐                                          │
-│  │ Difficulty  │ │ Report Agent   │                                          │
-│  └─────────────┘ └────────────────┘                                          │
-└────────────────────────────────────┬─────────────────────────────────────────┘
-                                     │
-                    ┌────────────────┼────────────────┐
-                    ▼                ▼                ▼
-         ┌─────────────────┐ ┌─────────────┐ ┌───────────────────┐
-         │   Redis Cache   │ │  ChromaDB   │ │    MongoDB        │
-         │   (Responses)   │ │ (RAG Store) │ │ (User History)    │
-         └─────────────────┘ └─────────────┘ └───────────────────┘
-```
+**Port**: 8000  
+**Framework**: FastAPI  
+**LLM**: Google Gemini (configurable)  
+**Vector Store**: ChromaDB
 
 ---
 
@@ -139,139 +24,766 @@ The **AI Services** module is the core AI-powered backend for the Mentat Trials 
 
 ```
 ai-services/
-├── main.py                     # FastAPI application entry point
-├── requirement.txt             # Python dependencies
-├── pytest.ini                  # Test configuration
-├── .env                        # Environment variables (not in git)
-├── .gitignore
+├── main.py                       # FastAPI entry point
+├── requirement.txt               # Python dependencies
+├── pytest.ini                    # Test configuration
 │
 ├── app/
 │   ├── __init__.py
 │   │
-│   ├── api/
-│   │   └── routes.py           # API endpoint definitions
+│   ├── api/                      # API endpoints
+│   │   └── routes.py             # All route definitions
 │   │
-│   ├── agents/                 # AI Agents (LangChain-based)
-│   │   ├── base_json_agent.py  # Base agent with caching & error handling
-│   │   ├── feedback_agent.py   # Code feedback generation
-│   │   ├── hint_agent.py       # Hint compression
-│   │   ├── pattern_detection_agent.py  # Mistake pattern detection
-│   │   ├── learning_agent.py   # Learning recommendations
-│   │   ├── difficulty_agent.py # Difficulty adjustment
-│   │   ├── report_agent.py     # Weekly progress reports
-│   │   └── context_compressor.py
+│   ├── agents/                   # LangGraph agents
+│   │   ├── base_json_agent.py    # Base agent with caching
+│   │   ├── feedback_agent.py     # Code feedback generation
+│   │   ├── hint_agent.py         # Progressive hint generation
+│   │   ├── pattern_agent.py      # Mistake pattern detection
+│   │   ├── difficulty_agent.py   # Difficulty assessment
+│   │   ├── learning_agent.py     # Learning recommendations
+│   │   ├── report_agent.py       # Weekly reports
+│   │   └── context_compressor.py # Context optimization
 │   │
-│   ├── cache/                  # Caching layer
-│   │   ├── redis_cache.py      # Redis-based caching (PRIMARY)
-│   │   ├── agent_cache.py      # File-based caching (DEPRECATED)
-│   │   └── cache_key.py        # Cache key generation
+│   ├── graph/                    # Workflow orchestration
+│   │   ├── sync_workflow.py      # Main synchronous workflow
+│   │   ├── async_workflow.py     # Background processing
+│   │   ├── orchestrator.py       # Agent coordination
+│   │   ├── workflow.py           # Workflow definitions
+│   │   └── async_runner.py       # Async task execution
 │   │
-│   ├── db/
-│   │   └── mongodb.py          # MongoDB client for user history
+│   ├── mim/                      # Machine Learning models
+│   │   ├── inference.py          # Real-time predictions
+│   │   ├── model.py              # Model definitions
+│   │   ├── feature_extractor.py  # Feature engineering
+│   │   ├── training.py           # Model training
+│   │   ├── evaluation.py         # Model evaluation
+│   │   ├── difficulty.py         # Difficulty prediction
+│   │   ├── recommender.py        # Problem recommendations
+│   │   ├── roadmap.py            # Learning path generation
+│   │   ├── schemas.py            # MIM data models
+│   │   └── models/               # Saved model files
 │   │
-│   ├── graph/                  # LangGraph workflows
-│   │   ├── sync_workflow.py    # Synchronous workflow
-│   │   ├── async_workflow.py   # Asynchronous background workflow
-│   │   ├── orchestrator.py     # Workflow decision logic
-│   │   └── workflow.py         # Legacy workflow (deprecated)
+│   ├── rag/                      # Retrieval Augmented Generation
+│   │   ├── retriever.py          # Memory retrieval
+│   │   ├── vector_store.py       # ChromaDB management
+│   │   ├── embeddings.py         # Text embeddings
+│   │   ├── context_builder.py    # Context assembly
+│   │   └── monitoring.py         # RAG metrics
 │   │
-│   ├── metrics/
-│   │   └── agent_metries.py    # Agent performance metrics
+│   ├── schemas/                  # Pydantic models
+│   │   ├── feedback.py           # Feedback schemas
+│   │   ├── submission.py         # Submission schemas
+│   │   ├── user_profile.py       # User profile schemas
+│   │   ├── hint.py               # Hint schemas
+│   │   ├── pattern.py            # Pattern schemas
+│   │   ├── difficulty.py         # Difficulty schemas
+│   │   ├── learning.py           # Learning schemas
+│   │   └── report.py             # Report schemas
 │   │
-│   ├── problem/
-│   │   └── problem_repository.py  # Problem context fetching
+│   ├── user_profile/             # User profiling
+│   │   └── profile_builder.py    # Cognitive profile construction
 │   │
-│   ├── prompts/                # System prompts for agents
-│   │   ├── feedback.py
-│   │   ├── learning.py
-│   │   ├── difficulty.py
-│   │   └── report.py
+│   ├── problem/                  # Problem data access
+│   │   └── problem_repository.py # Problem CRUD
 │   │
-│   ├── rag/                    # RAG components
-│   │   ├── __init__.py
-│   │   ├── vector_store.py     # ChromaDB vector stores
-│   │   ├── embeddings.py       # Embedding model (Ollama)
-│   │   ├── retriever.py        # Memory retrieval & storage
-│   │   ├── context_builder.py  # Context construction
-│   │   └── monitoring.py       # RAG quality monitoring
+│   ├── cache/                    # Caching layer
+│   │   ├── cache_key.py          # Cache key generation
+│   │   ├── agent_cache.py        # Agent response cache
+│   │   └── redis_cache.py        # Redis caching
 │   │
-│   ├── schemas/                # Pydantic models
-│   │   ├── submission.py       # SubmissionContext
-│   │   ├── feedback.py         # FeedbackResponse
-│   │   ├── hint.py             # CompressedHint
-│   │   ├── pattern.py          # DetectedPattern
-│   │   ├── learning.py         # LearningRecommendation
-│   │   ├── difficulty.py       # DifficultyAdjustment
-│   │   ├── report.py           # WeeklyProgressReport
-│   │   └── user_profile.py     # UserProfile
+│   ├── metrics/                  # Performance tracking
+│   │   └── agent_metries.py      # Agent execution metrics
 │   │
-│   ├── services/
-│   │   └── llm.py              # LLM factory (Google Gemini)
+│   ├── sync/                     # Data synchronization
+│   │   └── submission_sync.py    # Submission sync with backend
 │   │
-│   ├── sync/
-│   │   └── submission_sync.py  # Submission synchronization
+│   ├── db/                       # Database connections
+│   │   └── mongodb.py            # MongoDB client
 │   │
-│   └── user_profile/
-│       └── profile_builder.py  # User profile construction
+│   ├── services/                 # External services
+│   │   └── llm.py                # LLM provider abstraction
+│   │
+│   └── prompts/                  # LLM prompts
+│       └── (prompt templates)
 │
-├── tests/                      # Test suite
-│   ├── __init__.py
-│   ├── conftest.py             # Test fixtures
-│   ├── test_cache.py
-│   ├── test_agents.py
-│   ├── test_routes.py
-│   ├── test_rag.py
-│   ├── test_user_profile.py
-│   ├── test_problem_repository.py
-│   ├── test_workflows.py
-│   └── test_services.py
+├── tests/                        # Unit tests
+│   ├── test_mim.py               # MIM tests (85+ tests)
+│   └── ...
 │
-└── vector_db/                  # ChromaDB persistence
-    ├── user_memory/
-    └── problem_knowledge/
+├── agent_cache/                  # JSON response cache
+│   └── *.json
+│
+└── vector_db/                    # ChromaDB storage
+    ├── problem_knowledge/
+    └── user_memory/
 ```
 
 ---
 
-## Core Components
+## Core Files
 
-### 1. FastAPI Application (`main.py`)
+### main.py - Entry Point
 
-The main entry point that:
-
-- Configures CORS for frontend communication
-- Sets up request tracing middleware
-- Registers API routes
-- Provides structured JSON logging
-
-### API Routes (`app/api/routes.py`)
-
-| Endpoint                  | Method | Description                              | Timeout |
-| ------------------------- | ------ | ---------------------------------------- | ------- |
-| `/health`                 | GET    | Health check                             | -       |
-| `/ai/feedback`            | POST   | Generate AI feedback for code submission | **65s** |
-| `/ai/weekly-report`       | POST   | Generate weekly progress report          | 30s     |
-| `/ai/rag-stats/{user_id}` | GET    | Get RAG statistics for debugging         | -       |
-
-#### MIM Endpoints (V2.0) 🆕
-
-| Endpoint                                 | Method | Description                          | Auth |
-| ---------------------------------------- | ------ | ------------------------------------ | ---- |
-| `/ai/mim/status`                         | GET    | Model status and health              | No   |
-| `/ai/mim/profile/{user_id}`              | GET    | User cognitive profile               | No   |
-| `/ai/mim/recommend/{user_id}`            | GET    | Personalized problem recommendations | No   |
-| `/ai/mim/train`                          | POST   | Trigger model training (background)  | No   |
-| `/ai/mim/predict/{user_id}/{problem_id}` | GET    | Pre-submission prediction            | No   |
-
-**Timeout Update:** `/ai/feedback` timeout increased from 30s to **65s** to accommodate the 60s sync workflow budget plus overhead.
-
-### 3. Schemas (`app/schemas/`)
-
-Pydantic models for request/response validation:
+**Purpose**: Initializes FastAPI application with middleware and routes.
 
 ```python
-# SubmissionContext - Input from frontend
-class SubmissionContext(BaseModel):
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes import router
+
+app = FastAPI(
+    title="Mentat Trials AI Service",
+    version="2.0.0"
+)
+
+# CORS for backend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register routes
+app.include_router(router, prefix="/ai")
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "version": "2.0.0"}
+```
+
+---
+
+### api/routes.py - API Endpoints
+
+**Main Endpoints**:
+
+| Method | Endpoint                                 | Description                         |
+| ------ | ---------------------------------------- | ----------------------------------- |
+| GET    | `/health`                                | Service health check                |
+| POST   | `/ai/feedback`                           | Generate AI feedback for submission |
+| GET    | `/ai/mim/status`                         | MIM model status                    |
+| GET    | `/ai/mim/profile/{user_id}`              | User cognitive profile              |
+| GET    | `/ai/mim/recommend/{user_id}`            | Problem recommendations             |
+| POST   | `/ai/mim/train`                          | Trigger model training              |
+| GET    | `/ai/mim/predict/{user_id}/{problem_id}` | Success prediction                  |
+
+---
+
+## Agents
+
+### base_json_agent.py - Base Agent Class
+
+**Purpose**: Provides common functionality for all LangGraph agents.
+
+```python
+class BaseJSONAgent:
+    """
+    Base class for all agents with:
+    - Structured JSON output
+    - Response caching (Redis + file)
+    - Error handling
+    - Metrics logging
+    """
+
+    def __init__(self, llm, cache_enabled=True):
+        self.llm = llm
+        self.cache = AgentCache() if cache_enabled else None
+
+    async def invoke(self, state: dict) -> dict:
+        # Check cache first
+        cache_key = self._build_cache_key(state)
+        if cached := self.cache.get(cache_key):
+            return cached
+
+        # Generate response
+        response = await self._generate(state)
+
+        # Cache and return
+        self.cache.set(cache_key, response)
+        return response
+```
+
+**Caching Strategy**:
+
+- Cache key = hash of (user_id, problem_id, code, verdict)
+- TTL: 24 hours
+- Storage: Redis (primary) + JSON files (fallback)
+
+---
+
+### feedback_agent.py - Feedback Generation
+
+**Purpose**: Analyzes failed code and generates contextual explanations.
+
+**Input**:
+
+```python
+{
+    "code": "def solution(arr):\n    ...",
+    "language": "python",
+    "verdict": "Wrong Answer",
+    "error_type": "Wrong Answer",
+    "problem_context": {...},
+    "user_memory": [...]  # Past mistakes from RAG
+}
+```
+
+**Output**:
+
+```python
+{
+    "explanation": "Your solution fails on edge case where array is empty...",
+    "root_cause": "Missing boundary check",
+    "specific_line": 5,
+    "confidence": 0.85
+}
+```
+
+**Prompt Structure**:
+
+```
+You are an expert programming tutor analyzing a failed submission.
+
+Problem: {problem_title}
+Constraints: {constraints}
+User's Code: {code}
+Verdict: {verdict}
+Error: {error_type}
+
+Past Mistakes (similar problems):
+{user_memory}
+
+Analyze WHY the code failed and provide:
+1. Clear explanation of the bug
+2. Root cause identification
+3. Specific line/area if identifiable
+
+Do NOT reveal the full solution.
+```
+
+---
+
+### hint_agent.py - Progressive Hints
+
+**Purpose**: Generates tiered hints from conceptual to specific.
+
+**Output**:
+
+```python
+{
+    "hints": [
+        {
+            "level": 1,
+            "type": "conceptual",
+            "content": "Think about what happens when the input is empty"
+        },
+        {
+            "level": 2,
+            "type": "directional",
+            "content": "Check the loop boundaries - what if start > end?"
+        },
+        {
+            "level": 3,
+            "type": "specific",
+            "content": "Line 5: Add a condition to handle n == 0 before the loop"
+        }
+    ]
+}
+```
+
+**Hint Levels**:
+| Level | Type | When Revealed | Description |
+|-------|------|---------------|-------------|
+| 1 | Conceptual | Always | General direction |
+| 2 | Directional | After 2nd attempt | Points to area |
+| 3 | Specific | After 3rd attempt | Actionable fix |
+
+---
+
+### pattern_agent.py - Mistake Pattern Detection
+
+**Purpose**: Identifies recurring error patterns across submissions.
+
+**Common Patterns Detected**:
+
+- Off-by-one errors
+- Edge case handling (empty/single element)
+- Integer overflow
+- Array index out of bounds
+- Incorrect base case (recursion)
+- Wrong loop termination
+- Floating point precision
+
+**Output**:
+
+```python
+{
+    "detected_pattern": "Off-by-one error",
+    "frequency": 3,  # Times seen in last 10 submissions
+    "description": "You tend to use < instead of <= in loop conditions",
+    "recommendation": "Always verify loop bounds with smallest and largest inputs"
+}
+```
+
+---
+
+### learning_agent.py - Learning Recommendations
+
+**Purpose**: Suggests focus areas based on weakness analysis.
+
+**Output**:
+
+```python
+{
+    "focus_areas": [
+        {
+            "topic": "Edge Case Handling",
+            "priority": "high",
+            "reason": "Failed 4 of last 5 edge case tests"
+        },
+        {
+            "topic": "Dynamic Programming",
+            "priority": "medium",
+            "reason": "Struggling with state transitions"
+        }
+    ],
+    "suggested_problems": [
+        {"id": "...", "title": "...", "targets": "edge cases"}
+    ],
+    "estimated_time": "2-3 hours focused practice"
+}
+```
+
+---
+
+### difficulty_agent.py - Difficulty Assessment
+
+**Purpose**: Evaluates if problem difficulty matches user level.
+
+**Actions**:
+
+- `increase` - User solving too easily
+- `maintain` - Good challenge level
+- `decrease` - User struggling too much
+
+**Output**:
+
+```python
+{
+    "action": "maintain",
+    "rationale": "User is challenged but making progress",
+    "current_level": "intermediate",
+    "metrics": {
+        "acceptance_rate": 0.45,
+        "avg_attempts": 2.3,
+        "time_trend": "improving"
+    }
+}
+```
+
+---
+
+### report_agent.py - Weekly Reports
+
+**Purpose**: Generates comprehensive weekly performance summaries.
+
+**Output**:
+
+```python
+{
+    "period": "2026-01-19 to 2026-01-25",
+    "summary": {
+        "problems_attempted": 15,
+        "problems_solved": 12,
+        "acceptance_rate": 0.80,
+        "streak_days": 7
+    },
+    "improvements": [
+        "Array manipulation accuracy improved by 20%"
+    ],
+    "areas_to_focus": [
+        "Graph algorithms - only 40% success rate"
+    ],
+    "achievements": [
+        "🔥 7-day solving streak!",
+        "📈 Solved first hard problem"
+    ],
+    "next_week_goals": [
+        "Attempt 2 graph problems",
+        "Maintain streak"
+    ]
+}
+```
+
+---
+
+## Graph Workflows
+
+### sync_workflow.py - Main Workflow
+
+**Purpose**: Orchestrates agent execution within 65-second budget.
+
+**Workflow Nodes**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      SYNC WORKFLOW                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │  Retrieve   │───▶│   Build     │───▶│  Feedback   │         │
+│  │   Memory    │    │  Context    │    │   Agent     │         │
+│  └─────────────┘    └─────────────┘    └──────┬──────┘         │
+│                                               │                 │
+│                                               ▼                 │
+│                                    ┌─────────────────────┐      │
+│                                    │  Parallel Execution │      │
+│                                    │  ┌───────┬───────┐  │      │
+│                                    │  │ Hint  │Pattern│  │      │
+│                                    │  │ Agent │ Agent │  │      │
+│                                    │  └───────┴───────┘  │      │
+│                                    └──────────┬──────────┘      │
+│                                               │                 │
+│                                               ▼                 │
+│                                    ┌─────────────────────┐      │
+│                                    │  Parallel Execution │      │
+│                                    │  ┌───────┬────────┐ │      │
+│                                    │  │Learning│Difficul│ │      │
+│                                    │  │ Agent  │ty Agent│ │      │
+│                                    │  └───────┴────────┘ │      │
+│                                    └──────────┬──────────┘      │
+│                                               │                 │
+│                                               ▼                 │
+│                                    ┌─────────────────────┐      │
+│                                    │   Store Memory      │      │
+│                                    │   (if new pattern)  │      │
+│                                    └─────────────────────┘      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Time Budget**:
+
+- Total: 65 seconds
+- Memory retrieval: ~5s
+- Context building: ~2s
+- Feedback generation: ~15s
+- Parallel agents: ~20s (each)
+- Memory storage: ~3s
+
+**Code Structure**:
+
+```python
+class SyncWorkflow:
+    def __init__(self):
+        self.feedback_agent = FeedbackAgent()
+        self.hint_agent = HintAgent()
+        self.pattern_agent = PatternAgent()
+        self.learning_agent = LearningAgent()
+        self.difficulty_agent = DifficultyAgent()
+        self.retriever = MemoryRetriever()
+
+    async def execute(self, request: FeedbackRequest) -> FeedbackResponse:
+        # Step 1: Retrieve user memory
+        memory = await self.retriever.retrieve(
+            user_id=request.user_id,
+            problem_category=request.problem_category
+        )
+
+        # Step 2: Build context
+        context = self._build_context(request, memory)
+
+        # Step 3: Generate feedback
+        feedback = await self.feedback_agent.invoke(context)
+
+        # Step 4: Parallel hint + pattern
+        hint_task = self.hint_agent.invoke(context)
+        pattern_task = self.pattern_agent.invoke(context)
+        hints, pattern = await asyncio.gather(hint_task, pattern_task)
+
+        # Step 5: Parallel learning + difficulty
+        learning_task = self.learning_agent.invoke(context)
+        difficulty_task = self.difficulty_agent.invoke(context)
+        learning, difficulty = await asyncio.gather(learning_task, difficulty_task)
+
+        # Step 6: Store new memory if pattern detected
+        if pattern.detected_pattern:
+            await self._store_memory(request, pattern)
+
+        return FeedbackResponse(
+            explanation=feedback.explanation,
+            hints=hints.hints,
+            detected_pattern=pattern.detected_pattern,
+            learning_recommendation=learning,
+            difficulty_adjustment=difficulty
+        )
+```
+
+---
+
+## MIM (Mistake Inference Model)
+
+### inference.py - Real-Time Predictions
+
+**Purpose**: Singleton service for ML predictions without LLM calls.
+
+```python
+class MIMInference:
+    """
+    Provides instant predictions:
+    - Success probability
+    - Time to solve estimation
+    - Difficulty appropriateness
+    """
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._load_models()
+        return cls._instance
+
+    def predict_success(self, user_id: str, problem_id: str) -> float:
+        features = self.feature_extractor.extract(user_id, problem_id)
+        return self.success_model.predict_proba(features)[0][1]
+```
+
+---
+
+### feature_extractor.py - Feature Engineering
+
+**Purpose**: Extracts 60-dimensional feature vector from user + problem data.
+
+**Feature Categories**:
+
+```python
+FEATURES = {
+    # User features (30)
+    "user_total_submissions": int,
+    "user_acceptance_rate": float,
+    "user_avg_attempts": float,
+    "user_streak_days": int,
+    "user_category_strengths": dict,  # 10 categories
+    "user_difficulty_distribution": dict,  # easy/med/hard
+    "user_recent_momentum": float,  # Last 7 days trend
+
+    # Problem features (15)
+    "problem_difficulty": int,  # 1-3
+    "problem_category": str,  # One-hot encoded
+    "problem_acceptance_rate": float,
+    "problem_avg_time": float,
+    "problem_hint_usage_rate": float,
+
+    # Interaction features (15)
+    "user_category_match": float,  # User strength vs problem category
+    "difficulty_gap": float,  # User level vs problem level
+    "similar_problems_solved": int,
+    "time_since_similar": float,
+    "prerequisite_coverage": float
+}
+```
+
+---
+
+### recommender.py - Problem Recommendations
+
+**Purpose**: Suggests problems based on skill gaps and learning goals.
+
+**Algorithm**:
+
+1. Identify user's weak categories
+2. Filter problems in weak categories
+3. Score by difficulty appropriateness
+4. Diversify recommendations
+5. Add stretch goals
+
+```python
+def recommend(self, user_id: str, count: int = 5) -> List[Recommendation]:
+    profile = self._get_user_profile(user_id)
+    weak_areas = self._identify_weak_areas(profile)
+
+    candidates = self._get_candidate_problems(weak_areas)
+    scored = self._score_candidates(candidates, profile)
+
+    # Ensure diversity
+    recommendations = self._diversify(scored, count)
+
+    return recommendations
+```
+
+**Output**:
+
+```python
+[
+    {
+        "problem_id": "...",
+        "problem_title": "Two Sum",
+        "reason": "Targets your weakness in hash maps",
+        "difficulty": "easy",
+        "estimated_success": 0.75,
+        "estimated_time_minutes": 15
+    }
+]
+```
+
+---
+
+### roadmap.py - Learning Path Generation
+
+**Purpose**: Creates personalized multi-week learning roadmaps.
+
+**Output**:
+
+```python
+{
+    "current_level": "intermediate",
+    "target_level": "advanced",
+    "estimated_weeks": 8,
+    "milestones": [
+        {
+            "week": 1,
+            "focus": "Master two-pointer technique",
+            "problems": [...],
+            "expected_outcome": "Solve 80% of two-pointer problems"
+        },
+        {
+            "week": 2,
+            "focus": "Sliding window patterns",
+            "problems": [...],
+            "expected_outcome": "..."
+        }
+    ]
+}
+```
+
+---
+
+## RAG System
+
+### retriever.py - Memory Retrieval
+
+**Purpose**: Fetches relevant past mistakes from vector store.
+
+```python
+class MemoryRetriever:
+    def __init__(self):
+        self.vector_store = VectorStore()
+        self.embeddings = EmbeddingModel()
+
+    async def retrieve(
+        self,
+        user_id: str,
+        problem_category: str,
+        k: int = 5
+    ) -> List[Memory]:
+        # Build query from current context
+        query = f"User {user_id} mistakes in {problem_category}"
+        query_embedding = self.embeddings.embed(query)
+
+        # Search vector store
+        results = self.vector_store.similarity_search(
+            query_embedding,
+            filter={"user_id": user_id},
+            k=k
+        )
+
+        return [Memory(**r) for r in results]
+```
+
+**Memory Schema**:
+
+```python
+{
+    "user_id": str,
+    "problem_id": str,
+    "problem_category": str,
+    "mistake_type": str,
+    "code_snippet": str,
+    "feedback_given": str,
+    "timestamp": datetime
+}
+```
+
+---
+
+### vector_store.py - ChromaDB Management
+
+**Purpose**: Manages persistent vector storage for user memories.
+
+**Collections**:
+
+- `user_memory` - User mistakes and patterns
+- `problem_knowledge` - Problem-specific information
+
+```python
+class VectorStore:
+    def __init__(self):
+        self.client = chromadb.PersistentClient(
+            path="./vector_db"
+        )
+        self.user_collection = self.client.get_or_create_collection(
+            "user_memory",
+            metadata={"hnsw:space": "cosine"}
+        )
+
+    def add(self, user_id: str, content: str, metadata: dict):
+        embedding = self.embeddings.embed(content)
+        self.user_collection.add(
+            ids=[f"{user_id}_{uuid4()}"],
+            embeddings=[embedding],
+            documents=[content],
+            metadatas=[metadata]
+        )
+```
+
+---
+
+### context_builder.py - Context Assembly
+
+**Purpose**: Constructs LLM-safe context from multiple sources.
+
+**Context Structure**:
+
+```python
+{
+    "problem": {
+        "title": str,
+        "description": str (truncated),
+        "constraints": str,
+        "examples": List[dict]
+    },
+    "submission": {
+        "code": str,
+        "language": str,
+        "verdict": str,
+        "error_message": str
+    },
+    "user_memory": [
+        {
+            "problem": str,
+            "mistake": str,
+            "when": str
+        }
+    ],
+    "user_stats": {
+        "total_submissions": int,
+        "acceptance_rate": float
+    }
+}
+```
+
+**Token Budget**: ~4000 tokens max to leave room for response.
+
+---
+
+## Schemas
+
+### feedback.py
+
+```python
+class FeedbackRequest(BaseModel):
     user_id: str
     problem_id: str
     problem_category: str
@@ -279,1045 +791,287 @@ class SubmissionContext(BaseModel):
     code: str
     language: str
     verdict: str
-    error_type: Optional[str]
+    error_type: str
+    user_history_summary: str
 
-# FeedbackResponse - Agent output
 class FeedbackResponse(BaseModel):
     explanation: str
-    improvement_hint: str
+    hints: List[Hint]
     detected_pattern: Optional[str]
+    learning_recommendation: LearningRecommendation
+    difficulty_adjustment: DifficultyAdjustment
+    confidence: float
+    weekly_report: Optional[WeeklyReport]
 ```
 
 ---
 
-## Agent System
-
-All agents extend the base JSON agent pattern defined in `base_json_agent.py`:
-
-### Base JSON Agent
+### hint.py
 
 ```python
-def run_json_agent(
-    context: str,           # Input context
-    cache_key: str,         # Redis cache key
-    schema: Type,           # Pydantic output schema
-    system_prompt: str,     # Agent-specific prompt
-    fallback,               # Fallback response on error
-    agent_name: str         # For logging/metrics
-) -> schema
-```
+class Hint(BaseModel):
+    level: int  # 1, 2, or 3
+    type: Literal["conceptual", "directional", "specific"]
+    content: str
 
-Features:
-
-- **Redis Caching**: Responses are cached to reduce LLM costs
-- **Automatic Retries**: Uses correction prompts on parse failures
-- **Fallback Responses**: Returns graceful fallback on errors
-- **Metrics Recording**: Tracks agent performance
-
-### Available Agents
-
-| Agent                     | Purpose                               | Caching              |
-| ------------------------- | ------------------------------------- | -------------------- |
-| `feedback_agent`          | Analyze code and provide feedback     | ❌ Non-deterministic |
-| `hint_agent`              | Compress hints to actionable guidance | ❌ Non-deterministic |
-| `pattern_detection_agent` | Detect recurring mistake patterns     | ✅ Cached            |
-| `learning_agent`          | Recommend learning areas              | ✅ Cached            |
-| `difficulty_agent`        | Suggest difficulty adjustment         | ✅ Cached            |
-| `report_agent`            | Generate weekly reports               | ✅ Cached            |
-
----
-
-## Caching Strategy
-
-### Redis Cache (Primary)
-
-Location: `app/cache/redis_cache.py`
-
-```python
-# Configuration
-REDIS_URL = os.getenv("REDIS_URL")  # e.g., redis://localhost:6379/0
-DEFAULT_TTL = 3600  # 1 hour
-
-# Usage
-redis_cache.get(agent_name, cache_key)
-redis_cache.set(agent_name, cache_key, value, ttl=7200)
-redis_cache.invalidate_user(user_id)
-```
-
-### Cache Key Generation
-
-Location: `app/cache/cache_key.py`
-
-Cache keys are generated from:
-
-- Agent name
-- User ID
-- Problem ID
-- Problem category
-- Verdict
-- Code hash
-
-```python
-cache_key = build_cache_key("feedback_agent", payload)
-# Returns: SHA256 hash of stable payload
-```
-
-### Deprecated: File-based Cache
-
-The file-based cache in `agent_cache.py` is **deprecated**. All new code should use Redis caching.
-
----
-
-## RAG (Retrieval-Augmented Generation)
-
-### Vector Stores (`app/rag/vector_store.py`)
-
-Uses ChromaDB with Ollama embeddings:
-
-```python
-# User memory store - stores mistake patterns
-user_memory_store = Chroma(
-    collection_name="user_memory",
-    persist_directory="./vector_db/user_memory"
-)
-
-# Problem knowledge store - stores problem-specific data
-problem_knowledge_store = Chroma(
-    collection_name="problem_knowledge",
-    persist_directory="./vector_db/problem_knowledge"
-)
-```
-
-### Memory Retrieval (`app/rag/retriever.py`)
-
-**Enhanced with k=7 for richer context:**
-
-```python
-# Retrieve relevant memories with higher k
-memories = retrieve_user_memory(
-    user_id="user_123",
-    query="array problem edge cases",
-    k=7  # Increased from 3
-)
-
-# Store ALL submissions with comprehensive metadata
-store_user_feedback(
-    user_id="user_123",
-    problem_id="prob_001",
-    category="Array",
-    mistake_summary="Verdict: wrong_answer | Analysis: ... | Learning: ... | Difficulty: ..."
-)
-```
-
-**Future Enhancement (Planned):**
-Return relevance scores with chunks for better transparency.
-
-### Context Building (`app/rag/context_builder.py`)
-
-**Intelligence-First Philosophy: Full context, no truncation**
-
-```python
-def build_context(
-    submission: SubmissionContext,
-    user_memory: Optional[List[str]] = None,
-    problem_knowledge: Optional[List[str]] = None,
-    problem_context: Optional[Dict[str, Any]] = None,
-    user_profile: Optional[Dict[str, Any]] = None,
-    include_full_code: bool = True,  # NEW: Default to full code
-) -> str
-```
-
-Builds structured context for agents including:
-
-1. **Problem Definition** - Title, difficulty, tags, expected approach, constraints
-2. **User Profile & History** - Recurring mistakes, weak topics, patterns, success rate
-3. **Historical Submissions** (RAG Retrieved) - 5 most relevant chunks
-4. **Current Submission** - Language, verdict, error type, **FULL CODE WITH LINE NUMBERS**
-5. **Analysis Instructions** - Data quality flags, mandatory steps, output requirements
-
-**Key Features:**
-
-- ✅ **Full code with line numbers** - Enables precise reference (e.g., "Line 42")
-- ✅ **No truncation** - Was 4000 chars, now unlimited
-- ✅ **Structured sections** - Clearly delimited with box drawing characters
-- ✅ **Data quality flags** - Indicates if problem/user data is available
-
-**Example Code Format:**
-
-````python
-USER CODE:
-```cpp
-   1 | #include <iostream>
-   2 | using namespace std;
-   3 |
-   4 | int main() {
-   5 |     // User's code here
-   6 | }
-````
-
-(Total: 6 lines, 87 characters)
-
+class HintResponse(BaseModel):
+    hints: List[Hint]
+    should_reveal_more: bool
 ```
 
 ---
 
-## Workflows
+## Caching
 
-### Design Philosophy: Intelligence-First
+### cache_key.py
 
-**Key Principles:**
-- ✅ **All agents MUST complete** - No skipping due to budget constraints
-- ✅ **Full context, no truncation** - Complete code with line numbers for accurate analysis
-- ✅ **Agent coordination** - Results shared between agents for coherent outputs
-- ✅ **Comprehensive memory** - ALL submissions stored with full metadata
-- ✅ **Quality over speed** - 60s budget allows thorough analysis
-
-### Sync Workflow (User-facing)
-
-Location: `app/graph/sync_workflow.py`
-
-**Budget: 60 seconds total** (generous allocations per agent)
-
-Executes sequentially for immediate response:
-
-```
-
-retrieve_memory (k=7) → retrieve_problem → build_user_profile → orchestrator
-→ build_context (FULL CODE) → feedback (30s) → pattern_detection (25s) → hint (20s) → END
-
-````
-
-**Key Changes:**
-- **RAG_RETRIEVAL_K = 7** (increased from 3 for richer context)
-- **No budget-based skipping** - All agents complete regardless of time
-- **Agent coordination via `agent_results` dict** - Hint agent references feedback & patterns
-- **Full code inclusion** - No 4000 char truncation
-- **`_log_budget_status()`** replaced `_check_budget()` - Logs but never skips
-
-**Time Budgets:**
-```python
-SYNC_TOTAL_BUDGET_SECONDS = 60.0  # Was 10s
-SYNC_AGENT_BUDGETS = {
-    "retrieve_memory": 10.0,
-    "build_user_profile": 5.0,
-    "feedback_agent": 30.0,      # Most critical
-    "pattern_detection": 25.0,
-    "hint_agent": 20.0,
-}
-````
-
-**State Structure:**
+**Purpose**: Generates deterministic cache keys.
 
 ```python
-class MentatSyncState(TypedDict):
-    # ... existing fields ...
-    agent_results: Dict[str, Any]        # NEW: Cross-agent coordination
-    pattern_confidence: float            # NEW: For hint agent reference
-    user_memory_with_scores: List[Dict]  # NEW: Relevance scores
+def generate_cache_key(
+    user_id: str,
+    problem_id: str,
+    code: str,
+    verdict: str
+) -> str:
+    content = f"{user_id}:{problem_id}:{code}:{verdict}"
+    return hashlib.sha256(content.encode()).hexdigest()
 ```
 
-### Async Workflow (Background)
+### agent_cache.py
 
-Location: `app/graph/async_workflow.py`
+**Purpose**: File-based JSON cache for agent responses.
 
-**Philosophy: ALL agents MUST run** - No skip conditions
+**Storage**: `agent_cache/*.json`
 
-Runs after sync workflow returns:
+**TTL**: 24 hours (configurable)
 
-```
-learning (ALWAYS) → difficulty (ALWAYS) → weekly_report → store_memory (ALWAYS) → END
-```
+---
 
-**Key Changes:**
+## Metrics
 
-- **Learning agent ALWAYS runs** - Even for accepted submissions (recommends optimizations)
-- **Difficulty agent ALWAYS runs** - No skip conditions based on verdict
-- **Store memory ALWAYS runs** - Every submission stored with comprehensive metadata
-- **Agent coordination** - Learning results inform difficulty decisions
+### agent_metries.py
 
-**Time Budgets:**
+**Purpose**: Tracks agent performance metrics.
+
+**Metrics Tracked**:
 
 ```python
-ASYNC_AGENT_BUDGETS = {
-    "learning_agent": 45.0,    # MUST COMPLETE
-    "difficulty_agent": 30.0,  # MUST COMPLETE
-    "weekly_report": 45.0,
-    "store_memory": 15.0,      # ALWAYS STORE
+{
+    "agent_name": str,
+    "execution_time_ms": float,
+    "cache_hit": bool,
+    "tokens_used": int,
+    "error": Optional[str],
+    "timestamp": datetime
 }
 ```
 
-**Store Memory Enhancement:**
-Stores ALL submissions with:
-
-- Verdict and problem metadata
-- Feedback explanation and pattern
-- Learning recommendations
-- Difficulty adjustments
-
-### Orchestrator
-
-Location: `app/graph/orchestrator.py`
-
-Decides which agents run based on verdict:
-
-| Verdict               | SYNC Agents                       | ASYNC Agents         |
-| --------------------- | --------------------------------- | -------------------- |
-| `Accepted`            | feedback only                     | learning, difficulty |
-| `wrong_answer`        | feedback, pattern_detection, hint | learning, difficulty |
-| `time_limit_exceeded` | feedback, pattern_detection, hint | learning, difficulty |
-| `runtime_error`       | feedback, pattern_detection, hint | learning, difficulty |
-
-**Note:** Once orchestrator enables an agent, it **MUST complete** - no budget-based skipping.
+**Output File**: `agent_metrics.json`
 
 ---
 
-## Agent Coordination (v2.0)
+## Services
 
-### Cross-Agent State Sharing
+### llm.py - LLM Provider
 
-Agents now coordinate via shared `agent_results` dictionary:
+**Purpose**: Abstracts LLM provider for easy switching.
 
 ```python
-# In sync_workflow.py
-state["agent_results"] = {
-    "feedback": feedback_result,
-    "pattern": pattern_result,
-    "pattern_confidence": 0.95
-}
+class LLMService:
+    def __init__(self, provider: str = "gemini"):
+        if provider == "gemini":
+            self.client = GoogleGenerativeAI(
+                model="gemini-pro",
+                api_key=os.getenv("GOOGLE_API_KEY")
+            )
+        elif provider == "openai":
+            self.client = ChatOpenAI(
+                model="gpt-4",
+                api_key=os.getenv("OPENAI_API_KEY")
+            )
 
-# Hint agent uses previous results
-augmented_context = state["context"]
-if state["agent_results"].get("feedback"):
-    augmented_context += f"\nPREVIOUS FEEDBACK: {feedback.explanation}"
-if state["agent_results"].get("pattern"):
-    augmented_context += f"\nDETECTED PATTERN: {pattern} (confidence: {confidence})"
+    async def generate(self, prompt: str, **kwargs) -> str:
+        return await self.client.ainvoke(prompt, **kwargs)
 ```
-
-### Agent Execution Flow
-
-**Sync Workflow (Sequential):**
-
-```
-1. feedback_agent
-   └─> Stores result in agent_results["feedback"]
-
-2. pattern_detection_agent
-   └─> Stores result in agent_results["pattern"]
-   └─> Stores confidence in state["pattern_confidence"]
-
-3. hint_agent
-   └─> Reads agent_results["feedback"] and agent_results["pattern"]
-   └─> Generates coherent hint referencing previous insights
-```
-
-**Async Workflow (Sequential but independent):**
-
-```
-1. learning_agent
-   └─> Receives sync workflow results (feedback, pattern)
-   └─> Generates learning recommendations
-
-2. difficulty_agent
-   └─> Reads learning_agent results
-   └─> Makes informed difficulty decisions
-
-3. store_memory_node
-   └─> Collects ALL agent results
-   └─> Stores comprehensive submission record
-```
-
-### Benefits
-
-- ✅ **Coherent outputs** - Hint references specific feedback points
-- ✅ **Context awareness** - Each agent knows what previous agents found
-- ✅ **Better decisions** - Difficulty adjusts based on learning needs
-- ✅ **Rich memory** - All insights stored together
 
 ---
 
-## Configuration
+## Database
 
-### Environment Variables
+### mongodb.py
 
-Create a `.env` file in the `ai-services` directory:
-
-```bash
-# ═══════════════════════════════════════════════════════════════
-# REQUIRED
-# ═══════════════════════════════════════════════════════════════
-GOOGLE_API_KEY=your-gemini-api-key
-
-# ═══════════════════════════════════════════════════════════════
-# OPTIONAL (for full functionality)
-# ═══════════════════════════════════════════════════════════════
-
-# Redis - For response caching (recommended)
-REDIS_URL=redis://localhost:6379/0
-
-# MongoDB - For user submission history (optional)
-MONGODB_URI=mongodb://localhost:27017/mentat
-
-# Backend API - For problem retrieval
-BACKEND_API_URL=http://localhost:5000/api
-
-# ═══════════════════════════════════════════════════════════════
-# PERFORMANCE TUNING (v2.0 defaults)
-# ═══════════════════════════════════════════════════════════════
-
-# Sync workflow total budget (seconds)
-SYNC_TOTAL_BUDGET_SECONDS=60.0
-
-# RAG retrieval count (higher = more context)
-RAG_RETRIEVAL_K=7
-
-# Request timeout (should be > sync budget)
-MAX_REQUEST_SECONDS=65
-```
-
-### LLM Configuration
-
-Location: `app/services/llm.py`
+**Purpose**: MongoDB client for syncing with backend.
 
 ```python
-DEFAULT_MODEL = "gemini-2.5-flash"  # Fast, high-quality
-# Alternative: "gemini-2.5-pro" for even better quality
+class MongoDBClient:
+    def __init__(self):
+        self.client = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
+        self.db = self.client.mentat_trials
 
-def get_llm(temperature: float = 0.2):
-    return ChatGoogleGenerativeAI(
-        model=DEFAULT_MODEL,
-        temperature=temperature,  # Low for consistency
-        google_api_key=os.getenv("GOOGLE_API_KEY")
-    )
+    async def get_user_submissions(
+        self,
+        user_id: str,
+        limit: int = 20
+    ) -> List[dict]:
+        cursor = self.db.submissions.find(
+            {"user": ObjectId(user_id)}
+        ).sort("submittedAt", -1).limit(limit)
+        return await cursor.to_list(length=limit)
 ```
 
-**Model Selection:**
+---
 
-- `gemini-2.5-flash` - **Recommended** - Fast, cost-effective, high quality
-- `gemini-2.5-pro` - Maximum quality, slower, higher cost
-- `gemini-1.5-pro` - Stable, reliable fallback
+## Environment Variables
 
-### Workflow Configuration
+```env
+# LLM Configuration
+GOOGLE_API_KEY=your_google_api_key
+LLM_PROVIDER=gemini  # or "openai"
 
-**Sync Workflow Constants (`app/graph/sync_workflow.py`):**
+# Database
+MONGODB_URI=mongodb://localhost:27017/mentat-trials
 
-```python
-# Total budget for user-facing response
-SYNC_TOTAL_BUDGET_SECONDS = 60.0  # Generous for quality
+# Redis (optional)
+REDIS_URL=redis://localhost:6379
 
-# Per-agent budgets
-SYNC_AGENT_BUDGETS = {
-    "retrieve_memory": 10.0,
-    "build_user_profile": 5.0,
-    "feedback_agent": 30.0,      # Most important
-    "pattern_detection": 25.0,
-    "hint_agent": 20.0,
-}
+# Vector Store
+CHROMA_PERSIST_DIRECTORY=./vector_db
 
-# RAG retrieval count
-RAG_RETRIEVAL_K = 7  # More context = better analysis
+# Caching
+CACHE_TTL_HOURS=24
+ENABLE_CACHE=true
+
+# Workflow
+WORKFLOW_TIMEOUT_SECONDS=65
+
+# MIM
+ENABLE_MIM=true
+MIM_MODEL_PATH=./app/mim/models
 ```
-
-**Async Workflow Constants (`app/graph/async_workflow.py`):**
-
-```python
-# Background processing budgets (generous)
-ASYNC_AGENT_BUDGETS = {
-    "learning_agent": 45.0,
-    "difficulty_agent": 30.0,
-    "weekly_report": 45.0,
-    "store_memory": 15.0,
-}
-```
-
-### Caching Configuration
-
-**Redis Settings (`app/cache/redis_cache.py`):**
-
-```python
-# Connection
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-
-# TTL (time-to-live) settings
-DEFAULT_TTL = 3600  # 1 hour for most responses
-LONG_TTL = 7200     # 2 hours for stable results
-
-# Cache invalidation
-# Use: redis_cache.invalidate_user(user_id)
-```
-
-**Which Agents Use Cache:**
-| Agent | Cached | TTL | Reason |
-| ---------------------- | ------ | ------ | ----------------------------- |
-| feedback_agent | ❌ | - | Non-deterministic, context varies |
-| pattern_detection | ✅ | 2h | Deterministic analysis |
-| learning_agent | ✅ | 1h | Stable recommendations |
-| difficulty_agent | ✅ | 1h | Consistent decisions |
-| hint_agent | ❌ | - | References other agents |
 
 ---
 
 ## Testing
 
-### Running Tests
-
 ```bash
-# Navigate to ai-services directory
-cd ai-services
-
-# Install test dependencies
-pip install pytest pytest-asyncio pytest-cov
-
 # Run all tests
 pytest
 
 # Run with coverage
 pytest --cov=app --cov-report=html
 
-# Run specific test file
-pytest tests/test_agents.py
+# Run MIM tests only
+pytest tests/test_mim.py -v
 
-# Run specific test class
-pytest tests/test_agents.py::TestFeedbackAgent
-
-# Run with verbose output
-pytest -v
-
-# Run excluding slow integration tests
-pytest --ignore=tests/test_routes.py
+# Run specific test
+pytest tests/test_mim.py::test_feature_extraction -v
 ```
 
-### Test Results
+**Test Coverage**: 85+ MIM tests covering:
 
-**Status: ✅ 102/102 tests passing** (excluding route integration tests that make real API calls)
-
-**Test Coverage:**
-
-- Core workflows: ✅ All passing
-- Agents: ✅ All passing
-- RAG components: ✅ All passing
-- User profile building: ✅ All passing
-- Cache systems: ✅ All passing
-
-### Test Structure
-
-| Test File                    | Tests                                  | Status |
-| ---------------------------- | -------------------------------------- | ------ |
-| `test_cache.py`              | Redis cache, cache key generation      | ✅     |
-| `test_agents.py`             | All AI agents                          | ✅     |
-| `test_routes.py`             | API endpoints, progressive hints       | ⚠️ \*  |
-| `test_rag.py`                | Retriever, context builder, monitoring | ✅     |
-| `test_user_profile.py`       | Profile building, pattern extraction   | ✅     |
-| `test_problem_repository.py` | Problem context, approach inference    | ✅     |
-| `test_workflows.py`          | Sync/async workflows, orchestrator     | ✅     |
-| `test_services.py`           | LLM service, metrics                   | ✅     |
-
-\* _Route tests make real API calls and may timeout - excluded from CI_
-
-### Test Fixtures
-
-Common fixtures are defined in `conftest.py`:
-
-```python
-@pytest.fixture
-def sample_submission_payload():
-    return {
-        "user_id": "test_user_123",
-        "problem_id": "prob_001",
-        "code": "def solution(): ...",
-        ...
-    }
-```
-
-### Recent Test Updates
-
-**Intelligence-First Refactoring:**
-
-- ✅ Removed `_check_budget` mocks (function no longer exists)
-- ✅ Added `agent_results` and `pattern_confidence` to test state
-- ✅ Updated build_user_profile_node tests to reflect no-skip behavior
+- Feature extraction
+- Model predictions
+- Recommendations
+- Roadmap generation
+- Edge cases
 
 ---
 
-## Deployment
-
-### Development
+## Development
 
 ```bash
-# Install dependencies
-pip install -r requirement.txt
+# Start with hot reload
+uvicorn app.main:app --reload --port 8000
 
-# Start the server
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# Run with specific workers
+uvicorn app.main:app --workers 4 --port 8000
+
+# Train MIM models
+python -m app.mim.training
 ```
-
-### Production
-
-```bash
-# Using gunicorn with uvicorn workers
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-```
-
-### Docker (Recommended)
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY requirement.txt .
-RUN pip install -r requirement.txt
-
-COPY . .
-
-EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### Required Services
-
-1. **Redis**: For response caching
-
-   ```bash
-   docker run -d -p 6379:6379 redis:alpine
-   ```
-
-2. **MongoDB**: For user submission history
-
-   ```bash
-   docker run -d -p 27017:27017 mongo:latest
-   ```
-
-3. **Ollama**: For embeddings (optional, can use cloud embeddings)
-   ```bash
-   ollama serve
-   ollama pull nomic-embed-text
-   ```
 
 ---
 
-## API Usage Examples
+## API Reference
 
-### Generate Feedback
+### POST /ai/feedback
 
-**Request:**
-
-```bash
-curl -X POST http://localhost:8000/ai/feedback \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user_123",
-    "problem_id": "prob_001",
-    "problem_category": "Array",
-    "constraints": "1 <= n <= 10^4",
-    "code": "def two_sum(nums, target):\n    for i in range(len(nums)):\n        for j in range(len(nums)):\n            if nums[i] + nums[j] == target:\n                return [i, j]",
-    "language": "python",
-    "verdict": "wrong_answer",
-    "error_type": "Wrong Answer"
-  }'
-```
-
-**Response (v2.0):**
+**Request**:
 
 ```json
 {
-  "success": true,
-  "verdict": "wrong_answer",
-  "submission_id": "sub_abc123def456",
+  "user_id": "user123",
+  "problem_id": "prob456",
+  "problem_category": "Arrays",
+  "constraints": "1 ≤ n ≤ 10^5",
+  "code": "def solution(arr):\n    ...",
+  "language": "python",
+  "verdict": "Wrong Answer",
+  "error_type": "Wrong Answer",
+  "user_history_summary": "Recent 20 submissions: 5 accepted, 15 failed"
+}
+```
+
+**Response**:
+
+```json
+{
+  "explanation": "Your solution doesn't handle the edge case where...",
   "hints": [
+    {"level": 1, "type": "conceptual", "content": "..."},
+    {"level": 2, "type": "directional", "content": "..."},
+    {"level": 3, "type": "specific", "content": "..."}
+  ],
+  "detected_pattern": "Off-by-one error",
+  "learning_recommendation": {
+    "focus_areas": [...],
+    "rationale": "..."
+  },
+  "difficulty_adjustment": {
+    "action": "maintain",
+    "rationale": "..."
+  },
+  "confidence": 0.85,
+  "weekly_report": null
+}
+```
+
+### GET /ai/mim/profile/{user_id}
+
+**Response**:
+
+```json
+{
+  "user_id": "user123",
+  "level": "intermediate",
+  "strengths": ["arrays", "strings"],
+  "weaknesses": ["dynamic_programming", "graphs"],
+  "skill_scores": {
+    "arrays": 0.85,
+    "strings": 0.8,
+    "dynamic_programming": 0.45,
+    "graphs": 0.5
+  },
+  "predicted_next_milestone": "Solve first hard DP problem"
+}
+```
+
+### GET /ai/mim/recommend/{user_id}
+
+**Response**:
+
+```json
+{
+  "recommendations": [
     {
-      "level": 1,
-      "content": "Your solution has a logical error that allows incorrect element pairing.",
-      "hint_type": "conceptual"
-    },
-    {
-      "level": 2,
-      "content": "Consider what happens when index i equals index j in your nested loops.",
-      "hint_type": "specific"
-    },
-    {
-      "level": 3,
-      "content": "The problem requires using two DIFFERENT elements. Add a condition to check i != j.",
-      "hint_type": "concrete"
+      "problem_id": "...",
+      "title": "Coin Change",
+      "reason": "Targets your DP weakness",
+      "difficulty": "medium",
+      "estimated_success": 0.6,
+      "tags": ["dynamic_programming", "arrays"]
     }
-  ],
-  "explanation": "Your solution correctly attempts to find two numbers that sum to the target using nested loops. However, there's a critical logical error: when i equals j, you're using the same element twice, which violates the problem requirement. For example, if nums=[3,3] and target=6, your code would incorrectly return [0,0] or [1,1].\n\nThe time complexity O(n²) also suggests room for optimization, but fix the logic error first.",
-  "detected_pattern": "index boundary handling",
-  "pattern_confidence": 0.85,
-  "feedback_type": "error_feedback",
-  "execution_time_ms": 52340
+  ]
 }
 ```
-
-### Response Format (Detailed)
-
-**Success Response:**
-
-```json
-{
-  "success": true,
-  "verdict": "wrong_answer", // From submission
-  "submission_id": "sub_...",
-
-  // SYNC WORKFLOW RESULTS
-  "hints": [
-    /* Progressive hints */
-  ],
-  "explanation": "Detailed feedback from feedback_agent",
-  "detected_pattern": "Pattern name or null",
-  "pattern_confidence": 0.85, // NEW in v2.0
-  "feedback_type": "error_feedback",
-
-  // METADATA
-  "execution_time_ms": 52340, // Total workflow time
-  "agent_results": {
-    // NEW in v2.0: For debugging
-    "feedback_completed": true,
-    "pattern_completed": true,
-    "hint_completed": true
-  }
-}
-```
-
-**Error Response:**
-
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "details": "Detailed error information"
-}
-```
-
-### Get RAG Stats
-
-**Request:**
-
-```bash
-curl http://localhost:8000/ai/rag-stats/user_123
-```
-
-**Response:**
-
-```json
-{
-  "user_id": "user_123",
-  "total_memories": 15,
-  "last_retrieval": "2026-01-24T00:36:52Z",
-  "average_relevance": 0.67,
-  "retrieval_count": 42,
-  "context_builds": 38
-}
-```
-
-### Weekly Report
-
-**Request:**
-
-```bash
-curl -X POST http://localhost:8000/ai/weekly-report \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user_123"
-  }'
-```
-
-**Response:**
-
-```json
-{
-  "summary": "This week you attempted 12 problems...",
-  "strengths": ["Dynamic Programming", "Tree Traversal"],
-  "areas_for_improvement": ["Time complexity analysis", "Edge cases"],
-  "recommended_topics": ["Hash Tables", "Binary Search"],
-  "progress_indicators": {
-    "problems_attempted": 12,
-    "problems_solved": 8,
-    "success_rate": 0.67
-  }
-}
-```
-
----
-
-## Intelligence-First Architecture (v2.0)
-
-### Design Philosophy
-
-The v2.0 refactoring represents a fundamental shift from **speed-first** to **quality-first** design:
-
-#### Core Principles
-
-1. **No Agent Skipping**
-   - Budget checks replaced with budget logging
-   - All agents run to completion
-   - Failures fallback gracefully, not skip
-
-2. **Full Context Always**
-   - No code truncation (was 4000 chars)
-   - Complete code with line numbers
-   - All 7 RAG memory chunks included (was 3)
-
-3. **Agent Coordination**
-   - Shared `agent_results` state dict
-   - Hint agent references feedback & pattern results
-   - Learning agent results inform difficulty decisions
-
-4. **Comprehensive Memory**
-   - Store ALL submissions (not just failures)
-   - Include feedback, learning, difficulty metadata
-   - Enable rich historical analysis
-
-5. **Generous Time Budgets**
-   - 60s sync workflow (was 10s)
-   - 45s per async agent (was 10-15s)
-   - Quality analysis over quick responses
-
-### Why This Matters
-
-**For Users:**
-
-- 🎯 More accurate, insightful feedback
-- 📚 Better learning recommendations
-- 🔍 Deeper pattern recognition
-- 💡 Contextual, coherent hints
-
-**For System:**
-
-- 📊 Richer data collection
-- 🔄 Better long-term personalization
-- 🧠 Improved agent decision quality
-- 🐛 Easier debugging (full context logged)
-
-### Trade-offs
-
-**Pros:**
-
-- ✅ Significantly better feedback quality
-- ✅ More pedagogically useful
-- ✅ Better user learning outcomes
-- ✅ Richer data for future improvements
-
-**Cons:**
-
-- ⚠️ Higher latency (50-60s vs 10-15s)
-- ⚠️ More LLM API costs
-- ⚠️ Higher memory usage (full context)
-
-**Decision:** For an educational platform, learning quality > response speed.
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-1. **504 Gateway Timeout**
-   - **Symptom:** Request times out despite workflow completing
-   - **Cause:** Route timeout (30s) shorter than workflow budget (60s)
-   - **Fix:** Route timeout increased to 65s in v2.0
-
-2. **Redis Connection Failed**
-   - Ensure Redis is running: `redis-cli ping`
-   - Check REDIS_URL environment variable
-   - Fallback: Caching disabled, but system works
-
-3. **LLM API Errors**
-   - Verify GOOGLE_API_KEY is set correctly
-   - Check API quota limits at [Google AI Studio](https://makersuite.google.com/)
-   - Check for rate limiting (429 errors)
-
-4. **Vector Store Errors**
-   - Ensure Ollama is running for embeddings: `ollama serve`
-   - Check vector_db directory permissions
-   - Verify nomic-embed-text model: `ollama list`
-
-5. **Budget Exceeded Warnings**
-   - **Normal in v2.0:** System logs but continues
-   - Workflow completes regardless of budget
-   - No agents are skipped due to timeout
-
-6. **MongoDB Connection Issues**
-   - System works without MongoDB (optional feature)
-   - Check MONGODB_URI environment variable
-   - Real-time stats disabled if MongoDB unavailable
-
-7. **Import Errors**
-   - Ensure all dependencies are installed: `pip install -r requirement.txt`
-   - Check Python version (3.11+ recommended)
-   - Verify Python path includes project root
-
-### Logging
-
-Structured JSON logs are output to stdout. Key log events:
-
-**Startup:**
-
-- `service_startup` - Application starting
-- `module_loaded` - Modules initialized
-- `service_ready` - Ready to accept requests
-
-**Request Handling:**
-
-- `request_received` - API request received
-- `workflow_starting` - Workflow beginning
-- `workflow_completed` - Workflow finished
-- `request_completed` - Response sent
-
-**Agent Execution:**
-
-- `feedback_agent starting` - Agent beginning work
-- `⏱️ [agent_name] completed in Xs` - Agent finished
-- `✅ [AGENT] Completed` - Success summary
-
-**Caching:**
-
-- `cache_hit` / `cache_miss` - Cache status
-- `🔑 Cache key generated` - Key creation
-
-**Budget Logging (v2.0):**
-
-- `⏰ [agent_name] Budget status` - Time remaining (informational only)
-- `⚠️ BUDGET EXCEEDED by Xs` - Exceeded, but continued
-- `✅ Within budget` - Completed on time
-
-### Performance Monitoring
-
-**Expected Timings (v2.0):**
-
-```
-Sync Workflow: 45-55s typical, 60s max
-├─ retrieve_memory: 0.5-1s
-├─ build_user_profile: <0.1s
-├─ build_context: <0.1s
-├─ feedback_agent: 10-20s (LLM call)
-├─ pattern_detection: 15-25s (LLM call)
-└─ hint_agent: 15-20s (LLM call)
-
-Async Workflow: 60-90s (background)
-├─ learning_agent: 15-30s
-├─ difficulty_agent: 10-20s
-└─ store_memory: 0.5-2s
-```
-
-**If slower:**
-
-- Check LLM API response times
-- Verify network latency
-- Check Redis connection speed
-- Monitor embedding generation time
-
----
-
-## Contributing
-
-1. Follow the existing code structure
-2. Add tests for new features
-3. Use type hints
-4. Update documentation
-
----
-
-## Version History
-
-### 2.1.0 - MIM V2.0 ML Enhancement (2026-01-24)
-
-**MIM Enhancements:**
-
-**New Components:**
-
-- ✅ `recommender.py` - LightGBM-based problem recommendation engine (13 features)
-- ✅ `evaluation.py` - Evaluation pipeline with user-aware splits
-- ✅ `test_mim.py` - 85+ comprehensive unit tests
-
-**New API Endpoints:**
-
-- `GET /ai/mim/status` - Model status and health
-- `GET /ai/mim/profile/{user_id}` - User cognitive profile
-- `GET /ai/mim/recommend/{user_id}` - Problem recommendations
-- `POST /ai/mim/train` - Trigger model training
-- `GET /ai/mim/predict/{user_id}/{problem_id}` - Pre-submission prediction
-
-**Schema Additions:**
-
-- `ROOT_CAUSE_CATEGORIES` - Expanded from 9 to 15 categories
-- `MIMDifficultyAdjustment` - Difficulty calibration recommendations
-- `MIMProblemRecommendation` - Single problem recommendation
-- `MIMRecommendations` - Full recommendation response
-- `MIMModelMetrics` - Training/evaluation metrics
-- `MIMStatus` - System health status
-
-**New Root Cause Categories (6 new):**
-
-- `algorithm_choice` - Wrong algorithm selected
-- `edge_case_handling` - Specific edge case issues
-- `input_parsing` - Failed to parse input correctly
-- `misread_problem` - Misunderstood problem statement
-- `partial_solution` - Solution is incomplete
-- `type_error` - Type conversion/casting issues
-
-**Evaluation Improvements:**
-
-- User-aware data splits (no user leakage)
-- ROC-AUC, Precision@K, NDCG@K, MRR metrics
-- Cross-validation with user grouping
-
-### 2.0.0 - Intelligence-First Refactoring (2026-01-24)
-
-**Major Changes:**
-
-**Philosophy Shift:** Quality over speed
-
-- All agents MUST complete - no budget-based skipping
-- Full context without truncation
-- Cross-agent coordination via shared state
-- Comprehensive memory storage for ALL submissions
-
-**Sync Workflow:**
-
-- ⏱️ Budget increased from 10s to **60s**
-- 📊 RAG retrieval k increased from 3 to **7**
-- ❌ Removed `_check_budget()` → `_log_budget_status()` (never skips)
-- ✅ Added `agent_results` dict for agent coordination
-- ✅ Added `pattern_confidence` for hint agent
-- 📝 Full code with line numbers (no truncation)
-
-**Async Workflow:**
-
-- ✅ Learning agent ALWAYS runs (even for accepted)
-- ✅ Difficulty agent ALWAYS runs (no skip conditions)
-- ✅ Store memory ALWAYS runs (comprehensive metadata)
-- 🤝 Agent coordination via sync workflow results
-
-**Context Builder:**
-
-- 📝 Added `include_full_code=True` parameter
-- 🔢 Added line numbers to code for precise reference
-- ❌ Removed 4000 char truncation
-- 📊 Enhanced with agent-specific context building
-
-**Routes:**
-
-- ⏱️ `/ai/feedback` timeout increased from 30s to **65s**
-
-**Testing:**
-
-- ✅ 102/102 core tests passing
-- 🔧 Updated test fixtures for new state structure
-- 🧪 Removed deprecated `_check_budget` mocks
-
-### 1.2.0 - Pattern Detection & User Profiling
-
-- Added user profile building
-- Pattern detection improvements
-- MongoDB integration
-
-### 1.1.0 - Redis Caching
-
-- Added Redis caching
-- Deprecated file-based cache
-- Performance improvements
-
-### 1.0.0 - Initial Release
-
-- Core feedback functionality
-- Basic agent system
-- File-based caching

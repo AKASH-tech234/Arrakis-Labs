@@ -26,7 +26,10 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${AI_SERVICE_URL}${path}`, {
+  const url = `${AI_SERVICE_URL}${path}`;
+  console.log(`[AI API] ${method} ${url}`, body ? { body } : "");
+
+  const response = await fetch(url, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -35,6 +38,7 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error(`[AI API] Error ${response.status}:`, errorData);
     const error = new Error(
       errorData.detail || `AI request failed (${response.status})`,
     );
@@ -42,7 +46,9 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
     throw error;
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`[AI API] Response from ${path}:`, data);
+  return data;
 }
 
 /**
@@ -207,6 +213,35 @@ export async function getMIMPrediction({ userId, problemId, signal }) {
   return aiRequest(url, { method: "GET", signal });
 }
 
+/**
+ * GET /ai/mim/roadmap/:userId
+ * Get personalized learning roadmap from MIM V2.1
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {boolean} [params.regenerate=false] - Force regeneration
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMRoadmapResponse>}
+ */
+export async function getMIMRoadmap({ userId, regenerate = false, signal }) {
+  if (!userId) throw new Error("userId is required");
+  const url = `/ai/mim/roadmap/${encodeURIComponent(userId)}?regenerate=${regenerate}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
+/**
+ * GET /ai/mim/difficulty/:userId
+ * Get personalized difficulty adjustment recommendation from MIM V2.1
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMDifficultyResponse>}
+ */
+export async function getMIMDifficulty({ userId, signal }) {
+  if (!userId) throw new Error("userId is required");
+  const url = `/ai/mim/difficulty/${encodeURIComponent(userId)}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
 export default {
   getAIFeedback,
   getWeeklyReport,
@@ -216,4 +251,6 @@ export default {
   getMIMProfile,
   getMIMRecommendations,
   getMIMPrediction,
+  getMIMRoadmap,
+  getMIMDifficulty,
 };

@@ -306,6 +306,7 @@ function HintsView({
 
 function SummaryView({ feedback, submission, onBackToHints }) {
   const [expandedSections, setExpandedSections] = useState({
+    mimInsights: true,
     pattern: true,
     explanation: false,
     optimization: false,
@@ -345,6 +346,11 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </div>
         <VerdictBadge verdict={submission?.verdict} size="large" />
       </div>
+
+      {/* MIM Insights Panel - NEW */}
+      {feedback?.mimInsights && (
+        <MIMInsightsPanel mimInsights={feedback.mimInsights} />
+      )}
 
       {/* Detected Pattern */}
       {feedback?.detectedPattern && (
@@ -558,6 +564,240 @@ function CollapsibleSection({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MIM INSIGHTS PANEL - AI Intelligence Display
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function MIMInsightsPanel({ mimInsights }) {
+  if (!mimInsights) return null;
+
+  const rootCause = mimInsights.root_cause || mimInsights.rootCause;
+  const confidence =
+    mimInsights.root_cause_confidence || mimInsights.confidence || 0;
+  const pattern = mimInsights.pattern || {};
+  const difficultyAction =
+    mimInsights.difficulty_action || mimInsights.difficultyAction || {};
+  const focusAreas = mimInsights.focus_areas || mimInsights.focusAreas || [];
+  const isColdStart =
+    mimInsights.is_cold_start || mimInsights.isColdStart || false;
+  const isRecurring = pattern.is_recurring || pattern.isRecurring || false;
+  const recurrenceCount =
+    pattern.recurrence_count || pattern.recurrenceCount || 0;
+
+  // Confidence color based on level
+  const getConfidenceColor = (conf) => {
+    if (conf >= 0.7) return COLORS.success;
+    if (conf >= 0.4) return COLORS.warning;
+    return COLORS.error;
+  };
+
+  // Difficulty action badge colors
+  const getDifficultyActionStyle = (action) => {
+    const styles = {
+      increase: { bg: "#22C55E20", color: "#22C55E", icon: "↑" },
+      decrease: { bg: "#EF444420", color: "#EF4444", icon: "↓" },
+      maintain: { bg: "#3B82F620", color: "#3B82F6", icon: "→" },
+      stretch: { bg: "#F59E0B20", color: "#F59E0B", icon: "⚡" },
+    };
+    return styles[action] || styles.maintain;
+  };
+
+  const actionStyle = getDifficultyActionStyle(difficultyAction.action);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="border rounded-lg overflow-hidden mb-6"
+      style={{
+        borderColor: `${COLORS.accent}40`,
+        backgroundColor: `${COLORS.accent}05`,
+      }}
+    >
+      {/* Header */}
+      <div
+        className="px-4 py-3 flex items-center justify-between"
+        style={{
+          backgroundColor: `${COLORS.accent}10`,
+          borderBottom: `1px solid ${COLORS.accent}20`,
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <span style={{ color: COLORS.accent }}>🧠</span>
+          <span
+            className="text-xs uppercase tracking-[0.15em] font-semibold"
+            style={{ color: COLORS.accent, fontFamily }}
+          >
+            MIM Intelligence
+          </span>
+          {isColdStart && (
+            <span
+              className="px-2 py-0.5 rounded text-[10px] uppercase"
+              style={{
+                backgroundColor: `${COLORS.info}20`,
+                color: COLORS.info,
+              }}
+            >
+              New User
+            </span>
+          )}
+        </div>
+        <span
+          className="text-[10px] uppercase tracking-wider"
+          style={{ color: COLORS.textMuted }}
+        >
+          v3.0
+        </span>
+      </div>
+
+      {/* Content Grid */}
+      <div className="p-4 space-y-4">
+        {/* Root Cause + Confidence */}
+        {rootCause && (
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <span
+                className="text-[10px] uppercase tracking-wider block mb-1"
+                style={{ color: COLORS.textMuted, fontFamily }}
+              >
+                Root Cause
+              </span>
+              <span
+                className="text-sm font-medium"
+                style={{ color: COLORS.textPrimary, fontFamily }}
+              >
+                {rootCause
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+              </span>
+            </div>
+            <div className="text-right">
+              <span
+                className="text-[10px] uppercase tracking-wider block mb-1"
+                style={{ color: COLORS.textMuted, fontFamily }}
+              >
+                Confidence
+              </span>
+              <span
+                className="text-sm font-bold"
+                style={{ color: getConfidenceColor(confidence), fontFamily }}
+              >
+                {Math.round(confidence * 100)}%
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Pattern Detection */}
+        {pattern.pattern_name && (
+          <div
+            className="p-3 rounded-lg"
+            style={{ backgroundColor: `${COLORS.border}30` }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className="text-[10px] uppercase tracking-wider"
+                style={{ color: COLORS.textMuted, fontFamily }}
+              >
+                Detected Pattern
+              </span>
+              {isRecurring && (
+                <motion.span
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold flex items-center gap-1"
+                  style={{
+                    backgroundColor: `${COLORS.error}20`,
+                    color: COLORS.error,
+                  }}
+                >
+                  <span>⚠</span>
+                  Recurring ({recurrenceCount}x)
+                </motion.span>
+              )}
+            </div>
+            <span
+              className="text-sm"
+              style={{ color: COLORS.textPrimary, fontFamily }}
+            >
+              {pattern.pattern_name || pattern.patternName}
+            </span>
+          </div>
+        )}
+
+        {/* Difficulty Recommendation */}
+        {difficultyAction.action && (
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              style={{ backgroundColor: actionStyle.bg }}
+            >
+              <span style={{ color: actionStyle.color }}>
+                {actionStyle.icon}
+              </span>
+              <span
+                className="text-xs uppercase tracking-wider font-semibold"
+                style={{ color: actionStyle.color, fontFamily }}
+              >
+                {difficultyAction.action}
+              </span>
+            </div>
+            {difficultyAction.target_difficulty && (
+              <span
+                className="text-xs"
+                style={{ color: COLORS.textSecondary, fontFamily }}
+              >
+                → {difficultyAction.target_difficulty} problems recommended
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Focus Areas */}
+        {focusAreas.length > 0 && (
+          <div>
+            <span
+              className="text-[10px] uppercase tracking-wider block mb-2"
+              style={{ color: COLORS.textMuted, fontFamily }}
+            >
+              Focus Areas
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {focusAreas.map((area, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-1 rounded text-xs"
+                  style={{
+                    backgroundColor: `${COLORS.info}15`,
+                    color: COLORS.info,
+                    fontFamily,
+                  }}
+                >
+                  {area}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Rationale (if available) */}
+        {difficultyAction.rationale && (
+          <p
+            className="text-xs italic pt-2"
+            style={{
+              color: COLORS.textSecondary,
+              fontFamily,
+              borderTop: `1px solid ${COLORS.border}`,
+            }}
+          >
+            💡 {difficultyAction.rationale}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -585,6 +825,47 @@ export default function SubmissionResult() {
   const hasSubmission = !!submission;
   const isAccepted = submission?.verdict === "accepted";
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // 🔍 DEBUG LOGGING - FRONTEND DATA FLOW TRACE
+  // ═══════════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("🎯 [SubmissionResult] STATE DEBUG");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📋 submission:", submission);
+    console.log("🤖 aiFeedback:", aiFeedback);
+    console.log("📊 aiStatus:", aiStatus);
+    console.log("❌ aiError:", aiError);
+    console.log("🔄 isAILoading:", isAILoading);
+    console.log("✅ hasAIFeedback:", hasAIFeedback);
+    console.log("👁️  currentView:", currentView);
+    console.log("🏆 isAccepted:", isAccepted);
+    if (aiFeedback) {
+      console.log("─────────────────────────────────────────────────────────");
+      console.log("📦 [aiFeedback CONTENTS]");
+      console.log("   └─ hints:", aiFeedback.hints);
+      console.log("   └─ hints count:", aiFeedback.hints?.length);
+      console.log("   └─ explanation:", aiFeedback.explanation);
+      console.log("   └─ detectedPattern:", aiFeedback.detectedPattern);
+      console.log("   └─ complexityAnalysis:", aiFeedback.complexityAnalysis);
+      console.log("   └─ optimizationTips:", aiFeedback.optimizationTips);
+      console.log("   └─ edgeCases:", aiFeedback.edgeCases);
+      console.log("   └─ improvementHint:", aiFeedback.improvementHint);
+      console.log("   └─ mimInsights:", aiFeedback.mimInsights);
+      console.log("   └─ feedbackType:", aiFeedback.feedbackType);
+    }
+    console.log("═══════════════════════════════════════════════════════════");
+  }, [
+    submission,
+    aiFeedback,
+    aiStatus,
+    aiError,
+    isAILoading,
+    hasAIFeedback,
+    currentView,
+    isAccepted,
+  ]);
+
   // Auto-request AI feedback ONLY if not already present
   // ✨ FIX: Skip if aiFeedback already came with submission (avoids duplicate calls)
   useEffect(() => {
@@ -603,9 +884,16 @@ export default function SubmissionResult() {
 
   // Set initial view based on verdict once feedback is loaded
   useEffect(() => {
+    console.log(
+      `[SubmissionResult] View transition check: hasAIFeedback=${hasAIFeedback}, currentView=${currentView}, isAccepted=${isAccepted}`,
+    );
     if (hasAIFeedback && currentView === "initial") {
       // Accepted → Direct to summary | Wrong Answer → Show hints first
-      setCurrentView(isAccepted ? "summary" : "hints");
+      const newView = isAccepted ? "summary" : "hints";
+      console.log(
+        `[SubmissionResult] 🔀 Transitioning view: ${currentView} → ${newView}`,
+      );
+      setCurrentView(newView);
     }
   }, [hasAIFeedback, isAccepted, currentView]);
 

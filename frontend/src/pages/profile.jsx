@@ -8,7 +8,11 @@ import StatsOverview from "../components/charts/StatsOverview";
 import ActivityHeatmap from "../components/charts/ActivityHeatmap";
 import CategoryChart from "../components/charts/CategoryChart";
 import SubmissionSummary from "../components/charts/SubmissionSummary";
-import { CognitiveProfile, ProblemRecommendations } from "../components/mim";
+import {
+  CognitiveProfile,
+  ProblemRecommendations,
+  LearningRoadmap,
+} from "../components/mim";
 import contestApi from "../services/contestApi";
 import apiClient from "../services/api";
 import useProfileAnalytics from "../hooks/useProfileAnalytics";
@@ -42,6 +46,12 @@ export default function Profile({ username, readOnly = false } = {}) {
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const { data: analytics } = useProfileAnalytics({ username });
+
+  // Debug: Log analytics data to see user._id
+  useEffect(() => {
+    console.log("[Profile] Analytics data:", analytics);
+    console.log("[Profile] User ID:", analytics?.user?._id);
+  }, [analytics]);
 
   const clearActionMessageSoon = () => {
     window.setTimeout(() => setActionMessage(null), 2000);
@@ -307,6 +317,27 @@ export default function Profile({ username, readOnly = false } = {}) {
                 </h2>
               </div>
               <ProblemRecommendations userId={analytics.user._id} limit={5} />
+            </motion.section>
+          )}
+
+          {/* Learning Roadmap - MIM */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.26 }}
+              className="mb-16"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Learning Roadmap
+                </h2>
+              </div>
+              <LearningRoadmap userId={analytics.user._id} />
             </motion.section>
           )}
 

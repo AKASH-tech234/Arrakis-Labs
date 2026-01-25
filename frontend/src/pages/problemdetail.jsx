@@ -119,14 +119,38 @@ export default function ProblemDetail() {
     };
   }, [problemRaw]);
 
+  // Code validation constants
+  const MIN_CODE_LENGTH = 10;
+  const MAX_CODE_LENGTH = 65536; // 64KB
+
   const runOrSubmit = async (code, language, isSubmit = false) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
+    // Validate code is not empty
     if (!code || !code.trim()) {
       setStatus("error");
-      setOutput("No code to run.");
+      setOutput("⚠️ No code to run. Please write your solution first.");
+      return;
+    }
+
+    // Validate minimum code length (prevents empty/placeholder submissions)
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < MIN_CODE_LENGTH) {
+      setStatus("error");
+      setOutput(
+        `⚠️ Code is too short (${trimmedCode.length} chars). Please write a meaningful solution with at least ${MIN_CODE_LENGTH} characters.`,
+      );
+      return;
+    }
+
+    // Validate maximum code length
+    if (code.length > MAX_CODE_LENGTH) {
+      setStatus("error");
+      setOutput(
+        `⚠️ Code exceeds maximum size (${Math.round(code.length / 1024)}KB). Maximum allowed is 64KB.`,
+      );
       return;
     }
 

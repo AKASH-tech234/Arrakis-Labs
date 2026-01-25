@@ -75,20 +75,27 @@ export default function CognitiveProfile({ userId, compact = false }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!userId) return;
+    console.log("[CognitiveProfile] userId:", userId);
+    if (!userId) {
+      console.log("[CognitiveProfile] No userId, skipping fetch");
+      return;
+    }
 
     let cancelled = false;
     setLoading(true);
     setError(null);
 
+    console.log("[CognitiveProfile] Fetching MIM profile for:", userId);
     getMIMProfile({ userId })
       .then((data) => {
+        console.log("[CognitiveProfile] Received data:", data);
         if (!cancelled) {
           setProfile(data);
           setLoading(false);
         }
       })
       .catch((err) => {
+        console.error("[CognitiveProfile] Error:", err);
         if (!cancelled) {
           setError(err.message || "Failed to load cognitive profile");
           setLoading(false);
@@ -219,6 +226,74 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </>
         )}
 
+        {/* Learning Trajectory Stats */}
+        {!compact && learning_trajectory && (
+          <div className="mb-6">
+            <h4
+              className="text-[#78716C] text-xs uppercase tracking-wider mb-3"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Learning Progress
+            </h4>
+            <div className="grid grid-cols-3 gap-3">
+              {/* Total Submissions */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="bg-[#1A1814]/50 rounded-lg p-3 text-center border border-[#D97706]/10"
+              >
+                <p
+                  className="text-[#D97706] text-2xl font-bold"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {learning_trajectory.total_submissions || 0}
+                </p>
+                <p className="text-[#78716C] text-[10px] uppercase tracking-wider">
+                  Submissions
+                </p>
+              </motion.div>
+
+              {/* Success Rate */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="bg-[#1A1814]/50 rounded-lg p-3 text-center border border-[#D97706]/10"
+              >
+                <p
+                  className="text-[#10B981] text-2xl font-bold"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {Math.round(learning_trajectory.success_rate || 0)}%
+                </p>
+                <p className="text-[#78716C] text-[10px] uppercase tracking-wider">
+                  Success Rate
+                </p>
+              </motion.div>
+
+              {/* Trend */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                className="bg-[#1A1814]/50 rounded-lg p-3 text-center border border-[#D97706]/10"
+              >
+                <p className="text-2xl">
+                  {learning_trajectory.trend === "Improving"
+                    ? "📈"
+                    : learning_trajectory.trend === "Declining"
+                      ? "📉"
+                      : "➡️"}
+                </p>
+                <p className="text-[#78716C] text-[10px] uppercase tracking-wider">
+                  {learning_trajectory.trend || "Stable"}
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        )}
+
         {/* Readiness Scores */}
         {Object.keys(readiness_scores).length > 0 && (
           <div>
@@ -235,10 +310,10 @@ export default function CognitiveProfile({ userId, compact = false }) {
                 value={Math.round(score * 100)}
                 color={
                   level === "Easy"
-                    ? "#78716C"
+                    ? "#10B981"
                     : level === "Medium"
                       ? "#D97706"
-                      : "#92400E"
+                      : "#EF4444"
                 }
                 delay={i * 0.1}
               />
