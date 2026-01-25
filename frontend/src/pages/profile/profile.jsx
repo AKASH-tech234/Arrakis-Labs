@@ -1,8 +1,6 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
 import AppHeader from "../../components/layout/AppHeader";
 import ProfileHeader from "../../components/charts/ProfileHeader";
 import StatsOverview from "../../components/charts/StatsOverview";
@@ -12,22 +10,11 @@ import SubmissionSummary from "../../components/charts/SubmissionSummary";
 import contestApi from "../../services/contest/contestApi";
 import apiClient from "../../services/common/api";
 import useProfileAnalytics from "../../hooks/profile/useProfileAnalytics";
-=======
-import AppHeader from "../components/layout/AppHeader";
-import ProfileHeader from "../components/charts/ProfileHeader";
-import StatsOverview from "../components/charts/StatsOverview";
-import ActivityHeatmap from "../components/charts/ActivityHeatmap";
-import CategoryChart from "../components/charts/CategoryChart";
-import SubmissionSummary from "../components/charts/SubmissionSummary";
 import {
   CognitiveProfile,
   ProblemRecommendations,
   LearningRoadmap,
-} from "../components/mim";
-import contestApi from "../services/contestApi";
-import apiClient from "../services/api";
-import useProfileAnalytics from "../hooks/useProfileAnalytics";
->>>>>>> model:frontend/src/pages/profile.jsx
+} from "../../components/mim";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -205,16 +192,11 @@ export default function Profile({ username, readOnly = false } = {}) {
   };
 
   return (
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#0A0A08" }}>
-      {}
-=======
     <div
       className="min-h-screen relative overflow-hidden"
       style={{ backgroundColor: "#0A0A08" }}
     >
       {/* Background Effects */}
->>>>>>> model:frontend/src/pages/profile.jsx
       <div className="fixed inset-0 pointer-events-none z-0">
         {}
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl"></div>
@@ -224,13 +206,8 @@ export default function Profile({ username, readOnly = false } = {}) {
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-[#D97706]/3 rounded-full blur-3xl"></div>
       </div>
 
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
-      {}
-      <div 
-=======
       {/* Grid Pattern Overlay */}
       <div
->>>>>>> model:frontend/src/pages/profile.jsx
         className="fixed inset-0 pointer-events-none z-0 opacity-5"
         style={{
           backgroundImage: `linear-gradient(to right, #D97706 1px, transparent 1px), linear-gradient(to bottom, #D97706 1px, transparent 1px)`,
@@ -299,9 +276,6 @@ export default function Profile({ username, readOnly = false } = {}) {
             <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
-          {}
-=======
           {/* Cognitive Profile - MIM */}
           {analytics?.user?._id && (
             <motion.section
@@ -366,7 +340,6 @@ export default function Profile({ username, readOnly = false } = {}) {
           )}
 
           {/* Contests - User Dashboard */}
->>>>>>> model:frontend/src/pages/profile.jsx
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

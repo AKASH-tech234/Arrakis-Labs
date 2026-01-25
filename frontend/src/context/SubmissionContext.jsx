@@ -184,8 +184,6 @@ export function SubmissionProvider({ children }) {
   const [state, dispatch] = useReducer(submissionReducer, initialState);
   const abortControllerRef = useRef(null);
 
-<<<<<<< HEAD
-=======
   // ═══════════════════════════════════════════════════════════════════════════
   // SUBMISSION HANDLERS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -195,7 +193,6 @@ export function SubmissionProvider({ children }) {
    * If aiFeedback is included (from backend response), it will be set directly
    * This avoids duplicate AI calls when backend already provides feedback
    */
->>>>>>> model
   const recordSubmission = useCallback((submissionData) => {
     const submission = {
       id:

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMIMRecommendations } from "../../services/aiApi";
+import { getMIMRecommendations } from "../../services/ai/aiApi";
 
 const difficultyStyles = {
   Easy: "text-[#78716C] group-hover:text-[#F59E0B]",

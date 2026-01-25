@@ -2,7 +2,7 @@
 // Interactive radar chart visualization of user's topic competencies
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
-import { getMIMProfile } from "../../services/aiApi";
+import { getMIMProfile } from "../../services/ai/aiApi";
 
 // Calculate point position on radar
 const calculatePoint = (angle, value, maxValue, radius) => {

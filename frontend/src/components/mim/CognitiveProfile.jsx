@@ -2,7 +2,7 @@
 // Displays user's MIM cognitive profile with strengths and weaknesses
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMIMProfile } from "../../services/aiApi";
+import { getMIMProfile } from "../../services/ai/aiApi";
 
 const SkillBar = ({
   label,

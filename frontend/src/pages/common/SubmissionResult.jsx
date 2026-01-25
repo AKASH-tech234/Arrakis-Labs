@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -321,16 +319,12 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         <VerdictBadge verdict={submission?.verdict} size="large" />
       </div>
 
-<<<<<<< HEAD:frontend/src/pages/common/SubmissionResult.jsx
-      {}
-=======
       {/* MIM Insights Panel - NEW */}
       {feedback?.mimInsights && (
         <MIMInsightsPanel mimInsights={feedback.mimInsights} />
       )}
 
       {/* Detected Pattern */}
->>>>>>> model:frontend/src/pages/SubmissionResult.jsx
       {feedback?.detectedPattern && (
         <CollapsibleSection
           title="Detected Pattern"
@@ -537,8 +531,6 @@ function CollapsibleSection({
   );
 }
 
-<<<<<<< HEAD:frontend/src/pages/common/SubmissionResult.jsx
-=======
 // ═══════════════════════════════════════════════════════════════════════════════
 // MIM INSIGHTS PANEL - AI Intelligence Display
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -777,10 +769,9 @@ function MIMInsightsPanel({ mimInsights }) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
->>>>>>> model:frontend/src/pages/SubmissionResult.jsx
 export default function SubmissionResult() {
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState("initial"); 
+  const [currentView, setCurrentView] = useState("initial");
 
   const {
     currentSubmission,
@@ -802,12 +793,9 @@ export default function SubmissionResult() {
   const hasSubmission = !!submission;
   const isAccepted = submission?.verdict === "accepted";
 
-<<<<<<< HEAD:frontend/src/pages/common/SubmissionResult.jsx
-=======
   // ═══════════════════════════════════════════════════════════════════════════════
   // 🔍 DEBUG LOGGING - FRONTEND DATA FLOW TRACE
   // ═══════════════════════════════════════════════════════════════════════════════
->>>>>>> model:frontend/src/pages/SubmissionResult.jsx
   useEffect(() => {
     console.log("═══════════════════════════════════════════════════════════");
     console.log("🎯 [SubmissionResult] STATE DEBUG");
@@ -867,17 +855,12 @@ export default function SubmissionResult() {
       `[SubmissionResult] View transition check: hasAIFeedback=${hasAIFeedback}, currentView=${currentView}, isAccepted=${isAccepted}`,
     );
     if (hasAIFeedback && currentView === "initial") {
-<<<<<<< HEAD:frontend/src/pages/common/SubmissionResult.jsx
-      
-      setCurrentView(isAccepted ? "summary" : "hints");
-=======
       // Accepted → Direct to summary | Wrong Answer → Show hints first
       const newView = isAccepted ? "summary" : "hints";
       console.log(
         `[SubmissionResult] 🔀 Transitioning view: ${currentView} → ${newView}`,
       );
       setCurrentView(newView);
->>>>>>> model:frontend/src/pages/SubmissionResult.jsx
     }
   }, [hasAIFeedback, isAccepted, currentView]);
 

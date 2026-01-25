@@ -1,5 +1,5 @@
-import Submission from "../models/Submission.js";
-import User from "../models/User.js";
+import Submission from "../models/profile/Submission.js";
+import User from "../models/auth/User.js";
 
 /**
  * User Stats Aggregator

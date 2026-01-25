@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -112,7 +111,9 @@ export default function ProblemDetail() {
       try {
         const submissions = await getMySubmissions({ questionId: id });
         const accepted = Array.isArray(submissions)
-          ? submissions.find((s) => String(s.status).toLowerCase() === "accepted")
+          ? submissions.find(
+              (s) => String(s.status).toLowerCase() === "accepted",
+            )
           : null;
 
         if (!mounted) return;
@@ -160,7 +161,6 @@ export default function ProblemDetail() {
     };
   }, [problemRaw]);
 
-<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
   const lastAcceptedSubmission = useMemo(() => {
     const verdict = String(lastSubmission?.verdict || "").toLowerCase();
     if (verdict === "accepted" && lastSubmission?.backendSubmissionId) {
@@ -168,11 +168,9 @@ export default function ProblemDetail() {
     }
     return lastAcceptedFromHistory;
   }, [lastSubmission, lastAcceptedFromHistory]);
-=======
   // Code validation constants
   const MIN_CODE_LENGTH = 10;
   const MAX_CODE_LENGTH = 65536; // 64KB
->>>>>>> model:frontend/src/pages/problemdetail.jsx
 
   const runOrSubmit = async (code, language, isSubmit = false) => {
     if (abortControllerRef.current) {
@@ -237,20 +235,15 @@ export default function ProblemDetail() {
       setStatus(isAccepted ? "success" : "error");
 
       if (isSubmit) {
-
         if (isPOTD && data?.submissionId) {
           try {
             await recordPOTDAttempt(undefined, data.submissionId);
-          } catch {
-            
-          }
+          } catch {}
 
           if (data.status === "accepted") {
             try {
               await solvePOTD(undefined, data.submissionId);
-            } catch {
-              
-            }
+            } catch {}
           }
         }
 
@@ -263,25 +256,16 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
-<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
-          backendSubmissionId: data.submissionId || null,
-        };
-
-=======
           // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
           aiFeedback: data.aiFeedback || null,
         };
 
         // Record submission in context (includes aiFeedback if present)
->>>>>>> model:frontend/src/pages/problemdetail.jsx
         const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
-        navigate(`/submissions/${submission.id}`);
-=======
         // ✨ FIX: Show AI feedback panel instead of navigating away immediately
         // Only for non-accepted submissions - show hints progressively
         if (!isAccepted && data.aiFeedback) {
@@ -302,7 +286,6 @@ export default function ProblemDetail() {
           // Accepted - navigate to full results page
           navigate(`/submissions/${submission.id}`);
         }
->>>>>>> model:frontend/src/pages/problemdetail.jsx
       }
     } catch (err) {
       if (err.name === "AbortError") {
@@ -321,13 +304,13 @@ export default function ProblemDetail() {
   const handleRun = (code, language) => runOrSubmit(code, language, false);
   const handleSubmit = (code, language) => runOrSubmit(code, language, true);
 
-  const [panelWidth, setPanelWidth] = useState(50); 
+  const [panelWidth, setPanelWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [previousWidth, setPreviousWidth] = useState(50);
   const containerRef = useRef(null);
 
-  const [outputHeight, setOutputHeight] = useState(180); 
+  const [outputHeight, setOutputHeight] = useState(180);
   const [isOutputDragging, setIsOutputDragging] = useState(false);
   const editorPanelRef = useRef(null);
 
@@ -498,14 +481,17 @@ export default function ProblemDetail() {
                           type="button"
                           onClick={() => {
                             setActiveTab(t.key);
-                            if (t.key === "discuss" && panelWidth < 5) setDiscussOpen(true);
+                            if (t.key === "discuss" && panelWidth < 5)
+                              setDiscussOpen(true);
                           }}
                           className={`px-3 py-2 rounded-lg border text-xs tracking-[0.25em] uppercase transition-all ${
                             activeTab === t.key
                               ? "border-[#D97706]/50 bg-[#0F0F0D] text-[#E8E4D9]"
                               : "border-[#1A1814] bg-[#0A0A08] text-[#A29A8C] hover:border-[#D97706]/30"
                           }`}
-                          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                          style={{
+                            fontFamily: "'Rajdhani', system-ui, sans-serif",
+                          }}
                         >
                           {t.label}
                         </button>

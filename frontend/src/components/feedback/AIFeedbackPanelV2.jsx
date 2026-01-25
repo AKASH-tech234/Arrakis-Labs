@@ -1,5 +1,3 @@
-
-
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import MIMInsights from "../mim/MIMInsights"; // ✨ Import MIM insights component
@@ -136,13 +134,13 @@ export default function AIFeedbackPanelV2({
   loading = false,
   error = null,
   feedback = null,
-  
+
   onRevealNextHint,
   hasMoreHints = false,
   nextHintLabel = "Show next hint",
   onToggleExplanation,
   showFullExplanation = false,
-  
+
   onRetry,
 }) {
   const [showPattern, setShowPattern] = useState(false);
@@ -381,9 +379,6 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-<<<<<<< HEAD
-                {}
-=======
                 {/* ✨ MIM Insights - Machine Learning Predictions (NO LLM calls) */}
                 {feedback.mimInsights && (
                   <div className="pt-4 border-t border-[#1A1814]">
@@ -411,7 +406,6 @@ export default function AIFeedbackPanelV2({
                 )}
 
                 {/* Full Explanation Toggle */}
->>>>>>> model
                 {feedback.hasExplanation && !hasMoreHints && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <RevealButton

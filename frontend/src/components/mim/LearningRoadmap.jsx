@@ -2,7 +2,7 @@
 // Displays user's personalized learning roadmap from MIM V2.1
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { getMIMRoadmap } from "../../services/aiApi";
+import { getMIMRoadmap } from "../../services/ai/aiApi";
 
 // Phase icons and colors
 const PHASE_CONFIG = {

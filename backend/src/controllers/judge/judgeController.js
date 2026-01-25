@@ -7,21 +7,17 @@ import { compareOutputs } from "../../utils/stdinConverter.js";
 import {
   getAIFeedback,
   buildUserHistorySummary,
-<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
 } from "../../services/ai/aiService.js";
-=======
-} from "../services/aiService.js";
 import {
   getAttemptNumber,
   updateUserAIProfile,
-} from "../utils/userStatsAggregator.js";
->>>>>>> model:backend/src/controllers/judgeController.js
+} from "../../utils/userStatsAggregator.js";
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000; 
-const MAX_CODE_SIZE = 65536; 
-const MAX_STDIN_SIZE = 1024 * 1024; 
+const RETRY_DELAY = 1000;
+const MAX_CODE_SIZE = 65536;
+const MAX_STDIN_SIZE = 1024 * 1024;
 
 const LANGUAGE_MAP = {
   javascript: { language: "javascript", version: "18.15.0" },
@@ -69,8 +65,8 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
           run_memory_limit: 256 * 1024 * 1024,
         },
         {
-          timeout: Math.max(timeLimit + 10000, 15000), 
-          validateStatus: (status) => status < 500, 
+          timeout: Math.max(timeLimit + 10000, 15000),
+          validateStatus: (status) => status < 500,
         },
       );
 
@@ -83,7 +79,7 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
       if (compile && compile.stderr) {
         return {
           stdout: "",
-          stderr: compile.stderr.slice(0, 10000), 
+          stderr: compile.stderr.slice(0, 10000),
           exitCode: compile.code || 1,
           timedOut: false,
           compileError: true,
@@ -97,7 +93,7 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
         run?.signal === "SIGABRT";
 
       return {
-        stdout: (run?.stdout || "").slice(0, 100000), 
+        stdout: (run?.stdout || "").slice(0, 100000),
         stderr: (run?.stderr || "").slice(0, 10000),
         exitCode: run?.code ?? 0,
         timedOut: run?.signal === "SIGKILL",
@@ -199,8 +195,8 @@ export const runCode = async (req, res) => {
 
         results.push({
           label: tc.label,
-          stdin: tc.stdin, 
-          expectedStdout: tc.expectedStdout, 
+          stdin: tc.stdin,
+          expectedStdout: tc.expectedStdout,
           actualStdout: execution.stdout.trim(),
           stderr: execution.stderr,
           passed,
@@ -212,7 +208,6 @@ export const runCode = async (req, res) => {
           break;
         }
       } catch (error) {
-        
         const isServiceError = error.message.includes("unavailable");
 
         results.push({
@@ -270,7 +265,7 @@ export const runCode = async (req, res) => {
 export const submitCode = async (req, res) => {
   try {
     const { questionId, code, language } = req.body;
-    const userId = req.user?._id; 
+    const userId = req.user?._id;
 
     console.log("\n" + "=".repeat(80));
     console.log("📝 CODE SUBMISSION");
@@ -370,7 +365,6 @@ export const submitCode = async (req, res) => {
             passed,
             timedOut: execution.timedOut,
             compileError: execution.compileError,
-            
           });
         } else {
           results.push({
@@ -391,7 +385,6 @@ export const submitCode = async (req, res) => {
           break;
         }
       } catch (error) {
-        
         const isServiceError = error.message.includes("unavailable");
 
         results.push({
@@ -400,7 +393,7 @@ export const submitCode = async (req, res) => {
           passed: false,
           error: true,
           serviceError: isServiceError,
-          
+
           ...(tc.isHidden
             ? {}
             : {
@@ -422,7 +415,7 @@ export const submitCode = async (req, res) => {
 
     let status = "wrong_answer";
     if (hasServiceError) {
-      status = "runtime_error"; 
+      status = "runtime_error";
     } else if (compileErrorOccurred) {
       status = "compile_error";
     } else if (results.some((r) => r.timedOut)) {
@@ -451,9 +444,6 @@ export const submitCode = async (req, res) => {
         status,
         passedCount,
         totalCount: allTestCases.length,
-<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
-        
-=======
         // AI tracking fields
         attemptNumber,
         // Denormalized problem fields (immutable historical data)
@@ -461,7 +451,6 @@ export const submitCode = async (req, res) => {
         problemDifficulty: question.difficulty,
         problemTags: question.tags || [],
         // Don't store full test case results for security
->>>>>>> model:backend/src/controllers/judgeController.js
       });
 
       // Async update user's AI profile (non-blocking)
@@ -487,15 +476,12 @@ export const submitCode = async (req, res) => {
           question.topic ||
           (question.tags?.length > 0 ? question.tags[0] : "General");
 
-<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
-=======
         // Get user's AI profile for personalization
         const { getUserAIProfile } =
           await import("../utils/userStatsAggregator.js");
         const userProfile = await getUserAIProfile(userId).catch(() => null);
 
         // Call AI service with enriched context
->>>>>>> model:backend/src/controllers/judgeController.js
         aiFeedback = await getAIFeedback({
           userId: userId.toString(),
           problemId: questionId.toString(),
@@ -530,7 +516,6 @@ export const submitCode = async (req, res) => {
           console.log("[Submit] AI feedback unavailable (service may be down)");
         }
       } catch (aiError) {
-        
         console.error(
           "[Submit] AI feedback error (non-fatal):",
           aiError.message,
@@ -550,7 +535,7 @@ export const submitCode = async (req, res) => {
           passed: r.passed,
           timedOut: r.timedOut,
           compileError: r.compileError,
-          
+
           ...(r.isHidden
             ? {}
             : {
@@ -563,7 +548,7 @@ export const submitCode = async (req, res) => {
         passedCount,
         totalCount: allTestCases.length,
         allPassed,
-        
+
         aiFeedback: aiFeedback
           ? {
               hints: aiFeedback.hints || [],
