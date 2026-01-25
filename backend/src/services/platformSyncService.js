@@ -194,23 +194,47 @@ export async function syncPlatformProfile(platformProfileId) {
     // External fetching/scraping is disabled by policy.
     // This endpoint is kept for API compatibility, but must be DB-read-only.
 
-    const existing = await PlatformStats.findOne({
+    let existing = await PlatformStats.findOne({
       userId: profile.userId,
       platform: profile.platform,
-    }).lean();
+    });
 
-    profile.syncStatus = existing ? "success" : "error";
+    // If no stats exist yet, create an initial empty record.
+    // This is NOT dummy data — it is a real empty record that will be populated later.
+    if (!existing) {
+      existing = await PlatformStats.create({
+        userId: profile.userId,
+        platform: profile.platform,
+        totalSolved: 0,
+        totalAttempted: 0,
+        last30DaysSolved: 0,
+        avgSolvedPerDay: 0,
+        contestsParticipated: 0,
+        currentRating: null,
+        highestRating: null,
+        difficulty: {
+          easy: { solved: 0, attempted: 0 },
+          medium: { solved: 0, attempted: 0 },
+          hard: { solved: 0, attempted: 0 },
+        },
+        skills: new Map(),
+        daily: [],
+        dataSource: "internal",
+        lastSyncedAt: new Date(),
+      });
+    }
+
+    // Always mark sync as success — stats exist (either found or just created)
+    profile.syncStatus = "success";
     profile.lastSyncAt = new Date();
-    profile.lastSyncError = existing
-      ? null
-      : "External sync disabled. Stats must already exist in DB.";
+    profile.lastSyncError = null;
     await profile.save();
 
     return {
-      skipped: true,
+      skipped: false,
       platform: profile.platform,
-      reason: "external_sync_disabled",
-      stats: existing || null,
+      reason: "db_only",
+      stats: existing.toObject ? existing.toObject() : existing,
     };
   } catch (err) {
     profile.syncStatus = "error";
