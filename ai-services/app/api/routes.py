@@ -112,6 +112,28 @@ def health_check():
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "version": "1.0.0"
     }
+
+
+@router.get("/health/llm")
+def llm_health_check():
+    """Check LLM provider rate limit status."""
+    from app.services.llm import get_rate_limit_status, get_current_provider
+    
+    status = get_rate_limit_status()
+    return {
+        "provider": get_current_provider(),
+        "groq": {
+            "rate_limited": status["groq_limited"],
+            "wait_seconds": round(status["groq_wait_seconds"], 1),
+        },
+        "gemini": {
+            "rate_limited": status["gemini_limited"],
+            "wait_seconds": round(status["gemini_wait_seconds"], 1),
+        },
+        "all_limited": status["groq_limited"] and status["gemini_limited"],
+        "both_limited_count": status["both_limited_count"],
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
 #rag status
 @router.get("/ai/rag-stats/{user_id}")
 def get_rag_stats(user_id: str):
@@ -333,7 +355,7 @@ def generate_ai_feedback(
 
         feedback: Optional[FeedbackResponse] = sync_result.get("feedback")
         detected_pattern: Optional[str] = sync_result.get("detected_pattern")
-        hint: Optional[str] = sync_result.get("hint")
+        hint: Optional[str] = sync_result.get("improvement_hint")  # Fixed: workflow stores as improvement_hint
         mim_insights_raw: Optional[Dict] = sync_result.get("mim_insights")  # ✨ Get MIM predictions
         
         print(f"\n✅ SYNC workflow completed in {elapsed:.2f}s")
@@ -387,6 +409,19 @@ def generate_ai_feedback(
                 model_version=mim_insights_raw.get("model_version")
             )
         
+        # Extract rich feedback fields from FeedbackResponse
+        complexity_analysis = None
+        edge_cases = None
+        optimization_tips = None
+        
+        if feedback:
+            # Get complexity analysis from feedback agent
+            complexity_analysis = getattr(feedback, 'complexity_analysis', None)
+            # Get edge cases from feedback agent
+            edge_cases = getattr(feedback, 'edge_cases', None)
+            # Get optimization tips from feedback agent
+            optimization_tips = getattr(feedback, 'optimization_tips', None)
+        
         # Build response DTO
         response = AIFeedbackDTO(
             success=True,
@@ -395,21 +430,25 @@ def generate_ai_feedback(
             hints=hints,
             explanation=feedback.explanation if feedback else None,
             detected_pattern=detected_pattern,
-            optimization_tips=None,  # Populated for accepted
-            complexity_analysis=None,
-            edge_cases=None,
+            optimization_tips=optimization_tips,
+            complexity_analysis=complexity_analysis,
+            edge_cases=edge_cases,
             mim_insights=mim_dto,  # ✨ Include MIM predictions
             feedback_type=feedback_type
         )
         
-        # Add optimization tips for accepted submissions
-        if verdict_lower == "accepted" and feedback:
+        # For accepted submissions, add improvement hint as optimization tip if not already set
+        if verdict_lower == "accepted" and feedback and not optimization_tips:
             response.optimization_tips = [feedback.improvement_hint] if feedback.improvement_hint else []
         
         print(f"\n📤 Sending response:")
         print(f"   └─ Success: {response.success}")
         print(f"   └─ Feedback Type: {feedback_type}")
         print(f"   └─ Hints Count: {len(response.hints)}")
+        print(f"   └─ Explanation: {response.explanation[:50] if response.explanation else 'N/A'}...")
+        print(f"   └─ Complexity: {complexity_analysis or 'N/A'}")
+        print(f"   └─ Edge Cases: {len(edge_cases) if edge_cases else 0}")
+        print(f"   └─ Optimization Tips: {len(optimization_tips) if optimization_tips else 0}")
         print(f"   └─ MIM Root Cause: {mim_dto.root_cause.get('failure_cause') if mim_dto and mim_dto.root_cause else 'N/A'}")
         print(f"   └─ Total Time: {elapsed:.2f}s")
         print(f"{'='*80}\n")
@@ -425,13 +464,19 @@ def generate_ai_feedback(
 
     except TimeoutError:
         log_event("request_timeout", submission_id=submission_id)
-        raise HTTPException(
-            status_code=504,
-            detail={
-                "error": "AI processing timed out",
-                "submission_id": submission_id,
-                "retry": True
-            }
+        # Return graceful fallback instead of HTTPException
+        return AIFeedbackDTO(
+            success=False,
+            verdict=payload.verdict,
+            submission_id=submission_id,
+            hints=[
+                HintLevel(level=1, content="AI processing timed out. Review your approach and try again.", hint_type="conceptual"),
+                HintLevel(level=2, content="Check if your code handles edge cases correctly.", hint_type="specific")
+            ],
+            explanation="AI feedback generation timed out due to high demand. Please review your code manually or try again in a few moments.",
+            detected_pattern=None,
+            mim_insights=None,
+            feedback_type="error_feedback"
         )
 
     except Exception as e:
@@ -441,13 +486,37 @@ def generate_ai_feedback(
             error_message=str(e)
         )
         logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": "AI feedback generation failed",
-                "message": str(e),
-                "submission_id": submission_id
-            }
+        # Return graceful fallback instead of HTTPException
+        verdict_lower = payload.verdict.lower() if payload.verdict else "unknown"
+        fallback_hints = [
+            HintLevel(level=1, content="Review your approach against the problem requirements.", hint_type="conceptual")
+        ]
+        fallback_explanation = "AI feedback temporarily unavailable. "
+        
+        if verdict_lower == "accepted":
+            fallback_explanation += "Your solution passed all test cases. Consider reviewing for optimization opportunities."
+            fallback_hints.append(HintLevel(level=2, content="Check if there are more efficient algorithms for this problem.", hint_type="optimization"))
+        elif verdict_lower in ["time_limit_exceeded", "tle"]:
+            fallback_explanation += "Your solution is too slow. Consider reducing time complexity."
+            fallback_hints.append(HintLevel(level=2, content="Look for nested loops that could be optimized.", hint_type="specific"))
+        elif verdict_lower == "wrong_answer":
+            fallback_explanation += "Your solution produces incorrect output. Check your logic and edge cases."
+            fallback_hints.append(HintLevel(level=2, content="Test with edge cases like empty inputs, single elements, or boundary values.", hint_type="specific"))
+        elif verdict_lower in ["runtime_error", "runtime error"]:
+            fallback_explanation += "Your code crashed during execution. Check for array bounds and null references."
+            fallback_hints.append(HintLevel(level=2, content="Add defensive checks before accessing arrays or objects.", hint_type="specific"))
+        else:
+            fallback_explanation += "Please review your code and submission."
+            
+        return AIFeedbackDTO(
+            success=False,
+            verdict=payload.verdict,
+            submission_id=submission_id,
+            hints=fallback_hints,
+            explanation=fallback_explanation,
+            detected_pattern=None,
+            mim_insights=None,
+            feedback_type="error_feedback"
         )
 # -------------------------
 # Weekly Report Endpoint (ON-DEMAND)
@@ -1024,4 +1093,224 @@ def get_mim_prediction(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get prediction: {str(e)}"
+        )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIM ROADMAP ENDPOINTS (V2.1)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/ai/mim/roadmap/{user_id}")
+def get_learning_roadmap(
+    user_id: str,
+    regenerate: bool = False
+) -> Dict[str, Any]:
+    """
+    Get or generate a personalized learning roadmap for a user.
+    
+    The roadmap includes:
+    - 5-step micro-roadmap with immediate goals
+    - Topic dependency graph (derived from co-occurrence)
+    - Milestones achieved
+    - Estimated time to target level
+    - Difficulty adjustment recommendations
+    
+    Args:
+        user_id: User identifier
+        regenerate: Force regeneration even if roadmap exists
+    """
+    try:
+        from app.db.mongodb import mongo_client
+        from app.mim.difficulty_engine import compute_difficulty_adjustment
+        from app.mim.roadmap import generate_learning_roadmap
+        
+        # Get user submissions
+        submissions = mongo_client.get_user_submissions(user_id=user_id, limit=100)
+        
+        if not submissions:
+            # Cold start - generate default roadmap
+            return {
+                "status": "cold_start",
+                "message": "Start solving problems to get a personalized roadmap!",
+                "roadmap": {
+                    "userId": user_id,
+                    "currentPhase": "foundation",
+                    "steps": [
+                        {
+                            "stepNumber": 1,
+                            "goal": "Build problem-solving fundamentals",
+                            "targetProblems": 3,
+                            "completedProblems": 0,
+                            "focusTopics": ["Arrays", "Strings"],
+                            "targetDifficulty": "Easy",
+                            "status": "in_progress"
+                        },
+                        {
+                            "stepNumber": 2,
+                            "goal": "Practice basic patterns",
+                            "targetProblems": 2,
+                            "focusTopics": ["Arrays", "Math"],
+                            "targetDifficulty": "Easy",
+                            "status": "pending"
+                        }
+                    ],
+                    "milestones": [],
+                    "targetLevel": "Medium",
+                    "estimatedWeeksToTarget": 8
+                }
+            }
+        
+        # Convert MongoDB submissions to dict format
+        formatted_submissions = []
+        for sub in submissions:
+            formatted_submissions.append({
+                "problem_id": str(sub.get("questionId", "")),
+                "verdict": sub.get("status", ""),
+                "difficulty": sub.get("problemDifficulty") or sub.get("difficulty", "Medium"),
+                "category": sub.get("problemCategory") or sub.get("category", "General"),
+                "tags": sub.get("problemTags") or sub.get("tags", []),
+                "created_at": sub.get("createdAt"),
+            })
+        
+        # Build user profile from submissions
+        total = len(formatted_submissions)
+        accepted = sum(1 for s in formatted_submissions if s.get("verdict", "").lower() == "accepted")
+        success_rate = accepted / total if total > 0 else 0.5
+        
+        # Identify weak and strong topics
+        category_stats = {}
+        for sub in formatted_submissions:
+            cat = sub.get("category", "General")
+            if cat not in category_stats:
+                category_stats[cat] = {"total": 0, "accepted": 0}
+            category_stats[cat]["total"] += 1
+            if sub.get("verdict", "").lower() == "accepted":
+                category_stats[cat]["accepted"] += 1
+        
+        weak_topics = [
+            cat for cat, stats in category_stats.items()
+            if stats["total"] >= 2 and (stats["accepted"] / stats["total"]) < 0.4
+        ][:5]
+        
+        strong_topics = [
+            cat for cat, stats in category_stats.items()
+            if stats["total"] >= 3 and (stats["accepted"] / stats["total"]) > 0.7
+        ][:5]
+        
+        user_profile = {
+            "user_id": user_id,
+            "weakTopics": weak_topics,
+            "strongTopics": strong_topics,
+            "successRate": success_rate,
+            "totalSubmissions": total,
+            "difficultyReadiness": {
+                "easy": min(1.0, success_rate + 0.3),
+                "medium": success_rate,
+                "hard": max(0.1, success_rate - 0.3),
+            }
+        }
+        
+        # Compute difficulty adjustment
+        readiness = user_profile["difficultyReadiness"]
+        difficulty_adjustment = compute_difficulty_adjustment(
+            formatted_submissions[:20],  # Recent submissions
+            readiness,
+            user_profile
+        )
+        
+        # Generate roadmap
+        roadmap = generate_learning_roadmap(
+            user_id=user_id,
+            submissions=formatted_submissions,
+            user_profile=user_profile,
+            difficulty_adjustment=difficulty_adjustment,
+            existing_roadmap=None if regenerate else None  # TODO: Load from DB
+        )
+        
+        return {
+            "status": "success",
+            "roadmap": roadmap,
+            "profile_summary": {
+                "totalSolved": accepted,
+                "successRate": round(success_rate, 2),
+                "weakTopics": weak_topics,
+                "strongTopics": strong_topics,
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"MIM roadmap generation failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate roadmap: {str(e)}"
+        )
+
+
+@router.get("/ai/mim/difficulty/{user_id}")
+def get_difficulty_adjustment(
+    user_id: str
+) -> Dict[str, Any]:
+    """
+    Get personalized difficulty adjustment recommendation.
+    
+    Returns whether to increase, decrease, or maintain difficulty
+    based on recent performance, frustration, and boredom indices.
+    """
+    try:
+        from app.db.mongodb import mongo_client
+        from app.mim.difficulty_engine import compute_difficulty_adjustment
+        
+        # Get recent submissions
+        submissions = mongo_client.get_user_submissions(user_id=user_id, limit=20)
+        
+        if not submissions:
+            return {
+                "status": "cold_start",
+                "adjustment": {
+                    "next_difficulty": "Easy",
+                    "adjustment": "maintain",
+                    "confidence": 0.4,
+                    "reason": "Start with Easy problems to build foundation.",
+                    "frustration_index": 0.0,
+                    "boredom_index": 0.0,
+                }
+            }
+        
+        # Format submissions
+        formatted = []
+        for sub in submissions:
+            formatted.append({
+                "problem_id": str(sub.get("questionId", "")),
+                "verdict": sub.get("status", ""),
+                "difficulty": sub.get("problemDifficulty") or sub.get("difficulty", "Medium"),
+                "created_at": sub.get("createdAt"),
+            })
+        
+        # Compute readiness from recent performance
+        total = len(formatted)
+        accepted = sum(1 for s in formatted if s.get("verdict", "").lower() == "accepted")
+        success_rate = accepted / total if total > 0 else 0.5
+        
+        readiness = {
+            "easy": min(1.0, success_rate + 0.3),
+            "medium": success_rate,
+            "hard": max(0.1, success_rate - 0.3),
+        }
+        
+        # Get adjustment
+        adjustment = compute_difficulty_adjustment(formatted, readiness)
+        
+        return {
+            "status": "success",
+            "user_id": user_id,
+            "adjustment": adjustment
+        }
+        
+    except Exception as e:
+        logger.error(f"Difficulty adjustment failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compute difficulty adjustment: {str(e)}"
         )
