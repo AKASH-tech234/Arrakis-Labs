@@ -1,14 +1,18 @@
 """
-ASYNC Workflow - Background Processing for Non-Blocking Operations
-==================================================================
+ASYNC Workflow v3.0 - Background Processing for Non-Blocking Operations
+=======================================================================
 
 This workflow runs AFTER the sync response is sent to the user.
 It handles expensive operations that don't need to block the response:
 
-1. learning_agent - Generates personalized learning recommendations
-2. difficulty_agent - Adjusts difficulty for adaptive learning
+1. learning_agent - Generates personalized learning recommendations (MIM-instructed)
+2. difficulty - Uses MIM decision (NO LLM CALL)
 3. weekly_report - On-demand weekly progress reports
 4. store_memory - Persists submission data to RAG vector store
+
+v3.0 CHANGES:
+- difficulty_agent replaced by MIM difficulty_action (no LLM call)
+- learning_agent receives MIM instructions for focus areas
 
 CRITICAL: This workflow NEVER affects user-facing latency.
 """
@@ -27,21 +31,23 @@ from app.schemas.difficulty import DifficultyAdjustment
 from app.schemas.report import WeeklyProgressReport
 
 from app.agents.learning_agent import learning_agent
-from app.agents.difficulty_agent import difficulty_agent
 from app.agents.report_agent import report_agent
 from app.rag.retriever import store_user_feedback
+
+# MIM v3.0
+from app.mim.mim_decision import MIMDecision
 
 logger = logging.getLogger("async_workflow")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ASYNC TIME BUDGETS (generous - background processing)
-# PHILOSOPHY: ALL agents MUST complete. No skipping.
+# v3.0: difficulty no longer needs LLM call
 # ═══════════════════════════════════════════════════════════════════════════════
 
 ASYNC_AGENT_BUDGETS = {
     "learning_agent": 45.0,    # LLM call - MUST COMPLETE
-    "difficulty_agent": 30.0,  # LLM call - MUST COMPLETE  
+    "difficulty": 1.0,         # v3.0: MIM-based, no LLM (was 30s)
     "weekly_report": 45.0,     # LLM call - on demand
     "store_memory": 15.0,      # Vector store write - ALWAYS STORE
 }
@@ -56,7 +62,7 @@ _async_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="async_ag
 
 class AsyncState(TypedDict, total=False):
     """
-    ASYNC Workflow State
+    ASYNC Workflow State v3.0
     
     Inherits relevant data from SYNC workflow for continuity.
     """
@@ -71,6 +77,9 @@ class AsyncState(TypedDict, total=False):
     # === STRUCTURED DATA (passed from sync) ===
     problem: Optional[Dict[str, Any]]  # ProblemContext as dict
     user_profile: Optional[Dict[str, Any]]  # UserProfile as dict
+    
+    # === MIM DECISION (v3.0) ===
+    mim_decision: Optional[MIMDecision]  # Full MIM decision with agent instructions
 
     # === FLAGS ===
     request_weekly_report: bool
@@ -129,6 +138,7 @@ def learning_node(state: AsyncState) -> AsyncState:
     ASYNC: Generate personalized learning recommendations.
     
     RESPECTS orchestrator plan - skips if run_learning is False.
+    v3.0: Uses MIM decision for focus areas if available.
     """
     _init_async_timing(state)
     
@@ -141,10 +151,13 @@ def learning_node(state: AsyncState) -> AsyncState:
         return state
     
     verdict = state.get("verdict", "").lower()
-    logger.info(f"🧠 [ASYNC] learning_agent starting | verdict={verdict}")
+    logger.info(f"🧠 [ASYNC] learning_agent v3.0 starting | verdict={verdict}")
     
     # Build enriched context for learning recommendations
     context = state.get("context", "")
+    
+    # v3.0: Get MIM decision if available
+    mim_decision = state.get("mim_decision")
     
     # Add sync agent results for coordination
     feedback = state.get("feedback")
@@ -162,14 +175,14 @@ def learning_node(state: AsyncState) -> AsyncState:
     try:
         result = _run_async_with_timeout(
             learning_agent,
-            (context, state),
+            (context, state, mim_decision),  # Pass MIM decision
             timeout_seconds=ASYNC_AGENT_BUDGETS["learning_agent"],
             agent_name="learning_agent"
         )
         state["learning_recommendation"] = result
         
         if result:
-            logger.info(f"✅ [ASYNC] learning_agent completed | focus_areas={result.focus_areas}")
+            logger.info(f"✅ [ASYNC] learning_agent v3.0 completed | focus_areas={result.focus_areas}")
         
     except Exception as e:
         logger.error(f"❌ [ASYNC] learning_agent failed: {e}")
@@ -184,52 +197,53 @@ def learning_node(state: AsyncState) -> AsyncState:
 
 def difficulty_node(state: AsyncState) -> AsyncState:
     """
-    ASYNC: Adjust difficulty based on performance.
+    ASYNC v3.0: Difficulty adjustment from MIM (no LLM call needed).
     
-    RESPECTS orchestrator plan - skips if run_difficulty is False.
+    MIM's difficulty_action replaces difficulty_agent entirely.
+    This node just extracts and formats the MIM decision.
     """
     # CHECK orchestrator plan - respect the decision
     plan = state.get("plan", {})
     if not plan.get("run_difficulty", True):
-        logger.info("⏭️ [ASYNC] difficulty_agent SKIPPED by orchestrator plan")
+        logger.info("⏭️ [ASYNC] difficulty SKIPPED by orchestrator plan")
         state["difficulty_adjustment"] = None
         if "_async_timings" not in state:
             state["_async_timings"] = {}
-        state["_async_timings"]["difficulty_agent"] = 0.0
+        state["_async_timings"]["difficulty"] = 0.0
         return state
     
     start = time.time()
-    logger.info("📈 [ASYNC] difficulty_agent starting")
     
-    # Build context enriched with learning recommendations for coherent decisions
-    context = state.get("context", "")
+    # v3.0: Use MIM decision (no LLM call)
+    mim_decision = state.get("mim_decision")
     
-    # Add learning agent results for coordination
-    learning_rec = state.get("learning_recommendation")
-    if learning_rec:
-        context += f"\n\n═══ LEARNING AGENT RESULTS (for difficulty coherence) ═══\n"
-        context += f"RECOMMENDED FOCUS AREAS: {learning_rec.focus_areas}\n"
-        context += f"RATIONALE: {learning_rec.rationale}\n"
-    
-    try:
-        result = _run_async_with_timeout(
-            difficulty_agent,
-            (context, state),
-            timeout_seconds=ASYNC_AGENT_BUDGETS["difficulty_agent"],
-            agent_name="difficulty_agent"
+    if mim_decision and hasattr(mim_decision, 'difficulty_action'):
+        from app.schemas.difficulty import DifficultyAdjustment
+        
+        state["difficulty_adjustment"] = DifficultyAdjustment(
+            action=mim_decision.difficulty_action.action,
+            rationale=mim_decision.difficulty_action.rationale,
         )
-        state["difficulty_adjustment"] = result
         
-        if result:
-            logger.info(f"✅ [ASYNC] difficulty_agent completed | action={result.action} | rationale={result.rationale[:50]}...")
+        logger.info(
+            f"✅ [ASYNC] difficulty v3.0 (MIM-based) | "
+            f"action={mim_decision.difficulty_action.action} | "
+            f"target={mim_decision.difficulty_action.target_difficulty}"
+        )
+    else:
+        # Fallback: No MIM, use default
+        from app.schemas.difficulty import DifficultyAdjustment
         
-    except Exception as e:
-        logger.error(f"❌ [ASYNC] difficulty_agent failed: {e}")
-        logger.error(traceback.format_exc())
-        state["difficulty_adjustment"] = None
+        state["difficulty_adjustment"] = DifficultyAdjustment(
+            action="maintain",
+            rationale="Unable to determine optimal difficulty adjustment.",
+        )
+        logger.warning("⚠️ [ASYNC] difficulty using fallback - no MIM decision available")
     
     elapsed = time.time() - start
-    state["_async_timings"]["difficulty_agent"] = elapsed
+    if "_async_timings" not in state:
+        state["_async_timings"] = {}
+    state["_async_timings"]["difficulty"] = elapsed
     
     return state
 

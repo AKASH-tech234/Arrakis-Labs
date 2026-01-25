@@ -9,12 +9,68 @@ CRITICAL RULES:
 2. Only feedback_agent is mandatory for SYNC
 3. pattern_detection and hint are optional and skippable
 4. All expensive operations go to ASYNC
+5. RAG context MUST be validated before agents run
 """
 
 import logging
 from typing import Dict
 
 logger = logging.getLogger("orchestrator")
+
+
+def validate_rag_context(state: Dict) -> Dict:
+    """
+    Validate and ensure RAG context is available for agents.
+    
+    RAG Context Always Passed Policy:
+    - If user_memory is empty, attempt retrieval
+    - If retrieval fails, set a flag so agents know to use fallback
+    - Never run agents without at least attempting RAG retrieval
+    """
+    user_id = state.get("user_id", "")
+    user_memory = state.get("user_memory", [])
+    
+    # Check if we have RAG context
+    has_rag_context = bool(user_memory and len(user_memory) > 0)
+    
+    if not has_rag_context:
+        logger.warning(f"⚠️ No RAG context available for user {user_id}")
+        # Set flag so agents know context is missing
+        state["_rag_context_available"] = False
+        state["_rag_retrieval_attempted"] = state.get("_rag_retrieval_attempted", False)
+        
+        # Try to retrieve if not already attempted
+        if not state.get("_rag_retrieval_attempted"):
+            try:
+                from app.rag.retriever import retrieve_user_memory
+                
+                # Build query from current submission
+                code = state.get("code", "")
+                problem_category = state.get("problem_category", "")
+                verdict = state.get("verdict", "")
+                
+                query = f"User solving {problem_category} problem. Result: {verdict}. Code pattern analysis."
+                
+                memories = retrieve_user_memory(user_id, query, k=5)
+                
+                if memories:
+                    state["user_memory"] = memories
+                    state["_rag_context_available"] = True
+                    logger.info(f"✅ Retrieved {len(memories)} RAG memories for user {user_id}")
+                else:
+                    logger.info(f"ℹ️ No RAG memories found for user {user_id} (new user?)")
+                
+                state["_rag_retrieval_attempted"] = True
+                
+            except Exception as e:
+                logger.error(f"❌ RAG retrieval failed: {e}")
+                state["_rag_retrieval_attempted"] = True
+                state["_rag_context_available"] = False
+    else:
+        state["_rag_context_available"] = True
+        logger.debug(f"✅ RAG context available: {len(user_memory)} memories")
+    
+    return state
 
 
 def orchestrator_node(state: Dict) -> Dict:
@@ -26,7 +82,11 @@ def orchestrator_node(state: Dict) -> Dict:
     2. Problem context quality (grounded vs fallback)
     3. Time budget remaining
     4. User history availability
+    5. RAG context availability (ALWAYS validate first)
     """
+    # === FIRST: Validate RAG context ===
+    state = validate_rag_context(state)
+    
     verdict = state.get("verdict", "").lower()
     user_requested_report = state.get("request_weekly_report", False)
     
@@ -90,6 +150,7 @@ def orchestrator_node(state: Dict) -> Dict:
         # ---- METADATA ----
         "problem_grounded": is_problem_grounded,
         "has_user_history": has_user_history,
+        "rag_context_available": state.get("_rag_context_available", False),
     }
 
     state["plan"] = plan

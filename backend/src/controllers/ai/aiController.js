@@ -171,6 +171,18 @@ export const requestAIFeedback = async (req, res) => {
       language,
       verdict,
       userHistorySummary,
+      // Pass full problem context for better AI responses
+      problem: {
+        title: question.title,
+        difficulty: question.difficulty,
+        tags: question.tags || [],
+        topic: question.topic || problemCategory,
+        description: question.description,
+        expectedApproach: question.expectedApproach || null,
+        commonMistakes: question.commonMistakes || [],
+        timeComplexityHint: question.timeComplexityHint || null,
+        spaceComplexityHint: question.spaceComplexityHint || null,
+      },
     });
 
     const aiDuration = Date.now() - aiStartTime;
@@ -207,6 +219,8 @@ export const requestAIFeedback = async (req, res) => {
         optimizationTips: aiFeedback.optimization_tips,
         complexityAnalysis: aiFeedback.complexity_analysis,
         edgeCases: aiFeedback.edge_cases,
+        // MIM insights from AI service (ML-based predictions)
+        mimInsights: aiFeedback.mim_insights || null,
       },
       meta: {
         aiDurationMs: aiDuration,

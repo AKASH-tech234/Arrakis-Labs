@@ -13,7 +13,24 @@ export function AuthProvider({ children }) {
     const init = async () => {
       try {
         const me = await getMe();
-        if (!cancelled) setUser(me);
+        if (!cancelled) {
+          setUser(me);
+          // ═══════════════════════════════════════════════════════════════════
+          // USER ID LOGGING - For E2E Testing
+          // Copy this ID to use with: python scripts/test_user_flow.py <user_id>
+          // ═══════════════════════════════════════════════════════════════════
+          if (me && me.id) {
+            console.log(
+              "═══════════════════════════════════════════════════════════════",
+            );
+            console.log("🔑 USER_ID:", me.id);
+            console.log("📋 Copy this ID to seed test data:");
+            console.log(`   python scripts/test_user_flow.py ${me.id}`);
+            console.log(
+              "═══════════════════════════════════════════════════════════════",
+            );
+          }
+        }
       } catch {
         if (!cancelled) setUser(null);
       } finally {
@@ -41,16 +58,52 @@ export function AuthProvider({ children }) {
       async login(email, password) {
         const result = await signin({ email, password });
         setUser(result.user);
+        // Log user ID after login for E2E testing
+        if (result.user && result.user.id) {
+          console.log(
+            "═══════════════════════════════════════════════════════════════",
+          );
+          console.log("🔑 USER_ID (after login):", result.user.id);
+          console.log("📋 Copy this ID to seed test data:");
+          console.log(`   python scripts/test_user_flow.py ${result.user.id}`);
+          console.log(
+            "═══════════════════════════════════════════════════════════════",
+          );
+        }
         return result;
       },
       async register({ name, email, password, passwordConfirm }) {
         const result = await signup({ name, email, password, passwordConfirm });
         setUser(result.user);
+        // Log user ID after registration for E2E testing
+        if (result.user && result.user.id) {
+          console.log(
+            "═══════════════════════════════════════════════════════════════",
+          );
+          console.log("🔑 USER_ID (after register):", result.user.id);
+          console.log("📋 Copy this ID to seed test data:");
+          console.log(`   python scripts/test_user_flow.py ${result.user.id}`);
+          console.log(
+            "═══════════════════════════════════════════════════════════════",
+          );
+        }
         return result;
       },
       async loginWithGoogle(token) {
         const result = await googleAuth(token);
         setUser(result.user);
+        // Log user ID after Google auth for E2E testing
+        if (result.user && result.user.id) {
+          console.log(
+            "═══════════════════════════════════════════════════════════════",
+          );
+          console.log("🔑 USER_ID (after Google login):", result.user.id);
+          console.log("📋 Copy this ID to seed test data:");
+          console.log(`   python scripts/test_user_flow.py ${result.user.id}`);
+          console.log(
+            "═══════════════════════════════════════════════════════════════",
+          );
+        }
         return result;
       },
       async logout() {
@@ -59,7 +112,7 @@ export function AuthProvider({ children }) {
       },
       setUser,
     }),
-    [user, loading]
+    [user, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

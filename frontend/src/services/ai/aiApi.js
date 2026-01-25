@@ -18,7 +18,10 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${AI_SERVICE_URL}${path}`, {
+  const url = `${AI_SERVICE_URL}${path}`;
+  console.log(`[AI API] ${method} ${url}`, body ? { body } : "");
+
+  const response = await fetch(url, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -27,6 +30,7 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error(`[AI API] Error ${response.status}:`, errorData);
     const error = new Error(
       errorData.detail || `AI request failed (${response.status})`,
     );
@@ -34,7 +38,9 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
     throw error;
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`[AI API] Response from ${path}:`, data);
+  return data;
 }
 
 export async function getAIFeedback({
@@ -96,8 +102,104 @@ export async function checkAIServiceHealth() {
   return aiRequest("/health", { method: "GET" });
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIM (Misconception Identification Model) API
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /ai/mim/status
+ * Get MIM model status and health
+ * @returns {Promise<MIMStatusResponse>}
+ */
+export async function getMIMStatus() {
+  return aiRequest("/ai/mim/status", { method: "GET" });
+}
+
+/**
+ * GET /ai/mim/profile/:userId
+ * Get user's cognitive profile from MIM
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMProfileResponse>}
+ */
+export async function getMIMProfile({ userId, signal }) {
+  if (!userId) throw new Error("userId is required");
+  return aiRequest(`/ai/mim/profile/${encodeURIComponent(userId)}`, {
+    method: "GET",
+    signal,
+  });
+}
+
+/**
+ * GET /ai/mim/recommend/:userId
+ * Get personalized problem recommendations from MIM
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {number} [params.limit=5] - Number of recommendations
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMRecommendationsResponse>}
+ */
+export async function getMIMRecommendations({ userId, limit = 5, signal }) {
+  if (!userId) throw new Error("userId is required");
+  const url = `/ai/mim/recommend/${encodeURIComponent(userId)}?limit=${limit}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
+/**
+ * GET /ai/mim/predict/:userId/:problemId
+ * Get pre-submission prediction for a user on a specific problem
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {string} params.problemId - Problem identifier
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMPredictionResponse>}
+ */
+export async function getMIMPrediction({ userId, problemId, signal }) {
+  if (!userId) throw new Error("userId is required");
+  if (!problemId) throw new Error("problemId is required");
+  const url = `/ai/mim/predict/${encodeURIComponent(userId)}/${encodeURIComponent(problemId)}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
+/**
+ * GET /ai/mim/roadmap/:userId
+ * Get personalized learning roadmap from MIM V2.1
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {boolean} [params.regenerate=false] - Force regeneration
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMRoadmapResponse>}
+ */
+export async function getMIMRoadmap({ userId, regenerate = false, signal }) {
+  if (!userId) throw new Error("userId is required");
+  const url = `/ai/mim/roadmap/${encodeURIComponent(userId)}?regenerate=${regenerate}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
+/**
+ * GET /ai/mim/difficulty/:userId
+ * Get personalized difficulty adjustment recommendation from MIM V2.1
+ * @param {Object} params
+ * @param {string} params.userId - User identifier
+ * @param {AbortSignal} [params.signal] - Abort signal for cancellation
+ * @returns {Promise<MIMDifficultyResponse>}
+ */
+export async function getMIMDifficulty({ userId, signal }) {
+  if (!userId) throw new Error("userId is required");
+  const url = `/ai/mim/difficulty/${encodeURIComponent(userId)}`;
+  return aiRequest(url, { method: "GET", signal });
+}
+
 export default {
   getAIFeedback,
   getWeeklyReport,
   checkAIServiceHealth,
+  // MIM APIs
+  getMIMStatus,
+  getMIMProfile,
+  getMIMRecommendations,
+  getMIMPrediction,
+  getMIMRoadmap,
+  getMIMDifficulty,
 };

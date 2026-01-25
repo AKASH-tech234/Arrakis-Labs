@@ -160,6 +160,7 @@ export default function ProblemDetail() {
     };
   }, [problemRaw]);
 
+<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
   const lastAcceptedSubmission = useMemo(() => {
     const verdict = String(lastSubmission?.verdict || "").toLowerCase();
     if (verdict === "accepted" && lastSubmission?.backendSubmissionId) {
@@ -167,15 +168,40 @@ export default function ProblemDetail() {
     }
     return lastAcceptedFromHistory;
   }, [lastSubmission, lastAcceptedFromHistory]);
+=======
+  // Code validation constants
+  const MIN_CODE_LENGTH = 10;
+  const MAX_CODE_LENGTH = 65536; // 64KB
+>>>>>>> model:frontend/src/pages/problemdetail.jsx
 
   const runOrSubmit = async (code, language, isSubmit = false) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
+    // Validate code is not empty
     if (!code || !code.trim()) {
       setStatus("error");
-      setOutput("No code to run.");
+      setOutput("⚠️ No code to run. Please write your solution first.");
+      return;
+    }
+
+    // Validate minimum code length (prevents empty/placeholder submissions)
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < MIN_CODE_LENGTH) {
+      setStatus("error");
+      setOutput(
+        `⚠️ Code is too short (${trimmedCode.length} chars). Please write a meaningful solution with at least ${MIN_CODE_LENGTH} characters.`,
+      );
+      return;
+    }
+
+    // Validate maximum code length
+    if (code.length > MAX_CODE_LENGTH) {
+      setStatus("error");
+      setOutput(
+        `⚠️ Code exceeds maximum size (${Math.round(code.length / 1024)}KB). Maximum allowed is 64KB.`,
+      );
       return;
     }
 
@@ -237,15 +263,46 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
+<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
           backendSubmissionId: data.submissionId || null,
         };
 
+=======
+          // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
+          aiFeedback: data.aiFeedback || null,
+        };
+
+        // Record submission in context (includes aiFeedback if present)
+>>>>>>> model:frontend/src/pages/problemdetail.jsx
         const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
         setSubmitted(true);
 
+<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
         navigate(`/submissions/${submission.id}`);
+=======
+        // ✨ FIX: Show AI feedback panel instead of navigating away immediately
+        // Only for non-accepted submissions - show hints progressively
+        if (!isAccepted && data.aiFeedback) {
+          setShowFeedback(true); // Show the side panel with hints
+          // If aiFeedback came from backend, use it directly
+          // Otherwise, fetch it via the hook
+        } else if (!isAccepted && aiServiceAvailable) {
+          // No aiFeedback from backend - fetch via hook
+          setShowFeedback(true);
+          fetchFeedback({
+            questionId: id,
+            code,
+            language: langKey,
+            verdict: data.status || "wrong_answer",
+            errorType: data.errorType,
+          });
+        } else if (isAccepted) {
+          // Accepted - navigate to full results page
+          navigate(`/submissions/${submission.id}`);
+        }
+>>>>>>> model:frontend/src/pages/problemdetail.jsx
       }
     } catch (err) {
       if (err.name === "AbortError") {
@@ -495,7 +552,9 @@ export default function ProblemDetail() {
             ref={editorPanelRef}
             className="flex flex-col overflow-hidden bg-[#0A0A08] transition-all duration-200 ease-out"
             style={{
-              width: `${100 - panelWidth}%`,
+              width: showFeedback
+                ? `${(100 - panelWidth) * 0.6}%`
+                : `${100 - panelWidth}%`,
               flexGrow: isEditorFullscreen ? 1 : 0,
             }}
           >
@@ -515,6 +574,70 @@ export default function ProblemDetail() {
               onResizeStart={handleOutputResizeStart}
             />
           </div>
+
+          {/* ✨ AI Feedback Side Panel - Shows hints progressively */}
+          {showFeedback && (
+            <div
+              className="flex-shrink-0 transition-all duration-300 ease-out"
+              style={{
+                width: `${(100 - panelWidth) * 0.4}%`,
+                minWidth: "320px",
+                maxWidth: "450px",
+              }}
+            >
+              <AIFeedbackPanelV2
+                isVisible={showFeedback}
+                onClose={() => {
+                  setShowFeedback(false);
+                  // Navigate to full results when panel is closed
+                  if (lastSubmission) {
+                    navigate(`/submissions/${lastSubmission.questionId}`);
+                  }
+                }}
+                loading={feedbackLoading}
+                error={feedbackError}
+                feedback={
+                  feedback ||
+                  (lastSubmission?.aiFeedback
+                    ? {
+                        success: true,
+                        verdict: lastSubmission.verdict,
+                        feedbackType:
+                          lastSubmission.verdict === "accepted"
+                            ? "success_feedback"
+                            : "error_feedback",
+                        hints: lastSubmission.aiFeedback.hints || [],
+                        allHintsCount:
+                          lastSubmission.aiFeedback.hints?.length || 0,
+                        explanation: lastSubmission.aiFeedback.explanation,
+                        hasExplanation: !!lastSubmission.aiFeedback.explanation,
+                        detectedPattern:
+                          lastSubmission.aiFeedback.detectedPattern,
+                        mimInsights:
+                          lastSubmission.aiFeedback.mimInsights ||
+                          lastSubmission.aiFeedback.mim_insights,
+                      }
+                    : null)
+                }
+                onRevealNextHint={revealNextHint}
+                hasMoreHints={hasMoreHints}
+                nextHintLabel={nextHintLabel}
+                onToggleExplanation={toggleExplanation}
+                showFullExplanation={showFullExplanation}
+                onRetry={() => {
+                  if (lastSubmission) {
+                    fetchFeedback({
+                      questionId: lastSubmission.questionId,
+                      code: lastSubmission.code,
+                      language: lastSubmission.language,
+                      verdict: lastSubmission.verdict,
+                      errorType: lastSubmission.errorType,
+                    });
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <DiscussDrawer

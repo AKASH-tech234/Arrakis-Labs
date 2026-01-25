@@ -93,6 +93,24 @@ export function buildUserHistorySummary(submissions) {
   return summary;
 }
 
+<<<<<<< HEAD:backend/src/services/ai/aiService.js
+=======
+/**
+ * Request AI feedback for a submission
+ * @param {Object} params - Submission context
+ * @param {string} params.userId - User ID
+ * @param {string} params.problemId - Question/Problem ID
+ * @param {string} params.problemCategory - Category/tags of the problem
+ * @param {string} params.constraints - Problem constraints
+ * @param {string} params.code - Submitted code
+ * @param {string} params.language - Programming language
+ * @param {string} params.verdict - Submission verdict (backend format)
+ * @param {string|null} params.userHistorySummary - User's submission history summary
+ * @param {Object|null} params.problem - Full problem object for AI context
+ * @param {Object|null} params.userProfile - User's AI profile for personalization
+ * @returns {Promise<Object|null>} - AI feedback response or null on failure
+ */
+>>>>>>> model:backend/src/services/aiService.js
 export async function getAIFeedback({
   userId,
   problemId,
@@ -102,6 +120,8 @@ export async function getAIFeedback({
   language,
   verdict,
   userHistorySummary,
+  problem = null,
+  userProfile = null,
 }) {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/ai/feedback`;
@@ -113,6 +133,8 @@ export async function getAIFeedback({
       verdict,
       language,
       codeLength: code?.length,
+      hasProblemContext: !!problem,
+      hasUserProfile: !!userProfile,
     });
 
     const payload = {
@@ -125,11 +147,43 @@ export async function getAIFeedback({
       verdict: VERDICT_MAP[verdict] || verdict,
       error_type: ERROR_TYPE_MAP[verdict] || null,
       user_history_summary: userHistorySummary,
+      // Enhanced context for AI personalization
+      problem: problem
+        ? {
+            title: problem.title,
+            difficulty: problem.difficulty,
+            tags: problem.tags || [],
+            topic: problem.topic || problemCategory,
+            expected_approach: problem.expectedApproach || null,
+            common_mistakes: problem.commonMistakes || [],
+            time_complexity_hint: problem.timeComplexityHint || null,
+            space_complexity_hint: problem.spaceComplexityHint || null,
+          }
+        : null,
+      user_profile: userProfile
+        ? {
+            common_mistakes: userProfile.commonMistakes || [],
+            weak_topics: userProfile.weakTopics || [],
+            strong_topics: userProfile.strongTopics || [],
+            recurring_patterns: userProfile.recurringPatterns || [],
+            success_rate: userProfile.successRate || 0,
+            total_submissions: userProfile.totalSubmissions || 0,
+            recent_categories: userProfile.recentCategories || [],
+            skill_levels: userProfile.skillLevels || {},
+            difficulty_readiness: userProfile.difficultyReadiness || {
+              easy: 1.0,
+              medium: 0.5,
+              hard: 0.2,
+            },
+          }
+        : null,
     };
 
     log.info(`→ POST ${url}`, {
       verdict: payload.verdict,
       error_type: payload.error_type,
+      hasProblem: !!payload.problem,
+      hasUserProfile: !!payload.user_profile,
     });
 
     const response = await axios.post(url, payload, {
@@ -216,3 +270,162 @@ export default {
   buildUserHistorySummary,
   checkAIServiceHealth,
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIM (Misconception Identification Model) API
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get MIM model status
+ * @returns {Promise<Object|null>}
+ */
+export async function getMIMStatus() {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/ai/mim/status`;
+
+  try {
+    log.info(`MIM Status → ${url}`);
+    const response = await axios.get(url, { timeout: 10000 });
+    const duration = Date.now() - startTime;
+
+    log.http("GET", "/ai/mim/status", response.status, duration);
+    log.success("MIM status retrieved", response.data);
+    return response.data;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    log.error("MIM status check failed", {
+      duration,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
+ * Get user's cognitive profile from MIM
+ * @param {string} userId - User ID
+ * @returns {Promise<Object|null>}
+ */
+export async function getMIMProfile(userId) {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/ai/mim/profile/${encodeURIComponent(userId)}`;
+
+  try {
+    log.info(`MIM Profile → ${url}`, { userId });
+    const response = await axios.get(url, { timeout: 15000 });
+    const duration = Date.now() - startTime;
+
+    log.http("GET", `/ai/mim/profile/${userId}`, response.status, duration);
+    log.success("MIM profile retrieved", {
+      userId,
+      hasStrengths: !!response.data?.strengths,
+      hasWeaknesses: !!response.data?.weaknesses,
+    });
+    return response.data;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    log.error("MIM profile fetch failed", {
+      userId,
+      duration,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
+ * Get personalized problem recommendations from MIM
+ * @param {string} userId - User ID
+ * @param {number} [limit=5] - Number of recommendations
+ * @returns {Promise<Object|null>}
+ */
+export async function getMIMRecommendations(userId, limit = 5) {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/ai/mim/recommend/${encodeURIComponent(userId)}?limit=${limit}`;
+
+  try {
+    log.info(`MIM Recommendations → ${url}`, { userId, limit });
+    const response = await axios.get(url, { timeout: 20000 });
+    const duration = Date.now() - startTime;
+
+    log.http("GET", `/ai/mim/recommend/${userId}`, response.status, duration);
+    log.success("MIM recommendations retrieved", {
+      userId,
+      count: response.data?.recommendations?.length || 0,
+    });
+    return response.data;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    log.error("MIM recommendations fetch failed", {
+      userId,
+      duration,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
+ * Get pre-submission prediction from MIM
+ * @param {string} userId - User ID
+ * @param {string} problemId - Problem ID
+ * @returns {Promise<Object|null>}
+ */
+export async function getMIMPrediction(userId, problemId) {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/ai/mim/predict/${encodeURIComponent(userId)}/${encodeURIComponent(problemId)}`;
+
+  try {
+    log.info(`MIM Prediction → ${url}`, { userId, problemId });
+    const response = await axios.get(url, { timeout: 10000 });
+    const duration = Date.now() - startTime;
+
+    log.http(
+      "GET",
+      `/ai/mim/predict/${userId}/${problemId}`,
+      response.status,
+      duration,
+    );
+    log.success("MIM prediction retrieved", {
+      userId,
+      problemId,
+      successProbability: response.data?.success_probability,
+    });
+    return response.data;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    log.error("MIM prediction fetch failed", {
+      userId,
+      problemId,
+      duration,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
+ * Trigger MIM model training (admin only)
+ * @returns {Promise<Object|null>}
+ */
+export async function triggerMIMTraining() {
+  const startTime = Date.now();
+  const url = `${AI_SERVICE_URL}/ai/mim/train`;
+
+  try {
+    log.info(`MIM Training Trigger → ${url}`);
+    const response = await axios.post(url, {}, { timeout: 5000 });
+    const duration = Date.now() - startTime;
+
+    log.http("POST", "/ai/mim/train", response.status, duration);
+    log.success("MIM training triggered", response.data);
+    return response.data;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    log.error("MIM training trigger failed", {
+      duration,
+      error: error.message,
+    });
+    return null;
+  }
+}

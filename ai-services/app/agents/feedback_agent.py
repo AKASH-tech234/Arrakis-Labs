@@ -1,135 +1,181 @@
+"""
+Feedback Agent v3.0 - MIM-Instructed
+====================================
+
+PHILOSOPHY: Agent is the VOICE, MIM is the BRAIN.
+
+This agent receives pre-computed instructions from MIM and:
+1. Uses MIM's root cause as the definitive diagnosis
+2. Adds code-specific evidence to support the diagnosis
+3. Verbalizes the feedback in a helpful, educational tone
+
+ELIMINATES:
+- Root cause guessing (MIM provides this)
+- Pattern detection duplication (MIM provides this)
+- Generic feedback (MIM provides personalization data)
+"""
+
 import logging
 from app.schemas.feedback import FeedbackResponse
 from app.agents.base_json_agent import run_json_agent
 from app.cache.cache_key import build_cache_key
-from app.prompts.feedback import FEEDBACK_PROMPT  # ✅ use prompts folder
 
 logger = logging.getLogger("feedback_agent")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# REWRITTEN: PROBLEM-GROUNDED & USER-AWARE FEEDBACK PROMPT
+# v3.0: MIM-INSTRUCTED FEEDBACK PROMPT (STREAMLINED)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-FEEDBACK_SYSTEM_PROMPT = """You are an expert competitive programming reviewer analyzing a submission.
+FEEDBACK_SYSTEM_PROMPT = """You are an expert competitive programming reviewer.
 
 ═══════════════════════════════════════════════════════════════════════════════
-YOUR TASK
+YOUR ROLE (v3.0 - MIM-Instructed)
 ═══════════════════════════════════════════════════════════════════════════════
-Analyze WHY this submission received this VERDICT, considering:
-1. The PROBLEM'S expected approach and constraints
-2. The USER'S historical mistake patterns
-3. The specific logical flaw in the submitted code
+MIM (Meta-Intelligence Model) has ALREADY identified the root cause.
+Your job is to EXPLAIN it with code-specific evidence, NOT to diagnose.
 
-═══════════════════════════════════════════════════════════════════════════════
-CONTEXT YOU HAVE (in order of importance)
-═══════════════════════════════════════════════════════════════════════════════
-1. SECTION 1: PROBLEM DEFINITION
-   - Expected Approach: The intended algorithm/technique
-   - Constraints: Time/space limits, input bounds
-   - Known Pitfalls: Common mistakes for this problem type
-
-2. SECTION 2: USER PROFILE
-   - RECURRING MISTAKES: Patterns this user makes repeatedly
-   - WEAK TOPICS: Areas where user struggles
-   - Success Rate: Historical performance
-
-3. SECTION 3: CURRENT SUBMISSION
-   - Verdict: The judge's result (wrong_answer, TLE, etc.)
-   - Error Type: Specific error if available
+Think of it like this:
+- MIM = Doctor who diagnosed the condition
+- You = Nurse who explains the diagnosis to the patient
 
 ═══════════════════════════════════════════════════════════════════════════════
-ANALYSIS ALGORITHM (FOLLOW THIS ORDER)
+WHAT YOU RECEIVE FROM MIM
 ═══════════════════════════════════════════════════════════════════════════════
-STEP 1: Check if user's approach matches EXPECTED APPROACH
-        → If different, this is likely the root cause
-
-STEP 2: Check if user is repeating a RECURRING MISTAKE from their profile
-        → If yes, explicitly mention: "You're repeating a pattern: [mistake]"
-
-STEP 3: Check if the error matches KNOWN PITFALLS for this problem
-        → Reference the specific pitfall
-
-STEP 4: Identify the most likely logical cause for the VERDICT
-        → Be specific: "Your loop terminates early when..." not "There's a bug"
+1. ROOT CAUSE (definitive - use this, don't contradict)
+2. CONFIDENCE LEVEL (high/medium/low)
+3. IS RECURRING (has user made this mistake before?)
+4. TONE INSTRUCTION (encouraging/direct/firm)
+5. EDGE CASES LIKELY (which inputs might fail)
 
 ═══════════════════════════════════════════════════════════════════════════════
-OUTPUT FORMAT (JSON)
+YOUR OUTPUT FORMAT (JSON) - ALL FIELDS REQUIRED
 ═══════════════════════════════════════════════════════════════════════════════
 {{
-  "explanation": "2-4 sentences explaining the ROOT CAUSE. Reference the expected approach or known pitfall if applicable.",
-  "improvement_hint": "ONE specific, actionable suggestion (max 25 words). Point toward the fix without giving the solution.",
-  "detected_pattern": "Abstract mistake pattern name (e.g., 'off-by-one in iteration', 'missing base case'). null if no clear pattern."
+  "explanation": "3-5 sentences explaining WHY the MIM root cause applies to THIS code. Reference specific lines/constructs. If recurring, acknowledge the pattern.",
+  
+  "improvement_hint": "15-30 words pointing toward the fix WITHOUT giving the answer.",
+  
+  "detected_pattern": "Use MIM's pattern if provided, otherwise derive from root cause.",
+  
+  "complexity_analysis": "Time: O(...), Space: O(...) - analyze the actual code.",
+  
+  "edge_cases": ["List 2-3 from MIM's suggestions + any you identify in code"],
+  
+  "optimization_tips": ["1-2 specific optimizations if applicable, null if not"]
 }}
 
 ═══════════════════════════════════════════════════════════════════════════════
-RULES (MANDATORY)
+TONE GUIDE (from MIM instruction)
 ═══════════════════════════════════════════════════════════════════════════════
-✗ Do NOT restate the problem description
-✗ Do NOT provide corrected code or full solutions
-✗ Do NOT give generic advice like "debug your code" or "check for errors"
-✗ Do NOT speculate without evidence from the submission
+ENCOURAGING (burnout risk high):
+  "Great attempt! The core logic is sound, but there's a subtle issue with..."
+  
+DIRECT (normal):
+  "The submission fails because... Specifically, in your code..."
+  
+FIRM (recurring mistake, 3+ times):
+  "This is the same mistake pattern from before. Let's address it directly..."
 
-✓ DO reference the EXPECTED APPROACH when user's approach differs
-✓ DO mention if user is REPEATING a known mistake pattern
-✓ DO be specific about WHICH constraint or edge case is likely failing
-✓ DO keep explanation under 100 words"""
+═══════════════════════════════════════════════════════════════════════════════
+RULES (CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+✓ ALWAYS base explanation on MIM's root cause
+✓ ALWAYS add code-specific evidence (line numbers, variable names)
+✓ ALWAYS use the tone MIM specifies
+✓ If recurring, acknowledge it: "You've encountered this pattern before..."
+
+✗ NEVER contradict MIM's root cause diagnosis
+✗ NEVER be generic - reference the actual code
+✗ NEVER provide corrected code"""
 
 
-def feedback_agent(context: str, payload: dict) -> FeedbackResponse:
+def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackResponse:
+    """
+    Generate feedback using MIM instructions.
+    
+    v3.0: Receives MIMDecision with pre-computed instructions.
+    Agent's job is to add code-specific evidence, NOT to diagnose.
+    
+    Args:
+        context: Assembled context string
+        payload: Submission data and problem context
+        mim_decision: MIMDecision object with instructions (optional for backward compat)
+    """
     logger.debug(
-        f"📨 feedback_agent called | verdict={payload.get('verdict')} "
-        f"| language={payload.get('language')}"
+        f"📨 feedback_agent v3.0 called | verdict={payload.get('verdict')} "
+        f"| has_mim={mim_decision is not None}"
     )
 
     # -------------------------
-    # ACCEPTED → minimal feedback
+    # ACCEPTED → still provide optimization feedback
     # -------------------------
-    if payload.get("verdict") == "Accepted":
+    verdict = (payload.get("verdict") or "").lower()
+    if verdict == "accepted":
         return FeedbackResponse(
-            explanation="Your solution passed all test cases successfully.",
-            improvement_hint="No changes required.",
+            explanation="Congratulations! Your solution correctly handles all test cases. "
+                       "The approach you used is valid and produces correct results. "
+                       "Consider reviewing the complexity analysis below for potential optimizations.",
+            improvement_hint="Solution is correct. Review complexity for potential optimizations.",
             detected_pattern=None,
+            complexity_analysis="Analysis not performed for accepted solutions.",
+            edge_cases=None,
+            optimization_tips=None,
         )
 
     # -------------------------
-    # Cache key (code-aware + problem-aware)
+    # Build MIM-enhanced context if decision available
+    # -------------------------
+    enhanced_context = context
+    if mim_decision:
+        # Add MIM's specific feedback instructions to context
+        mim_context = mim_decision.get_feedback_context()
+        enhanced_context = f"{mim_context}\n\n{context}"
+        
+        logger.debug(f"   └─ MIM root cause: {mim_decision.root_cause}")
+        logger.debug(f"   └─ MIM tone: {mim_decision.feedback_instruction.tone}")
+        logger.debug(f"   └─ Is recurring: {mim_decision.feedback_instruction.is_recurring_mistake}")
+
+    # -------------------------
+    # Cache key (code-aware + MIM-aware)
     # -------------------------
     problem = payload.get("problem", {})
-    user_profile = payload.get("user_profile", {})
     
     cache_key = build_cache_key(
-        "feedback_agent",
+        "feedback_agent_v3",
         {
             **payload,
-            # 🔑 Make cache code-sensitive
             "code_hash": hash(payload.get("code", "")),
-            # 🔑 Include problem expected approach in cache key
-            "expected_approach": problem.get("expected_approach", ""),
-            # 🔑 Include user mistakes pattern for personalization
-            "user_mistakes_hash": hash(tuple(user_profile.get("common_mistakes", []))),
+            "mim_root_cause": mim_decision.root_cause if mim_decision else "none",
+            "mim_recurring": mim_decision.feedback_instruction.is_recurring_mistake if mim_decision else False,
         },
     )
 
-    logger.debug(f"   └─ Cache key generated: {cache_key[:16]}...")
-    logger.debug(f"   └─ Problem: {problem.get('title', 'unknown')}, Expected: {problem.get('expected_approach', 'N/A')}")
-    logger.debug(f"   └─ User recurring mistakes: {user_profile.get('common_mistakes', [])}")
+    logger.debug(f"   └─ Cache key: {cache_key[:16]}...")
+
+    # Use MIM pattern if available, otherwise let agent detect
+    mim_pattern = None
+    if mim_decision and mim_decision.pattern.pattern_name:
+        mim_pattern = mim_decision.pattern.pattern_name
 
     return run_json_agent(
         agent_name="feedback_agent",
-        context=context,
+        context=enhanced_context,
         cache_key=cache_key,
         schema=FeedbackResponse,
         system_prompt=FEEDBACK_SYSTEM_PROMPT,
         fallback=FeedbackResponse(
             explanation=(
-                "The submission failed due to a logical issue that causes "
-                "incorrect results on certain test cases."
+                f"The submission failed due to {mim_decision.root_cause.replace('_', ' ') if mim_decision else 'a logical issue'}. "
+                "This type of error typically occurs when the algorithm logic doesn't handle all expected cases correctly. "
+                "Review the specific area mentioned and trace through your code with sample inputs to identify the fix."
             ),
             improvement_hint=(
-                "Re-check the algorithm's assumptions against edge cases "
-                "revealed by the code."
+                "Focus on the identified root cause area and trace through edge cases carefully."
             ),
-            detected_pattern="Logical edge case handling",
+            detected_pattern=mim_pattern,
+            complexity_analysis="Unable to analyze - review manually.",
+            edge_cases=mim_decision.feedback_instruction.edge_cases_likely if mim_decision else None,
+            optimization_tips=None,
         ),
     )

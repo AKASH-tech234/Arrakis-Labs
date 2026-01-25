@@ -7,7 +7,15 @@ import { compareOutputs } from "../../utils/stdinConverter.js";
 import {
   getAIFeedback,
   buildUserHistorySummary,
+<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
 } from "../../services/ai/aiService.js";
+=======
+} from "../services/aiService.js";
+import {
+  getAttemptNumber,
+  updateUserAIProfile,
+} from "../utils/userStatsAggregator.js";
+>>>>>>> model:backend/src/controllers/judgeController.js
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
@@ -427,6 +435,14 @@ export const submitCode = async (req, res) => {
 
     let submission = null;
     if (userId) {
+      // Get attempt number for this user+problem combo
+      const attemptNumber = await getAttemptNumber(userId, questionId);
+
+      // Denormalize problem fields for AI queries
+      const problemCategory =
+        question.topic ||
+        (question.tags?.length > 0 ? question.tags[0] : "General");
+
       submission = await Submission.create({
         userId,
         questionId,
@@ -435,8 +451,23 @@ export const submitCode = async (req, res) => {
         status,
         passedCount,
         totalCount: allTestCases.length,
+<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
         
+=======
+        // AI tracking fields
+        attemptNumber,
+        // Denormalized problem fields (immutable historical data)
+        problemCategory,
+        problemDifficulty: question.difficulty,
+        problemTags: question.tags || [],
+        // Don't store full test case results for security
+>>>>>>> model:backend/src/controllers/judgeController.js
       });
+
+      // Async update user's AI profile (non-blocking)
+      updateUserAIProfile(userId).catch((err) =>
+        console.error("[Submit] AI profile update failed:", err.message),
+      );
     }
 
     let aiFeedback = null;
@@ -453,10 +484,18 @@ export const submitCode = async (req, res) => {
         const userHistorySummary = buildUserHistorySummary(recentSubmissions);
 
         const problemCategory =
-          question.tags?.length > 0
-            ? question.tags.join(", ")
-            : question.difficulty || "General";
+          question.topic ||
+          (question.tags?.length > 0 ? question.tags[0] : "General");
 
+<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
+=======
+        // Get user's AI profile for personalization
+        const { getUserAIProfile } =
+          await import("../utils/userStatsAggregator.js");
+        const userProfile = await getUserAIProfile(userId).catch(() => null);
+
+        // Call AI service with enriched context
+>>>>>>> model:backend/src/controllers/judgeController.js
         aiFeedback = await getAIFeedback({
           userId: userId.toString(),
           problemId: questionId.toString(),
@@ -466,10 +505,27 @@ export const submitCode = async (req, res) => {
           language,
           verdict: status,
           userHistorySummary,
+          // Enhanced context for AI personalization
+          problem: {
+            title: question.title,
+            difficulty: question.difficulty,
+            tags: question.tags || [],
+            topic: question.topic || problemCategory,
+            expectedApproach: question.expectedApproach || null,
+            commonMistakes: question.commonMistakes || [],
+            timeComplexityHint: question.timeComplexityHint || null,
+            spaceComplexityHint: question.spaceComplexityHint || null,
+          },
+          userProfile,
         });
 
         if (aiFeedback) {
           console.log("[Submit] AI feedback received successfully");
+          // Mark submission as having received AI feedback
+          if (submission) {
+            submission.aiFeedbackReceived = true;
+            await submission.save();
+          }
         } else {
           console.log("[Submit] AI feedback unavailable (service may be down)");
         }
@@ -510,11 +566,18 @@ export const submitCode = async (req, res) => {
         
         aiFeedback: aiFeedback
           ? {
+              hints: aiFeedback.hints || [],
               explanation: aiFeedback.explanation,
               improvementHint: aiFeedback.improvement_hint,
               detectedPattern: aiFeedback.detected_pattern,
+              feedbackType: aiFeedback.feedback_type || "error_feedback",
               learningRecommendation: aiFeedback.learning_recommendation,
               difficultyAdjustment: aiFeedback.difficulty_adjustment,
+              optimizationTips: aiFeedback.optimization_tips || [],
+              complexityAnalysis: aiFeedback.complexity_analysis,
+              edgeCases: aiFeedback.edge_cases || [],
+              // MIM insights from AI service (ML-based predictions)
+              mimInsights: aiFeedback.mim_insights || null,
             }
           : null,
       },

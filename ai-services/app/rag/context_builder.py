@@ -144,6 +144,120 @@ def format_memory_chunks(user_memory: Optional[List[str]]) -> str:
     return '\n'.join(chunks)
 
 
+def format_mim_section(mim_insights: Optional[Dict[str, Any]]) -> str:
+    """
+    Format MIM predictions for agent prompts.
+    
+    Provides structured ML predictions to guide agent analysis.
+    
+    V2.1 Enhancement: Now includes difficulty adjustment and roadmap context.
+    """
+    if not mim_insights:
+        return ""
+    
+    try:
+        root_cause = mim_insights.get("root_cause", {})
+        readiness = mim_insights.get("readiness", {})
+        performance = mim_insights.get("performance_forecast", {})
+        similar_mistakes = mim_insights.get("similar_past_mistakes", [])
+        focus_areas = mim_insights.get("recommended_focus_areas", [])
+        is_cold_start = mim_insights.get("is_cold_start", False)
+        
+        # V2.1: Difficulty adjustment insights
+        difficulty_adjustment = mim_insights.get("difficulty_adjustment", {})
+        frustration_index = difficulty_adjustment.get("frustration_index", 0)
+        boredom_index = difficulty_adjustment.get("boredom_index", 0)
+        adjustment_direction = difficulty_adjustment.get("adjustment", "maintain")
+        adjustment_reason = difficulty_adjustment.get("reason", "")
+        
+        # V2.1: Roadmap context
+        roadmap_context = mim_insights.get("roadmap_context", {})
+        current_phase = roadmap_context.get("current_phase", "")
+        current_goal = roadmap_context.get("current_goal", "")
+        roadmap_progress = roadmap_context.get("progress", "")
+        
+        confidence = root_cause.get("confidence", 0)
+        confidence_level = "HIGH" if confidence >= 0.7 else "MEDIUM" if confidence >= 0.5 else "LOW"
+        
+        cold_start_note = "\n⚠️ NEW USER: Limited history - predictions based on problem difficulty" if is_cold_start else ""
+        
+        similar_str = "\n".join([f"   • {m[:100]}..." if len(m) > 100 else f"   • {m}" for m in similar_mistakes[:3]]) if similar_mistakes else "   (No similar mistakes found)"
+        focus_str = "\n".join([f"   • {f}" for f in focus_areas[:3]]) if focus_areas else "   (Continue current approach)"
+        
+        # V2.1: Format emotional state indicators
+        emotional_state = ""
+        if frustration_index > 0.6:
+            emotional_state = """
+⚠️ USER FRUSTRATION DETECTED (index: {:.0%})
+   - User may be struggling with consecutive failures
+   - Consider: Simpler explanation, more encouragement, smaller steps
+   - Avoid: Complex terminology, multiple simultaneous corrections""".format(frustration_index)
+        elif boredom_index > 0.7:
+            emotional_state = """
+💤 BOREDOM RISK DETECTED (index: {:.0%})
+   - User may need more challenging problems
+   - Consider: Advanced techniques, optimization focus
+   - Avoid: Basic explanations they likely already know""".format(boredom_index)
+        
+        # V2.1: Format roadmap context
+        roadmap_section = ""
+        if current_phase and current_goal:
+            roadmap_section = f"""
+LEARNING JOURNEY:
+   Current Phase: {current_phase}
+   Current Goal: {current_goal}
+   Progress: {roadmap_progress}"""
+        
+        # V2.1: Difficulty recommendation
+        difficulty_section = ""
+        if adjustment_direction and adjustment_reason:
+            direction_emoji = "📈" if adjustment_direction == "increase" else "📉" if adjustment_direction == "decrease" else "➡️"
+            difficulty_section = f"""
+DIFFICULTY RECOMMENDATION:
+   {direction_emoji} Adjustment: {adjustment_direction.upper()}
+   Reason: {adjustment_reason}"""
+        
+        return f"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  🧠 MIM INTELLIGENCE INSIGHTS V2.1 (Confidence: {confidence_level})                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+{cold_start_note}
+
+PREDICTED ROOT CAUSE: {root_cause.get('failure_cause', 'unknown')}
+   Confidence: {confidence:.0%}
+
+USER READINESS:
+   Current Level: {readiness.get('current_level', 'Medium')}
+   Easy: {readiness.get('easy_readiness', 0.5):.0%} | Medium: {readiness.get('medium_readiness', 0.5):.0%} | Hard: {readiness.get('hard_readiness', 0.3):.0%}
+
+PERFORMANCE FORECAST:
+   Expected Success (next 5): {performance.get('expected_success_rate', 0.5):.0%}
+   Learning Velocity: {performance.get('learning_velocity', 'stable')}
+{roadmap_section}
+{difficulty_section}
+{emotional_state}
+
+SIMILAR PAST MISTAKES:
+{similar_str}
+
+RECOMMENDED FOCUS AREAS:
+{focus_str}
+
+═══════════════════════════════════════════════════════════════════════════════
+MIM USAGE INSTRUCTIONS:
+- If confidence >= 70%: Structure feedback around predicted root cause
+- If confidence 50-70%: Consider MIM prediction as strong hypothesis  
+- If confidence < 50%: Use as supplementary signal, investigate independently
+- If frustration detected: Be extra encouraging, break down into smaller steps
+- If boredom detected: Skip basics, focus on advanced concepts/optimizations
+- ALWAYS mention if your analysis agrees/disagrees with MIM prediction
+═══════════════════════════════════════════════════════════════════════════════
+"""
+    except Exception as e:
+        logger.warning(f"Failed to format MIM section: {e}")
+        return ""
+
+
 def _format_user_code(submission: SubmissionContext, include_full: bool = True) -> str:
     """
     Format user's submitted code for agent context.
@@ -186,6 +300,7 @@ def build_context(
     problem_context: Optional[Dict[str, Any]] = None,
     user_profile: Optional[Dict[str, Any]] = None,
     include_full_code: bool = True,
+    mim_insights: Optional[Dict[str, Any]] = None,  # ✨ NEW: MIM predictions
 ) -> str:
     """
     Build STRUCTURED context for agent consumption.
@@ -203,6 +318,7 @@ def build_context(
         problem_context: Structured problem data from repository
         user_profile: Structured user profile from profile builder
         include_full_code: If True, include full user code without truncation (DEFAULT: True)
+        mim_insights: MIM prediction results for agent guidance
     
     Returns:
         Formatted context string with explicit sections
@@ -210,14 +326,16 @@ def build_context(
     import time
     start = time.time()
     
-    logger.debug(f"📄 build_context called | include_full_code={include_full_code}")
+    logger.debug(f"📄 build_context called | include_full_code={include_full_code} | mim={mim_insights is not None}")
     
     # ═══════════════════════════════════════════════════════════════════════════
     # SECTION 1: MONGODB STATISTICS (Real-time data)
     # ═══════════════════════════════════════════════════════════════════════════
     mongo_stats_section = ""
     try:
-        if mongo_client.db is not None:
+        # ✨ FIX: Use getattr to safely check if db exists and is connected
+        has_db = getattr(mongo_client, 'db', None) is not None
+        if has_db:
             mongo_submissions = mongo_client.get_user_submissions(
                 user_id=submission.user_id,
                 limit=20
@@ -247,10 +365,12 @@ def build_context(
     problem_section = format_problem_section(problem_context)
     user_profile_section = format_user_profile_section(user_profile)
     memory_section = format_memory_chunks(user_memory)
+    mim_section = format_mim_section(mim_insights)  # ✨ NEW: MIM insights section
     
     # Determine data quality flags
     has_grounded_problem = problem_context and problem_context.get("_source") != "fallback"
     has_user_history = bool(user_memory) or bool(user_profile and user_profile.get("common_mistakes"))
+    has_mim_predictions = bool(mim_insights)  # ✨ NEW
     
     # ═══════════════════════════════════════════════════════════════════════════
     # BUILD FINAL CONTEXT
@@ -269,7 +389,7 @@ def build_context(
 
 Historical Submissions (RAG Retrieved):
 {memory_section}
-
+{mim_section}
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  SECTION 3: CURRENT SUBMISSION                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -286,18 +406,21 @@ USER CODE:
 DATA QUALITY FLAGS:
 - Problem grounded: {"✓ YES" if has_grounded_problem else "✗ NO (use generic advice)"}
 - User history available: {"✓ YES" if has_user_history else "✗ NO (skip personalization)"}
+- MIM predictions available: {"✓ YES" if has_mim_predictions else "✗ NO (analyze without ML guidance)"}
 
 MANDATORY ANALYSIS STEPS:
 1. {"Compare user's approach with EXPECTED APPROACH" if has_grounded_problem else "Analyze based on verdict type only"}
 2. {"Check if user repeats RECURRING MISTAKES from profile" if has_user_history else "Skip personalization"}
-3. Reference specific problem CONSTRAINTS when relevant
-4. Focus on THIS submission, not generic advice
-5. If user has known WEAK TOPICS matching this problem, address them
+3. {"Use MIM root cause prediction as starting hypothesis (confidence shown above)" if has_mim_predictions else "Determine root cause independently"}
+4. Reference specific problem CONSTRAINTS when relevant
+5. Focus on THIS submission, not generic advice
+6. If user has known WEAK TOPICS matching this problem, address them
 
 OUTPUT REQUIREMENTS:
 - Be specific to THIS problem
 - Reference problem constraints
 - If user repeats a known mistake, explicitly mention it
+- {"State whether you agree/disagree with MIM's predicted root cause" if has_mim_predictions else ""}
 - Do NOT provide full solutions or corrected code
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """

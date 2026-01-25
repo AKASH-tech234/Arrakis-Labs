@@ -1,11 +1,33 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+<<<<<<< HEAD:frontend/src/pages/common/problem.jsx
 import AppHeader from "../../components/layout/AppHeader";
 import ProblemList from "../../components/problem/ProblemList";
 import ProblemFilters from "../../components/problem/ProblemFilters";
 import POTDBanner from "../../components/potd/POTDBanner";
 import { getPublicQuestions } from "../../services/common/api";
+=======
+import AppHeader from "../components/layout/AppHeader";
+import ProblemList from "../components/problem/ProblemList";
+import ProblemFilters from "../components/problem/ProblemFilters";
+import POTDBanner from "../components/potd/POTDBanner";
+import { ProblemRecommendations } from "../components/mim";
+import { getPublicQuestions } from "../services/api";
+>>>>>>> model:frontend/src/pages/problem.jsx
+
+// Get userId from localStorage (same pattern as other pages)
+function getCurrentUserId() {
+  try {
+    const token = localStorage.getItem("arrakis_token");
+    if (!token) return null;
+    // Decode JWT payload (basic decode, not verification)
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload?.id || payload?.userId || payload?._id || null;
+  } catch {
+    return null;
+  }
+}
 
 export default function ProblemLibrary() {
   const [problems, setProblems] = useState([]);
@@ -13,6 +35,12 @@ export default function ProblemLibrary() {
   const [loadError, setLoadError] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [userId, setUserId] = useState(null);
+
+  // Get current user ID on mount
+  useEffect(() => {
+    setUserId(getCurrentUserId());
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -24,7 +52,8 @@ export default function ProblemLibrary() {
 
         const { questions } = await getPublicQuestions({ limit: 1000 });
         const mapped = (questions || []).map((q) => {
-          const category = Array.isArray(q.tags) && q.tags.length > 0 ? q.tags[0] : "General";
+          const category =
+            Array.isArray(q.tags) && q.tags.length > 0 ? q.tags[0] : "General";
           return {
             id: q._id,
             title: q.title,
@@ -49,7 +78,9 @@ export default function ProblemLibrary() {
   }, []);
 
   const categories = useMemo(() => {
-    return [...new Set(problems.map((p) => p.category))].sort((a, b) => a.localeCompare(b));
+    return [...new Set(problems.map((p) => p.category))].sort((a, b) =>
+      a.localeCompare(b),
+    );
   }, [problems]);
 
   const filteredProblems = useMemo(() => {
@@ -84,7 +115,9 @@ export default function ProblemLibrary() {
           >
             <h1
               className="text-[#E8E4D9] text-4xl font-bold tracking-[0.15em] uppercase mb-3"
-              style={{ fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif" }}
+              style={{
+                fontFamily: "'Rajdhani', 'Orbitron', system-ui, sans-serif",
+              }}
             >
               Problem Archive
             </h1>
@@ -120,7 +153,27 @@ export default function ProblemLibrary() {
             <POTDBanner />
           </motion.div>
 
+<<<<<<< HEAD:frontend/src/pages/common/problem.jsx
           {}
+=======
+          {/* MIM Recommendations (only shown if user is logged in) */}
+          {userId && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.17 }}
+              className="mb-8"
+            >
+              <ProblemRecommendations
+                userId={userId}
+                limit={3}
+                title="Recommended for You"
+              />
+            </motion.div>
+          )}
+
+          {/* Problem List */}
+>>>>>>> model:frontend/src/pages/problem.jsx
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import MIMInsights from "../mim/MIMInsights"; // ✨ Import MIM insights component
 
 const HINT_COLORS = {
   conceptual: { bg: "#3B82F6", text: "#DBEAFE", label: "Conceptual" },
@@ -380,7 +381,37 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
+<<<<<<< HEAD
                 {}
+=======
+                {/* ✨ MIM Insights - Machine Learning Predictions (NO LLM calls) */}
+                {feedback.mimInsights && (
+                  <div className="pt-4 border-t border-[#1A1814]">
+                    <MIMInsights
+                      insights={{
+                        root_cause:
+                          feedback.mimInsights.root_cause ||
+                          feedback.mimInsights.rootCause,
+                        readiness_scores: feedback.mimInsights.readiness
+                          ? {
+                              easy: feedback.mimInsights.readiness
+                                .easy_readiness,
+                              medium:
+                                feedback.mimInsights.readiness.medium_readiness,
+                              hard: feedback.mimInsights.readiness
+                                .hard_readiness,
+                            }
+                          : {},
+                        similar_mistakes: [],
+                        recommended_focus: [],
+                      }}
+                      expanded={false}
+                    />
+                  </div>
+                )}
+
+                {/* Full Explanation Toggle */}
+>>>>>>> model
                 {feedback.hasExplanation && !hasMoreHints && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <RevealButton

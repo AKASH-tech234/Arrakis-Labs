@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
 import AppHeader from "../../components/layout/AppHeader";
 import ProfileHeader from "../../components/charts/ProfileHeader";
 import StatsOverview from "../../components/charts/StatsOverview";
@@ -11,6 +12,22 @@ import SubmissionSummary from "../../components/charts/SubmissionSummary";
 import contestApi from "../../services/contest/contestApi";
 import apiClient from "../../services/common/api";
 import useProfileAnalytics from "../../hooks/profile/useProfileAnalytics";
+=======
+import AppHeader from "../components/layout/AppHeader";
+import ProfileHeader from "../components/charts/ProfileHeader";
+import StatsOverview from "../components/charts/StatsOverview";
+import ActivityHeatmap from "../components/charts/ActivityHeatmap";
+import CategoryChart from "../components/charts/CategoryChart";
+import SubmissionSummary from "../components/charts/SubmissionSummary";
+import {
+  CognitiveProfile,
+  ProblemRecommendations,
+  LearningRoadmap,
+} from "../components/mim";
+import contestApi from "../services/contestApi";
+import apiClient from "../services/api";
+import useProfileAnalytics from "../hooks/useProfileAnalytics";
+>>>>>>> model:frontend/src/pages/profile.jsx
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,15 +59,23 @@ export default function Profile({ username, readOnly = false } = {}) {
 
   const { data: analytics } = useProfileAnalytics({ username });
 
+  // Debug: Log analytics data to see user._id
+  useEffect(() => {
+    console.log("[Profile] Analytics data:", analytics);
+    console.log("[Profile] User ID:", analytics?.user?._id);
+  }, [analytics]);
+
   const clearActionMessageSoon = () => {
     window.setTimeout(() => setActionMessage(null), 2000);
   };
 
   const handleCopyProfileLink = async () => {
-    const publicUsername = analytics?.publicSettings?.publicUsername || analytics?.user?.username;
-    const url = readOnly || !publicUsername
-      ? window.location.href
-      : `${window.location.origin}/u/${encodeURIComponent(publicUsername)}`;
+    const publicUsername =
+      analytics?.publicSettings?.publicUsername || analytics?.user?.username;
+    const url =
+      readOnly || !publicUsername
+        ? window.location.href
+        : `${window.location.origin}/u/${encodeURIComponent(publicUsername)}`;
 
     try {
       if (navigator?.clipboard?.writeText) {
@@ -69,7 +94,10 @@ export default function Profile({ username, readOnly = false } = {}) {
     if (readOnly) return;
     try {
       setExportingPdf(true);
-      const res = await apiClient.post("/export/pdf", { format: "one_page", includeQr: true });
+      const res = await apiClient.post("/export/pdf", {
+        format: "one_page",
+        includeQr: true,
+      });
       const fileUrl = res?.data?.data?.fileUrl;
 
       if (!fileUrl) throw new Error("PDF export did not return a file URL");
@@ -82,7 +110,9 @@ export default function Profile({ username, readOnly = false } = {}) {
       setActionMessage("PDF generated");
       clearActionMessageSoon();
     } catch (err) {
-      alert(err?.response?.data?.message || err?.message || "Failed to export PDF");
+      alert(
+        err?.response?.data?.message || err?.message || "Failed to export PDF",
+      );
     } finally {
       setExportingPdf(false);
     }
@@ -125,16 +155,15 @@ export default function Profile({ username, readOnly = false } = {}) {
   }, []);
 
   const formatDate = useMemo(
-    () =>
-      (date) =>
-        new Intl.DateTimeFormat("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date(date)),
-    []
+    () => (date) =>
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(date)),
+    [],
   );
 
   const handleRegister = async (contest) => {
@@ -158,7 +187,7 @@ export default function Profile({ username, readOnly = false } = {}) {
                     registeredAt: new Date().toISOString(),
                   },
                 }
-              : c
+              : c,
           );
 
         return {
@@ -167,15 +196,25 @@ export default function Profile({ username, readOnly = false } = {}) {
         };
       });
     } catch (err) {
-      alert(err?.response?.data?.message || err?.message || "Failed to register");
+      alert(
+        err?.response?.data?.message || err?.message || "Failed to register",
+      );
     } finally {
       setContestBusy(contestId, false);
     }
   };
 
   return (
+<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#0A0A08" }}>
       {}
+=======
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ backgroundColor: "#0A0A08" }}
+    >
+      {/* Background Effects */}
+>>>>>>> model:frontend/src/pages/profile.jsx
       <div className="fixed inset-0 pointer-events-none z-0">
         {}
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl"></div>
@@ -185,12 +224,17 @@ export default function Profile({ username, readOnly = false } = {}) {
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-[#D97706]/3 rounded-full blur-3xl"></div>
       </div>
 
+<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
       {}
       <div 
+=======
+      {/* Grid Pattern Overlay */}
+      <div
+>>>>>>> model:frontend/src/pages/profile.jsx
         className="fixed inset-0 pointer-events-none z-0 opacity-5"
         style={{
           backgroundImage: `linear-gradient(to right, #D97706 1px, transparent 1px), linear-gradient(to bottom, #D97706 1px, transparent 1px)`,
-          backgroundSize: '50px 50px'
+          backgroundSize: "50px 50px",
         }}
       ></div>
 
@@ -224,7 +268,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                 </button>
               )}
               {actionMessage && (
-                <div className="text-xs text-[#E8E4D9]/70 sm:ml-2 sm:self-center">{actionMessage}</div>
+                <div className="text-xs text-[#E8E4D9]/70 sm:ml-2 sm:self-center">
+                  {actionMessage}
+                </div>
               )}
             </div>
             <div className="relative z-10">
@@ -253,7 +299,74 @@ export default function Profile({ username, readOnly = false } = {}) {
             <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
+<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
           {}
+=======
+          {/* Cognitive Profile - MIM */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.22 }}
+              className="mb-16"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  AI Cognitive Profile
+                </h2>
+              </div>
+              <CognitiveProfile userId={analytics.user._id} />
+            </motion.section>
+          )}
+
+          {/* Problem Recommendations - MIM */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.24 }}
+              className="mb-16"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Recommended Problems
+                </h2>
+              </div>
+              <ProblemRecommendations userId={analytics.user._id} limit={5} />
+            </motion.section>
+          )}
+
+          {/* Learning Roadmap - MIM */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.26 }}
+              className="mb-16"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Learning Roadmap
+                </h2>
+              </div>
+              <LearningRoadmap userId={analytics.user._id} />
+            </motion.section>
+          )}
+
+          {/* Contests - User Dashboard */}
+>>>>>>> model:frontend/src/pages/profile.jsx
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -295,7 +408,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                     </div>
 
                     {contests.live.length === 0 ? (
-                      <div className="text-[#E8E4D9]/60 text-sm">No live contests right now.</div>
+                      <div className="text-[#E8E4D9]/60 text-sm">
+                        No live contests right now.
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         {contests.live.map((contest) => (
@@ -305,7 +420,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <div className="text-white font-medium">{contest.name}</div>
+                                <div className="text-white font-medium">
+                                  {contest.name}
+                                </div>
                                 <div className="text-[#E8E4D9]/60 text-xs mt-1">
                                   Ends: {formatDate(contest.endTime)}
                                 </div>
@@ -318,7 +435,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                               </Link>
                             </div>
                             {contest.registration && (
-                              <div className="mt-2 text-xs text-blue-300">✓ Registered</div>
+                              <div className="mt-2 text-xs text-blue-300">
+                                ✓ Registered
+                              </div>
                             )}
                           </div>
                         ))}
@@ -336,12 +455,15 @@ export default function Profile({ username, readOnly = false } = {}) {
                     </div>
 
                     {contests.upcoming.length === 0 ? (
-                      <div className="text-[#E8E4D9]/60 text-sm">No upcoming contests.</div>
+                      <div className="text-[#E8E4D9]/60 text-sm">
+                        No upcoming contests.
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         {contests.upcoming.map((contest) => {
                           const isRegistered = Boolean(contest.registration);
-                          const canRegister = contest.requiresRegistration && !isRegistered;
+                          const canRegister =
+                            contest.requiresRegistration && !isRegistered;
                           const contestId = contest._id;
 
                           return (
@@ -351,7 +473,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
-                                  <div className="text-white font-medium">{contest.name}</div>
+                                  <div className="text-white font-medium">
+                                    {contest.name}
+                                  </div>
                                   <div className="text-[#E8E4D9]/60 text-xs mt-1">
                                     Starts: {formatDate(contest.startTime)}
                                   </div>
@@ -364,11 +488,19 @@ export default function Profile({ username, readOnly = false } = {}) {
                                 ) : canRegister ? (
                                   <button
                                     type="button"
-                                    disabled={readOnly || Boolean(busy[contestId])}
-                                    onClick={readOnly ? undefined : () => handleRegister(contest)}
+                                    disabled={
+                                      readOnly || Boolean(busy[contestId])
+                                    }
+                                    onClick={
+                                      readOnly
+                                        ? undefined
+                                        : () => handleRegister(contest)
+                                    }
                                     className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                   >
-                                    {busy[contestId] ? "Registering…" : "Register"}
+                                    {busy[contestId]
+                                      ? "Registering…"
+                                      : "Register"}
                                   </button>
                                 ) : (
                                   <Link
@@ -451,7 +583,9 @@ export default function Profile({ username, readOnly = false } = {}) {
               <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative z-10">
-                  <SubmissionSummary submissions={analytics?.recentSubmissions} />
+                  <SubmissionSummary
+                    submissions={analytics?.recentSubmissions}
+                  />
                 </div>
               </div>
             </motion.section>

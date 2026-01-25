@@ -64,7 +64,7 @@ class MongoDBClient:
     ) -> List[Dict[str, Any]]:
         """Get user's submission history"""
         
-        if not self.db:
+        if self.db is None:
             print(f"⚠️  MongoDB not connected - cannot fetch submissions for user: {user_id}")
             return []
         
@@ -102,7 +102,7 @@ class MongoDBClient:
     def get_user_profile_data(self, user_id: str) -> Dict[str, Any]:
         """Get comprehensive user profile from MongoDB"""
         
-        if not self.db:
+        if self.db is None:
             print(f"⚠️  MongoDB not connected - cannot fetch profile for user: {user_id}")
             return {}
         
@@ -185,5 +185,18 @@ class MongoDBClient:
         else:
             print(f"⚠️  Failed to sync submission to RAG")
 
+
 # Singleton
 mongo_client = MongoDBClient()
+
+
+def get_database():
+    """
+    Get the MongoDB database instance.
+    
+    Convenience function for test mocking and external access.
+    
+    Returns:
+        MongoDB database instance, or None if not connected
+    """
+    return mongo_client.db

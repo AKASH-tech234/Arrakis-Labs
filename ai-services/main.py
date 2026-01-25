@@ -1,9 +1,14 @@
+from dotenv import load_dotenv
+# Load environment variables from .env file FIRST (before any other imports)
+load_dotenv()
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import time
 import uuid
+import os
 from contextvars import ContextVar
 
 # -------------------------

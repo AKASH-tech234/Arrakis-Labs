@@ -10,6 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
 
+<<<<<<< HEAD
 import authRoutes from "./routes/auth/authRoutes.js";
 import adminRoutes from "./routes/admin/adminRoutes.js";
 import contestRoutes from "./routes/contest/contestRoutes.js";
@@ -20,6 +21,19 @@ import exportRoutes from "./routes/profile/exportRoutes.js";
 import potdRoutes from "./routes/potd/potdRoutes.js";
 import adminPOTDRoutes from "./routes/admin/adminPOTDRoutes.js";
 import discussionRoutes from "./routes/discussion/discussionRoutes.js";
+=======
+import authRoutes from "./routes/authRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import contestRoutes from "./routes/contestRoutes.js";
+import adminContestRoutes from "./routes/adminContestRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
+import exportRoutes from "./routes/exportRoutes.js";
+import potdRoutes from "./routes/potdRoutes.js";
+import adminPOTDRoutes from "./routes/adminPOTDRoutes.js";
+import mimRoutes from "./routes/mimRoutes.js";
+import aiProfileRoutes from "./routes/aiProfileRoutes.js";
+>>>>>>> model
 
 import {
   runCode,
@@ -136,6 +150,7 @@ app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/admin/potd", adminPOTDRoutes);
 app.use("/api/contests", contestRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/users", aiProfileRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/potd", potdRoutes);
@@ -157,6 +172,16 @@ app.get("/api/ai/health", getAIHealth);
 app.post("/api/ai/feedback", protect, requestAIFeedback);
 app.post("/api/ai/summary", protect, getAILearningSummary);
 
+<<<<<<< HEAD
+=======
+// MIM (Misconception Identification Model) routes
+app.use("/api/mim", mimRoutes);
+
+/* ======================================================
+   ERRORS
+====================================================== */
+
+>>>>>>> model
 app.use((req, res) =>
   res.status(404).json({ status: "error", message: "Route not found" }),
 );
