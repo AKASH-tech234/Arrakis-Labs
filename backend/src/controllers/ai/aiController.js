@@ -7,11 +7,11 @@ import {
 } from "../../services/ai/aiService.js";
 
 const LOG_PREFIX = {
-  INFO: "\x1b[36m[AI-CTRL]\x1b[0m", 
-  SUCCESS: "\x1b[32m[AI-CTRL]\x1b[0m", 
-  WARN: "\x1b[33m[AI-CTRL]\x1b[0m", 
-  ERROR: "\x1b[31m[AI-CTRL]\x1b[0m", 
-  DEBUG: "\x1b[35m[AI-CTRL]\x1b[0m", 
+  INFO: "\x1b[36m[AI-CTRL]\x1b[0m",
+  SUCCESS: "\x1b[32m[AI-CTRL]\x1b[0m",
+  WARN: "\x1b[33m[AI-CTRL]\x1b[0m",
+  ERROR: "\x1b[31m[AI-CTRL]\x1b[0m",
+  DEBUG: "\x1b[35m[AI-CTRL]\x1b[0m",
 };
 
 const log = {
@@ -182,6 +182,8 @@ export const requestAIFeedback = async (req, res) => {
         commonMistakes: question.commonMistakes || [],
         timeComplexityHint: question.timeComplexityHint || null,
         spaceComplexityHint: question.spaceComplexityHint || null,
+        // v3.2: Add canonical algorithms for feedback grounding
+        canonicalAlgorithms: question.canonicalAlgorithms || [],
       },
     });
 
@@ -297,6 +299,19 @@ export const getAILearningSummary = async (req, res) => {
       language,
       verdict: "accepted",
       userHistorySummary,
+      // v3.2: Pass full problem context
+      problem: {
+        title: question.title,
+        difficulty: question.difficulty,
+        tags: question.tags || [],
+        topic: question.topic || problemCategory,
+        description: question.description,
+        expectedApproach: question.expectedApproach || null,
+        commonMistakes: question.commonMistakes || [],
+        timeComplexityHint: question.timeComplexityHint || null,
+        spaceComplexityHint: question.spaceComplexityHint || null,
+        canonicalAlgorithms: question.canonicalAlgorithms || [],
+      },
     });
 
     if (!aiFeedback) {

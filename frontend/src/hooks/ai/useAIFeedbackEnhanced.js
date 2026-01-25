@@ -1,12 +1,35 @@
-
-
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { getAIFeedback, getWeeklyReport } from "../../services/ai/aiApi";
 import { useConfidenceBadge } from "../common/useConfidenceBadge";
 import { useLearningTimeline } from "../profile/useLearningTimeline";
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// v3.1: REAL-TIME SUBMISSION EVENT SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Global event emitter for cross-component updates
+const submissionEventListeners = new Set();
+
+export function emitSubmissionUpdate(data) {
+  submissionEventListeners.forEach((listener) => {
+    try {
+      listener(data);
+    } catch (e) {
+      console.error("[SubmissionEvent] Listener error:", e);
+    }
+  });
+}
+
+function useSubmissionEvents(onUpdate) {
+  useEffect(() => {
+    if (onUpdate) {
+      submissionEventListeners.add(onUpdate);
+      return () => submissionEventListeners.delete(onUpdate);
+    }
+  }, [onUpdate]);
+}
+
 export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
-  
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,8 +46,15 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
 
   const [feedbackCache, setFeedbackCache] = useState({});
 
+  // v3.1: Track submission history for real-time updates
+  const [submissionHistory, setSubmissionHistory] = useState([]);
+
   const feedbackAbortRef = useRef(null);
   const reportAbortRef = useRef(null);
+
+  // v3.2: Request deduplication - prevent duplicate API calls
+  const lastRequestKeyRef = useRef(null);
+  const pendingRequestRef = useRef(null);
 
   const confidenceBadge = useConfidenceBadge(submissions);
 
@@ -33,6 +63,32 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
     feedbackCache,
     weeklyReport,
   });
+
+  // v3.1: Listen for real-time submission updates
+  const handleSubmissionUpdate = useCallback(
+    (data) => {
+      console.log("[AIFeedback] Real-time submission update:", data);
+
+      // Add to history
+      setSubmissionHistory((prev) => [data, ...prev].slice(0, 20));
+
+      // Update feedback cache if we have new feedback
+      if (data.feedback && data.questionId) {
+        setFeedbackCache((prev) => ({
+          ...prev,
+          [data.questionId]: data.feedback,
+        }));
+      }
+
+      // Auto-update current feedback if matching
+      if (data.feedback && feedback?.submission_id === data.submissionId) {
+        setFeedback(data.feedback);
+      }
+    },
+    [feedback],
+  );
+
+  useSubmissionEvents(handleSubmissionUpdate);
 
   const fetchFeedback = useCallback(
     async ({
@@ -44,12 +100,35 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       verdict,
       errorType,
     }) => {
-      
+      // v3.2: Generate unique request key for deduplication
+      const requestKey = `${questionId}-${code?.substring(0, 50)}-${verdict}`;
+
+      // Skip if identical request is already pending
+      if (
+        lastRequestKeyRef.current === requestKey &&
+        pendingRequestRef.current
+      ) {
+        console.log("[AIFeedback] Deduped identical request:", questionId);
+        return pendingRequestRef.current;
+      }
+
+      // Check cache first - return cached feedback if available and recent
+      const cachedFeedback = feedbackCache[questionId];
+      if (
+        cachedFeedback &&
+        cachedFeedback.code_hash === code?.substring(0, 50)
+      ) {
+        console.log("[AIFeedback] Returning cached feedback:", questionId);
+        setFeedback(cachedFeedback);
+        return cachedFeedback;
+      }
+
       if (feedbackAbortRef.current) {
         feedbackAbortRef.current.abort();
       }
 
       feedbackAbortRef.current = new AbortController();
+      lastRequestKeyRef.current = requestKey;
 
       setShowHint(false);
       setShowPattern(false);
@@ -57,39 +136,65 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       setError(null);
       setFeedback(null);
 
-      try {
-        const data = await getAIFeedback({
-          userId,
-          problemId: questionId,
-          problemCategory: problemCategory || "General",
-          constraints: constraints || "",
-          code,
-          language,
-          verdict,
-          errorType,
-          signal: feedbackAbortRef.current.signal,
-        });
+      // v3.2: Store promise for deduplication
+      pendingRequestRef.current = (async () => {
+        try {
+          const data = await getAIFeedback({
+            userId,
+            problemId: questionId,
+            problemCategory: problemCategory || "General",
+            constraints: constraints || "",
+            code,
+            language,
+            verdict,
+            errorType,
+            signal: feedbackAbortRef.current.signal,
+          });
 
-        setFeedback(data);
+          // Add code hash for cache validation
+          data.code_hash = code?.substring(0, 50);
+          setFeedback(data);
 
-        setFeedbackCache((prev) => ({
-          ...prev,
-          [questionId]: data,
-        }));
+          setFeedbackCache((prev) => ({
+            ...prev,
+            [questionId]: data,
+          }));
 
-        return data;
-      } catch (err) {
-        if (err.name === "AbortError") {
+          // v3.1: Emit real-time update event for other components
+          emitSubmissionUpdate({
+            type: "feedback_received",
+            questionId,
+            submissionId: data.submission_id,
+            verdict,
+            feedback: data,
+            timestamp: Date.now(),
+          });
+
+          return data;
+        } catch (err) {
+          if (err.name === "AbortError") {
+            return null;
+          }
+          const message = err.message || "Failed to fetch AI feedback";
+          setError(message);
+
+          // v3.1: Emit error event
+          emitSubmissionUpdate({
+            type: "feedback_error",
+            questionId,
+            error: message,
+            timestamp: Date.now(),
+          });
+
+          console.error("AI feedback error:", err);
           return null;
+        } finally {
+          setLoading(false);
+          pendingRequestRef.current = null;
         }
-        const message = err.message || "Failed to fetch AI feedback";
-        setError(message);
-        
-        console.error("AI feedback error:", err);
-        return null;
-      } finally {
-        setLoading(false);
-      }
+      })();
+
+      return pendingRequestRef.current;
     },
     [userId],
   );
@@ -148,12 +253,11 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
     setShowModal(false);
     setShowHint(false);
     setShowPattern(false);
-    
   }, []);
 
   const openWeeklyReport = useCallback(() => {
     setShowWeeklyReport(true);
-    
+
     if (!weeklyReport) {
       fetchWeeklyReport();
     }
@@ -196,7 +300,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
 
   const state = useMemo(
     () => ({
-      
       isSubmitting: loading,
       aiFeedback: feedback,
       showAIModal: showModal,
@@ -214,6 +317,9 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       timeline,
       timelineStats: stats,
       recentEvents: getRecentEvents(5),
+
+      // v3.1: Real-time submission history
+      submissionHistory,
     }),
     [
       loading,
@@ -230,11 +336,11 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       timeline,
       stats,
       getRecentEvents,
+      submissionHistory,
     ],
   );
 
   return {
-    
     ...state,
 
     fetchFeedback,

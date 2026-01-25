@@ -40,6 +40,8 @@ class ProblemContext(BaseModel):
     time_complexity_hint: Optional[str] = None
     space_complexity_hint: Optional[str] = None
     common_mistakes: List[str] = []  # Known common mistakes for this problem
+    # v3.2: Canonical algorithms for grounding feedback
+    canonical_algorithms: List[str] = []  # e.g., ["bipartite_matching", "max_flow"]
     
     class Config:
         json_schema_extra = {
@@ -53,7 +55,8 @@ class ProblemContext(BaseModel):
                 "expected_approach": "Use a hash map to store complements",
                 "time_complexity_hint": "O(n)",
                 "space_complexity_hint": "O(n)",
-                "common_mistakes": ["Not handling duplicate values", "Off-by-one errors"]
+                "common_mistakes": ["Not handling duplicate values", "Off-by-one errors"],
+                "canonical_algorithms": ["hash_map", "two_pointers"]
             }
         }
 

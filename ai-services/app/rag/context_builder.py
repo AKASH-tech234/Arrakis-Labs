@@ -6,6 +6,11 @@ This module builds STRUCTURED context that agents can reliably parse.
 
 CRITICAL: Agents receive explicit sections, NOT raw concatenated blobs.
 
+v3.1: Added focused context builders for specific agents:
+- build_feedback_context: Full context for feedback agent (main agent)
+- build_hint_context: Minimal context for hint agent (fast)
+- build_learning_context: Minimal context for learning agent
+
 Sections:
 1. PROBLEM CONTEXT - title, statement, constraints, expected approach
 2. USER PROFILE - common mistakes, weak topics, success rate
@@ -25,6 +30,125 @@ from app.schemas.submission import SubmissionContext
 from app.db.mongodb import mongo_client
 
 logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3.1: FOCUSED CONTEXT BUILDERS (Optimized per-agent)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def build_feedback_context_focused(
+    submission: SubmissionContext,
+    problem_context: Optional[Dict[str, Any]] = None,
+    user_profile: Optional[Dict[str, Any]] = None,
+    mim_decision = None,  # MIMDecision object
+) -> str:
+    """
+    Build FOCUSED context for feedback_agent.
+    
+    v3.1: Includes only what feedback needs:
+    - Problem constraints & expected approach
+    - User code (with line numbers)
+    - MIM root cause & instructions
+    - User weak topics (if recurring)
+    
+    Target: ~2500 chars for fast LLM inference
+    """
+    sections = []
+    
+    # 1. PROBLEM ESSENTIALS (constraints + expected approach)
+    if problem_context:
+        constraints = problem_context.get('constraints', 'N/A')[:300]
+        expected = problem_context.get('expected_approach', 'Not specified')[:200]
+        difficulty = problem_context.get('difficulty', 'Medium')
+        sections.append(f"""PROBLEM:
+Difficulty: {difficulty}
+Constraints: {constraints}
+Expected Approach: {expected}""")
+    
+    # 2. MIM INSTRUCTIONS (pre-computed analysis)
+    if mim_decision:
+        recurring_note = ""
+        if mim_decision.feedback_instruction.is_recurring_mistake:
+            recurring_note = f"\n⚠️ RECURRING MISTAKE ({mim_decision.pattern.recurrence_count}x before)"
+        
+        sections.append(f"""MIM DIAGNOSIS:
+Root Cause: {mim_decision.root_cause} (confidence: {mim_decision.root_cause_confidence:.0%})
+Tone: {mim_decision.feedback_instruction.tone}{recurring_note}
+Edge Cases to Check: {', '.join(mim_decision.feedback_instruction.edge_cases_likely[:3])}""")
+    
+    # 3. USER CODE (with line numbers - ESSENTIAL for specific feedback)
+    code = submission.code or ""
+    if code:
+        lines = code.split('\n')
+        numbered = '\n'.join([f"{i+1:3d}| {line}" for i, line in enumerate(lines[:50])])  # Max 50 lines
+        truncate_note = f"\n... [{len(lines) - 50} more lines]" if len(lines) > 50 else ""
+        sections.append(f"""USER CODE ({submission.language}):
+```
+{numbered}{truncate_note}
+```""")
+    else:
+        sections.append("USER CODE: ⚠️ EMPTY OR MISSING - Note this in feedback!")
+    
+    # 4. VERDICT & ERROR
+    sections.append(f"""SUBMISSION:
+Verdict: {submission.verdict}
+Error Type: {submission.error_type or 'N/A'}""")
+    
+    # 5. USER WEAK TOPICS (only if relevant)
+    if user_profile and user_profile.get('weak_topics'):
+        weak = ', '.join(user_profile['weak_topics'][:3])
+        sections.append(f"USER WEAK AREAS: {weak}")
+    
+    return '\n\n'.join(sections)
+
+
+def build_hint_context_minimal(
+    mim_decision,
+    feedback_hint: str = "",
+) -> str:
+    """
+    Build MINIMAL context for hint_agent.
+    
+    v3.1: ULTRA-LEAN - hints don't need deep reasoning.
+    Target: < 500 chars for instant LLM inference
+    """
+    if mim_decision:
+        direction = mim_decision.hint_instruction.hint_direction[:150]
+        avoid = ', '.join(mim_decision.hint_instruction.avoid_revealing[:3])
+        return f"""COMPRESS THIS HINT:
+Direction: {direction}
+Avoid saying: {avoid}
+
+Output: ONE sentence, max 20 words, starts with action verb."""
+    
+    # Fallback
+    snippet = (feedback_hint.split('.')[0][:100] + '.') if feedback_hint else "Review approach."
+    return f"""COMPRESS: {snippet}
+Output: ONE sentence, max 20 words."""
+
+
+def build_learning_context_minimal(
+    mim_decision,
+    problem_category: str = "",
+) -> str:
+    """
+    Build MINIMAL context for learning_agent.
+    
+    v3.1: Only needs MIM's learning instruction.
+    Target: < 400 chars
+    """
+    if mim_decision:
+        focus = ', '.join(mim_decision.learning_instruction.focus_areas[:3])
+        gap = mim_decision.learning_instruction.skill_gap[:100]
+        return f"""EXPLAIN WHY THESE FOCUS AREAS MATTER:
+Focus Areas: {focus}
+Skill Gap: {gap}
+Category: {problem_category}
+
+Output: 1-2 sentence rationale connecting focus areas to this mistake."""
+    
+    return f"""Category: {problem_category}
+Provide generic learning recommendation."""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

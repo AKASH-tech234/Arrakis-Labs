@@ -8,10 +8,10 @@ const generateAdminToken = (admin) => {
       id: admin._id,
       email: admin.email,
       role: admin.role,
-      isAdmin: true, 
+      isAdmin: true,
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.ADMIN_JWT_EXPIRY || "8h" } 
+    { expiresIn: process.env.ADMIN_JWT_EXPIRY || "8h" },
   );
 };
 
@@ -29,7 +29,6 @@ export const adminLogin = async (req, res) => {
     const admin = await Admin.findByCredentials(email, password);
 
     if (!admin) {
-      
       await AuditLog.log({
         action: "LOGIN",
         resourceType: "Admin",
@@ -50,7 +49,7 @@ export const adminLogin = async (req, res) => {
     const token = generateAdminToken(admin);
 
     const cookieOptions = {
-      expires: new Date(Date.now() + 8 * 60 * 60 * 1000), 
+      expires: new Date(Date.now() + 8 * 60 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -66,16 +65,19 @@ export const adminLogin = async (req, res) => {
       userAgent: req.get("User-Agent"),
     });
 
-    res.status(200).cookie("adminToken", token, cookieOptions).json({
-      success: true,
-      message: "Login successful",
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        role: admin.role,
-        lastLogin: admin.lastLogin,
-      },
-    });
+    res
+      .status(200)
+      .cookie("adminToken", token, cookieOptions)
+      .json({
+        success: true,
+        message: "Login successful",
+        admin: {
+          id: admin._id,
+          email: admin.email,
+          role: admin.role,
+          lastLogin: admin.lastLogin,
+        },
+      });
   } catch (error) {
     console.error("[Admin Login Error]:", error.message);
     res.status(500).json({
@@ -87,7 +89,6 @@ export const adminLogin = async (req, res) => {
 
 export const adminLogout = async (req, res) => {
   try {
-    
     res.clearCookie("adminToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -139,10 +140,13 @@ export const getAdminProfile = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    
-    const Question = (await import("../models/Question.js")).default;
-    const TestCase = (await import("../models/TestCase.js")).default;
-    const Submission = (await import("../models/Submission.js")).default;
+    // Fixed import paths (v3.2)
+    const Question = (await import("../../models/question/Question.js"))
+      .default;
+    const TestCase = (await import("../../models/question/TestCase.js"))
+      .default;
+    const Submission = (await import("../../models/profile/Submission.js"))
+      .default;
 
     const [
       totalQuestions,

@@ -87,6 +87,12 @@ const questionSchema = new mongoose.Schema(
       type: String,
       default: null, // Expected memory complexity
     },
+    // v3.2: Canonical algorithms for AI feedback grounding
+    // e.g., ["bipartite_matching", "max_flow"] for task assignment problems
+    canonicalAlgorithms: {
+      type: [String],
+      default: [], // Preferred algorithms for this problem
+    },
     // For optimistic concurrency control
     version: {
       type: Number,

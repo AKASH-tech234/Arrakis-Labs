@@ -1,7 +1,17 @@
-
+import { useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Lightbulb,
+  Clock,
+  Database,
+  AlertTriangle,
+} from "lucide-react";
 import { formatExampleInput } from "../../utils/formatExampleInput";
 
 export default function ProblemDescription({ problem }) {
+  const [showHints, setShowHints] = useState(false);
+
   const displayId =
     problem?.externalId ||
     (typeof problem?.id === "string" && problem.id.length > 8
@@ -45,9 +55,7 @@ export default function ProblemDescription({ problem }) {
           Problem {displayId}
         </span>
 
-        <h1 className="text-[#E8E4D9] text-lg mt-1">
-          {problem.title}
-        </h1>
+        <h1 className="text-[#E8E4D9] text-lg mt-1">{problem.title}</h1>
 
         <div className="flex gap-4 mt-2">
           <span className="text-xs uppercase text-[#78716C]">
@@ -60,9 +68,7 @@ export default function ProblemDescription({ problem }) {
       </div>
 
       {}
-      <p className="text-[#E8E4D9] text-sm mb-6">
-        {problem.description}
-      </p>
+      <p className="text-[#E8E4D9] text-sm mb-6">{problem.description}</p>
 
       {}
       {constraints.length > 0 && (
@@ -102,12 +108,116 @@ export default function ProblemDescription({ problem }) {
               </div>
 
               <div className="text-xs text-[#78716C] mt-2">Output:</div>
-              <div className="text-xs text-[#E8E4D9]">
-                {ex.output}
-              </div>
+              <div className="text-xs text-[#E8E4D9]">{ex.output}</div>
             </div>
           ))}
         </>
+      )}
+
+      {/* AI Hints Section - Collapsible */}
+      {(problem?.topic ||
+        problem?.timeComplexityHint ||
+        problem?.canonicalAlgorithms?.length > 0) && (
+        <div className="mt-8 border-t border-[#3D3D3D] pt-4">
+          <button
+            onClick={() => setShowHints(!showHints)}
+            className="flex items-center justify-between w-full text-left group"
+          >
+            <span className="flex items-center gap-2 text-[#78716C] text-[10px] uppercase tracking-wider">
+              <Lightbulb className="w-3 h-3" />
+              Hints & Guidance
+            </span>
+            {showHints ? (
+              <ChevronUp className="w-4 h-4 text-[#78716C] group-hover:text-[#E8E4D9] transition-colors" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-[#78716C] group-hover:text-[#E8E4D9] transition-colors" />
+            )}
+          </button>
+
+          {showHints && (
+            <div className="mt-4 space-y-4 animate-in fade-in duration-200">
+              {/* Topic Badge */}
+              {problem.topic && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase text-[#78716C]">
+                    Topic:
+                  </span>
+                  <span className="px-2 py-1 rounded bg-orange-500/20 text-orange-400 text-xs">
+                    {problem.topic}
+                  </span>
+                </div>
+              )}
+
+              {/* Algorithms */}
+              {problem.canonicalAlgorithms?.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase text-[#78716C] block mb-2">
+                    Recommended Techniques:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {problem.canonicalAlgorithms.map((algo, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-mono"
+                      >
+                        {algo.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Complexity Hints */}
+              {(problem.timeComplexityHint || problem.spaceComplexityHint) && (
+                <div className="flex gap-4">
+                  {problem.timeComplexityHint && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-green-400" />
+                      <span className="text-[10px] uppercase text-[#78716C]">
+                        Time:
+                      </span>
+                      <span className="text-green-400 text-xs font-mono">
+                        {problem.timeComplexityHint}
+                      </span>
+                    </div>
+                  )}
+                  {problem.spaceComplexityHint && (
+                    <div className="flex items-center gap-2">
+                      <Database className="w-3 h-3 text-purple-400" />
+                      <span className="text-[10px] uppercase text-[#78716C]">
+                        Space:
+                      </span>
+                      <span className="text-purple-400 text-xs font-mono">
+                        {problem.spaceComplexityHint}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Common Mistakes */}
+              {problem.commonMistakes?.length > 0 && (
+                <div>
+                  <span className="flex items-center gap-2 text-[10px] uppercase text-[#78716C] mb-2">
+                    <AlertTriangle className="w-3 h-3" />
+                    Watch Out For:
+                  </span>
+                  <ul className="space-y-1">
+                    {problem.commonMistakes.slice(0, 3).map((mistake, i) => (
+                      <li
+                        key={i}
+                        className="text-xs text-red-400/80 flex items-start gap-2"
+                      >
+                        <span className="mt-1.5 w-1 h-1 bg-red-400 rounded-full flex-shrink-0" />
+                        {mistake}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

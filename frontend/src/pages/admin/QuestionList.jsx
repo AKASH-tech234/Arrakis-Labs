@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Bot,
 } from "lucide-react";
 
 const QuestionList = () => {
@@ -167,15 +168,29 @@ const QuestionList = () => {
             <table className="w-full">
               <thead className="bg-gray-800/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Title</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Difficulty</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-400">Test Cases</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">
+                    Title
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">
+                    Difficulty
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-400">
+                    AI Ready
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-400">
+                    Test Cases
+                  </th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
                 {questions.map((question) => (
-                  <tr key={question._id} className="hover:bg-gray-800/30 transition-colors">
+                  <tr
+                    key={question._id}
+                    className="hover:bg-gray-800/30 transition-colors"
+                  >
                     <td className="px-4 py-4">
                       <div>
                         <Link
@@ -199,13 +214,37 @@ const QuestionList = () => {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyBadge(question.difficulty)}`}>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyBadge(question.difficulty)}`}
+                      >
                         {question.difficulty}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
+                      {question.topic &&
+                      question.canonicalAlgorithms?.length > 0 ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs"
+                          title={`Topic: ${question.topic}`}
+                        >
+                          <Bot className="h-3 w-3" />
+                          Ready
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-xs"
+                          title="Missing AI metadata"
+                        >
+                          <Bot className="h-3 w-3" />
+                          Needs Data
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <span className="text-white">{question.testCases?.total || 0}</span>
+                        <span className="text-white">
+                          {question.testCases?.total || 0}
+                        </span>
                         {question.testCases?.hidden > 0 && (
                           <span className="flex items-center gap-1 text-xs text-gray-500">
                             <EyeOff className="h-3 w-3" />
@@ -274,9 +313,12 @@ const QuestionList = () => {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-white mb-2">Delete Question?</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Delete Question?
+            </h3>
             <p className="text-gray-400 mb-6">
-              This action cannot be undone. All associated test cases will also be deleted.
+              This action cannot be undone. All associated test cases will also
+              be deleted.
             </p>
             <div className="flex gap-3">
               <button

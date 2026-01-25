@@ -78,52 +78,48 @@ def hint_agent(raw_hint: str, payload: dict, mim_decision=None) -> CompressedHin
     """
     Compress hint using MIM instructions.
     
-    v3.0: Receives MIMDecision with pre-computed hint direction.
-    Agent's job is to compress into 20 words, NOT to decide direction.
+    v3.1: OPTIMIZED - Minimal context for fast execution.
+    Agent's job is ONLY to compress into 20 words.
+    
+    CONTEXT LIMIT: < 500 chars total (for speed)
     
     Args:
         raw_hint: Improvement hint from feedback (backward compat)
         payload: Submission data
         mim_decision: MIMDecision with hint instructions (optional)
     """
-    logger.debug(f"✂️ hint_agent v3.0 called | has_mim={mim_decision is not None}")
+    logger.debug(f"✂️ hint_agent v3.1 called | has_mim={mim_decision is not None}")
 
-    # Build context based on MIM availability
+    # v3.1: MINIMAL context - hints don't need deep reasoning
+    # Only pass: MIM direction + one sentence from feedback
     if mim_decision:
-        # Use MIM's pre-computed hint context
-        augmented_context = mim_decision.get_hint_context()
+        # Extract ONLY the essentials - no history, no full context
+        hint_direction = mim_decision.hint_instruction.hint_direction[:200]
+        avoid_words = ", ".join(mim_decision.hint_instruction.avoid_revealing[:3])
         
-        # Also include the raw hint as additional context
-        augmented_context += f"\n\nADDITIONAL CONTEXT FROM FEEDBACK:\n{raw_hint}"
+        # One sentence from feedback (first sentence only)
+        feedback_snippet = (raw_hint.split(".")[0][:100] + ".") if raw_hint else ""
         
-        logger.debug(f"   └─ MIM direction: {mim_decision.hint_instruction.hint_direction[:50]}...")
-        logger.debug(f"   └─ Avoid: {mim_decision.hint_instruction.avoid_revealing}")
+        augmented_context = f"""HINT DIRECTION: {hint_direction}
+AVOID: {avoid_words}
+FEEDBACK: {feedback_snippet}
+
+Compress into ONE sentence (max 20 words). Start with action verb."""
+        
+        logger.debug(f"   └─ Context size: {len(augmented_context)} chars (optimized)")
     else:
-        # Fallback: use raw hint (backward compatibility)
-        problem = payload.get("problem", {})
-        user_profile = payload.get("user_profile", {})
+        # Fallback: minimal context
+        feedback_snippet = (raw_hint.split(".")[0][:100] + ".") if raw_hint else "Review your approach."
         
-        augmented_context = f"""
-RAW IMPROVEMENT HINT:
-{raw_hint}
+        augmented_context = f"""HINT TO COMPRESS: {feedback_snippet}
+Compress into ONE actionable sentence (max 20 words). Start with action verb."""
 
-PROBLEM CONTEXT:
-- Difficulty: {problem.get('difficulty', 'Unknown')}
-- Expected Approach: {problem.get('expected_approach', 'Not specified')}
-
-USER CONTEXT:
-- Weak Topics: {', '.join(user_profile.get('weak_topics', [])[:2]) or 'None identified'}
-
-INSTRUCTIONS:
-Compress into ONE actionable sentence (max 20 words).
-"""
-
-    # Cache key
+    # Cache key - simpler for optimized context
     cache_key = build_cache_key(
-        "hint_agent_v3", 
+        "hint_agent_v3.1", 
         {
-            "hint_hash": hash(raw_hint) if raw_hint else 0,
-            "mim_direction": mim_decision.hint_instruction.hint_direction[:50] if mim_decision else "none",
+            "hint_hash": hash(raw_hint[:50]) if raw_hint else 0,
+            "mim_direction": mim_decision.hint_instruction.hint_direction[:30] if mim_decision else "none",
         }
     )
 
@@ -133,6 +129,7 @@ Compress into ONE actionable sentence (max 20 words).
         cache_key=cache_key,
         schema=CompressedHint,
         system_prompt=HINT_SYSTEM_PROMPT,
+        timeout_seconds=8,  # v3.1: Reduced timeout - hints should be fast
         fallback=CompressedHint(
             hint=mim_decision.hint_instruction.hint_direction[:100] if mim_decision 
                  else (raw_hint.split(".")[0][:100] if raw_hint else "Review your approach carefully.")

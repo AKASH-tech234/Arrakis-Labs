@@ -158,6 +158,14 @@ export default function ProblemDetail() {
       testCases: Array.isArray(problemRaw.testCases)
         ? problemRaw.testCases
         : [],
+
+      // AI Metadata fields
+      topic: problemRaw.topic || null,
+      expectedApproach: problemRaw.expectedApproach || null,
+      canonicalAlgorithms: problemRaw.canonicalAlgorithms || [],
+      timeComplexityHint: problemRaw.timeComplexityHint || null,
+      spaceComplexityHint: problemRaw.spaceComplexityHint || null,
+      commonMistakes: problemRaw.commonMistakes || [],
     };
   }, [problemRaw]);
 

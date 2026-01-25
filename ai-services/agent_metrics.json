@@ -143,5 +143,90 @@
     "agent": "learning_agent",
     "elapsed_seconds": 1.9,
     "timestamp": 1769346841
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 23.95,
+    "timestamp": 1769363688
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 23.38,
+    "timestamp": 1769363712
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 23.45,
+    "timestamp": 1769363823
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 22.89,
+    "timestamp": 1769363846
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 23.82,
+    "timestamp": 1769363867
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 25.23,
+    "timestamp": 1769363949
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 22.71,
+    "timestamp": 1769363972
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 25.29,
+    "timestamp": 1769363995
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 2.77,
+    "timestamp": 1769370682
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.67,
+    "timestamp": 1769370684
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 2.01,
+    "timestamp": 1769370686
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 5.11,
+    "timestamp": 1769370723
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 4.79,
+    "timestamp": 1769370725
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.32,
+    "timestamp": 1769370728
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.25,
+    "timestamp": 1769370729
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 2.84,
+    "timestamp": 1769370731
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 2.42,
+    "timestamp": 1769370732
   }
 ]

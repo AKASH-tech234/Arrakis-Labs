@@ -1,52 +1,88 @@
 """
-Feedback Agent v3.0 - MIM-Instructed
-====================================
+Feedback Agent v3.2 - Algorithm-Grounded
+========================================
 
 PHILOSOPHY: Agent is the VOICE, MIM is the BRAIN.
+
+v3.2 UPGRADE: Now includes algorithm detection and grounding.
+- Detects user's algorithm approach before LLM call
+- Compares against canonical algorithms for the problem
+- Prevents hallucinated algorithm suggestions
 
 This agent receives pre-computed instructions from MIM and:
 1. Uses MIM's root cause as the definitive diagnosis
 2. Adds code-specific evidence to support the diagnosis
 3. Verbalizes the feedback in a helpful, educational tone
+4. v3.2: Grounds algorithm feedback against canonical solutions
 
 ELIMINATES:
 - Root cause guessing (MIM provides this)
 - Pattern detection duplication (MIM provides this)
 - Generic feedback (MIM provides personalization data)
+- v3.2: Algorithm hallucination (detector provides grounding)
 """
 
 import logging
 from app.schemas.feedback import FeedbackResponse
 from app.agents.base_json_agent import run_json_agent
 from app.cache.cache_key import build_cache_key
+from app.utils.algorithm_detector import analyze_user_algorithm, detect_algorithm
 
 logger = logging.getLogger("feedback_agent")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# v3.0: MIM-INSTRUCTED FEEDBACK PROMPT (STREAMLINED)
+# v3.2: MIM-INSTRUCTED + ALGORITHM-GROUNDED FEEDBACK PROMPT
 # ═══════════════════════════════════════════════════════════════════════════════
 
 FEEDBACK_SYSTEM_PROMPT = """You are an expert competitive programming reviewer.
 
 ═══════════════════════════════════════════════════════════════════════════════
-YOUR ROLE (v3.0 - MIM-Instructed)
+YOUR ROLE (v3.2 - MIM-Instructed + Algorithm-Grounded)
 ═══════════════════════════════════════════════════════════════════════════════
 MIM (Meta-Intelligence Model) has ALREADY identified the root cause.
-Your job is to EXPLAIN it with code-specific evidence, NOT to diagnose.
+Algorithm Detector has ALREADY identified what algorithm the user is attempting.
+
+Your job is to EXPLAIN with code-specific evidence, NOT to diagnose or guess algorithms.
 
 Think of it like this:
 - MIM = Doctor who diagnosed the condition
+- Algorithm Detector = Lab that identified the treatment attempted
 - You = Nurse who explains the diagnosis to the patient
 
 ═══════════════════════════════════════════════════════════════════════════════
-WHAT YOU RECEIVE FROM MIM
+WHAT YOU RECEIVE
 ═══════════════════════════════════════════════════════════════════════════════
-1. ROOT CAUSE (definitive - use this, don't contradict)
-2. CONFIDENCE LEVEL (high/medium/low)
-3. IS RECURRING (has user made this mistake before?)
-4. TONE INSTRUCTION (encouraging/direct/firm)
-5. EDGE CASES LIKELY (which inputs might fail)
+1. ROOT CAUSE (from MIM - definitive, don't contradict)
+2. USER'S DETECTED ALGORITHM (from detector - what they're attempting)
+3. CANONICAL ALGORITHMS (from problem DB - what's expected)
+4. ALGORITHM COMPARISON (match/mismatch status)
+5. CONFIDENCE LEVEL, TONE INSTRUCTION, EDGE CASES
+
+═══════════════════════════════════════════════════════════════════════════════
+ALGORITHM GROUNDING RULES (v3.2 - CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY:
+- Identify what algorithm the user is attempting (USE THE DETECTED ALGORITHM)
+- Compare ONLY against the provided CANONICAL_ALGORITHMS
+- If user algorithm MATCHES canonical but has bugs → say "IMPLEMENTATION ISSUE"
+- If user algorithm does NOT match canonical → say "ALGORITHM MISMATCH"
+
+FORBIDDEN:
+- NEVER suggest algorithms not in CANONICAL_ALGORITHMS
+- NEVER invent alternative paradigms (e.g., suggesting "disjoint set" for a flow problem)
+- NEVER guess at algorithms - use the provided detection
+- NEVER say "consider using X" if X is not in canonical list
+
+EXAMPLE (CORRECT):
+  User detected: max_flow
+  Canonical: [bipartite_matching, max_flow]
+  → "Your max-flow approach is appropriate. The issue is in your capacity handling on line 15."
+
+EXAMPLE (INCORRECT - DO NOT DO THIS):
+  User detected: max_flow
+  Canonical: [bipartite_matching, max_flow]
+  → "Consider using a hash map instead" ← WRONG! Hash map is not canonical
 
 ═══════════════════════════════════════════════════════════════════════════════
 YOUR OUTPUT FORMAT (JSON) - ALL FIELDS REQUIRED
@@ -78,24 +114,54 @@ FIRM (recurring mistake, 3+ times):
   "This is the same mistake pattern from before. Let's address it directly..."
 
 ═══════════════════════════════════════════════════════════════════════════════
+MANDATORY REQUIREMENTS (NON-NEGOTIABLE)
+═══════════════════════════════════════════════════════════════════════════════
+1. CITE USER'S CODE:
+   - Reference specific line numbers (e.g., "On line 5, your for-loop...")
+   - Quote actual variable names and function names from their code
+   - If code is EMPTY or MISSING, explicitly state: "Your submission appears empty or incomplete"
+
+2. CONTRAST APPROACHES (ONLY using canonical algorithms):
+   - State what user's code does: "Your approach uses [DETECTED_ALGORITHM]..."
+   - If mismatch: State what's expected: "This problem requires [CANONICAL_ALGORITHM]..."
+   - If match: Focus on implementation: "Your [DETECTED_ALGORITHM] has a bug in..."
+
+3. REFERENCE CONSTRAINTS:
+   - Mention at least ONE specific constraint from the problem
+   - Explain HOW that constraint impacts the solution
+   - Example: "With n ≤ 10^6, your O(n²) approach would need 10^12 operations"
+
+4. PERSONALIZE FOR RECURRING ISSUES:
+   - If MIM flags is_recurring, say: "You've made this exact mistake before..."
+   - Connect to user's weak_topics from profile
+   - Suggest pattern to break the cycle
+
+═══════════════════════════════════════════════════════════════════════════════
 RULES (CRITICAL)
 ═══════════════════════════════════════════════════════════════════════════════
 ✓ ALWAYS base explanation on MIM's root cause
+✓ ALWAYS use the DETECTED_ALGORITHM as the user's approach
+✓ ALWAYS compare against CANONICAL_ALGORITHMS only
 ✓ ALWAYS add code-specific evidence (line numbers, variable names)
 ✓ ALWAYS use the tone MIM specifies
 ✓ If recurring, acknowledge it: "You've encountered this pattern before..."
 
 ✗ NEVER contradict MIM's root cause diagnosis
+✗ NEVER suggest algorithms outside CANONICAL_ALGORITHMS
 ✗ NEVER be generic - reference the actual code
-✗ NEVER provide corrected code"""
+✗ NEVER provide corrected code
+✗ NEVER say "your code has issues" without citing WHICH lines/constructs
+✗ NEVER invent algorithm suggestions - use only what's provided"""
 
 
 def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackResponse:
     """
-    Generate feedback using MIM instructions.
+    Generate feedback using MIM instructions + Algorithm Grounding.
     
-    v3.0: Receives MIMDecision with pre-computed instructions.
-    Agent's job is to add code-specific evidence, NOT to diagnose.
+    v3.2: Now includes algorithm detection before LLM call.
+    - Detects user's algorithm from code patterns
+    - Compares against canonical algorithms
+    - Provides grounded context to prevent hallucination
     
     Args:
         context: Assembled context string
@@ -103,7 +169,7 @@ def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackRe
         mim_decision: MIMDecision object with instructions (optional for backward compat)
     """
     logger.debug(
-        f"📨 feedback_agent v3.0 called | verdict={payload.get('verdict')} "
+        f"📨 feedback_agent v3.2 called | verdict={payload.get('verdict')} "
         f"| has_mim={mim_decision is not None}"
     )
 
@@ -124,13 +190,57 @@ def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackRe
         )
 
     # -------------------------
-    # Build MIM-enhanced context if decision available
+    # v3.2: ALGORITHM DETECTION (Pre-LLM grounding)
+    # -------------------------
+    code = payload.get("code", "")
+    problem = payload.get("problem", {})
+    problem_category = payload.get("problem_category", problem.get("category", "General"))
+    problem_tags = problem.get("tags", [])
+    
+    # Get canonical algorithms from problem DB if available
+    canonical_from_db = problem.get("canonical_algorithms") or problem.get("canonicalAlgorithms")
+    
+    # Analyze user's algorithm approach
+    algo_analysis = analyze_user_algorithm(
+        code=code,
+        problem_category=problem_category,
+        problem_tags=problem_tags,
+        canonical_from_db=canonical_from_db
+    )
+    
+    logger.debug(f"   └─ Detected algorithm: {algo_analysis['user_algorithm']}")
+    logger.debug(f"   └─ Canonical algorithms: {algo_analysis['canonical_algorithms']}")
+    logger.debug(f"   └─ Comparison: {algo_analysis['comparison']['status']}")
+
+    # -------------------------
+    # Build MIM-enhanced context + Algorithm grounding
     # -------------------------
     enhanced_context = context
+    
+    # Add algorithm grounding section
+    algo_context = f"""
+═══════════════════════════════════════════════════════════════════════════════
+ALGORITHM GROUNDING (v3.2 - Use this, don't contradict)
+═══════════════════════════════════════════════════════════════════════════════
+USER'S DETECTED ALGORITHM: {algo_analysis['user_algorithm']}
+DETECTION CONFIDENCE: {algo_analysis['user_confidence']:.0%}
+DETECTION EVIDENCE: {', '.join(algo_analysis['user_evidence'][:3])}
+
+CANONICAL ALGORITHMS FOR THIS PROBLEM: {', '.join(algo_analysis['canonical_algorithms'])}
+
+COMPARISON RESULT: {algo_analysis['comparison']['status']}
+GUIDANCE: {algo_analysis['comparison']['guidance']}
+
+IMPORTANT: Base your feedback on THIS comparison. Do NOT suggest algorithms outside the canonical list.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+    
+    enhanced_context = f"{algo_context}\n\n{enhanced_context}"
+    
     if mim_decision:
         # Add MIM's specific feedback instructions to context
         mim_context = mim_decision.get_feedback_context()
-        enhanced_context = f"{mim_context}\n\n{context}"
+        enhanced_context = f"{mim_context}\n\n{enhanced_context}"
         
         logger.debug(f"   └─ MIM root cause: {mim_decision.root_cause}")
         logger.debug(f"   └─ MIM tone: {mim_decision.feedback_instruction.tone}")

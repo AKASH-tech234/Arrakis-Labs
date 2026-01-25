@@ -2,6 +2,7 @@ from typing import TypedDict, Optional, List, Dict, Any, cast
 import logging
 import time
 import asyncio
+import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 from langgraph.graph import StateGraph, END
@@ -11,7 +12,7 @@ from app.schemas.submission import SubmissionContext
 from app.schemas.user_profile import UserProfile
 
 from app.rag.retriever import retrieve_user_memory
-from app.rag.context_builder import build_context
+from app.rag.context_builder import build_context, build_feedback_context_focused, build_hint_context_minimal
 
 from app.agents.feedback_agent import feedback_agent
 from app.agents.hint_agent import hint_agent
@@ -27,28 +28,38 @@ from app.mim.mim_decision import MIMDecision
 
 logger = logging.getLogger("sync_workflow")
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3.2: VERBOSE LOGGING TOGGLE - Set VERBOSE_LOGGING=1 for debug output
+# ═══════════════════════════════════════════════════════════════════════════════
+VERBOSE_LOGGING = os.environ.get("VERBOSE_LOGGING", "0") == "1"
+
+def _vprint(*args, **kwargs):
+    """Verbose print - only outputs if VERBOSE_LOGGING is enabled."""
+    if VERBOSE_LOGGING:
+        print(*args, **kwargs)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TIME BUDGET CONSTANTS (QUALITY > SPEED)
+# TIME BUDGET CONSTANTS (QUALITY > SPEED) - v3.1 OPTIMIZED
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Total SYNC workflow budget: 65 seconds (Option B: Accept longer response time for MIM)
-SYNC_TOTAL_BUDGET_SECONDS = 65.0
+# Total SYNC workflow budget: 45 seconds (v3.1: Reduced with optimizations)
+SYNC_TOTAL_BUDGET_SECONDS = 45.0
 
-# Per-agent time budgets - generous to ensure completion
+# Per-agent time budgets - v3.1: Tighter budgets with optimized contexts
 AGENT_TIME_BUDGETS = {
-    "retrieve_memory": 10.0,     # RAG retrieval with k=7
-    "retrieve_problem": 10.0,    # DB/API fetch
-    "mim_prediction": 5.0,       # MIM inference (sklearn - fast)
-    "build_user_profile": 5.0,   # Heuristic processing
-    "build_context": 5.0,        # Context assembly
-    "feedback_agent": 30.0,      # LLM call - MUST COMPLETE
-    "pattern_detection": 25.0,   # LLM call - MUST COMPLETE
-    "hint_agent": 20.0,          # LLM call - MUST COMPLETE
+    "retrieve_memory": 8.0,      # RAG retrieval with k=5 (reduced)
+    "retrieve_problem": 8.0,    # DB/API fetch
+    "mim_prediction": 3.0,      # MIM inference (sklearn - fast)
+    "build_user_profile": 3.0,  # Heuristic processing
+    "build_context": 3.0,       # Context assembly
+    "feedback_agent": 20.0,     # LLM call - MUST COMPLETE (main agent)
+    "pattern_detection": 0.0,   # v3.1: DISABLED - MIM handles this
+    "hint_agent": 8.0,          # v3.1: Reduced - minimal context now
 }
 
-# RAG retrieval depth - higher k for better context
-RAG_RETRIEVAL_K = 7
+# RAG retrieval depth - v3.1: Reduced for speed
+RAG_RETRIEVAL_K = 5
 
 # Thread pool for parallel execution
 _executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="sync_agent_")
@@ -133,13 +144,13 @@ def _run_with_timeout(func, args, timeout_seconds: float, fallback, agent_name: 
     except FuturesTimeoutError:
         elapsed = time.time() - start
         logger.warning(f"⏰ [{agent_name}] TIMEOUT after {elapsed:.2f}s (budget: {timeout_seconds}s)")
-        print(f"⏰ [{agent_name}] TIMEOUT - returning fallback")
+        _vprint(f"⏰ [{agent_name}] TIMEOUT - returning fallback")
         return fallback
         
     except Exception as e:
         elapsed = time.time() - start
         logger.error(f"❌ [{agent_name}] FAILED in {elapsed:.2f}s: {type(e).__name__}: {e}")
-        print(f"❌ [{agent_name}] ERROR: {e} - returning fallback")
+        _vprint(f"❌ [{agent_name}] ERROR: {e} - returning fallback")
         return fallback
 
 
@@ -182,7 +193,7 @@ def retrieve_memory_node(state: MentatSyncState) -> MentatSyncState:
     _init_timing(state)
     start = time.time()
     
-    print(f"\n🔍 [MEMORY RETRIEVAL] Starting for user: {state['user_id']}")
+    _vprint(f"\n🔍 [MEMORY RETRIEVAL] Starting for user: {state['user_id']}")
     
     # Build rich query with full problem context
     query_parts = [
@@ -207,17 +218,17 @@ def retrieve_memory_node(state: MentatSyncState) -> MentatSyncState:
         # ═══════════════════════════════════════════════════════════════════════════════
         # VERBOSE LOGGING: Show all retrieved RAG memory chunks
         # ═══════════════════════════════════════════════════════════════════════════════
-        print(f"\n{'='*80}")
-        print(f"🧠 [RAG MEMORY] Retrieved {len(state['user_memory'])} chunks for user: {state['user_id']}")
-        print(f"{'='*80}")
-        print(f"📌 Query: {query}")
+        _vprint(f"\n{'='*80}")
+        _vprint(f"🧠 [RAG MEMORY] Retrieved {len(state['user_memory'])} chunks for user: {state['user_id']}")
+        _vprint(f"{'='*80}")
+        _vprint(f"📌 Query: {query}")
         if state['user_memory']:
             for i, chunk in enumerate(state['user_memory'], 1):
-                print(f"\n📄 Memory {i}:")
-                print(f"   {chunk}")
+                _vprint(f"\n📄 Memory {i}:")
+                _vprint(f"   {chunk}")
         else:
-            print(f"\n⚠️  No memories found (new user or empty RAG store)")
-        print(f"{'='*80}\n")
+            _vprint(f"\n⚠️  No memories found (new user or empty RAG store)")
+        _vprint(f"{'='*80}\n")
         
         # Initialize agent_results for coordination
         state["agent_results"] = {
@@ -232,7 +243,7 @@ def retrieve_memory_node(state: MentatSyncState) -> MentatSyncState:
     
     elapsed = time.time() - start
     state["_node_timings"]["retrieve_memory"] = elapsed
-    print(f"✅ [MEMORY RETRIEVAL] Completed in {elapsed:.2f}s | {len(state['user_memory'])} chunks (k={RAG_RETRIEVAL_K})")
+    _vprint(f"✅ [MEMORY RETRIEVAL] Completed in {elapsed:.2f}s | {len(state['user_memory'])} chunks (k={RAG_RETRIEVAL_K})")
     
     return state
 
@@ -254,7 +265,7 @@ def retrieve_problem_node(state: MentatSyncState) -> MentatSyncState:
     import time
     start = time.time()
     
-    print(f"\n🎲 [PROBLEM RETRIEVAL] Starting for: {state['problem_id']}")
+    _vprint(f"\n🎲 [PROBLEM RETRIEVAL] Starting for: {state['problem_id']}")
     logger.info(f"🎲 retrieve_problem_node started | problem_id={state['problem_id']}")
     
     # Check if problem data was sent in the payload (from backend)
@@ -278,11 +289,11 @@ def retrieve_problem_node(state: MentatSyncState) -> MentatSyncState:
         state["problem"] = problem_dict
         
         elapsed = time.time() - start
-        print(f"✅ [PROBLEM RETRIEVAL] Using payload data in {elapsed:.2f}s")
-        print(f"   └─ Title: {problem_dict['title']}")
-        print(f"   └─ Difficulty: {problem_dict['difficulty']}")
-        print(f"   └─ Tags: {problem_dict['tags']}")
-        print(f"   └─ Expected Approach: {problem_dict['expected_approach'][:50]}..." if problem_dict.get('expected_approach') else "   └─ Expected Approach: N/A")
+        _vprint(f"✅ [PROBLEM RETRIEVAL] Using payload data in {elapsed:.2f}s")
+        _vprint(f"   └─ Title: {problem_dict['title']}")
+        _vprint(f"   └─ Difficulty: {problem_dict['difficulty']}")
+        _vprint(f"   └─ Tags: {problem_dict['tags']}")
+        _vprint(f"   └─ Expected Approach: {problem_dict['expected_approach'][:50]}..." if problem_dict.get('expected_approach') else "   └─ Expected Approach: N/A")
         
         logger.info(f"✅ Problem from payload: {problem_dict['title']} | tags={problem_dict['tags']} | {elapsed:.2f}s")
         return state
@@ -302,17 +313,17 @@ def retrieve_problem_node(state: MentatSyncState) -> MentatSyncState:
         state["problem"] = problem_dict
         
         elapsed = time.time() - start
-        print(f"✅ [PROBLEM RETRIEVAL] Success in {elapsed:.2f}s")
-        print(f"   └─ Title: {problem_context.title}")
-        print(f"   └─ Difficulty: {problem_context.difficulty}")
-        print(f"   └─ Tags: {problem_context.tags}")
-        print(f"   └─ Expected Approach: {problem_context.expected_approach[:50]}..." if problem_context.expected_approach else "   └─ Expected Approach: N/A")
+        _vprint(f"✅ [PROBLEM RETRIEVAL] Success in {elapsed:.2f}s")
+        _vprint(f"   └─ Title: {problem_context.title}")
+        _vprint(f"   └─ Difficulty: {problem_context.difficulty}")
+        _vprint(f"   └─ Tags: {problem_context.tags}")
+        _vprint(f"   └─ Expected Approach: {problem_context.expected_approach[:50]}..." if problem_context.expected_approach else "   └─ Expected Approach: N/A")
         
         logger.info(f"✅ Problem retrieved: {problem_context.title} | tags={problem_context.tags} | {elapsed:.2f}s")
         
     except Exception as e:
         elapsed = time.time() - start
-        print(f"⚠️  [PROBLEM RETRIEVAL] Failed in {elapsed:.2f}s: {type(e).__name__}")
+        _vprint(f"⚠️  [PROBLEM RETRIEVAL] Failed in {elapsed:.2f}s: {type(e).__name__}")
         logger.error(f"❌ Problem retrieval failed: {type(e).__name__}: {e}")
         
         # FALLBACK: Build minimal context from frontend payload
@@ -341,9 +352,9 @@ def retrieve_problem_node(state: MentatSyncState) -> MentatSyncState:
             "_fetched_at": time.time()
         }
         
-        print(f"⚠️  Using fallback problem context")
-        print(f"   └─ Category: {category}")
-        print(f"   └─ Inferred approach: {fallback_approach[:50]}..." if fallback_approach else "   └─ Inferred approach: N/A")
+        _vprint(f"⚠️  Using fallback problem context")
+        _vprint(f"   └─ Category: {category}")
+        _vprint(f"   └─ Inferred approach: {fallback_approach[:50]}..." if fallback_approach else "   └─ Inferred approach: N/A")
         logger.warning(f"⚠️ Using fallback context for {state['problem_id']} | category={category}")
     
     return state
@@ -366,7 +377,7 @@ def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
     _log_budget_status(state, "mim_decision")
     
     start = time.time()
-    print(f"\n🧠 [MIM DECISION ENGINE v3.0] Starting...")
+    _vprint(f"\n🧠 [MIM DECISION ENGINE v3.0] Starting...")
     logger.info(f"🧠 mim_decision_node v3.0 started | user={state['user_id']} | verdict={state.get('verdict')}")
     
     try:
@@ -427,20 +438,20 @@ def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
         state["_node_timings"]["mim_decision"] = elapsed
         
         # === VERBOSE LOGGING ===
-        print(f"\n{'='*80}")
-        print(f"🧠 MIM DECISION ENGINE v3.0 OUTPUT")
-        print(f"{'='*80}")
-        print(f"✅ ROOT CAUSE: {decision.root_cause} (confidence: {decision.root_cause_confidence:.0%})")
-        print(f"🔄 PATTERN: {decision.pattern.pattern_name or 'None'}")
+        _vprint(f"\n{'='*80}")
+        _vprint(f"🧠 MIM DECISION ENGINE v3.0 OUTPUT")
+        _vprint(f"{'='*80}")
+        _vprint(f"✅ ROOT CAUSE: {decision.root_cause} (confidence: {decision.root_cause_confidence:.0%})")
+        _vprint(f"🔄 PATTERN: {decision.pattern.pattern_name or 'None'}")
         if decision.pattern.is_recurring:
-            print(f"   ⚠️ RECURRING: {decision.pattern.recurrence_count} times!")
-        print(f"📊 USER LEVEL: {decision.user_skill_level}")
-        print(f"📈 DIFFICULTY ACTION: {decision.difficulty_action.action.upper()} → {decision.difficulty_action.target_difficulty}")
-        print(f"   └─ Rationale: {decision.difficulty_action.rationale}")
-        print(f"🎯 FOCUS AREAS: {', '.join(decision.focus_areas)}")
-        print(f"💡 FEEDBACK TONE: {decision.feedback_instruction.tone}")
-        print(f"⏱️ Inference time: {decision.inference_time_ms:.1f}ms")
-        print(f"{'='*80}\n")
+            _vprint(f"   ⚠️ RECURRING: {decision.pattern.recurrence_count} times!")
+        _vprint(f"📊 USER LEVEL: {decision.user_skill_level}")
+        _vprint(f"📈 DIFFICULTY ACTION: {decision.difficulty_action.action.upper()} → {decision.difficulty_action.target_difficulty}")
+        _vprint(f"   └─ Rationale: {decision.difficulty_action.rationale}")
+        _vprint(f"🎯 FOCUS AREAS: {', '.join(decision.focus_areas)}")
+        _vprint(f"💡 FEEDBACK TONE: {decision.feedback_instruction.tone}")
+        _vprint(f"⏱️ Inference time: {decision.inference_time_ms:.1f}ms")
+        _vprint(f"{'='*80}\n")
         
         logger.info(
             f"✅ MIM decision complete | "
@@ -460,8 +471,8 @@ def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
     except Exception as e:
         elapsed = time.time() - start
         logger.error(f"❌ MIM decision failed: {e}", exc_info=True)
-        print(f"⚠️  [MIM DECISION] Failed in {elapsed:.2f}s: {e}")
-        print(f"   └─ Agents will proceed without MIM instructions")
+        _vprint(f"⚠️  [MIM DECISION] Failed in {elapsed:.2f}s: {e}")
+        _vprint(f"   └─ Agents will proceed without MIM instructions")
         
         # Graceful degradation - agents still work
         state["mim_decision"] = None
@@ -484,7 +495,7 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
     _log_budget_status(state, "build_user_profile")
     
     start = time.time()
-    print(f"\n👤 [USER PROFILE] Building from {len(state.get('user_memory', []))} memory chunks...")
+    _vprint(f"\n👤 [USER PROFILE] Building from {len(state.get('user_memory', []))} memory chunks...")
     
     try:
         memory_text = "\n".join(state.get("user_memory", []))
@@ -503,25 +514,25 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
             # ═══════════════════════════════════════════════════════════════════════════════
             # VERBOSE LOGGING: Show full user profile details
             # ═══════════════════════════════════════════════════════════════════════════════
-            print(f"\n{'='*80}")
-            print(f"👤 [USER PROFILE] Built for user: {state['user_id']}")
-            print(f"{'='*80}")
-            print(f"🚩 Common Mistakes ({len(profile.common_mistakes)}):")
+            _vprint(f"\n{'='*80}")
+            _vprint(f"👤 [USER PROFILE] Built for user: {state['user_id']}")
+            _vprint(f"{'='*80}")
+            _vprint(f"🚩 Common Mistakes ({len(profile.common_mistakes)}):")
             for mistake in profile.common_mistakes:
-                print(f"   • {mistake}")
-            print(f"\n📊 Weak Topics ({len(profile.weak_topics)}):")
+                _vprint(f"   • {mistake}")
+            _vprint(f"\n📊 Weak Topics ({len(profile.weak_topics)}):")
             for topic in profile.weak_topics:
-                print(f"   • {topic}")
-            print(f"\n🔄 Recurring Patterns ({len(profile.recurring_patterns)}):")
+                _vprint(f"   • {topic}")
+            _vprint(f"\n🔄 Recurring Patterns ({len(profile.recurring_patterns)}):")
             for pattern in profile.recurring_patterns:
-                print(f"   • {pattern}")
-            print(f"\n📊 Stats:")
-            print(f"   • Success Rate: {profile.success_rate or 'N/A'}")
-            print(f"   • Total Submissions: {profile.total_submissions or 'N/A'}")
-            print(f"   • Last Verdict: {profile.last_verdict or 'N/A'}")
-            print(f"{'='*80}\n")
+                _vprint(f"   • {pattern}")
+            _vprint(f"\n📊 Stats:")
+            _vprint(f"   • Success Rate: {profile.success_rate or 'N/A'}")
+            _vprint(f"   • Total Submissions: {profile.total_submissions or 'N/A'}")
+            _vprint(f"   • Last Verdict: {profile.last_verdict or 'N/A'}")
+            _vprint(f"{'='*80}\n")
             
-            print(f"✅ [USER PROFILE] Built | mistakes={len(profile.common_mistakes)} | weak_topics={len(profile.weak_topics)}")
+            _vprint(f"✅ [USER PROFILE] Built | mistakes={len(profile.common_mistakes)} | weak_topics={len(profile.weak_topics)}")
             logger.info(f"✅ User profile built | user={state['user_id']} | mistakes={len(profile.common_mistakes)}")
             
             # Add to agent_results for coordination
@@ -561,26 +572,23 @@ def build_context_node(state: MentatSyncState) -> MentatSyncState:
     """
     Build Structured Context - Format data for agent prompts.
     
-    QUALITY-FIRST: No truncation. Full context for thorough analysis.
+    v3.1 OPTIMIZED: Creates FOCUSED contexts per agent type.
     
-    The context includes:
-    1. PROBLEM CONTEXT section (full problem data)
-    2. USER PROFILE section (complete history)
-    3. SUBMISSION section (full code - no truncation)
-    4. MEMORY CHUNKS section (all retrieved memories)
-    5. AGENT COORDINATION section (for later agents)
+    - context: Full context (for backward compat)
+    - context_focused: Optimized context for feedback_agent (~2500 chars)
+    - hint_context: Minimal context for hint_agent (~500 chars)
     """
     _log_budget_status(state, "build_context")
     
     start = time.time()
-    print(f"\n📝 [CONTEXT BUILD] Assembling FULL structured context...")
+    _vprint(f"\n📝 [CONTEXT BUILD v3.1] Building focused contexts...")
     
     submission = SubmissionContext(
         user_id=state["user_id"],
         problem_id=state["problem_id"],
         problem_category=state["problem_category"],
         constraints=state["constraints"],
-        code=state["code"],  # FULL code - no truncation
+        code=state["code"],
         language=state["language"],
         verdict=state["verdict"],
         error_type=state.get("error_type"),
@@ -588,39 +596,46 @@ def build_context_node(state: MentatSyncState) -> MentatSyncState:
     )
 
     try:
-        # Build rich context with all structured data - NO TRUNCATION
-        # ✨ NEW: Include MIM predictions for agent guidance
-        context = build_context(
-            submission, 
-            state.get("user_memory", []),
+        # v3.1: Build FOCUSED context for feedback agent (primary)
+        focused_context = build_feedback_context_focused(
+            submission=submission,
             problem_context=state.get("problem"),
             user_profile=state.get("user_profile"),
-            include_full_code=True,  # Always include full code
-            mim_insights=state.get("mim_insights"),  # ✨ MIM predictions
+            mim_decision=state.get("mim_decision"),
         )
         
-        # NO TRUNCATION - quality > speed
-        state["context"] = context
+        # Store focused context for feedback agent
+        state["context"] = focused_context
+        state["context_focused"] = focused_context
+        
+        # v3.1: Pre-build minimal hint context (for hint_agent)
+        mim_decision = state.get("mim_decision")
+        hint_context = build_hint_context_minimal(
+            mim_decision=mim_decision,
+            feedback_hint="",  # Will be filled by feedback agent later
+        )
+        state["hint_context"] = hint_context
         
         # ═══════════════════════════════════════════════════════════════════════════════
-        # VERBOSE LOGGING: Show full assembled context (truncated for display)
+        # VERBOSE LOGGING: Show context sizes
         # ═══════════════════════════════════════════════════════════════════════════════
-        print(f"\n{'='*80}")
-        print(f"📝 [FULL CONTEXT] Assembled for LLM agents")
-        print(f"{'='*80}")
-        print(f"📊 Total length: {len(context)} characters")
-        print(f"\n📄 Context preview (first 2000 chars):")
-        print(f"{'-'*80}")
-        print(context[:2000])
-        if len(context) > 2000:
-            print(f"\n... [{len(context) - 2000} more characters] ...")
-        print(f"{'-'*80}")
-        print(f"{'='*80}\n")
+        _vprint(f"\n{'='*80}")
+        _vprint(f"📝 [CONTEXT BUILD v3.1] Optimized contexts ready")
+        _vprint(f"{'='*80}")
+        _vprint(f"📊 Focused feedback context: {len(focused_context)} chars")
+        _vprint(f"📊 Minimal hint context: {len(hint_context)} chars")
+        _vprint(f"\n📄 Feedback context preview:")
+        _vprint(f"{'-'*80}")
+        print(focused_context[:1500])
+        if len(focused_context) > 1500:
+            _vprint(f"\n... [{len(focused_context) - 1500} more characters] ...")
+        _vprint(f"{'-'*80}")
+        _vprint(f"{'='*80}\n")
         
         elapsed = time.time() - start
         state["_node_timings"]["build_context"] = elapsed
         
-        print(f"✅ [CONTEXT BUILD] Completed in {elapsed:.2f}s | {len(state['context'])} chars (FULL, no truncation)")
+        _vprint(f"✅ [CONTEXT BUILD] Completed in {elapsed:.2f}s | {len(state['context'])} chars (FULL, no truncation)")
         logger.info(f"✅ Context built | length={len(state['context'])} | {elapsed:.2f}s")
         
     except Exception as e:
@@ -656,7 +671,7 @@ def feedback_node(state: MentatSyncState) -> MentatSyncState:
     Agent's job: Add code-specific evidence, not diagnose.
     """
     if not state["plan"]["run_feedback"]:
-        print(f"⏭️  [FEEDBACK] Skipped by orchestrator plan")
+        _vprint(f"⏭️  [FEEDBACK] Skipped by orchestrator plan")
         return state
     
     _log_budget_status(state, "feedback")
@@ -664,7 +679,7 @@ def feedback_node(state: MentatSyncState) -> MentatSyncState:
     start = time.time()
     mim_decision = state.get("mim_decision")
     
-    print(f"\n🤖 [FEEDBACK AGENT v3.0] Starting (MIM-instructed={mim_decision is not None})...")
+    _vprint(f"\n🤖 [FEEDBACK AGENT v3.0] Starting (MIM-instructed={mim_decision is not None})...")
     logger.info(f"🤖 feedback_agent v3.0 starting | verdict={state.get('verdict')} | has_mim={mim_decision is not None}")
     
     try:
@@ -702,12 +717,12 @@ def feedback_node(state: MentatSyncState) -> MentatSyncState:
         elapsed = time.time() - start
         state["_node_timings"]["feedback_agent"] = elapsed
         
-        print(f"✅ [FEEDBACK AGENT v3.0] Completed in {elapsed:.2f}s")
+        _vprint(f"✅ [FEEDBACK AGENT v3.0] Completed in {elapsed:.2f}s")
         if feedback:
-            print(f"   └─ Explanation: {feedback.explanation[:100]}..." if feedback.explanation else "   └─ Explanation: N/A")
-            print(f"   └─ Pattern: {state.get('detected_pattern')} (MIM-provided)" if mim_decision else f"   └─ Pattern: {state.get('detected_pattern')}")
+            _vprint(f"   └─ Explanation: {feedback.explanation[:100]}..." if feedback.explanation else "   └─ Explanation: N/A")
+            _vprint(f"   └─ Pattern: {state.get('detected_pattern')} (MIM-provided)" if mim_decision else f"   └─ Pattern: {state.get('detected_pattern')}")
             if mim_decision and mim_decision.pattern.is_recurring:
-                print(f"   ⚠️ RECURRING PATTERN: User made this mistake {mim_decision.pattern.recurrence_count} times before!")
+                _vprint(f"   ⚠️ RECURRING PATTERN: User made this mistake {mim_decision.pattern.recurrence_count} times before!")
         
     except Exception as e:
         logger.error(f"❌ Feedback agent failed: {e}")
@@ -765,35 +780,34 @@ def pattern_detection_node(state: MentatSyncState) -> MentatSyncState:
     The pattern is already set by feedback_node from MIMDecision.
     """
     if not state["plan"].get("run_pattern_detection", False):
-        print(f"⏭️  [PATTERN] Skipped by orchestrator plan")
+        _vprint(f"⏭️  [PATTERN] Skipped by orchestrator plan")
         return state
     
     # v3.0: Pattern already detected by MIM in feedback_node
     mim_decision = state.get("mim_decision")
     if mim_decision:
-        print(f"✅ [PATTERN v3.0] Using MIM pattern: {mim_decision.pattern.pattern_name or 'None'}")
+        _vprint(f"✅ [PATTERN v3.0] Using MIM pattern: {mim_decision.pattern.pattern_name or 'None'}")
         if mim_decision.pattern.is_recurring:
-            print(f"   ⚠️ RECURRING: {mim_decision.pattern.recurrence_count} times")
+            _vprint(f"   ⚠️ RECURRING: {mim_decision.pattern.recurrence_count} times")
         # Pattern already set by feedback_node
         return state
     
     # Fallback: If no MIM, pattern was set by feedback_agent
     pattern = state.get("detected_pattern")
-    print(f"⚠️  [PATTERN] No MIM - using feedback agent pattern: {pattern}")
+    _vprint(f"⚠️  [PATTERN] No MIM - using feedback agent pattern: {pattern}")
     
     return state
 
 
 def hint_node(state: MentatSyncState) -> MentatSyncState:
     """
-    HINT AGENT v3.0: Generate hint using MIM instructions.
+    HINT AGENT v3.1: Generate hint using MINIMAL context.
     
     MUST COMPLETE - No budget skipping.
-    Receives MIMDecision with pre-computed hint direction.
-    Agent's job: Compress into 20 words.
+    v3.1: Uses pre-built minimal context for fast execution.
     """
     if not state["plan"]["run_hint"]:
-        print(f"⏭️  [HINT] Skipped by orchestrator plan")
+        _vprint(f"⏭️  [HINT] Skipped by orchestrator plan")
         return state
     
     _log_budget_status(state, "hint")
@@ -801,17 +815,26 @@ def hint_node(state: MentatSyncState) -> MentatSyncState:
     start = time.time()
     mim_decision = state.get("mim_decision")
     
-    print(f"\n✂️ [HINT AGENT v3.0] Generating hint (MIM-instructed={mim_decision is not None})...")
+    _vprint(f"\n✂️ [HINT AGENT v3.1] Generating hint (minimal context)...")
     
     try:
-        # Get feedback hint as fallback
+        # Get feedback hint for context
         feedback = state.get("feedback")
         raw_hint = feedback.improvement_hint if feedback and feedback.improvement_hint else ""
         
-        # Run hint agent with MIM decision
+        # v3.1: Use minimal context (pre-built or build now)
+        hint_context = build_hint_context_minimal(
+            mim_decision=mim_decision,
+            feedback_hint=raw_hint,
+        )
+        
+        # Log context size
+        _vprint(f"   └─ Hint context size: {len(hint_context)} chars (optimized)")
+        
+        # Run hint agent with minimal context
         hint_result = _run_with_timeout(
             hint_agent,
-            (raw_hint, state, mim_decision),  # Pass MIM decision
+            (raw_hint, {"hint_context": hint_context}, mim_decision),  # Pass minimal context
             timeout_seconds=AGENT_TIME_BUDGETS["hint_agent"],
             fallback=None,
             agent_name="hint_agent"
@@ -835,8 +858,8 @@ def hint_node(state: MentatSyncState) -> MentatSyncState:
         elapsed = time.time() - start
         state["_node_timings"]["hint_agent"] = elapsed
         
-        print(f"✅ [HINT AGENT v3.0] Completed in {elapsed:.2f}s")
-        print(f"   └─ Hint: {state['improvement_hint'][:80]}..." if state.get('improvement_hint') else "   └─ Hint: N/A")
+        _vprint(f"✅ [HINT AGENT v3.1] Completed in {elapsed:.2f}s")
+        _vprint(f"   └─ Hint: {state['improvement_hint'][:80]}..." if state.get('improvement_hint') else "   └─ Hint: N/A")
         
     except Exception as e:
         logger.error(f"❌ Hint agent failed: {e}")
@@ -862,21 +885,21 @@ def _timing_summary_node(state: MentatSyncState) -> MentatSyncState:
         total_elapsed = time.time() - state["_workflow_start"]
         timings = state.get("_node_timings", {})
         
-        print(f"\n{'='*60}")
-        print(f"📊 SYNC WORKFLOW TIMING SUMMARY")
-        print(f"{'='*60}")
-        print(f"⏱️  Total elapsed: {total_elapsed:.2f}s (budget: {SYNC_TOTAL_BUDGET_SECONDS}s)")
-        print(f"📊 Node timings:")
+        _vprint(f"\n{'='*60}")
+        _vprint(f"📊 SYNC WORKFLOW TIMING SUMMARY")
+        _vprint(f"{'='*60}")
+        _vprint(f"⏱️  Total elapsed: {total_elapsed:.2f}s (budget: {SYNC_TOTAL_BUDGET_SECONDS}s)")
+        _vprint(f"📊 Node timings:")
         for node, duration in timings.items():
-            print(f"   └─ {node}: {duration:.2f}s")
+            _vprint(f"   └─ {node}: {duration:.2f}s")
         
         if total_elapsed > SYNC_TOTAL_BUDGET_SECONDS:
-            print(f"⚠️  BUDGET EXCEEDED by {total_elapsed - SYNC_TOTAL_BUDGET_SECONDS:.2f}s")
+            _vprint(f"⚠️  BUDGET EXCEEDED by {total_elapsed - SYNC_TOTAL_BUDGET_SECONDS:.2f}s")
             logger.warning(f"⚠️ Sync workflow exceeded budget: {total_elapsed:.2f}s > {SYNC_TOTAL_BUDGET_SECONDS}s")
         else:
-            print(f"✅ Within budget ({SYNC_TOTAL_BUDGET_SECONDS - total_elapsed:.2f}s remaining)")
+            _vprint(f"✅ Within budget ({SYNC_TOTAL_BUDGET_SECONDS - total_elapsed:.2f}s remaining)")
         
-        print(f"{'='*60}\n")
+        _vprint(f"{'='*60}\n")
         
         logger.info(f"📊 Sync workflow completed | total={total_elapsed:.2f}s | timings={timings}")
     
@@ -907,7 +930,6 @@ def build_sync_workflow():
     graph.add_node("orchestrator", orchestrator_node)
     graph.add_node("build_context", build_context_node)
     graph.add_node("feedback", feedback_node)
-    graph.add_node("pattern_detection", pattern_detection_node)
     graph.add_node("hint", hint_node)
     graph.add_node("timing_summary", _timing_summary_node)
 
@@ -925,8 +947,7 @@ def build_sync_workflow():
     graph.add_edge("build_context", "feedback")
     
     # feedback → pattern_detection → hint → timing_summary → END
-    graph.add_edge("feedback", "pattern_detection")
-    graph.add_edge("pattern_detection", "hint")
+    graph.add_edge("feedback", "hint")
     graph.add_edge("hint", "timing_summary")
     graph.add_edge("timing_summary", END)
 

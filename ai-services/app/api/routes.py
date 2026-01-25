@@ -894,6 +894,48 @@ def get_mim_recommendations(
                     )
                     problems.extend(more_problems)
                 
+                # v3.2: FALLBACK - If still not enough, try other difficulties
+                if len(problems) < num_recommendations:
+                    difficulty_fallbacks = ["Medium", "Hard", "Easy"]
+                    difficulty_fallbacks = [d for d in difficulty_fallbacks if d != recommended_difficulty]
+                    
+                    for fallback_diff in difficulty_fallbacks:
+                        if len(problems) >= num_recommendations:
+                            break
+                        alt_query = {
+                            "_id": {"$nin": list(solved_problem_ids)},
+                            "difficulty": fallback_diff
+                        }
+                        alt_problems = list(
+                            mongo_client.db.problems
+                            .find(alt_query)
+                            .limit(num_recommendations - len(problems))
+                        )
+                        problems.extend(alt_problems)
+                
+                # v3.2: FALLBACK - If user has solved most problems, suggest review
+                if len(problems) < num_recommendations and len(solved_problem_ids) > 10:
+                    # Recommend re-attempting problems they got wrong before
+                    failed_problem_ids = set()
+                    for sub in submissions:
+                        if sub.get("status") != "accepted":
+                            failed_problem_ids.add(sub.get("questionId"))
+                    
+                    # Remove problems they eventually solved
+                    review_ids = failed_problem_ids - solved_problem_ids
+                    
+                    if review_ids:
+                        review_query = {"_id": {"$in": list(review_ids)}}
+                        review_problems = list(
+                            mongo_client.db.problems
+                            .find(review_query)
+                            .limit(num_recommendations - len(problems))
+                        )
+                        # Mark these as review problems
+                        for p in review_problems:
+                            p["_is_review"] = True
+                        problems.extend(review_problems)
+                
                 # Build recommendations from actual problems
                 for i, prob in enumerate(problems[:num_recommendations]):
                     problem_id = str(prob.get("_id", ""))
@@ -902,7 +944,17 @@ def get_mim_recommendations(
                     
                     # Calculate confidence based on whether it matches weak area
                     is_weak_area = any(t in weak_topics for t in tags) if tags else False
-                    confidence = 0.4 if is_weak_area else 0.6
+                    is_review = prob.get("_is_review", False)
+                    
+                    if is_review:
+                        confidence = 0.7
+                        reason = f"Review: You struggled with this {category} problem before. Try again!"
+                    elif is_weak_area:
+                        confidence = 0.4
+                        reason = f"Recommended to strengthen your {category} skills."
+                    else:
+                        confidence = 0.6
+                        reason = "Recommended to diversify your practice."
                     
                     recommendations.append({
                         "problem_id": problem_id,
@@ -910,7 +962,8 @@ def get_mim_recommendations(
                         "difficulty": prob.get("difficulty", recommended_difficulty),
                         "category": category,
                         "confidence": confidence,
-                        "reason": f"Recommended to strengthen your {category} skills." if is_weak_area else "Recommended to diversify your practice."
+                        "reason": reason,
+                        "is_review": is_review
                     })
                     
             except Exception as db_err:
