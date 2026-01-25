@@ -148,17 +148,18 @@ export async function getCodingProfileSummary(req, res) {
       platform: "arrakis",
       stats: arrakisStats
         ? {
-            totalSolved: arrakisStats.totalSolved ?? null,
+            totalSolved: arrakisStats.totalSolved ?? 0,
             rating: pickRating(arrakisStats),
             lastSyncedAt: arrakisStats.lastSyncedAt || null,
           }
-        : null,
+        : { totalSolved: 0, rating: null, lastSyncedAt: null },
       activity: Array.isArray(agg?.dailyActivity) ? agg.dailyActivity.slice(-365) : [],
     };
 
+    // Include all platforms in totals (even those with 0 solved)
     const combinedPlatformsForTotals = [internal, ...platforms]
       .map((p) => ({ platform: p.platform, stats: p.stats }))
-      .filter((p) => p.stats && Number.isFinite(p.stats.totalSolved));
+      .filter((p) => p.stats);
 
     const combinedTotalSolved = combinedPlatformsForTotals.reduce(
       (sum, p) => sum + (p.stats.totalSolved || 0),
@@ -170,13 +171,14 @@ export async function getCodingProfileSummary(req, res) {
       .filter((r) => Number.isFinite(r));
     const bestRating = ratings.length ? Math.max(...ratings) : null;
 
+    // Include all platforms in contributions (even those with 0 solved)
     const contributions = [internal, ...platforms]
+      .filter((p) => p.stats)
       .map((p) => ({
         platform: p.platform,
-        totalSolved: p.stats?.totalSolved ?? null,
+        totalSolved: p.stats?.totalSolved ?? 0,
         rating: p.stats?.rating ?? null,
-      }))
-      .filter((p) => p.totalSolved !== null || p.rating !== null);
+      }));
 
     const combinedActivity = toHeatmapSeries({
       internalDailyActivity: Array.isArray(agg?.dailyActivity) ? agg.dailyActivity : [],
