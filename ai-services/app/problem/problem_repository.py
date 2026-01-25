@@ -101,9 +101,18 @@ def _fetch_problem_from_db(problem_id: str) -> Optional[Dict[str, Any]]:
         )
         
         if response.status_code == 200:
-            data = response.json()
-            logger.info(f"✅ Problem fetched from backend: {problem_id}")
-            return data
+            response_data = response.json()
+            # Backend returns {success: true, data: {...question...}}
+            # Extract the actual question data from the wrapper
+            if response_data.get("success") and response_data.get("data"):
+                data = response_data["data"]
+                logger.info(f"✅ Problem fetched from backend: {problem_id}")
+                logger.info(f"   └─ Title: {data.get('title', 'N/A')}")
+                logger.info(f"   └─ Description length: {len(data.get('description', ''))} chars")
+                return data
+            else:
+                logger.warning(f"⚠️ Backend returned unexpected format for problem {problem_id}")
+                return None
         else:
             logger.warning(f"⚠️ Backend returned {response.status_code} for problem {problem_id}")
             

@@ -31,14 +31,36 @@ GROQ_FALLBACK_MODEL = "mixtral-8x7b-32768"
 # Gemini models (reliable, good for complex tasks)
 GEMINI_MODEL = "gemini-2.5-flash"
 
-# Rate limit tracking for Groq
+# Rate limit tracking for both providers
 _groq_rate_limit_until: float = 0.0
+_gemini_rate_limit_until: float = 0.0
+_both_rate_limited_count: int = 0
+
+
+class AllProvidersRateLimitedError(Exception):
+    """Raised when all LLM providers are rate limited."""
+    pass
+
+
+def _is_rate_limit_error(error: Exception) -> bool:
+    """Check if an exception is a rate limit error."""
+    error_str = str(error).lower()
+    return (
+        "429" in str(error) or
+        "rate" in error_str or
+        "limit" in error_str or
+        "quota" in error_str or
+        "resource_exhausted" in error_str
+    )
 
 
 class LLMWithFallback(BaseChatModel):
     """
     LLM wrapper with automatic fallback on rate limits or errors.
     Primary: Groq (fast) | Fallback: Gemini (reliable)
+    
+    When both are rate limited, raises AllProvidersRateLimitedError
+    so agents can return fallback responses immediately.
     """
     
     primary: Optional[BaseChatModel] = None
@@ -54,75 +76,117 @@ class LLMWithFallback(BaseChatModel):
     
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
         """Generate with automatic fallback."""
-        global _groq_rate_limit_until
+        global _groq_rate_limit_until, _gemini_rate_limit_until, _both_rate_limited_count
         
-        # Check if we're in rate limit cooldown
-        if time.time() < _groq_rate_limit_until:
-            logger.debug("Groq rate limited, using Gemini fallback")
-            if self.fallback:
-                return self.fallback._generate(messages, stop, run_manager, **kwargs)
+        now = time.time()
+        groq_limited = now < _groq_rate_limit_until
+        gemini_limited = now < _gemini_rate_limit_until
         
-        # Try primary (Groq)
-        if self.primary and not self._use_fallback:
+        # If both are rate limited, fail fast
+        if groq_limited and gemini_limited:
+            _both_rate_limited_count += 1
+            wait_time = min(_groq_rate_limit_until, _gemini_rate_limit_until) - now
+            logger.warning(f"Both LLMs rate limited, wait {wait_time:.1f}s (count: {_both_rate_limited_count})")
+            raise AllProvidersRateLimitedError(f"All LLM providers rate limited. Retry in {wait_time:.1f}s")
+        
+        # Try primary (Groq) if not rate limited
+        if self.primary and not self._use_fallback and not groq_limited:
             try:
-                return self.primary._generate(messages, stop, run_manager, **kwargs)
+                result = self.primary._generate(messages, stop, run_manager, **kwargs)
+                _both_rate_limited_count = 0  # Reset on success
+                return result
             except Exception as e:
-                error_str = str(e).lower()
-                
-                # Handle rate limiting (429)
-                if "429" in str(e) or "rate" in error_str or "limit" in error_str:
+                if _is_rate_limit_error(e):
                     logger.warning(f"Groq rate limited, switching to Gemini fallback")
-                    _groq_rate_limit_until = time.time() + 60  # 1 min cooldown
-                    if self.fallback:
-                        return self.fallback._generate(messages, stop, run_manager, **kwargs)
+                    _groq_rate_limit_until = now + 60  # 1 min cooldown
+                else:
+                    logger.error(f"Primary LLM error: {e}, trying fallback")
                 
-                # Handle other errors
-                logger.error(f"Primary LLM error: {e}, trying fallback")
-                if self.fallback:
-                    return self.fallback._generate(messages, stop, run_manager, **kwargs)
+                # Try fallback
+                if self.fallback and not gemini_limited:
+                    try:
+                        result = self.fallback._generate(messages, stop, run_manager, **kwargs)
+                        _both_rate_limited_count = 0
+                        return result
+                    except Exception as fallback_err:
+                        if _is_rate_limit_error(fallback_err):
+                            _gemini_rate_limit_until = now + 120  # 2 min cooldown for Gemini
+                            logger.warning("Gemini also rate limited")
+                            raise AllProvidersRateLimitedError("All LLM providers rate limited")
+                        raise
+                elif gemini_limited:
+                    raise AllProvidersRateLimitedError("All LLM providers rate limited")
                 raise
         
-        # Use fallback directly
-        if self.fallback:
-            return self.fallback._generate(messages, stop, run_manager, **kwargs)
+        # Use fallback directly if Groq is limited
+        if self.fallback and not gemini_limited:
+            try:
+                result = self.fallback._generate(messages, stop, run_manager, **kwargs)
+                _both_rate_limited_count = 0
+                return result
+            except Exception as e:
+                if _is_rate_limit_error(e):
+                    _gemini_rate_limit_until = now + 120
+                    raise AllProvidersRateLimitedError("All LLM providers rate limited")
+                raise
         
-        raise RuntimeError("No LLM available")
+        raise AllProvidersRateLimitedError("All LLM providers rate limited or unavailable")
     
     async def _agenerate(self, messages, stop=None, run_manager=None, **kwargs):
         """Async generate with automatic fallback."""
-        global _groq_rate_limit_until
+        global _groq_rate_limit_until, _gemini_rate_limit_until, _both_rate_limited_count
         
-        # Check if we're in rate limit cooldown
-        if time.time() < _groq_rate_limit_until:
-            logger.debug("Groq rate limited, using Gemini fallback (async)")
-            if self.fallback:
-                return await self.fallback._agenerate(messages, stop, run_manager, **kwargs)
+        now = time.time()
+        groq_limited = now < _groq_rate_limit_until
+        gemini_limited = now < _gemini_rate_limit_until
         
-        # Try primary (Groq)
-        if self.primary and not self._use_fallback:
+        # If both are rate limited, fail fast
+        if groq_limited and gemini_limited:
+            _both_rate_limited_count += 1
+            wait_time = min(_groq_rate_limit_until, _gemini_rate_limit_until) - now
+            logger.warning(f"Both LLMs rate limited (async), wait {wait_time:.1f}s")
+            raise AllProvidersRateLimitedError(f"All LLM providers rate limited. Retry in {wait_time:.1f}s")
+        
+        # Try primary (Groq) if not rate limited
+        if self.primary and not self._use_fallback and not groq_limited:
             try:
-                return await self.primary._agenerate(messages, stop, run_manager, **kwargs)
+                result = await self.primary._agenerate(messages, stop, run_manager, **kwargs)
+                _both_rate_limited_count = 0
+                return result
             except Exception as e:
-                error_str = str(e).lower()
+                if _is_rate_limit_error(e):
+                    logger.warning(f"Groq rate limited (async), switching to Gemini fallback")
+                    _groq_rate_limit_until = now + 60
+                else:
+                    logger.error(f"Primary LLM error (async): {e}, trying fallback")
                 
-                # Handle rate limiting (429)
-                if "429" in str(e) or "rate" in error_str or "limit" in error_str:
-                    logger.warning(f"Groq rate limited, switching to Gemini fallback (async)")
-                    _groq_rate_limit_until = time.time() + 60  # 1 min cooldown
-                    if self.fallback:
-                        return await self.fallback._agenerate(messages, stop, run_manager, **kwargs)
-                
-                # Handle other errors
-                logger.error(f"Primary LLM error (async): {e}, trying fallback")
-                if self.fallback:
-                    return await self.fallback._agenerate(messages, stop, run_manager, **kwargs)
+                if self.fallback and not gemini_limited:
+                    try:
+                        result = await self.fallback._agenerate(messages, stop, run_manager, **kwargs)
+                        _both_rate_limited_count = 0
+                        return result
+                    except Exception as fallback_err:
+                        if _is_rate_limit_error(fallback_err):
+                            _gemini_rate_limit_until = now + 120
+                            raise AllProvidersRateLimitedError("All LLM providers rate limited")
+                        raise
+                elif gemini_limited:
+                    raise AllProvidersRateLimitedError("All LLM providers rate limited")
                 raise
         
         # Use fallback directly
-        if self.fallback:
-            return await self.fallback._agenerate(messages, stop, run_manager, **kwargs)
+        if self.fallback and not gemini_limited:
+            try:
+                result = await self.fallback._agenerate(messages, stop, run_manager, **kwargs)
+                _both_rate_limited_count = 0
+                return result
+            except Exception as e:
+                if _is_rate_limit_error(e):
+                    _gemini_rate_limit_until = now + 120
+                    raise AllProvidersRateLimitedError("All LLM providers rate limited")
+                raise
         
-        raise RuntimeError("No LLM available")
+        raise AllProvidersRateLimitedError("All LLM providers rate limited or unavailable")
 
 
 def _create_groq_llm(temperature: float = 0.2) -> Optional[ChatGroq]:
@@ -216,12 +280,35 @@ def get_current_provider() -> str:
 
 
 def is_rate_limited() -> bool:
-    """Check if Groq is currently rate limited."""
-    global _groq_rate_limit_until
-    return time.time() < _groq_rate_limit_until
+    """Check if any LLM provider is currently rate limited."""
+    global _groq_rate_limit_until, _gemini_rate_limit_until
+    now = time.time()
+    return now < _groq_rate_limit_until or now < _gemini_rate_limit_until
+
+
+def are_all_rate_limited() -> bool:
+    """Check if ALL LLM providers are currently rate limited."""
+    global _groq_rate_limit_until, _gemini_rate_limit_until
+    now = time.time()
+    return now < _groq_rate_limit_until and now < _gemini_rate_limit_until
+
+
+def get_rate_limit_status() -> dict:
+    """Get detailed rate limit status for monitoring."""
+    global _groq_rate_limit_until, _gemini_rate_limit_until, _both_rate_limited_count
+    now = time.time()
+    return {
+        "groq_limited": now < _groq_rate_limit_until,
+        "groq_wait_seconds": max(0, _groq_rate_limit_until - now),
+        "gemini_limited": now < _gemini_rate_limit_until,
+        "gemini_wait_seconds": max(0, _gemini_rate_limit_until - now),
+        "both_limited_count": _both_rate_limited_count,
+    }
 
 
 def reset_rate_limit():
-    """Reset the rate limit cooldown (for testing)."""
-    global _groq_rate_limit_until
+    """Reset all rate limit cooldowns (for testing)."""
+    global _groq_rate_limit_until, _gemini_rate_limit_until, _both_rate_limited_count
     _groq_rate_limit_until = 0.0
+    _gemini_rate_limit_until = 0.0
+    _both_rate_limited_count = 0
