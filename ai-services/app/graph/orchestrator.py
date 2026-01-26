@@ -10,6 +10,18 @@ CRITICAL RULES:
 3. pattern_detection and hint are optional and skippable
 4. All expensive operations go to ASYNC
 5. RAG context MUST be validated before agents run
+
+AUTHORITATIVE DECISION TABLE (v3.1):
+╔═════════════╦═══════════╦══════════╦═════════╦═══════════╦════════════════════════╗
+║ Verdict     ║ Difficulty║ Run MIM  ║ Run RAG ║ Run Hint  ║ Notes                  ║
+╠═════════════╬═══════════╬══════════╬═════════╬═══════════╬════════════════════════╣
+║ Accepted    ║ Easy      ║ ❌ NO    ║ ❌ NO   ║ ❌ NO     ║ Reinforcement only     ║
+║ Accepted    ║ Medium    ║ ❌ NO    ║ ⚠️ Light ║ ❌ NO     ║ Pattern confirmation   ║
+║ Accepted    ║ Hard      ║ ⚠️ Light ║ ⚠️ Light ║ ❌ NO     ║ Skill validation       ║
+║ Wrong Answer║ Any       ║ ✅ YES   ║ ✅ YES  ║ ✅ YES    ║ Full pipeline          ║
+║ TLE         ║ Any       ║ ✅ YES   ║ ✅ YES  ║ ✅ YES    ║ Algorithm focus        ║
+║ Runtime Err ║ Any       ║ ✅ YES   ║ ✅ YES  ║ ✅ YES    ║ Safety & correctness   ║
+╚═════════════╩═══════════╩══════════╩═════════╩═══════════╩════════════════════════╝
 """
 
 import logging
@@ -83,6 +95,7 @@ def orchestrator_node(state: Dict) -> Dict:
     3. Time budget remaining
     4. User history availability
     5. RAG context availability (ALWAYS validate first)
+    6. Guardrails from API layer (verdict guards)
     """
     # === FIRST: Validate RAG context ===
     state = validate_rag_context(state)
@@ -93,6 +106,7 @@ def orchestrator_node(state: Dict) -> Dict:
     # Check problem context quality
     problem = state.get("problem", {})
     is_problem_grounded = problem.get("_source") != "fallback"
+    difficulty = problem.get("difficulty", "Medium") if isinstance(problem, dict) else "Medium"
     
     # Check user profile quality
     user_profile = state.get("user_profile", {})
@@ -102,38 +116,44 @@ def orchestrator_node(state: Dict) -> Dict:
         user_profile.get("recurring_patterns")
     )
     
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL CHECK: Respect verdict guards from API layer
+    # ═══════════════════════════════════════════════════════════════════════════════
+    guardrails = state.get("_guardrails", {})
+    is_accepted = verdict == "accepted"
+    
     # === SYNC AGENTS (user-facing, must be fast) ===
     
     # Feedback is ALWAYS run (primary agent)
     run_feedback = True
     
-    # Pattern detection: Skip for accepted OR if problem context is fallback
-    # (can't reliably detect patterns without grounded problem data)
+    # Pattern detection: Skip for accepted OR if guardrails say so
     run_pattern_detection = (
-        verdict != "accepted" and 
+        not is_accepted and 
+        not guardrails.get("skip_mim", False) and
         is_problem_grounded
     )
     
-    # Hint: Skip for accepted OR if no feedback agent ran
-    # Also skip if problem context is fallback (hints would be too generic)
+    # Hint: Skip for accepted OR if guardrails say so
     run_hint = (
-        verdict != "accepted" and
+        not is_accepted and
+        not guardrails.get("skip_hint", False) and
         run_feedback
     )
     
     # === ASYNC AGENTS (background, no latency impact) ===
     
-    # Learning: Only for failed submissions
-    run_learning = verdict != "accepted"
+    # Learning: For failures, run diagnosis. For accepted, run reinforcement.
+    run_learning = True  # Always run, but mode differs
     
     # Difficulty: Only for failed submissions with user history
-    run_difficulty = verdict != "accepted" and has_user_history
+    run_difficulty = not is_accepted and has_user_history
     
     # Weekly report: Only on explicit request
     run_weekly_report = user_requested_report
     
-    # Memory storage: Only for failures (store mistakes)
-    store_memory = verdict != "accepted" or  verdict == "accepted"
+    # Memory storage: ALWAYS (both success and failure are valuable signals)
+    store_memory = True
     
     plan = {
         # ---- SYNC (user-facing, <10s total) ----
@@ -151,6 +171,8 @@ def orchestrator_node(state: Dict) -> Dict:
         "problem_grounded": is_problem_grounded,
         "has_user_history": has_user_history,
         "rag_context_available": state.get("_rag_context_available", False),
+        "is_accepted": is_accepted,
+        "difficulty": difficulty,
     }
 
     state["plan"] = plan
@@ -161,12 +183,15 @@ def orchestrator_node(state: Dict) -> Dict:
     
     logger.info(f"🧠 Orchestrator decision:")
     logger.info(f"   └─ Verdict: {verdict}")
+    logger.info(f"   └─ Difficulty: {difficulty}")
+    logger.info(f"   └─ Is Accepted: {is_accepted}")
     logger.info(f"   └─ Problem grounded: {is_problem_grounded}")
     logger.info(f"   └─ User history: {has_user_history}")
     logger.info(f"   └─ SYNC agents: {sync_agents}")
     logger.info(f"   └─ ASYNC agents: {async_agents}")
     
     print(f"\n🧠 [ORCHESTRATOR] Execution plan:")
+    print(f"   └─ Verdict: {verdict} | Accepted: {is_accepted}")
     print(f"   └─ SYNC: {sync_agents}")
     print(f"   └─ ASYNC: {async_agents}")
     print(f"   └─ Problem grounded: {is_problem_grounded}")

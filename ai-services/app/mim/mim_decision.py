@@ -193,11 +193,26 @@ class MIMDecision(BaseModel):
     This is the ONLY decision-making output. Agents receive this
     and add linguistic polish without changing decisions.
     
+    v3.2 ENHANCEMENT: Single Immutable Decision per Submission
+    - Once decision_id is set, this decision CANNOT be recreated
+    - Profile builder uses decision_id to detect duplicate MIM runs
+    - Prevents MIM from making different decisions on retries
+    
     REPLACES:
     - pattern_detection_agent (pattern field)
     - difficulty_agent (difficulty_action field)
     - Duplicate analysis in feedback_agent, learning_agent
     """
+    
+    # === v3.2: IMMUTABILITY ENFORCEMENT ===
+    decision_id: Optional[str] = Field(
+        default=None,
+        description="Unique immutable ID - once set, decision cannot be recreated"
+    )
+    is_frozen: bool = Field(
+        default=False,
+        description="True after decision is used - prevents mutation"
+    )
     
     # === CORE ANALYTICAL DECISIONS ===
     root_cause: str = Field(
@@ -261,7 +276,7 @@ class MIMDecision(BaseModel):
         description="True if user has limited history"
     )
     model_version: str = Field(
-        default="v3.0",
+        default="v3.2",
         description="MIM model version"
     )
     inference_time_ms: float = Field(
@@ -272,6 +287,23 @@ class MIMDecision(BaseModel):
         default_factory=datetime.now,
         description="When decision was made"
     )
+    
+    model_config = {"arbitrary_types_allowed": True}
+    
+    def freeze(self, new_decision_id: str) -> "MIMDecision":
+        """
+        Freeze this decision with a unique ID.
+        Once frozen, the decision should not be recreated.
+        
+        v3.2: Enforces single immutable MIM decision per submission.
+        """
+        self.decision_id = new_decision_id
+        self.is_frozen = True
+        return self
+    
+    def get_decision_id(self) -> Optional[str]:
+        """Get the unique decision ID if frozen."""
+        return self.decision_id
     
     def to_agent_context(self) -> str:
         """

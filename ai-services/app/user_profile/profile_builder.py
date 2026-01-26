@@ -5,17 +5,26 @@ User Profile Builder
 Builds structured UserProfile from raw RAG memory chunks.
 NO EXTRA LLM CALLS - uses pattern matching and heuristics.
 
+v3.2 ENHANCEMENTS:
+- Integrates current MIM decision into profile
+- Enforces single immutable MIM decision per submission
+- Logs assertion if profile history disagrees with MIM
+- Tracks profile_updated_after_submission metric
+
 Key responsibilities:
 1. Parse memory chunks into structured patterns
 2. Identify recurring mistakes via keyword matching
 3. Extract weak topics from memory text
 4. Generate profile summary for agents
+5. Validate MIM decision against profile history (NEW)
 """
 
 import re
+import uuid
+import logging
 from typing import List, Dict, Any, Optional
 from functools import lru_cache
-import logging
+from datetime import datetime
 
 from app.schemas.user_profile import UserProfile
 
@@ -338,22 +347,31 @@ def build_user_profile(
     user_id: str,
     memory_text: str,
     submission_stats: Optional[Dict[str, Any]] = None,
-    last_verdict: Optional[str] = None
+    last_verdict: Optional[str] = None,
+    mim_decision: Any = None,  # v3.2: Accept MIM decision for integration
 ) -> UserProfile:
     """
     Build structured UserProfile from raw memory and submission data.
+    
+    v3.2 ENHANCEMENTS:
+    - Integrates MIM decision into profile
+    - Enforces single immutable MIM decision (generates unique ID)
+    - Logs ASSERTION if profile history disagrees with MIM diagnosis
+    - Tracks profile update timestamp
     
     This function:
     1. Parses memory text for patterns (NO LLM call)
     2. Derives mistakes via keyword matching
     3. Identifies weak topics
     4. Incorporates submission statistics if available
+    5. Validates MIM decision against profile history (NEW)
     
     Args:
         user_id: User identifier
         memory_text: Raw concatenated memory chunks from RAG
         submission_stats: Optional dict with total_submissions, success_rate
         last_verdict: Last submission verdict (e.g., "Wrong Answer")
+        mim_decision: Optional MIMDecision object for integration
         
     Returns:
         Structured UserProfile for agent consumption
@@ -381,6 +399,51 @@ def build_user_profile(
         # submission_stats is not a dict - log warning and skip
         logger.warning(f"submission_stats has unexpected type: {type(submission_stats)}")
     
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # v3.2: MIM DECISION INTEGRATION
+    # ═══════════════════════════════════════════════════════════════════════════════
+    current_mim_root_cause = None
+    current_mim_confidence = None
+    mim_decision_id = None
+    profile_mim_agreement = None
+    profile_mim_disagreement_reason = None
+    
+    if mim_decision is not None:
+        try:
+            # Generate unique immutable decision ID
+            mim_decision_id = f"mim_{uuid.uuid4().hex[:12]}"
+            
+            # Extract MIM root cause - NULL-SAFE
+            current_mim_root_cause = getattr(mim_decision, 'root_cause', None)
+            current_mim_confidence = getattr(mim_decision, 'root_cause_confidence', None)
+            
+            # ═══════════════════════════════════════════════════════════════════════════════
+            # v3.2: PROFILE-MIM AGREEMENT CHECK (ASSERTION/LOG)
+            # ═══════════════════════════════════════════════════════════════════════════════
+            if current_mim_root_cause and common_mistakes:
+                profile_mim_agreement, profile_mim_disagreement_reason = _check_profile_mim_agreement(
+                    mim_root_cause=current_mim_root_cause,
+                    profile_mistakes=common_mistakes,
+                    weak_topics=weak_topics,
+                    user_id=user_id,
+                )
+            else:
+                # No profile history to compare - agreement is neutral
+                profile_mim_agreement = None
+            
+            # Fixed f-string formatting for optional confidence
+            confidence_str = f"{current_mim_confidence:.2f}" if current_mim_confidence is not None else "N/A"
+            logger.info(
+                f"MIM integrated into profile | "
+                f"decision_id={mim_decision_id} | "
+                f"root_cause={current_mim_root_cause} | "
+                f"confidence={confidence_str} | "
+                f"agreement={profile_mim_agreement}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to integrate MIM decision into profile: {e}")
+    
     profile = UserProfile(
         user_id=user_id,
         common_mistakes=common_mistakes,
@@ -389,15 +452,113 @@ def build_user_profile(
         total_submissions=total_submissions,
         success_rate=success_rate,
         recent_categories=recent_categories,
-        last_verdict=last_verdict
+        last_verdict=last_verdict,
+        # v3.2: MIM Integration Fields
+        current_mim_root_cause=current_mim_root_cause,
+        current_mim_confidence=current_mim_confidence,
+        mim_decision_id=mim_decision_id,
+        profile_mim_agreement=profile_mim_agreement,
+        profile_mim_disagreement_reason=profile_mim_disagreement_reason,
+        # v3.2: Update Tracking
+        profile_updated_after_submission=True,  # This profile IS the update
+        last_profile_update=datetime.now(),
     )
     
     logger.info(
         f"Built profile: mistakes={len(common_mistakes)}, "
-        f"weak_topics={len(weak_topics)}, patterns={len(recurring_patterns)}"
+        f"weak_topics={len(weak_topics)}, patterns={len(recurring_patterns)}, "
+        f"mim_integrated={mim_decision_id is not None}"
     )
     
     return profile
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3.2: PROFILE-MIM AGREEMENT CHECKER
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# MIM root cause to profile mistake keyword mapping
+_MIM_TO_PROFILE_MAPPING = {
+    "boundary_condition_blindness": ["edge case", "boundary", "empty input"],
+    "off_by_one_error": ["off-by-one", "loop boundary", "index"],
+    "integer_overflow": ["overflow", "large numbers"],
+    "time_complexity_issue": ["time complexity", "TLE", "too slow"],
+    "wrong_data_structure": ["data structure", "hashmap", "set"],
+    "recursion_issue": ["recursion", "stack overflow", "base case"],
+    "logic_error": ["logic error", "wrong logic"],
+    "comparison_error": ["comparison", "operator", "< vs <="],
+    "algorithm_choice": ["algorithm", "approach", "wrong approach"],
+    "edge_case_handling": ["edge case", "corner case", "special case"],
+    "input_parsing": ["parsing", "input format", "read"],
+    "misread_problem": ["misunderstood", "misread", "wrong interpretation"],
+    "partial_solution": ["incomplete", "partial", "missing case"],
+    "type_error": ["type error", "type mismatch", "conversion"],
+}
+
+
+def _check_profile_mim_agreement(
+    mim_root_cause: str,
+    profile_mistakes: List[str],
+    weak_topics: List[str],
+    user_id: str,
+) -> tuple:
+    """
+    Check if MIM's diagnosis agrees with user's historical profile.
+    
+    IMPORTANT: This is an ASSERTION check - disagreements are LOGGED, not errors.
+    
+    Agreement scenarios:
+    1. MIM says "off_by_one_error" and profile has "off-by-one" in mistakes → AGREE
+    2. MIM says "time_complexity_issue" and profile has "TLE" weakness → AGREE
+    3. MIM says "recursion_issue" but profile has no recursion-related mistakes → DISAGREE
+    
+    Returns:
+        (agreement: bool, reason: str or None)
+    """
+    if not mim_root_cause:
+        return None, None
+    
+    mim_root_cause_lower = mim_root_cause.lower()
+    
+    # Get expected keywords for this MIM root cause
+    expected_keywords = _MIM_TO_PROFILE_MAPPING.get(
+        mim_root_cause_lower,
+        [mim_root_cause_lower.replace("_", " ")]  # Fallback: use root cause as keyword
+    )
+    
+    # Check if any expected keyword appears in profile mistakes or weak topics
+    all_profile_text = " ".join(profile_mistakes + weak_topics).lower()
+    
+    has_matching_history = any(
+        keyword.lower() in all_profile_text
+        for keyword in expected_keywords
+    )
+    
+    if has_matching_history:
+        logger.info(
+            f"✅ PROFILE-MIM AGREEMENT | user={user_id} | "
+            f"MIM: {mim_root_cause} matches profile history"
+        )
+        return True, None
+    else:
+        # DISAGREEMENT - LOG ASSERTION
+        disagreement_reason = (
+            f"MIM diagnosed '{mim_root_cause}' but user profile shows no history of "
+            f"similar mistakes. Profile mistakes: {profile_mistakes[:3]}"
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # ASSERTION LOG - This is important for MIM calibration
+        # ═══════════════════════════════════════════════════════════════════════════════
+        logger.warning(
+            f"⚠️ PROFILE-MIM DISAGREEMENT ASSERTION | user={user_id} | "
+            f"MIM diagnosed: {mim_root_cause} | "
+            f"Profile mistakes: {profile_mistakes[:3]} | "
+            f"This could indicate: (1) First occurrence of this mistake type, "
+            f"(2) MIM miscategorization, or (3) Profile data is stale"
+        )
+        
+        return False, disagreement_reason
 
 
 def format_profile_for_prompt(profile: UserProfile) -> str:

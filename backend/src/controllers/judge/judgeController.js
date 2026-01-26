@@ -459,10 +459,30 @@ export const submitCode = async (req, res) => {
       );
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AI FEEDBACK GATE: Only request AI for eligible verdicts
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AI feedback should only run for:
+    // ✓ Wrong Answer - needs diagnosis
+    // ✓ TLE - needs algorithm optimization guidance
+    // ✓ Runtime Error - needs safety/correctness feedback
+    //
+    // AI feedback should NOT run for:
+    // ✗ Accepted - success, no diagnosis needed
+    // ✗ Compile Error - show raw compiler output, not AI
+    // ✗ Internal Error - infrastructure issue, not code issue
+    const AI_ELIGIBLE_STATUSES = [
+      "wrong_answer",
+      "time_limit_exceeded",
+      "runtime_error",
+    ];
+
     let aiFeedback = null;
-    if (userId && status !== "accepted") {
+    if (userId && AI_ELIGIBLE_STATUSES.includes(status)) {
       try {
-        console.log("[Submit] Requesting AI feedback for failed submission...");
+        console.log(
+          `[Submit] Requesting AI feedback for ${status} submission...`,
+        );
 
         const recentSubmissions = await Submission.find({ userId })
           .sort({ createdAt: -1 })

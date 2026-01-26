@@ -1,8 +1,34 @@
 // src/components/mim/CognitiveProfile.jsx
 // Displays user's MIM cognitive profile with strengths and weaknesses
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROFILE REFRESH EVENT SYSTEM
+// Allows profile components to refresh after submissions
+// ═══════════════════════════════════════════════════════════════════════════════
+const profileRefreshListeners = new Set();
+
+export function emitProfileRefresh() {
+  console.log("[CognitiveProfile] Emitting profile refresh event");
+  profileRefreshListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {
+      console.error("[CognitiveProfile] Refresh listener error:", e);
+    }
+  });
+}
+
+function useProfileRefresh(onRefresh) {
+  useEffect(() => {
+    if (onRefresh) {
+      profileRefreshListeners.add(onRefresh);
+      return () => profileRefreshListeners.delete(onRefresh);
+    }
+  }, [onRefresh]);
+}
 
 const SkillBar = ({
   label,
@@ -73,39 +99,43 @@ export default function CognitiveProfile({ userId, compact = false }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    console.log("[CognitiveProfile] userId:", userId);
+  // Fetch profile function - reusable for initial load and refresh
+  const fetchProfile = useCallback(async () => {
     if (!userId) {
       console.log("[CognitiveProfile] No userId, skipping fetch");
       return;
     }
 
-    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    console.log("[CognitiveProfile] Fetching MIM profile for:", userId);
-    getMIMProfile({ userId })
-      .then((data) => {
-        console.log("[CognitiveProfile] Received data:", data);
-        if (!cancelled) {
-          setProfile(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error("[CognitiveProfile] Error:", err);
-        if (!cancelled) {
-          setError(err.message || "Failed to load cognitive profile");
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    try {
+      console.log("[CognitiveProfile] Fetching MIM profile for:", userId);
+      const data = await getMIMProfile({ userId });
+      console.log("[CognitiveProfile] Received data:", data);
+      setProfile(data);
+    } catch (err) {
+      console.error("[CognitiveProfile] Error:", err);
+      setError(err.message || "Failed to load cognitive profile");
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile, refreshKey]);
+
+  // Listen for profile refresh events (triggered after submissions)
+  const handleRefresh = useCallback(() => {
+    console.log("[CognitiveProfile] Refresh triggered - reloading profile");
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  useProfileRefresh(handleRefresh);
 
   if (loading) {
     return (

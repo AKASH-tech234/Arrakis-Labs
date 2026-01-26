@@ -187,11 +187,25 @@ def retrieve_memory_node(state: MentatSyncState) -> MentatSyncState:
     """
     RAG Memory Retrieval - Fetch user's historical mistakes with relevance scores.
     
+    GUARDRAIL: Skipped for Accepted Easy submissions (no need to retrieve failure history).
+    
     QUALITY-FIRST: Uses k=7 for comprehensive history retrieval.
     Returns both raw chunks and scored metadata for context building.
     """
     _init_timing(state)
     start = time.time()
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL CHECK: Skip RAG if verdict guard says so
+    # ═══════════════════════════════════════════════════════════════════════════════
+    guardrails = state.get("_guardrails", {})
+    if guardrails.get("skip_rag", False):
+        _vprint(f"\n⏭️ [MEMORY RETRIEVAL] SKIPPED by verdict guard")
+        logger.info(f"⏭️ Memory retrieval skipped | reason=verdict_guard | verdict={state.get('verdict')}")
+        state["user_memory"] = []
+        state["agent_results"] = {"memory_retrieved": 0, "skipped_by_guardrail": True}
+        state["_node_timings"]["retrieve_memory"] = time.time() - start
+        return state
     
     _vprint(f"\n🔍 [MEMORY RETRIEVAL] Starting for user: {state['user_id']}")
     
@@ -364,6 +378,9 @@ def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
     """
     MIM DECISION ENGINE v3.0 - Authoritative decision-making.
     
+    GUARDRAIL: Skipped for Accepted submissions (no diagnosis needed).
+    For Hard Accepted, runs in "reinforcement mode" (confidence calibration only).
+    
     Runs AFTER retrieve_problem, BEFORE build_user_profile.
     
     Provides agents with:
@@ -377,6 +394,39 @@ def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
     _log_budget_status(state, "mim_decision")
     
     start = time.time()
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL CHECK: Skip MIM for Accepted (Easy/Medium) - No diagnosis needed
+    # ═══════════════════════════════════════════════════════════════════════════════
+    guardrails = state.get("_guardrails", {})
+    verdict = state.get("verdict", "").lower()
+    
+    if guardrails.get("skip_mim", False):
+        _vprint(f"\n⏭️ [MIM DECISION] SKIPPED by verdict guard (Accepted submission)")
+        logger.info(f"⏭️ MIM skipped | reason=verdict_guard | verdict={verdict}")
+        
+        # For Accepted, create a reinforcement signal instead of diagnosis
+        if guardrails.get("create_reinforcement", False):
+            state["mim_decision"] = None
+            state["mim_insights"] = {
+                "type": "reinforcement",  # NOT diagnosis
+                "root_cause": None,  # NO root cause for success
+                "readiness": {
+                    "current_level": "Proficient",
+                    "recommendation": "Continue to next challenge"
+                },
+                "is_success": True,
+                "is_cold_start": False,
+                "model_version": "v3.0-reinforcement"
+            }
+            _vprint(f"   └─ Created REINFORCEMENT signal (no diagnosis)")
+        else:
+            state["mim_decision"] = None
+            state["mim_insights"] = None
+        
+        state["_node_timings"]["mim_decision"] = time.time() - start
+        return state
+    
     _vprint(f"\n🧠 [MIM DECISION ENGINE v3.0] Starting...")
     logger.info(f"🧠 mim_decision_node v3.0 started | user={state['user_id']} | verdict={state.get('verdict')}")
     
@@ -486,6 +536,12 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
     """
     Build User Profile - Heuristic pattern extraction (NO LLM).
     
+    v3.2 ENHANCEMENTS:
+    - Passes MIM decision to profile builder for integration
+    - Enforces single immutable MIM decision (via mim_decision_id)
+    - Logs profile-MIM agreement/disagreement
+    - Tracks profile_updated_after_submission metric
+    
     ALWAYS RUNS - No budget skipping.
     Extracts patterns from RAG memory WITHOUT LLM calls:
     - Common mistakes (keyword matching)
@@ -495,14 +551,28 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
     _log_budget_status(state, "build_user_profile")
     
     start = time.time()
-    _vprint(f"\n👤 [USER PROFILE] Building from {len(state.get('user_memory', []))} memory chunks...")
+    _vprint(f"\n👤 [USER PROFILE v3.2] Building from {len(state.get('user_memory', []))} memory chunks...")
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # v3.2: ENFORCE SINGLE IMMUTABLE MIM DECISION
+    # If MIM decision already has an ID, it must not be re-generated
+    # ═══════════════════════════════════════════════════════════════════════════════
+    mim_decision = state.get("mim_decision")
+    existing_mim_id = None
+    
+    if mim_decision is not None:
+        existing_mim_id = getattr(mim_decision, '_decision_id', None)
+        if existing_mim_id:
+            _vprint(f"   └─ Using existing MIM decision ID: {existing_mim_id}")
+            logger.info(f"🔒 MIM decision already immutable | id={existing_mim_id}")
     
     try:
         memory_text = "\n".join(state.get("user_memory", []))
         
+        # v3.2: Pass MIM decision to profile builder
         profile = _run_with_timeout(
             build_user_profile,
-            (state["user_id"], memory_text, None, state.get("verdict")),
+            (state["user_id"], memory_text, None, state.get("verdict"), mim_decision),
             timeout_seconds=AGENT_TIME_BUDGETS["build_user_profile"],
             fallback=None,
             agent_name="build_user_profile"
@@ -515,7 +585,7 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
             # VERBOSE LOGGING: Show full user profile details
             # ═══════════════════════════════════════════════════════════════════════════════
             _vprint(f"\n{'='*80}")
-            _vprint(f"👤 [USER PROFILE] Built for user: {state['user_id']}")
+            _vprint(f"👤 [USER PROFILE v3.2] Built for user: {state['user_id']}")
             _vprint(f"{'='*80}")
             _vprint(f"🚩 Common Mistakes ({len(profile.common_mistakes)}):")
             for mistake in profile.common_mistakes:
@@ -530,16 +600,29 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
             _vprint(f"   • Success Rate: {profile.success_rate or 'N/A'}")
             _vprint(f"   • Total Submissions: {profile.total_submissions or 'N/A'}")
             _vprint(f"   • Last Verdict: {profile.last_verdict or 'N/A'}")
+            
+            # v3.2: Show MIM integration status
+            _vprint(f"\n🧠 MIM Integration:")
+            _vprint(f"   • Decision ID: {profile.mim_decision_id or 'N/A'}")
+            _vprint(f"   • Root Cause: {profile.current_mim_root_cause or 'N/A'}")
+            _vprint(f"   • Confidence: {profile.current_mim_confidence:.0%}" if profile.current_mim_confidence else "   • Confidence: N/A")
+            _vprint(f"   • Profile-MIM Agreement: {profile.profile_mim_agreement}")
+            if profile.profile_mim_disagreement_reason:
+                _vprint(f"   ⚠️ Disagreement: {profile.profile_mim_disagreement_reason}")
+            _vprint(f"   • Profile Updated: {profile.profile_updated_after_submission}")
             _vprint(f"{'='*80}\n")
             
-            _vprint(f"✅ [USER PROFILE] Built | mistakes={len(profile.common_mistakes)} | weak_topics={len(profile.weak_topics)}")
-            logger.info(f"✅ User profile built | user={state['user_id']} | mistakes={len(profile.common_mistakes)}")
+            _vprint(f"✅ [USER PROFILE v3.2] Built | mistakes={len(profile.common_mistakes)} | weak_topics={len(profile.weak_topics)} | mim_integrated={profile.mim_decision_id is not None}")
+            logger.info(f"✅ User profile built | user={state['user_id']} | mistakes={len(profile.common_mistakes)} | mim_id={profile.mim_decision_id}")
             
             # Add to agent_results for coordination
             if state.get("agent_results"):
                 state["agent_results"]["user_profile_built"] = True
                 state["agent_results"]["common_mistakes"] = profile.common_mistakes
                 state["agent_results"]["weak_topics"] = profile.weak_topics
+                # v3.2: Track profile update metric
+                state["agent_results"]["profile_updated_after_submission"] = True
+                state["agent_results"]["profile_mim_agreement"] = profile.profile_mim_agreement
         else:
             state["user_profile"] = _get_fallback_profile(state)
             
@@ -554,7 +637,7 @@ def build_user_profile_node(state: MentatSyncState) -> MentatSyncState:
 
 
 def _get_fallback_profile(state: MentatSyncState) -> Dict[str, Any]:
-    """Generate fallback user profile"""
+    """Generate fallback user profile with v3.2 fields"""
     return {
         "user_id": state["user_id"],
         "common_mistakes": [],
@@ -564,7 +647,13 @@ def _get_fallback_profile(state: MentatSyncState) -> Dict[str, Any]:
         "last_verdict": state.get("verdict"),
         "success_rate": None,
         "total_submissions": None,
-        "_source": "fallback"
+        "_source": "fallback",
+        # v3.2 fields
+        "current_mim_root_cause": None,
+        "current_mim_confidence": None,
+        "mim_decision_id": None,
+        "profile_mim_agreement": None,
+        "profile_updated_after_submission": False,
     }
 
 
@@ -803,11 +892,24 @@ def hint_node(state: MentatSyncState) -> MentatSyncState:
     """
     HINT AGENT v3.1: Generate hint using MINIMAL context.
     
+    GUARDRAIL: Skipped for Accepted submissions (no hints needed for success).
+    
     MUST COMPLETE - No budget skipping.
     v3.1: Uses pre-built minimal context for fast execution.
     """
+    # Check orchestrator plan
     if not state["plan"]["run_hint"]:
         _vprint(f"⏭️  [HINT] Skipped by orchestrator plan")
+        return state
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL CHECK: Skip hint for Accepted submissions
+    # ═══════════════════════════════════════════════════════════════════════════════
+    guardrails = state.get("_guardrails", {})
+    if guardrails.get("skip_hint", False):
+        _vprint(f"⏭️ [HINT] SKIPPED by verdict guard (Accepted submission)")
+        logger.info(f"⏭️ Hint skipped | reason=verdict_guard | verdict={state.get('verdict')}")
+        state["improvement_hint"] = None
         return state
     
     _log_budget_status(state, "hint")

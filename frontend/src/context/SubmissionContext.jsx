@@ -11,6 +11,9 @@ import {
 // v3.2: Import event system for cross-component updates
 import { emitSubmissionUpdate } from "../hooks/ai/useAIFeedbackEnhanced";
 
+// v3.3: Import MIM refresh function to update profile after submissions
+import { refreshAllMIMComponents } from "../components/mim";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const initialState = {
@@ -254,6 +257,13 @@ export function SubmissionProvider({ children }) {
         mimInsights: processedFeedback.mimInsights,
         timestamp: Date.now(),
       });
+
+      // v3.3: Refresh MIM profile components after AI feedback received
+      // This ensures profile/recommendations/roadmap update after each submission
+      console.log(
+        "[SubmissionContext] Triggering MIM profile refresh after submission",
+      );
+      setTimeout(() => refreshAllMIMComponents(), 1000);
     }
 
     return submission;
@@ -359,6 +369,12 @@ export function SubmissionProvider({ children }) {
             mimInsights: processedFeedback.mimInsights,
             timestamp: Date.now(),
           });
+
+          // v3.3: Refresh MIM profile components after AI feedback
+          console.log(
+            "[SubmissionContext] Triggering MIM profile refresh after AI feedback",
+          );
+          setTimeout(() => refreshAllMIMComponents(), 1000);
 
           return processedFeedback;
         } else {

@@ -174,19 +174,45 @@ def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackRe
     )
 
     # -------------------------
-    # ACCEPTED → still provide optimization feedback
+    # ACCEPTED → Celebration + Reinforcement (NO DIAGNOSIS)
     # -------------------------
     verdict = (payload.get("verdict") or "").lower()
     if verdict == "accepted":
+        problem = payload.get("problem", {})
+        difficulty = problem.get("difficulty", "Medium") if isinstance(problem, dict) else "Medium"
+        category = payload.get("problem_category", problem.get("category", "General") if isinstance(problem, dict) else "General")
+        canonical_algorithms = problem.get("canonical_algorithms") or problem.get("canonicalAlgorithms") or []
+        
+        # Build celebration message based on difficulty
+        if difficulty == "Easy":
+            celebration = (
+                "Well done! Your solution correctly handles all test cases. "
+                f"This demonstrates solid understanding of {category} fundamentals."
+            )
+        elif difficulty == "Medium":
+            celebration = (
+                "Excellent work! Your solution passed all test cases. "
+                f"Your approach to this {category} problem shows strong problem-solving skills."
+            )
+        else:  # Hard
+            celebration = (
+                "Outstanding! Solving this hard problem demonstrates advanced skills. "
+                f"Your {category} solution is correct and shows deep understanding."
+            )
+        
+        # Pattern confirmation (what they did RIGHT)
+        pattern_note = None
+        if canonical_algorithms:
+            algo_names = [a.replace("_", " ") for a in canonical_algorithms[:2]]
+            pattern_note = f"correct use of {' and '.join(algo_names)}"
+        
         return FeedbackResponse(
-            explanation="Congratulations! Your solution correctly handles all test cases. "
-                       "The approach you used is valid and produces correct results. "
-                       "Consider reviewing the complexity analysis below for potential optimizations.",
-            improvement_hint="Solution is correct. Review complexity for potential optimizations.",
-            detected_pattern=None,
-            complexity_analysis="Analysis not performed for accepted solutions.",
-            edge_cases=None,
-            optimization_tips=None,
+            explanation=celebration,
+            improvement_hint="Solution is correct. Consider exploring similar problems to reinforce these concepts.",
+            detected_pattern=pattern_note,
+            complexity_analysis=None,  # Don't analyze - it's correct
+            edge_cases=None,  # Don't suggest - they handled them
+            optimization_tips=None,  # Optional optimization can be added later
         )
 
     # -------------------------

@@ -51,30 +51,64 @@ def build_feedback_context_focused(
     - MIM root cause & instructions
     - User weak topics (if recurring)
     
+    v3.2: HARDENED null-safety for all optional fields
+    
     Target: ~2500 chars for fast LLM inference
     """
     sections = []
     
-    # 1. PROBLEM ESSENTIALS (constraints + expected approach)
-    if problem_context:
-        constraints = problem_context.get('constraints', 'N/A')[:300]
-        expected = problem_context.get('expected_approach', 'Not specified')[:200]
-        difficulty = problem_context.get('difficulty', 'Medium')
+    # 1. PROBLEM ESSENTIALS (constraints + expected approach) - NULL-SAFE
+    if problem_context and isinstance(problem_context, dict):
+        constraints = str(problem_context.get('constraints') or 'N/A')[:300]
+        expected = str(problem_context.get('expected_approach') or 'Not specified')[:200]
+        difficulty = str(problem_context.get('difficulty') or 'Medium')
         sections.append(f"""PROBLEM:
 Difficulty: {difficulty}
 Constraints: {constraints}
 Expected Approach: {expected}""")
+    else:
+        sections.append("PROBLEM: Context not available - provide generic feedback")
     
-    # 2. MIM INSTRUCTIONS (pre-computed analysis)
-    if mim_decision:
-        recurring_note = ""
-        if mim_decision.feedback_instruction.is_recurring_mistake:
-            recurring_note = f"\n⚠️ RECURRING MISTAKE ({mim_decision.pattern.recurrence_count}x before)"
-        
-        sections.append(f"""MIM DIAGNOSIS:
-Root Cause: {mim_decision.root_cause} (confidence: {mim_decision.root_cause_confidence:.0%})
-Tone: {mim_decision.feedback_instruction.tone}{recurring_note}
-Edge Cases to Check: {', '.join(mim_decision.feedback_instruction.edge_cases_likely[:3])}""")
+    # 2. MIM INSTRUCTIONS (pre-computed analysis) - NULL-SAFE
+    if mim_decision is not None:
+        try:
+            # Safely access nested attributes with defaults
+            root_cause = getattr(mim_decision, 'root_cause', 'unknown') or 'unknown'
+            confidence = getattr(mim_decision, 'root_cause_confidence', 0.0) or 0.0
+            
+            # Safely access feedback_instruction
+            feedback_inst = getattr(mim_decision, 'feedback_instruction', None)
+            tone = 'encouraging'
+            is_recurring = False
+            recurrence_count = 0
+            edge_cases = []
+            
+            if feedback_inst is not None:
+                tone = getattr(feedback_inst, 'tone', 'encouraging') or 'encouraging'
+                is_recurring = getattr(feedback_inst, 'is_recurring_mistake', False) or False
+                recurrence_count = getattr(feedback_inst, 'recurrence_count', 0) or 0
+                edge_cases = getattr(feedback_inst, 'edge_cases_likely', []) or []
+            
+            # Safely access pattern
+            pattern = getattr(mim_decision, 'pattern', None)
+            if pattern is not None and is_recurring:
+                pattern_count = getattr(pattern, 'recurrence_count', recurrence_count) or recurrence_count
+            else:
+                pattern_count = recurrence_count
+            
+            recurring_note = ""
+            if is_recurring:
+                recurring_note = f"\n⚠️ RECURRING MISTAKE ({pattern_count}x before)"
+            
+            edge_cases_str = ', '.join(edge_cases[:3]) if edge_cases else 'Analyze from code'
+            
+            sections.append(f"""MIM DIAGNOSIS:
+Root Cause: {root_cause} (confidence: {confidence:.0%})
+Tone: {tone}{recurring_note}
+Edge Cases to Check: {edge_cases_str}""")
+        except Exception as e:
+            logger.warning(f"Failed to format MIM decision: {e}")
+            sections.append("MIM DIAGNOSIS: Not available")
     
     # 3. USER CODE (with line numbers - ESSENTIAL for specific feedback)
     code = submission.code or ""
@@ -110,19 +144,33 @@ def build_hint_context_minimal(
     Build MINIMAL context for hint_agent.
     
     v3.1: ULTRA-LEAN - hints don't need deep reasoning.
+    v3.2: HARDENED null-safety
     Target: < 500 chars for instant LLM inference
     """
-    if mim_decision:
-        direction = mim_decision.hint_instruction.hint_direction[:150]
-        avoid = ', '.join(mim_decision.hint_instruction.avoid_revealing[:3])
-        return f"""COMPRESS THIS HINT:
+    if mim_decision is not None:
+        try:
+            # Safely access hint_instruction with defaults
+            hint_inst = getattr(mim_decision, 'hint_instruction', None)
+            if hint_inst is not None:
+                direction = str(getattr(hint_inst, 'hint_direction', '') or 'Review your approach')[:150]
+                avoid_list = getattr(hint_inst, 'avoid_revealing', []) or []
+                avoid = ', '.join(avoid_list[:3]) if avoid_list else 'N/A'
+                return f"""COMPRESS THIS HINT:
 Direction: {direction}
 Avoid saying: {avoid}
 
 Output: ONE sentence, max 20 words, starts with action verb."""
+        except Exception as e:
+            logger.warning(f"Failed to format hint context from MIM: {e}")
     
-    # Fallback
-    snippet = (feedback_hint.split('.')[0][:100] + '.') if feedback_hint else "Review approach."
+    # Fallback - NULL-SAFE
+    feedback_hint = feedback_hint or ""
+    if feedback_hint and '.' in feedback_hint:
+        snippet = feedback_hint.split('.')[0][:100] + '.'
+    elif feedback_hint:
+        snippet = feedback_hint[:100]
+    else:
+        snippet = "Review approach."
     return f"""COMPRESS: {snippet}
 Output: ONE sentence, max 20 words."""
 
@@ -135,19 +183,27 @@ def build_learning_context_minimal(
     Build MINIMAL context for learning_agent.
     
     v3.1: Only needs MIM's learning instruction.
+    v3.2: HARDENED null-safety
     Target: < 400 chars
     """
-    if mim_decision:
-        focus = ', '.join(mim_decision.learning_instruction.focus_areas[:3])
-        gap = mim_decision.learning_instruction.skill_gap[:100]
-        return f"""EXPLAIN WHY THESE FOCUS AREAS MATTER:
+    if mim_decision is not None:
+        try:
+            # Safely access learning_instruction with defaults
+            learning_inst = getattr(mim_decision, 'learning_instruction', None)
+            if learning_inst is not None:
+                focus_areas = getattr(learning_inst, 'focus_areas', []) or []
+                focus = ', '.join(focus_areas[:3]) if focus_areas else 'General practice'
+                gap = str(getattr(learning_inst, 'skill_gap', '') or 'Not identified')[:100]
+                return f"""EXPLAIN WHY THESE FOCUS AREAS MATTER:
 Focus Areas: {focus}
 Skill Gap: {gap}
-Category: {problem_category}
+Category: {problem_category or 'General'}
 
 Output: 1-2 sentence rationale connecting focus areas to this mistake."""
+        except Exception as e:
+            logger.warning(f"Failed to format learning context from MIM: {e}")
     
-    return f"""Category: {problem_category}
+    return f"""Category: {problem_category or 'General'}
 Provide generic learning recommendation."""
 
 

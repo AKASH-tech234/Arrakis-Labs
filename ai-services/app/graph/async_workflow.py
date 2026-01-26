@@ -13,15 +13,17 @@ It handles expensive operations that don't need to block the response:
 v3.0 CHANGES:
 - difficulty_agent replaced by MIM difficulty_action (no LLM call)
 - learning_agent receives MIM instructions for focus areas
+- DEDUPE CHECK: Prevents duplicate async runs for same submission
 
 CRITICAL: This workflow NEVER affects user-facing latency.
 """
 
-from typing import TypedDict, Optional, Dict, List, Any
+from typing import TypedDict, Optional, Dict, List, Any, Set
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 import logging
 import traceback
 import time
+from threading import Lock
 
 from langgraph.graph import StateGraph, END
 
@@ -38,6 +40,46 @@ from app.rag.retriever import store_user_feedback
 from app.mim.mim_decision import MIMDecision
 
 logger = logging.getLogger("async_workflow")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ASYNC DEDUPE: Prevent duplicate async runs for same submission
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_processed_submissions: Set[str] = set()
+_processed_lock = Lock()
+_MAX_PROCESSED_CACHE = 1000  # LRU-style cap
+
+
+def _check_and_mark_processed(submission_id: str) -> bool:
+    """
+    Check if this submission was already processed async.
+    
+    Returns:
+        True if already processed (should skip)
+        False if new (proceed with processing)
+    """
+    with _processed_lock:
+        if submission_id in _processed_submissions:
+            logger.warning(f"⚠️ [ASYNC DEDUPE] Submission {submission_id} already processed - SKIPPING")
+            return True
+        
+        # LRU-style cleanup if too large
+        if len(_processed_submissions) >= _MAX_PROCESSED_CACHE:
+            # Remove oldest entries (convert to list, remove first half)
+            old_list = list(_processed_submissions)
+            _processed_submissions.clear()
+            _processed_submissions.update(old_list[_MAX_PROCESSED_CACHE // 2:])
+            logger.info(f"🧹 [ASYNC DEDUPE] Cleaned up processed cache, now {len(_processed_submissions)} entries")
+        
+        _processed_submissions.add(submission_id)
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ASYNC TIME BUDGETS (generous - background processing)
+# v3.0: difficulty no longer needs LLM call
+# ═══════════════════════════════════════════════════════════════════════════════
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -139,8 +181,20 @@ def learning_node(state: AsyncState) -> AsyncState:
     
     RESPECTS orchestrator plan - skips if run_learning is False.
     v3.0: Uses MIM decision for focus areas if available.
+    
+    GUARDRAIL: Checks submission_id dedupe to prevent duplicate processing.
     """
     _init_async_timing(state)
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL: Prevent duplicate async runs for same submission
+    # ═══════════════════════════════════════════════════════════════════════════════
+    submission_id = state.get("submission_id", "")
+    if submission_id and _check_and_mark_processed(submission_id):
+        logger.warning(f"⏭️ [ASYNC] ENTIRE WORKFLOW SKIPPED - duplicate submission_id: {submission_id}")
+        state["learning_recommendation"] = None
+        state["_async_timings"]["learning_agent"] = 0.0
+        return state
     
     # CHECK orchestrator plan - respect the decision
     plan = state.get("plan", {})
@@ -150,7 +204,29 @@ def learning_node(state: AsyncState) -> AsyncState:
         state["_async_timings"]["learning_agent"] = 0.0
         return state
     
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL: For Accepted, use reinforcement mode (no diagnosis)
+    # ═══════════════════════════════════════════════════════════════════════════════
     verdict = state.get("verdict", "").lower()
+    guardrails = state.get("_guardrails", {})
+    
+    if verdict == "accepted" or guardrails.get("skip_learning_diagnosis", False):
+        logger.info(f"🎉 [ASYNC] learning_agent in REINFORCEMENT mode (Accepted submission)")
+        # For accepted, just acknowledge success and recommend next challenges
+        from app.schemas.learning import LearningRecommendation
+        
+        problem = state.get("problem") or {}
+        difficulty = problem.get("difficulty", "Medium") if isinstance(problem, dict) else "Medium"
+        
+        state["learning_recommendation"] = LearningRecommendation(
+            focus_areas=[f"Advanced {state.get('problem_category', 'algorithms')} techniques"],
+            skill_gap="None - solution accepted",
+            exercises=["Try the next challenge in this topic"],
+            summary=f"Great work! Your {difficulty} solution was accepted. Keep building on this momentum."
+        )
+        state["_async_timings"]["learning_agent"] = 0.01
+        return state
+    
     logger.info(f"🧠 [ASYNC] learning_agent v3.0 starting | verdict={verdict}")
     
     # Build enriched context for learning recommendations

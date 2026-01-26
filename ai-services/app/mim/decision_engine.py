@@ -658,9 +658,22 @@ def make_decision(
     """
     Convenience function for workflow integration.
     
+    v3.2: Automatically freezes the decision with a unique ID
+    to enforce single immutable MIM decision per submission.
+    
     Usage:
         from app.mim.decision_engine import make_decision
         decision = make_decision(submission, history, problem, memory, profile)
     """
+    import uuid
+    
     engine = get_decision_engine()
-    return engine.decide(submission, user_history, problem_context, user_memory, user_profile)
+    decision = engine.decide(submission, user_history, problem_context, user_memory, user_profile)
+    
+    # v3.2: Freeze decision with unique ID to enforce immutability
+    decision_id = f"mim_{uuid.uuid4().hex[:12]}"
+    decision.freeze(decision_id)
+    
+    logger.info(f"🔒 MIM decision frozen | id={decision_id} | root_cause={decision.root_cause}")
+    
+    return decision

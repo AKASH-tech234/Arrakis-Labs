@@ -12,6 +12,20 @@ from app.schemas.feedback import FeedbackResponse
 from app.graph.sync_workflow import sync_workflow
 from app.graph.async_workflow import async_workflow
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# GUARDRAILS - Idempotency & Verdict Protection
+# ═══════════════════════════════════════════════════════════════════════════════
+from app.guardrails.idempotency import (
+    is_duplicate_request,
+    mark_request_complete,
+)
+from app.guardrails.verdict_guards import (
+    VerdictGuard,
+    is_success_verdict,
+    get_success_path,
+    create_reinforcement_signal,
+)
+
 # -------------------------
 # Logging - Structured
 # -------------------------
@@ -304,9 +318,52 @@ def generate_ai_feedback(
     - learning
     - difficulty
     - memory storage
+    
+    GUARDRAILS:
+    - Idempotency: Duplicate requests return cached response
+    - Verdict Guards: Accepted submissions skip MIM diagnosis
     """
     start_time = time.time()
     submission_id = f"sub_{uuid.uuid4().hex[:12]}"
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL 1: IDEMPOTENCY - Prevent duplicate request processing
+    # ═══════════════════════════════════════════════════════════════════════════════
+    is_dup, cached_response = is_duplicate_request(
+        user_id=payload.user_id,
+        problem_id=payload.problem_id,
+        verdict=payload.verdict,
+        code=payload.code or "",
+    )
+    
+    if is_dup:
+        if cached_response:
+            print(f"🔄 DUPLICATE REQUEST - returning cached response")
+            log_event("duplicate_request_cached",
+                user_id=payload.user_id,
+                problem_id=payload.problem_id,
+                verdict=payload.verdict
+            )
+            # Convert cached dict to DTO
+            return AIFeedbackDTO(**cached_response)
+        else:
+            # In-flight - return a "processing" response
+            print(f"⏳ DUPLICATE REQUEST - still processing")
+            log_event("duplicate_request_in_flight",
+                user_id=payload.user_id,
+                problem_id=payload.problem_id,
+                verdict=payload.verdict
+            )
+            return AIFeedbackDTO(
+                success=True,
+                verdict=payload.verdict,
+                submission_id=submission_id,
+                hints=[HintLevel(level=1, content="Your submission is being analyzed...", hint_type="conceptual")],
+                explanation="Processing your submission. Results will appear shortly.",
+                detected_pattern=None,
+                mim_insights=None,
+                feedback_type="processing"
+            )
     
     print(f"\n{'='*80}")
     print(f"🎯 NEW FEEDBACK REQUEST")
@@ -326,18 +383,45 @@ def generate_ai_feedback(
         verdict=payload.verdict,
         language=payload.language
     )
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL 2: VERDICT GUARD - Check if this needs full pipeline
+    # ═══════════════════════════════════════════════════════════════════════════════
+    verdict_check = VerdictGuard.check(
+        verdict=payload.verdict,
+        difficulty=payload.problem.get("difficulty", "Medium") if payload.problem else "Medium",
+        has_user_history=False,  # Will be determined by workflow
+    )
+    
+    print(f"🛡️ VERDICT GUARD:")
+    print(f"   └─ Skip MIM: {verdict_check.skip_mim}")
+    print(f"   └─ Skip RAG: {verdict_check.skip_rag}")
+    print(f"   └─ Skip Hint: {verdict_check.skip_hint}")
+    print(f"   └─ Use Success Path: {verdict_check.use_success_path}")
+    print(f"   └─ Rationale: {verdict_check.rationale}")
 
     try:
         # -------------------------
-        # Build initial state
+        # Build initial state with guardrail flags
         # -------------------------
         state: Dict[str, Any] = payload.model_dump()
         state["submission_id"] = submission_id
         
+        # Pass guardrail decisions to workflow
+        state["_guardrails"] = {
+            "skip_mim": verdict_check.skip_mim,
+            "skip_rag": verdict_check.skip_rag,
+            "skip_hint": verdict_check.skip_hint,
+            "use_success_path": verdict_check.use_success_path,
+            "create_reinforcement": verdict_check.create_reinforcement,
+        }
+        
         print(f"🔄 Starting SYNC workflow...")
         log_event("workflow_starting",
             submission_id=submission_id,
-            workflow="sync"
+            workflow="sync",
+            skip_mim=verdict_check.skip_mim,
+            skip_rag=verdict_check.skip_rag
         )
 
         # -------------------------
@@ -458,6 +542,17 @@ def generate_ai_feedback(
             verdict=payload.verdict,
             hint_count=len(hints),
             total_time_seconds=round(time.time() - start_time, 2)
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # GUARDRAIL: Cache response for idempotency
+        # ═══════════════════════════════════════════════════════════════════════════════
+        mark_request_complete(
+            user_id=payload.user_id,
+            problem_id=payload.problem_id,
+            verdict=payload.verdict,
+            code=payload.code or "",
+            response=response.model_dump()
         )
         
         return response
