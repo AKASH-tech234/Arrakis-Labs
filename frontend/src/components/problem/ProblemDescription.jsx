@@ -12,6 +12,13 @@ import { formatExampleInput } from "../../utils/formatExampleInput";
 export default function ProblemDescription({ problem }) {
   const [showHints, setShowHints] = useState(false);
 
+  const inputFormatText =
+    problem?.inputFormat ||
+    "The input consists of one or more lines. Each line represents one input parameter.";
+
+  const outputFormatText =
+    problem?.outputFormat || "Print the required result to standard output.";
+
   const displayId =
     problem?.externalId ||
     (typeof problem?.id === "string" && problem.id.length > 8
@@ -113,6 +120,28 @@ export default function ProblemDescription({ problem }) {
           ))}
         </>
       )}
+
+      <>
+        <h3 className="text-[#78716C] text-[10px] uppercase mt-8 mb-3">
+          Input Format
+        </h3>
+        <div
+          className="text-[#E8E4D9] text-sm"
+          style={{ fontFamily: "JetBrains Mono, monospace" }}
+        >
+          {inputFormatText}
+        </div>
+
+        <h3 className="text-[#78716C] text-[10px] uppercase mt-6 mb-3">
+          Output Format
+        </h3>
+        <div
+          className="text-[#E8E4D9] text-sm"
+          style={{ fontFamily: "JetBrains Mono, monospace" }}
+        >
+          {outputFormatText}
+        </div>
+      </>
 
       {/* AI Hints Section - Collapsible */}
       {(problem?.topic ||

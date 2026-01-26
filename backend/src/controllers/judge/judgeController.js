@@ -4,6 +4,7 @@ import Question from "../../models/question/Question.js";
 import TestCase from "../../models/question/TestCase.js";
 import Submission from "../../models/profile/Submission.js";
 import { compareOutputs } from "../../utils/stdinConverter.js";
+import { inferIOFormatsFromTestCases } from "../../utils/ioFormatInference.js";
 import {
   getAIFeedback,
   buildUserHistorySummary,
@@ -728,10 +729,24 @@ export const getPublicQuestion = async (req, res) => {
       .sort({ order: 1 })
       .select("stdin expectedStdout label");
 
+    const allTestCasesForFormat = await TestCase.find({
+      questionId: req.params.id,
+      isActive: true,
+    })
+      .sort({ order: 1 })
+      .select("stdin expectedStdout")
+      .lean();
+
+    const { inputFormat, outputFormat } = inferIOFormatsFromTestCases(
+      allTestCasesForFormat,
+    );
+
     res.status(200).json({
       success: true,
       data: {
         ...question,
+        inputFormat,
+        outputFormat,
         testCases: visibleTestCases.map((tc) => ({
           label: tc.label,
           stdin: tc.stdin,

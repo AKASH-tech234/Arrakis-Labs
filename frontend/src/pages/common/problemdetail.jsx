@@ -147,6 +147,9 @@ export default function ProblemDetail() {
       category,
       description: problemRaw.description,
 
+      inputFormat: problemRaw.inputFormat || null,
+      outputFormat: problemRaw.outputFormat || null,
+
       constraints: Array.isArray(problemRaw.constraints)
         ? problemRaw.constraints
         : [],

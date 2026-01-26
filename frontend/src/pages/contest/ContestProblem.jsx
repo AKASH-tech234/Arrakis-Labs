@@ -482,6 +482,20 @@ export default function ContestProblem() {
                 {problem?.description}
               </div>
 
+              <div className="mt-6">
+                <h3 className="text-white font-medium mb-2">Input Format</h3>
+                <pre className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap">
+                {problem?.inputFormat || "The input consists of one or more lines. Each line represents one input parameter."}
+                </pre>
+              </div>
+
+              <div className="mt-6">
+                <h3 className="text-white font-medium mb-2">Output Format</h3>
+                <pre className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap">
+                {problem?.outputFormat || "Print the required result to standard output."}
+                </pre>
+              </div>
+
               {problem?.constraints && (
                 <div className="mt-6">
                   <h3 className="text-white font-medium mb-2">Constraints</h3>

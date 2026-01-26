@@ -338,5 +338,110 @@
     "agent": "learning_agent",
     "elapsed_seconds": 1.58,
     "timestamp": 1769428950
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 6.01,
+    "timestamp": 1769435173
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.67,
+    "timestamp": 1769435178
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 4.54,
+    "timestamp": 1769435182
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 5.62,
+    "timestamp": 1769435373
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.78,
+    "timestamp": 1769435378
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 5.48,
+    "timestamp": 1769435384
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 7.25,
+    "timestamp": 1769442938
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.36,
+    "timestamp": 1769442943
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 5.17,
+    "timestamp": 1769442948
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 8.11,
+    "timestamp": 1769443040
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.36,
+    "timestamp": 1769443044
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 4.85,
+    "timestamp": 1769443049
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 5.97,
+    "timestamp": 1769443140
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.51,
+    "timestamp": 1769443145
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 5.18,
+    "timestamp": 1769443150
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 8.32,
+    "timestamp": 1769443234
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.6,
+    "timestamp": 1769443239
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 5.94,
+    "timestamp": 1769443245
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 6.17,
+    "timestamp": 1769443328
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.53,
+    "timestamp": 1769443333
+  },
+  {
+    "agent": "learning_agent",
+    "elapsed_seconds": 5.58,
+    "timestamp": 1769443338
   }
 ]
