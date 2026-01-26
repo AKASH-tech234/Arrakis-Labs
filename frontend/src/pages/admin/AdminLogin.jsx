@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { Shield, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 
@@ -14,8 +15,9 @@ const AdminLogin = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A08]">
+        <Loader2 className="h-10 w-10 animate-spin text-[#D97706]" />
+        <p className="text-[#78716C] mt-4">Loading...</p>
       </div>
     );
   }
@@ -47,55 +49,79 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="w-full max-w-md px-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A08]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      {}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#D97706]/3 rounded-full blur-3xl" />
+      </div>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md px-6 relative z-10"
+      >
         {}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/20 mb-4">
-            <Shield className="h-8 w-8 text-orange-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Admin Portal</h1>
-          <p className="text-gray-400 mt-2">Arrakis Labs Management Console</p>
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#D97706]/20 to-[#D97706]/5 border border-[#D97706]/30 mb-6 shadow-lg shadow-[#D97706]/10"
+          >
+            <Shield className="h-10 w-10 text-[#D97706]" />
+          </motion.div>
+          <h1 className="text-3xl font-bold text-[#E8E4D9] uppercase tracking-wider">Admin Portal</h1>
+          <p className="text-[#78716C] mt-2">Mentat Trials Management Console</p>
         </div>
 
         {}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-[#0F0F0D] backdrop-blur-sm rounded-2xl border border-[#1A1814] p-8 shadow-2xl"
+        >
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400"
+              >
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <span className="text-sm">{error}</span>
-              </div>
+              </motion.div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-semibold text-[#78716C] mb-2 uppercase tracking-wide">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#78716C]" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="admin@arrakis.dev"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-[#0A0A08] border border-[#1A1814] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-[#D97706]/50 transition-all"
+                  placeholder="admin@mentat.dev"
                   autoComplete="email"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-semibold text-[#78716C] mb-2 uppercase tracking-wide">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#78716C]" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-[#0A0A08] border border-[#1A1814] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-[#D97706]/50 transition-all"
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
@@ -105,7 +131,7 @@ const AdminLogin = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium hover:from-orange-600 hover:to-amber-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#D97706] to-amber-600 text-white font-semibold uppercase tracking-wider hover:from-[#D97706]/90 hover:to-amber-600/90 focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:ring-offset-2 focus:ring-offset-[#0F0F0D] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-[#D97706]/20"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -118,25 +144,30 @@ const AdminLogin = () => {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-700">
-            <p className="text-center text-sm text-gray-500">
+          <div className="mt-6 pt-6 border-t border-[#1A1814]">
+            <p className="text-center text-sm text-[#78716C]">
               Admin accounts are created via seed scripts only.
               <br />
               Contact your system administrator for access.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {}
-        <div className="mt-6 text-center">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 text-center"
+        >
           <a
             href="/"
-            className="text-gray-400 hover:text-white text-sm transition-colors"
+            className="text-[#78716C] hover:text-[#D97706] text-sm transition-colors font-medium"
           >
             ← Back to main site
           </a>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
