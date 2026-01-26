@@ -70,6 +70,9 @@ async function importQuestionData() {
         // Build update object (only non-FILL_ME values)
         const updateFields = {};
 
+        if (toFill.categoryType && toFill.categoryType !== "FILL_ME") {
+          updateFields.categoryType = toFill.categoryType;
+        }
         if (toFill.topic && toFill.topic !== "FILL_ME") {
           updateFields.topic = toFill.topic;
         }
@@ -156,7 +159,7 @@ async function importQuestionData() {
           await Submission.findByIdAndUpdate(sub._id, {
             $set: {
               problemCategory:
-                question.topic || question.tags?.[0] || "General",
+                question.categoryType || question.topic || question.tags?.[0] || "General",
               problemDifficulty: question.difficulty,
               problemTags: question.tags || [],
             },
