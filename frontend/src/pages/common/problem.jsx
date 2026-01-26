@@ -43,8 +43,7 @@ export default function ProblemLibrary() {
 
         const { questions } = await getPublicQuestions({ limit: 1000 });
         const mapped = (questions || []).map((q) => {
-          const category =
-            Array.isArray(q.tags) && q.tags.length > 0 ? q.tags[0] : "General";
+          const category = q.categoryType || "Unknown";
           return {
             id: q._id,
             title: q.title,

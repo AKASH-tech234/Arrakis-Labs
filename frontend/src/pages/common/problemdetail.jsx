@@ -137,10 +137,7 @@ export default function ProblemDetail() {
   const problem = useMemo(() => {
     if (!problemRaw) return defaultProblem;
 
-    const category =
-      Array.isArray(problemRaw.tags) && problemRaw.tags.length > 0
-        ? problemRaw.tags[0]
-        : "General";
+    const category = problemRaw.categoryType || "Unknown";
 
     return {
       id: problemRaw._id,
