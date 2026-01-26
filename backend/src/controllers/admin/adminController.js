@@ -140,50 +140,84 @@ export const getAdminProfile = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    // Fixed import paths (v3.2)
+    // Import all required models
     const Question = (await import("../../models/question/Question.js"))
       .default;
     const TestCase = (await import("../../models/question/TestCase.js"))
       .default;
     const Submission = (await import("../../models/profile/Submission.js"))
       .default;
+    const User = (await import("../../models/auth/User.js")).default;
 
+    // Fetch all stats in parallel for performance
     const [
       totalQuestions,
       totalTestCases,
       hiddenTestCases,
       totalSubmissions,
-      recentQuestions,
+      totalUsers,
+      difficultyStats,
+      submissionStatusStats,
     ] = await Promise.all([
       Question.countDocuments({ isActive: true }),
       TestCase.countDocuments({ isActive: true }),
       TestCase.countDocuments({ isActive: true, isHidden: true }),
       Submission.countDocuments(),
-      Question.find({ isActive: true })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("title difficulty createdAt"),
+      User.countDocuments(),
+      Question.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: "$difficulty", count: { $sum: 1 } } },
+      ]),
+      Submission.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
     ]);
 
-    const difficultyStats = await Question.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: "$difficulty", count: { $sum: 1 } } },
-    ]);
+    // Transform difficulty stats to object
+    const byDifficulty = difficultyStats.reduce((acc, curr) => {
+      if (curr._id) {
+        acc[curr._id] = curr.count;
+      }
+      return acc;
+    }, { Easy: 0, Medium: 0, Hard: 0 });
 
+    // Transform submission status stats to object
+    const byStatus = submissionStatusStats.reduce((acc, curr) => {
+      if (curr._id) {
+        acc[curr._id] = curr.count;
+      }
+      return acc;
+    }, { 
+      accepted: 0, 
+      wrong_answer: 0, 
+      time_limit_exceeded: 0,
+      memory_limit_exceeded: 0,
+      runtime_error: 0,
+      compile_error: 0,
+      pending: 0,
+      running: 0,
+      internal_error: 0
+    });
+
+    // Return data in the format frontend expects
     res.status(200).json({
       success: true,
-      stats: {
-        totalQuestions,
-        totalTestCases,
-        hiddenTestCases,
-        visibleTestCases: totalTestCases - hiddenTestCases,
-        totalSubmissions,
-        difficultyDistribution: difficultyStats.reduce((acc, curr) => {
-          acc[curr._id] = curr.count;
-          return acc;
-        }, {}),
+      data: {
+        questions: {
+          total: totalQuestions,
+          byDifficulty,
+        },
+        testCases: {
+          total: totalTestCases,
+          hidden: hiddenTestCases,
+          visible: totalTestCases - hiddenTestCases,
+        },
+        submissions: {
+          total: totalSubmissions,
+          byStatus,
+        },
+        users: totalUsers,
       },
-      recentQuestions,
     });
   } catch (error) {
     console.error("[Dashboard Stats Error]:", error.message);

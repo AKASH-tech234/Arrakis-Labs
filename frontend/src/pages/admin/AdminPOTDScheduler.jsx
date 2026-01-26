@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   Calendar,
   ChevronLeft,
@@ -13,6 +14,7 @@ import {
   Lock,
   AlertCircle,
   RefreshCw,
+  X,
 } from "lucide-react";
 import {
   getScheduledPOTDs,
@@ -212,13 +214,13 @@ export default function AdminPOTDScheduler() {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Easy":
-        return "text-green-400 bg-green-400/10 border-green-400/30";
+        return "text-[#78716C] bg-[#78716C]/10 border border-[#78716C]/30";
       case "Medium":
-        return "text-yellow-400 bg-yellow-400/10 border-yellow-400/30";
+        return "text-[#D97706] bg-[#D97706]/10 border border-[#D97706]/30";
       case "Hard":
-        return "text-red-400 bg-red-400/10 border-red-400/30";
+        return "text-[#92400E] bg-[#92400E]/10 border border-[#92400E]/30";
       default:
-        return "text-gray-400 bg-gray-400/10 border-gray-400/30";
+        return "text-[#78716C] bg-[#78716C]/10 border border-[#78716C]/30";
     }
   };
 
@@ -232,27 +234,27 @@ export default function AdminPOTDScheduler() {
     const isPast = cellDate < today;
     const isLocked = schedule?.isLocked;
 
-    let bgColor = "bg-gray-800/30 hover:bg-gray-700/50 cursor-pointer";
+    let bgColor = "bg-[#0F0F0D] hover:bg-[#1A1814]/70 cursor-pointer border-[#1A1814]";
     let statusIcon = null;
 
     if (schedule) {
       if (schedule.status === "published") {
-        bgColor = "bg-green-500/20 border-green-500/50";
-        statusIcon = <CheckCircle className="w-4 h-4 text-green-400" />;
+        bgColor = "bg-emerald-500/10 border-emerald-500/40";
+        statusIcon = <CheckCircle className="w-4 h-4 text-emerald-400" />;
       } else if (schedule.status === "today") {
-        bgColor = "bg-orange-500/20 border-orange-500/50";
-        statusIcon = <Clock className="w-4 h-4 text-orange-400" />;
+        bgColor = "bg-[#D97706]/10 border-[#D97706]/40";
+        statusIcon = <Clock className="w-4 h-4 text-[#D97706]" />;
       } else if (schedule.status === "scheduled") {
-        bgColor = "bg-blue-500/20 border-blue-500/50";
+        bgColor = "bg-blue-500/10 border-blue-500/40";
         statusIcon = <Calendar className="w-4 h-4 text-blue-400" />;
       } else if (schedule.status === "missed") {
-        bgColor = "bg-red-500/20 border-red-500/50";
+        bgColor = "bg-red-500/10 border-red-500/40";
         statusIcon = <AlertCircle className="w-4 h-4 text-red-400" />;
       }
     }
 
     if (isPast && !schedule) {
-      bgColor = "bg-gray-900/50 cursor-not-allowed opacity-50";
+      bgColor = "bg-[#0A0A08] cursor-not-allowed opacity-40 border-[#1A1814]";
     }
 
     if (isLocked) {
@@ -260,34 +262,37 @@ export default function AdminPOTDScheduler() {
     }
 
     return (
-      <div
+      <motion.div
         key={day}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: day * 0.01 }}
         onClick={() => handleDayClick(day)}
-        className={`min-h-[100px] p-2 rounded-lg border ${bgColor} ${
-          isToday ? "ring-2 ring-orange-500" : "border-gray-700"
+        className={`min-h-[100px] p-2 rounded-xl border ${bgColor} ${
+          isToday ? "ring-2 ring-[#D97706] ring-offset-1 ring-offset-[#0A0A08]" : ""
         } transition-all duration-200`}
       >
         <div className="flex items-center justify-between mb-1">
           <span
-            className={`text-sm font-medium ${
-              isToday ? "text-orange-400" : "text-gray-400"
+            className={`text-sm font-semibold ${
+              isToday ? "text-[#D97706]" : "text-[#78716C]"
             }`}
           >
             {day}
           </span>
           <div className="flex items-center gap-1">
-            {isLocked && <Lock className="w-3 h-3 text-gray-500" />}
+            {isLocked && <Lock className="w-3 h-3 text-[#78716C]" />}
             {statusIcon}
           </div>
         </div>
 
         {schedule && (
           <div className="mt-1">
-            <p className="text-xs text-white truncate font-medium">
+            <p className="text-xs text-[#E8E4D9] truncate font-medium">
               {schedule.problem?.title || "Unknown"}
             </p>
             <span
-              className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] ${getDifficultyColor(
+              className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${getDifficultyColor(
                 schedule.problem?.difficulty
               )}`}
             >
@@ -299,14 +304,14 @@ export default function AdminPOTDScheduler() {
                   e.stopPropagation();
                   handleDelete(schedule._id);
                 }}
-                className="mt-1 p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded"
+                className="mt-1 p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
             )}
           </div>
         )}
-      </div>
+      </motion.div>
     );
   };
 
@@ -318,33 +323,36 @@ export default function AdminPOTDScheduler() {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="p-6">
+    <div className="p-6 min-h-screen" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
       {}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-orange-500" />
-            POTD Scheduler
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Schedule Problem of the Day for upcoming dates
-          </p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gradient-to-b from-[#D97706] to-[#D97706]/20 rounded-full" />
+          <div>
+            <h1 className="text-2xl font-bold text-[#E8E4D9] uppercase tracking-wider flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-[#D97706]" />
+              POTD Scheduler
+            </h1>
+            <p className="text-sm text-[#78716C]">
+              Schedule Problem of the Day for upcoming dates
+            </p>
+          </div>
         </div>
 
         {}
         <div className="flex items-center gap-4">
           {schedulerStatus && (
-            <div className="text-sm text-gray-400">
+            <div className="text-sm">
               <span
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium ${
                   schedulerStatus.cronJobActive
-                    ? "bg-green-500/20 text-green-400"
-                    : "bg-red-500/20 text-red-400"
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : "bg-red-500/10 text-red-400 border border-red-500/30"
                 }`}
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    schedulerStatus.cronJobActive ? "bg-green-400" : "bg-red-400"
+                    schedulerStatus.cronJobActive ? "bg-emerald-400 animate-pulse" : "bg-red-400"
                   }`}
                 ></span>
                 Cron {schedulerStatus.cronJobActive ? "Active" : "Inactive"}
@@ -353,7 +361,7 @@ export default function AdminPOTDScheduler() {
           )}
           <button
             onClick={handleForcePublish}
-            className="flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#D97706]/10 text-[#D97706] hover:bg-[#D97706]/20 rounded-lg text-sm transition-colors border border-[#D97706]/30 font-medium"
           >
             <RefreshCw className="w-4 h-4" />
             Force Publish Today
@@ -364,59 +372,60 @@ export default function AdminPOTDScheduler() {
       {}
       <div className="flex items-center gap-6 mb-6 text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-green-500/30 border border-green-500/50"></div>
-          <span className="text-gray-400">Published</span>
+          <div className="w-4 h-4 rounded bg-emerald-500/20 border border-emerald-500/40"></div>
+          <span className="text-[#78716C]">Published</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-orange-500/30 border border-orange-500/50"></div>
-          <span className="text-gray-400">Today</span>
+          <div className="w-4 h-4 rounded bg-[#D97706]/20 border border-[#D97706]/40"></div>
+          <span className="text-[#78716C]">Today</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-blue-500/30 border border-blue-500/50"></div>
-          <span className="text-gray-400">Scheduled</span>
+          <div className="w-4 h-4 rounded bg-blue-500/20 border border-blue-500/40"></div>
+          <span className="text-[#78716C]">Scheduled</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-red-500/30 border border-red-500/50"></div>
-          <span className="text-gray-400">Missed</span>
+          <div className="w-4 h-4 rounded bg-red-500/20 border border-red-500/40"></div>
+          <span className="text-[#78716C]">Missed</span>
         </div>
         <div className="flex items-center gap-2">
-          <Lock className="w-4 h-4 text-gray-500" />
-          <span className="text-gray-400">Locked</span>
+          <Lock className="w-4 h-4 text-[#78716C]" />
+          <span className="text-[#78716C]">Locked</span>
         </div>
       </div>
 
       {}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6 bg-[#0F0F0D] rounded-xl border border-[#1A1814] p-4">
         <button
           onClick={handlePrevMonth}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          className="p-2 hover:bg-[#1A1814] rounded-lg transition-colors text-[#78716C] hover:text-[#E8E4D9]"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-400" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="text-xl font-semibold text-white">
+        <span className="text-xl font-bold text-[#E8E4D9] uppercase tracking-wider">
           {monthNames[month]} {year}
         </span>
         <button
           onClick={handleNextMonth}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          className="p-2 hover:bg-[#1A1814] rounded-lg transition-colors text-[#78716C] hover:text-[#E8E4D9]"
         >
-          <ChevronRight className="w-5 h-5 text-gray-400" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
       {}
       {loading ? (
-        <div className="h-96 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <div className="h-96 flex flex-col items-center justify-center bg-[#0F0F0D] rounded-xl border border-[#1A1814]">
+          <Loader2 className="w-10 h-10 animate-spin text-[#D97706]" />
+          <p className="text-[#78716C] mt-4">Loading schedule...</p>
         </div>
       ) : (
-        <>
+        <div className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] p-4">
           {}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {dayNames.map((day) => (
               <div
                 key={day}
-                className="text-center text-sm font-medium text-gray-500 py-2"
+                className="text-center text-sm font-semibold text-[#78716C] py-2 uppercase tracking-wider"
               >
                 {day}
               </div>
@@ -432,48 +441,52 @@ export default function AdminPOTDScheduler() {
               renderDay(index + 1)
             )}
           </div>
-        </>
+        </div>
       )}
 
       {}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+          >
             {}
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-[#E8E4D9] uppercase tracking-wide">
                 Schedule POTD for{" "}
-                {selectedDate?.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                <span className="text-[#D97706]">
+                  {selectedDate?.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="p-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814] rounded-lg transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {}
             <div className="flex gap-3 mb-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" />
                 <input
                   type="text"
                   placeholder="Search problems..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A08] border border-[#1A1814] rounded-lg text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-1 focus:ring-[#D97706]/30 transition-all"
                 />
               </div>
               <select
                 value={difficultyFilter}
                 onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                className="px-4 py-2.5 bg-[#0A0A08] border border-[#1A1814] rounded-lg text-[#E8E4D9] focus:outline-none focus:border-[#D97706]/50"
               >
                 <option value="">All Difficulties</option>
                 <option value="Easy">Easy</option>
@@ -483,32 +496,34 @@ export default function AdminPOTDScheduler() {
             </div>
 
             {}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4 max-h-[300px]">
               {problemsLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[#D97706]" />
                 </div>
               ) : problems.length === 0 ? (
-                <div className="text-center text-gray-400 py-8">
+                <div className="text-center text-[#78716C] py-8">
                   No problems found
                 </div>
               ) : (
                 problems.map((problem) => (
-                  <div
+                  <motion.div
                     key={problem._id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
                     onClick={() => setSelectedProblem(problem)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedProblem?._id === problem._id
-                        ? "border-orange-500 bg-orange-500/10"
-                        : "border-gray-700 bg-gray-700/30 hover:border-gray-600"
+                        ? "border-[#D97706] bg-[#D97706]/10"
+                        : "border-[#1A1814] bg-[#0A0A08] hover:border-[#D97706]/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-white font-medium">{problem.title}</p>
+                        <p className="text-[#E8E4D9] font-medium">{problem.title}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span
-                            className={`px-2 py-0.5 rounded text-xs ${getDifficultyColor(
+                            className={`px-2 py-0.5 rounded-lg text-xs font-medium ${getDifficultyColor(
                               problem.difficulty
                             )}`}
                           >
@@ -517,7 +532,7 @@ export default function AdminPOTDScheduler() {
                           {problem.tags?.slice(0, 3).map((tag) => (
                             <span
                               key={tag}
-                              className="px-2 py-0.5 rounded text-xs bg-gray-600 text-gray-300"
+                              className="px-2 py-0.5 rounded-lg text-xs bg-[#1A1814] text-[#78716C]"
                             >
                               {tag}
                             </span>
@@ -525,43 +540,43 @@ export default function AdminPOTDScheduler() {
                         </div>
                       </div>
                       {problem.lastUsedAsPOTD && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-[#78716C]">
                           Last used:{" "}
                           {new Date(problem.lastUsedAsPOTD).toLocaleDateString()}
                         </span>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 ))
               )}
             </div>
 
             {}
             <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-[#78716C] mb-1.5 uppercase tracking-wide">
                 Notes (optional)
               </label>
               <textarea
                 value={scheduleNotes}
                 onChange={(e) => setScheduleNotes(e.target.value)}
                 placeholder="Add notes about why this problem was selected..."
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 resize-none"
+                className="w-full px-3 py-2.5 bg-[#0A0A08] border border-[#1A1814] rounded-lg text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 resize-none"
                 rows={2}
               />
             </div>
 
             {}
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#1A1814]">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                className="px-4 py-2.5 text-[#78716C] hover:text-[#E8E4D9] transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSchedule}
                 disabled={!selectedProblem || saving}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#D97706] to-amber-600 hover:from-[#D97706]/90 hover:to-amber-600/90 disabled:from-[#1A1814] disabled:to-[#1A1814] disabled:cursor-not-allowed text-white rounded-lg transition-all font-medium shadow-lg shadow-[#D97706]/20 disabled:shadow-none"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -571,7 +586,7 @@ export default function AdminPOTDScheduler() {
                 Schedule POTD
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
