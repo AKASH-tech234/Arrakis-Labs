@@ -211,7 +211,13 @@ def apply_mim_decision_to_profile(
     """
     Apply MIM decision deltas to cognitive profile.
     
-    INCREMENTS counters, doesn't replace:
+    v3.2 FIX: For ACCEPTED verdicts, this is a REINFORCEMENT signal:
+    - Do NOT increment mistake_counts
+    - Do NOT increment weak_topics
+    - Only update success metrics and readiness scores positively
+    
+    For FAILURES:
+    - INCREMENTS counters, doesn't replace:
     - mistake_counts[root_cause] += 1
     - weak_topics[topic] += 1 (for user_weak_topics)
     - patterns[pattern_name] += recurrence_count
@@ -224,6 +230,39 @@ def apply_mim_decision_to_profile(
     Returns:
         Updated profile dict (NOT saved yet - caller should save)
     """
+    is_accepted = verdict.lower() == "accepted"
+    
+    # Update submission counts FIRST (always)
+    profile["total_submissions_processed"] = profile.get("total_submissions_processed", 0) + 1
+    
+    if is_accepted:
+        profile["total_correct"] = profile.get("total_correct", 0) + 1
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # REINFORCEMENT PATH - Accepted submissions
+        # SUCCESS ≠ DIAGNOSIS: Only positive updates
+        # ═══════════════════════════════════════════════════════════════════════════════
+        logger.info(f"🎉 [PROFILE] Reinforcement mode - Accepted verdict, no negative signals")
+        
+        # Boost readiness scores for the problem's difficulty
+        if mim_decision:
+            diff_action = getattr(mim_decision, 'difficulty_action', None)
+            if diff_action:
+                target_diff = getattr(diff_action, 'target_difficulty', None)
+                if target_diff and "readiness_scores" in profile:
+                    # BOOST readiness (success increases confidence)
+                    existing = profile["readiness_scores"].get(target_diff, 0.5)
+                    profile["readiness_scores"][target_diff] = min(1.0, round(existing + 0.05, 2))
+                    logger.info(f"📈 Readiness boost for {target_diff}: {existing} → {profile['readiness_scores'][target_diff]}")
+        
+        return profile
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # FAILURE PATH - Wrong Answer / TLE / RE etc.
+    # Apply diagnostic signals
+    # ═══════════════════════════════════════════════════════════════════════════════
+    profile["total_incorrect"] = profile.get("total_incorrect", 0) + 1
+    
     if mim_decision is None:
         return profile
     
@@ -238,7 +277,7 @@ def apply_mim_decision_to_profile(
         if root_cause:
             profile["last_mim_root_cause"] = root_cause
             
-            # Increment mistake count for this root cause
+            # Increment mistake count for this root cause (FAILURES ONLY)
             if "mistake_counts" not in profile:
                 profile["mistake_counts"] = {}
             profile["mistake_counts"][root_cause] = profile["mistake_counts"].get(root_cause, 0) + 1
@@ -250,7 +289,7 @@ def apply_mim_decision_to_profile(
         if confidence is not None:
             profile["last_mim_confidence"] = confidence
         
-        # Update weak topics from MIM
+        # Update weak topics from MIM (FAILURES ONLY)
         weak_topics = getattr(mim_decision, 'user_weak_topics', []) or []
         if weak_topics:
             if "weak_topics" not in profile:
@@ -258,7 +297,7 @@ def apply_mim_decision_to_profile(
             for topic in weak_topics:
                 profile["weak_topics"][topic] = profile["weak_topics"].get(topic, 0) + 1
         
-        # Update patterns from MIM
+        # Update patterns from MIM (FAILURES ONLY)
         pattern = getattr(mim_decision, 'pattern', None)
         if pattern:
             pattern_name = getattr(pattern, 'pattern_name', None)
@@ -284,7 +323,7 @@ def apply_mim_decision_to_profile(
         if velocity:
             profile["learning_velocity"] = velocity
         
-        # Update readiness from difficulty action
+        # Update readiness from difficulty action (may decrease for failures)
         diff_action = getattr(mim_decision, 'difficulty_action', None)
         if diff_action:
             target_diff = getattr(diff_action, 'target_difficulty', None)
@@ -305,14 +344,6 @@ def apply_mim_decision_to_profile(
             focus_areas = getattr(learning_inst, 'focus_areas', []) or []
             if focus_areas:
                 profile["focus_areas"] = focus_areas[:5]  # Keep top 5
-        
-        # Update submission counts
-        profile["total_submissions_processed"] = profile.get("total_submissions_processed", 0) + 1
-        
-        if verdict.lower() == "accepted":
-            profile["total_correct"] = profile.get("total_correct", 0) + 1
-        else:
-            profile["total_incorrect"] = profile.get("total_incorrect", 0) + 1
         
         logger.info(
             f"✅ Applied MIM decision to profile | "

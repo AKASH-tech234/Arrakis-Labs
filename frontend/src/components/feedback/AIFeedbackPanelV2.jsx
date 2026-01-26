@@ -11,6 +11,84 @@ const HINT_COLORS = {
   pattern: { bg: "#EC4899", text: "#FCE7F3", label: "Pattern" },
 };
 
+// v3.3: Code block component for displaying correct code
+function CodeBlock({ code, language, onCopy }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      if (onCopy) onCopy();
+    } catch (err) {
+      console.error("Failed to copy code:", err);
+    }
+  };
+
+  return (
+    <div className="relative border border-[#3D3D3D]/50 bg-[#0D0D0B] rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#3D3D3D]/30 bg-[#1A1814]">
+        <span
+          className="text-[#78716C] text-[10px] uppercase tracking-wider"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          {language || "Solution"}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-2 py-1 text-[10px] uppercase tracking-wider text-[#78716C] hover:text-[#22C55E] transition-colors"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          {copied ? (
+            <>
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              Copy
+            </>
+          )}
+        </button>
+      </div>
+      <pre className="p-3 overflow-x-auto">
+        <code
+          className="text-[#E8E4D9] text-xs leading-relaxed"
+          style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}
+        >
+          {code}
+        </code>
+      </pre>
+    </div>
+  );
+}
+
 function VerdictBadge({ verdict }) {
   const configs = {
     accepted: { bg: "#22C55E", text: "Accepted", icon: "✓" },
@@ -405,50 +483,157 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Full Explanation Toggle */}
-                {feedback.hasExplanation && !hasMoreHints && (
-                  <div className="pt-4 border-t border-[#1A1814]">
-                    <RevealButton
-                      label={
-                        showFullExplanation
-                          ? "Hide full explanation"
-                          : "Show full explanation"
-                      }
-                      onClick={onToggleExplanation}
-                      variant="secondary"
-                    />
+                {/* Full Explanation Toggle - v3.3 Enhanced with Correct Code */}
+                {(feedback.hasExplanation || feedback.correctCode) &&
+                  !hasMoreHints && (
+                    <div className="pt-4 border-t border-[#1A1814]">
+                      <RevealButton
+                        label={
+                          showFullExplanation
+                            ? "Hide full explanation"
+                            : "Show full explanation"
+                        }
+                        onClick={onToggleExplanation}
+                        variant="secondary"
+                      />
 
-                    <AnimatePresence>
-                      {showFullExplanation && feedback.explanation && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden mt-4"
-                        >
-                          <div className="border border-[#3D3D3D]/50 bg-[#0D0D0B] p-4 rounded-lg">
-                            <h5
-                              className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2"
-                              style={{
-                                fontFamily: "'Rajdhani', system-ui, sans-serif",
-                              }}
-                            >
-                              Full Explanation
-                            </h5>
-                            <p
-                              className="text-[#E8E4D9] text-sm leading-relaxed whitespace-pre-wrap"
-                              style={{
-                                fontFamily: "'Rajdhani', system-ui, sans-serif",
-                              }}
-                            >
-                              {feedback.explanation}
-                            </p>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
+                      <AnimatePresence>
+                        {showFullExplanation && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden mt-4 space-y-4"
+                          >
+                            {/* Explanation Text */}
+                            {feedback.explanation && (
+                              <div className="border border-[#3D3D3D]/50 bg-[#0D0D0B] p-4 rounded-lg">
+                                <h5
+                                  className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  Full Explanation
+                                </h5>
+                                <p
+                                  className="text-[#E8E4D9] text-sm leading-relaxed whitespace-pre-wrap"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  {feedback.explanation}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* v3.3: Root Cause Analysis */}
+                            {(feedback.rootCauseSubtype ||
+                              feedback.failureMechanism) && (
+                              <div className="border border-[#EF4444]/30 bg-[#EF4444]/5 p-4 rounded-lg">
+                                <h5
+                                  className="text-[#EF4444] text-[10px] uppercase tracking-wider mb-2 flex items-center gap-2"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]"></span>
+                                  Root Cause
+                                </h5>
+                                {feedback.rootCauseSubtype && (
+                                  <p
+                                    className="text-[#E8E4D9] text-sm mb-2"
+                                    style={{
+                                      fontFamily:
+                                        "'Rajdhani', system-ui, sans-serif",
+                                    }}
+                                  >
+                                    <span className="text-[#EF4444] font-semibold">
+                                      {feedback.rootCauseSubtype
+                                        .replace(/_/g, " ")
+                                        .replace(/\b\w/g, (l) =>
+                                          l.toUpperCase(),
+                                        )}
+                                    </span>
+                                  </p>
+                                )}
+                                {feedback.failureMechanism && (
+                                  <p
+                                    className="text-[#E8E4D9]/80 text-sm leading-relaxed"
+                                    style={{
+                                      fontFamily:
+                                        "'Rajdhani', system-ui, sans-serif",
+                                    }}
+                                  >
+                                    {feedback.failureMechanism}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* v3.3: Correct Code Solution */}
+                            {feedback.correctCode && (
+                              <div className="space-y-2">
+                                <h5
+                                  className="text-[#22C55E] text-[10px] uppercase tracking-wider flex items-center gap-2"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]"></span>
+                                  Correct Solution
+                                </h5>
+                                <CodeBlock
+                                  code={feedback.correctCode}
+                                  language={feedback.language || "Solution"}
+                                />
+                                {feedback.correctCodeExplanation && (
+                                  <p
+                                    className="text-[#78716C] text-xs leading-relaxed mt-2"
+                                    style={{
+                                      fontFamily:
+                                        "'Rajdhani', system-ui, sans-serif",
+                                    }}
+                                  >
+                                    {feedback.correctCodeExplanation}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* v3.3: Concept Reinforcement */}
+                            {feedback.conceptReinforcement && (
+                              <div className="border border-[#8B5CF6]/30 bg-[#8B5CF6]/5 p-4 rounded-lg">
+                                <h5
+                                  className="text-[#8B5CF6] text-[10px] uppercase tracking-wider mb-2 flex items-center gap-2"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]"></span>
+                                  Key Concept
+                                </h5>
+                                <p
+                                  className="text-[#E8E4D9] text-sm leading-relaxed"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  {feedback.conceptReinforcement}
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
 
                 {}
                 {feedback.optimizationTips?.length > 0 && (

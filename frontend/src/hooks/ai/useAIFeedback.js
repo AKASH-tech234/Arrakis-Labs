@@ -1,5 +1,3 @@
-
-
 import { useState, useCallback, useRef, useMemo } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -31,7 +29,7 @@ async function fetchAIFeedbackAPI({
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "include", 
+    credentials: "include",
     body: JSON.stringify({
       questionId,
       code,
@@ -55,7 +53,6 @@ async function fetchAIFeedbackAPI({
 }
 
 export function useAIFeedback() {
-  
   const [rawFeedback, setRawFeedback] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -68,7 +65,6 @@ export function useAIFeedback() {
 
   const fetchFeedback = useCallback(
     async ({ questionId, code, language, verdict, errorType }) => {
-      
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -135,7 +131,6 @@ export function useAIFeedback() {
   }, []);
 
   const retry = useCallback(() => {
-    
     setError(null);
   }, []);
 
@@ -171,7 +166,6 @@ export function useAIFeedback() {
     if (!rawFeedback) return null;
 
     return {
-      
       success: rawFeedback.success,
       verdict: rawFeedback.verdict,
       submissionId: rawFeedback.submission_id,
@@ -183,16 +177,34 @@ export function useAIFeedback() {
       explanation: showFullExplanation ? rawFeedback.explanation : null,
       hasExplanation: !!rawFeedback.explanation,
 
-      detectedPattern: rawFeedback.detected_pattern,
+      detectedPattern:
+        rawFeedback.detected_pattern || rawFeedback.detectedPattern,
 
-      optimizationTips: rawFeedback.optimization_tips,
-      complexityAnalysis: rawFeedback.complexity_analysis,
-      edgeCases: rawFeedback.edge_cases,
+      optimizationTips:
+        rawFeedback.optimization_tips || rawFeedback.optimizationTips,
+      complexityAnalysis:
+        rawFeedback.complexity_analysis || rawFeedback.complexityAnalysis,
+      edgeCases: rawFeedback.edge_cases || rawFeedback.edgeCases,
+
+      // v3.3: Enhanced fields with correct code
+      rootCause: rawFeedback.root_cause || rawFeedback.rootCause,
+      rootCauseSubtype:
+        rawFeedback.root_cause_subtype || rawFeedback.rootCauseSubtype,
+      failureMechanism:
+        rawFeedback.failure_mechanism || rawFeedback.failureMechanism,
+      correctCode: rawFeedback.correct_code || rawFeedback.correctCode,
+      correctCodeExplanation:
+        rawFeedback.correct_code_explanation ||
+        rawFeedback.correctCodeExplanation,
+      conceptReinforcement:
+        rawFeedback.concept_reinforcement || rawFeedback.conceptReinforcement,
+
+      // MIM insights
+      mimInsights: rawFeedback.mim_insights || rawFeedback.mimInsights,
     };
   }, [rawFeedback, visibleHints, showFullExplanation]);
 
   return {
-    
     feedback,
     loading,
     error,

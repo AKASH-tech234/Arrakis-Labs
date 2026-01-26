@@ -118,6 +118,7 @@ class AsyncState(TypedDict, total=False):
     verdict: str
     context: str
     feedback: Optional[FeedbackResponse]
+    submission_id: str  # For dedupe tracking
     
     # === STRUCTURED DATA (passed from sync) ===
     problem: Optional[Dict[str, Any]]  # ProblemContext as dict
@@ -126,8 +127,14 @@ class AsyncState(TypedDict, total=False):
     # === MIM DECISION (v3.0) ===
     mim_decision: Optional[MIMDecision]  # Full MIM decision with agent instructions
 
+    # === GUARDRAILS (v3.2 - verdict guard decisions) ===
+    _guardrails: Optional[Dict[str, Any]]  # skip_mim, skip_rag, skip_learning_diagnosis, etc.
+    
     # === FLAGS ===
     request_weekly_report: bool
+    
+    # === ORCHESTRATOR PLAN ===
+    plan: Optional[Dict[str, Any]]  # Orchestrator execution plan
     
     # === ASYNC OUTPUTS ===
     learning_recommendation: Optional[LearningRecommendation]
@@ -220,9 +227,12 @@ def learning_node(state: AsyncState) -> AsyncState:
         
         problem = state.get("problem") or {}
         difficulty = problem.get("difficulty", "Medium") if isinstance(problem, dict) else "Medium"
+        category = state.get('problem_category', 'algorithms')
         
+        # Create a valid LearningRecommendation with ALL required fields
         state["learning_recommendation"] = LearningRecommendation(
-            focus_areas=[f"Advanced {state.get('problem_category', 'algorithms')} techniques"],
+            focus_areas=[f"Advanced {category} techniques"],
+            rationale=f"Reinforcement: {difficulty} solution accepted. Skill confirmed, continue progression.",
             skill_gap="None - solution accepted",
             exercises=["Try the next challenge in this topic"],
             summary=f"Great work! Your {difficulty} solution was accepted. Keep building on this momentum."

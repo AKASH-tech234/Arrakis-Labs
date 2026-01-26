@@ -108,6 +108,9 @@ class MentatSyncState(TypedDict):
     # === AGENT RESULTS BUNDLE (for cross-agent reference) ===
     agent_results: Optional[Dict[str, Any]]  # Accumulated results for later agents
     
+    # === GUARDRAILS (v3.2 - MUST BE DEFINED) ===
+    _guardrails: Optional[Dict[str, Any]]  # Verdict guard decisions: skip_mim, skip_rag, etc.
+    
     # === TIMING METADATA ===
     _workflow_start: Optional[float]
     _node_timings: Optional[Dict[str, float]]
@@ -401,8 +404,30 @@ def mim_prediction_node(state: MentatSyncState) -> MentatSyncState:
     guardrails = state.get("_guardrails", {})
     verdict = state.get("verdict", "").lower()
     
+    # v3.2: HARD CHECK - If Accepted, skip MIM regardless of guardrails state
+    # This is a safety net in case _guardrails wasn't propagated correctly
+    if verdict == "accepted":
+        _vprint(f"\n⏭️ [MIM DECISION] SKIPPED - Accepted verdict (v3.2 hard check)")
+        logger.info(f"⏭️ MIM skipped | reason=accepted_verdict_hard_check | verdict={verdict}")
+        
+        # Create reinforcement signal
+        state["mim_decision"] = None
+        state["mim_insights"] = {
+            "type": "reinforcement",
+            "root_cause": None,  # NO root cause for success
+            "readiness": {
+                "current_level": "Proficient",
+                "recommendation": "Continue to next challenge"
+            },
+            "is_success": True,
+            "is_cold_start": False,
+            "model_version": "v3.2-reinforcement"
+        }
+        state["_node_timings"]["mim_decision"] = time.time() - start
+        return state
+    
     if guardrails.get("skip_mim", False):
-        _vprint(f"\n⏭️ [MIM DECISION] SKIPPED by verdict guard (Accepted submission)")
+        _vprint(f"\n⏭️ [MIM DECISION] SKIPPED by verdict guard")
         logger.info(f"⏭️ MIM skipped | reason=verdict_guard | verdict={verdict}")
         
         # For Accepted, create a reinforcement signal instead of diagnosis

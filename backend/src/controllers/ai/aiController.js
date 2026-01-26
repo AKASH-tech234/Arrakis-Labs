@@ -436,6 +436,13 @@ export const requestAIFeedback = async (req, res) => {
         edgeCases: aiFeedback.edge_cases,
         // MIM insights from AI service (ML-based predictions)
         mimInsights: aiFeedback.mim_insights || null,
+        // v3.3: New fields for enhanced feedback
+        rootCause: aiFeedback.root_cause || null,
+        rootCauseSubtype: aiFeedback.root_cause_subtype || null,
+        failureMechanism: aiFeedback.failure_mechanism || null,
+        correctCode: aiFeedback.correct_code || null,
+        correctCodeExplanation: aiFeedback.correct_code_explanation || null,
+        conceptReinforcement: aiFeedback.concept_reinforcement || null,
       },
       meta: {
         aiDurationMs: aiDuration,

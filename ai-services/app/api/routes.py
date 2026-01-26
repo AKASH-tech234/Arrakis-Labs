@@ -457,11 +457,21 @@ def generate_ai_feedback(
         )
 
         # -------------------------
-        # ASYNC WORKFLOW (background)
+        # ASYNC WORKFLOW (background) - with crash protection
         # -------------------------
+        def safe_async_invoke(state_data):
+            """Wrapper to catch and log async workflow crashes."""
+            try:
+                async_workflow.invoke(state_data)
+                logger.info(f"✅ [ASYNC] Workflow completed successfully | submission_id={state_data.get('submission_id')}")
+            except Exception as e:
+                logger.error(f"❌ [ASYNC] Workflow CRASHED: {type(e).__name__}: {e}")
+                logger.error(traceback.format_exc())
+                # Don't re-raise - this is a background task
+        
         print(f"\n🚀 Scheduling ASYNC workflow (background)...")
         log_event("async_workflow_scheduling", submission_id=submission_id)
-        background_tasks.add_task(async_workflow.invoke, sync_result)
+        background_tasks.add_task(safe_async_invoke, sync_result)
 
         # -------------------------
         # Build Progressive Response

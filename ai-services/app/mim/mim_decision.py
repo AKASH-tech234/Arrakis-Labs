@@ -30,13 +30,25 @@ class FeedbackInstruction(BaseModel):
     Pre-computed instruction for feedback_agent.
     
     Agent MUST use these facts, only adding linguistic polish.
+    
+    v3.3: Added root_cause_subtype for granular diagnosis.
     """
     root_cause: str = Field(
         description="Definitive root cause - agent uses this, does NOT guess"
     )
+    # v3.3: MANDATORY subtype for granular diagnosis
+    root_cause_subtype: Optional[str] = Field(
+        default=None,
+        description="Granular subtype (e.g., algorithm_choice->wrong_invariant, brute_force)"
+    )
     root_cause_confidence: float = Field(
         ge=0.0, le=1.0,
         description="Confidence in root cause prediction"
+    )
+    # v3.3: Concrete failure mechanism explanation
+    failure_mechanism: Optional[str] = Field(
+        default=None,
+        description="Concrete explanation of WHY the code fails (e.g., 'sorting breaks reversal equality')"
     )
     is_recurring_mistake: bool = Field(
         default=False,

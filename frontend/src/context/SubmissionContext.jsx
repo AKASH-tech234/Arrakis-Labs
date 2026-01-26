@@ -240,6 +240,15 @@ export function SubmissionProvider({ children }) {
           submissionData.aiFeedback.mimInsights ||
           submissionData.aiFeedback.mim_insights ||
           null,
+        // v3.3: Enhanced feedback fields for full explanation
+        rootCause: submissionData.aiFeedback.rootCause || null,
+        rootCauseSubtype: submissionData.aiFeedback.rootCauseSubtype || null,
+        failureMechanism: submissionData.aiFeedback.failureMechanism || null,
+        correctCode: submissionData.aiFeedback.correctCode || null,
+        correctCodeExplanation:
+          submissionData.aiFeedback.correctCodeExplanation || null,
+        conceptReinforcement:
+          submissionData.aiFeedback.conceptReinforcement || null,
       };
 
       dispatch({
