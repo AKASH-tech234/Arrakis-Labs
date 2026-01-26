@@ -293,14 +293,13 @@ export default function ProblemDetail() {
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-        // ✨ LeetCode-style: ALWAYS show the result panel for Submit
-        // Both Accepted and Wrong Answer should display in the result panel
-        if (data.aiFeedback) {
-          // Show AI feedback panel for hints (wrong answer) or tips (accepted)
-          setShowFeedback(true);
-        } else if (aiServiceAvailable && !isAccepted) {
-          // No aiFeedback from backend for wrong answer - fetch via hook
-          setShowFeedback(true);
+        // ✨ FIX: ALWAYS open submission result panel after Submit
+        // Panel visibility must NOT be conditional on verdict
+        // The panel should open for: Accepted, Wrong Answer, TLE, Runtime Error, etc.
+        setShowFeedback(true);
+
+        // Fetch AI feedback if not already included and service is available
+        if (!data.aiFeedback && aiServiceAvailable && !isAccepted) {
           fetchFeedback({
             questionId: id,
             code,
@@ -308,10 +307,6 @@ export default function ProblemDetail() {
             verdict: data.status || "wrong_answer",
             errorType: data.errorType,
           });
-        } else if (isAccepted && !data.aiFeedback) {
-          // Accepted without AI feedback - still show result in output panel
-          // The OutputPanel will display the "Accepted" status with test results
-          setShowFeedback(false);
         }
       }
     } catch (err) {
@@ -609,6 +604,8 @@ export default function ProblemDetail() {
                 }}
                 loading={feedbackLoading}
                 error={feedbackError}
+                // ✨ FIX: Pass submission data so panel can show results even without AI feedback
+                submissionData={lastSubmission}
                 feedback={
                   feedback ||
                   (lastSubmission?.aiFeedback
