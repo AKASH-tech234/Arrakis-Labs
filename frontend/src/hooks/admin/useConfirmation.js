@@ -1,11 +1,7 @@
-// src/hooks/admin/useConfirmation.js
-// Hook for managing confirmation modal state
+
 
 import { useState, useCallback } from "react";
 
-/**
- * Hook to manage confirmation modal state
- */
 export const useConfirmation = () => {
   const [state, setState] = useState({
     isOpen: false,
@@ -20,19 +16,6 @@ export const useConfirmation = () => {
     onConfirm: null,
   });
 
-  /**
-   * Open confirmation modal
-   * @param {Object} options - Modal options
-   * @param {string} options.title - Modal title
-   * @param {string} options.message - Confirmation message
-   * @param {string} [options.confirmText='Confirm'] - Confirm button text
-   * @param {string} [options.cancelText='Cancel'] - Cancel button text
-   * @param {'warning'|'danger'|'info'} [options.variant='warning'] - Modal variant
-   * @param {boolean} [options.requireTyping=false] - Require typing to confirm
-   * @param {string} [options.typingPhrase=''] - Phrase to type for confirmation
-   * @param {Function} options.onConfirm - Callback on confirm
-   * @returns {Promise} Resolves when confirmed, rejects when cancelled
-   */
   const confirm = useCallback((options) => {
     return new Promise((resolve, reject) => {
       setState({
@@ -66,16 +49,10 @@ export const useConfirmation = () => {
     });
   }, []);
 
-  /**
-   * Close the modal
-   */
   const close = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
-  /**
-   * Shorthand for delete confirmation
-   */
   const confirmDelete = useCallback(
     (itemName, onConfirm) => {
       return confirm({
@@ -91,9 +68,6 @@ export const useConfirmation = () => {
     [confirm],
   );
 
-  /**
-   * Shorthand for dangerous action confirmation
-   */
   const confirmDangerous = useCallback(
     (title, message, onConfirm) => {
       return confirm({

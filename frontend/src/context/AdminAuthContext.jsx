@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { adminLogin as apiAdminLogin, adminLogout as apiAdminLogout, getAdminProfile } from "../services/adminApi";
+import { adminLogin as apiAdminLogin, adminLogout as apiAdminLogout, getAdminProfile } from "../services/admin/adminApi";
 
 const AdminAuthContext = createContext(null);
 
@@ -16,11 +16,15 @@ export const AdminAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check for existing admin session on mount
   useEffect(() => {
     const checkAdminAuth = async () => {
+      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      if (!isAdminRoute) {
+        setLoading(false);
+        return;
+      }
+      
       try {
-        // Cookie-based session; backend sets HttpOnly adminToken cookie on login
         const response = await getAdminProfile();
         if (response.success) setAdmin(response.admin);
       } catch {
@@ -57,7 +61,6 @@ export const AdminAuthProvider = ({ children }) => {
     try {
       await apiAdminLogout();
     } catch (err) {
-      // Ignore logout errors
     } finally {
       setAdmin(null);
     }

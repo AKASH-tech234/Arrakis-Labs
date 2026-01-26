@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 def sync_recent_submissions(hours: int = 24):
     """Sync recent submissions from MongoDB to RAG"""
     
-    if not mongo_client.db:
+    if mongo_client.db is None:
         logger.error("MongoDB not connected")
         return 0
     

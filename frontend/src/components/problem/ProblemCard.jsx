@@ -1,4 +1,4 @@
-// src/components/problem/ProblemCard.jsx
+
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -28,16 +28,17 @@ export default function ProblemCard({ problem, index }) {
         to={`/problems/${id}`}
         className={`group block relative overflow-hidden rounded-lg border border-[#D97706]/20 py-5 px-5 transition-all duration-300 ${difficultyBgStyles[difficulty]} hover:border-[#D97706]/50 hover:shadow-lg hover:shadow-[#D97706]/25`}
       >
-        {/* Hover Gradient Background */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/8 to-[#92400E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-        {/* Top accent line on hover */}
+        {}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
         <div className="relative z-10 flex items-center justify-between gap-4">
-          {/* Left: Title and Category */}
+          {}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
+<<<<<<< HEAD
               {/* Sequential number badge */}
               {displaySequential !== null && (
                 <motion.div
@@ -50,6 +51,9 @@ export default function ProblemCard({ problem, index }) {
               )}
 
               {/* Solved indicator */}
+=======
+              {}
+>>>>>>> 87f87059bb00580ed402846e5611bd1db8259af1
               <motion.span
                 className={`text-xs uppercase tracking-wider transition-colors duration-300 ${
                   solved ? "text-[#D97706] group-hover:text-[#F59E0B]" : "text-[#666] group-hover:text-[#999]"
@@ -60,7 +64,7 @@ export default function ProblemCard({ problem, index }) {
                 {solved ? "✓ solved" : "—"}
               </motion.span>
 
-              {/* Title */}
+              {}
               <h3
                 className="text-[#E8E4D9] text-base font-semibold truncate group-hover:text-[#FCD34D] transition-colors duration-300"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
@@ -70,7 +74,7 @@ export default function ProblemCard({ problem, index }) {
             </div>
           </div>
 
-          {/* Right: Category and Difficulty */}
+          {}
           <div className="flex items-center gap-6">
             <span
               className="text-[#A29A8C] text-sm uppercase tracking-wider hidden sm:block group-hover:text-[#D97706] transition-colors duration-300"

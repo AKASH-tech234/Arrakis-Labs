@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { Flame, Trophy, TrendingUp, Calendar } from "lucide-react";
-import { getUserStreak } from "../../services/potdApi";
+import { getUserStreak } from "../../services/potd/potdApi";
 
-/**
- * Streak Display Widget
- * Shows user's current streak, max streak, and streak statistics
- */
 export default function StreakWidget({ compact = false }) {
   const [streakData, setStreakData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +37,6 @@ export default function StreakWidget({ compact = false }) {
 
   const { currentStreak, maxStreak, totalPOTDsSolved, lastSolvedDate } = streakData;
 
-  // Determine flame intensity based on streak
   const getFlameColor = (streak) => {
     if (streak >= 30) return "text-purple-500";
     if (streak >= 14) return "text-orange-500";
@@ -75,7 +70,7 @@ export default function StreakWidget({ compact = false }) {
 
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
           <Flame className={`w-5 h-5 ${getFlameColor(currentStreak)}`} />
@@ -84,7 +79,7 @@ export default function StreakWidget({ compact = false }) {
         <span className="text-sm text-gray-400">{getStreakMessage(currentStreak)}</span>
       </div>
 
-      {/* Main Streak Display */}
+      {}
       <div className="flex items-center justify-center mb-6">
         <div className="relative">
           <div
@@ -109,7 +104,7 @@ export default function StreakWidget({ compact = false }) {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {}
       <div className="grid grid-cols-3 gap-4">
         <div className="text-center p-3 bg-gray-800/50 rounded-lg">
           <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
@@ -135,7 +130,7 @@ export default function StreakWidget({ compact = false }) {
         </div>
       </div>
 
-      {/* Streak Tips */}
+      {}
       {currentStreak === 0 && (
         <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
           <p className="text-sm text-orange-300">

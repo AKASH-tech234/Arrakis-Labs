@@ -1,5 +1,4 @@
-// Arrakis Labs Logo - "The Rising Signal"
-// Abstract symbol representing buried intelligence ascending from desert sands
+
 
 import React from "react";
 import { motion } from "framer-motion";
@@ -49,7 +48,7 @@ export default function ArrakisLogo({
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
-      {/* Symbol */}
+      {}
       <motion.div
         variants={animated ? symbolVariants : undefined}
         initial={animated ? "initial" : undefined}
@@ -57,7 +56,7 @@ export default function ArrakisLogo({
         className="relative"
         style={{ width: config.symbol, height: config.symbol }}
       >
-        {/* Ambient glow */}
+        {}
         {animated && (
           <motion.div
             variants={glowVariants}
@@ -97,7 +96,7 @@ export default function ArrakisLogo({
             </filter>
           </defs>
 
-          {/* Left ascending line - Memory/Past */}
+          {}
           <motion.path
             d="M 25 75 L 45 25"
             stroke="url(#arrakis-gradient)"
@@ -110,7 +109,7 @@ export default function ArrakisLogo({
             custom={0}
           />
 
-          {/* Center vertical line - Core Intelligence */}
+          {}
           <motion.path
             d="M 50 80 L 50 20"
             stroke="url(#arrakis-gradient)"
@@ -123,7 +122,7 @@ export default function ArrakisLogo({
             custom={1}
           />
 
-          {/* Right ascending line - Adaptation/Future */}
+          {}
           <motion.path
             d="M 75 75 L 55 25"
             stroke="url(#arrakis-gradient)"
@@ -136,7 +135,7 @@ export default function ArrakisLogo({
             custom={2}
           />
 
-          {/* Horizon line - Sand/Ground */}
+          {}
           <motion.path
             d="M 15 82 L 85 82"
             stroke="url(#arrakis-gradient)"
@@ -149,7 +148,7 @@ export default function ArrakisLogo({
             custom={3}
           />
 
-          {/* Apex point - Signal origin */}
+          {}
           <motion.circle
             cx="50"
             cy="18"
@@ -176,7 +175,7 @@ export default function ArrakisLogo({
         </svg>
       </motion.div>
 
-      {/* Wordmark */}
+      {}
       {showWordmark && (
         <motion.div
           initial={animated ? { opacity: 0, y: 5 } : undefined}

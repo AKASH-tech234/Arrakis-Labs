@@ -1,4 +1,4 @@
-// src/components/problem/ProblemList.jsx
+
 import ProblemCard from "./ProblemCard";
 
 export default function ProblemList({ problems }) {
@@ -17,7 +17,7 @@ export default function ProblemList({ problems }) {
 
   return (
     <div className="space-y-3">
-      {/* Table Header */}
+      {}
       <div className="flex items-center justify-between gap-4 py-4 px-5 border-b border-[#666]/20">
         <div className="flex items-center gap-3">
           <span
@@ -49,9 +49,15 @@ export default function ProblemList({ problems }) {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Problem Items */}
       {problems.map((problem, index) => (
         <ProblemCard key={problem.id} problem={problem} index={index} />
+=======
+      {}
+      {problems.map((problem) => (
+        <ProblemCard key={problem.id} problem={problem} />
+>>>>>>> 87f87059bb00580ed402846e5611bd1db8259af1
       ))}
     </div>
   );

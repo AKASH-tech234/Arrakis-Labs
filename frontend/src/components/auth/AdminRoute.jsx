@@ -1,5 +1,5 @@
-// src/components/auth/AdminRoute.jsx
-// Protected route wrapper for admin-only access
+
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 
@@ -7,7 +7,6 @@ export default function AdminRoute({ children }) {
   const { isAuthenticated, loading } = useAdminAuth();
   const location = useLocation();
 
-  // Show loading state
   if (loading) {
     return (
       <div
@@ -27,7 +26,6 @@ export default function AdminRoute({ children }) {
     );
   }
 
-  // Not logged in as admin - redirect to admin login
   if (!isAuthenticated) {
     return (
       <Navigate to="/admin/login" state={{ from: location.pathname }} replace />

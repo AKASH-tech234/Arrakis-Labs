@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Flame, User } from "lucide-react";
-import { getStreakLeaderboard } from "../../services/potdApi";
+import { getStreakLeaderboard } from "../../services/potd/potdApi";
 
-/**
- * Streak Leaderboard Component
- * Displays top users by POTD streak
- */
 export default function StreakLeaderboard({ limit = 10 }) {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,13 +64,13 @@ export default function StreakLeaderboard({ limit = 10 }) {
 
   return (
     <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-2 mb-6">
         <Flame className="w-5 h-5 text-orange-500" />
         <h3 className="text-lg font-semibold text-white">Streak Leaderboard</h3>
       </div>
 
-      {/* Leaderboard List */}
+      {}
       {leaderboard.length === 0 ? (
         <div className="text-center text-gray-400 py-8">
           <p>No active streaks yet</p>
@@ -89,10 +85,10 @@ export default function StreakLeaderboard({ limit = 10 }) {
                 entry.rank
               )} transition-all duration-200 hover:scale-[1.02]`}
             >
-              {/* Rank */}
+              {}
               <div className="flex-shrink-0 w-8">{getRankIcon(entry.rank)}</div>
 
-              {/* User Info */}
+              {}
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {entry.user.profileImage ? (
                   <img
@@ -110,7 +106,7 @@ export default function StreakLeaderboard({ limit = 10 }) {
                 </span>
               </div>
 
-              {/* Streak */}
+              {}
               <div className="flex items-center gap-2">
                 <Flame
                   className={`w-4 h-4 ${
@@ -129,7 +125,7 @@ export default function StreakLeaderboard({ limit = 10 }) {
                 <span className="text-xs text-gray-400">days</span>
               </div>
 
-              {/* Max Streak Badge */}
+              {}
               {entry.currentStreak === entry.maxStreak && entry.maxStreak >= 7 && (
                 <div className="flex-shrink-0">
                   <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
@@ -142,7 +138,7 @@ export default function StreakLeaderboard({ limit = 10 }) {
         </div>
       )}
 
-      {/* Footer */}
+      {}
       <div className="mt-6 pt-4 border-t border-gray-700 text-center">
         <p className="text-xs text-gray-500">
           Solve the daily POTD to climb the leaderboard!

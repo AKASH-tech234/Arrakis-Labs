@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Flame, Clock, ChevronRight, Trophy } from "lucide-react";
-import { getTodaysPOTD } from "../../services/potdApi";
+import { getTodaysPOTD } from "../../services/potd/potdApi";
 
-/**
- * Compact POTD Banner for Problem Listing Page
- * Similar to GeeksforGeeks POTD section
- */
 export default function POTDBanner() {
   const [potd, setPotd] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,17 +15,14 @@ export default function POTDBanner() {
   useEffect(() => {
     if (!potd) return;
 
-    // Safely get endTime from nested structure
     const endTime = potd?.potd?.endTime || potd?.endTime;
     if (!endTime) return;
 
-    // Initial calculation
     const now = new Date();
     const end = new Date(endTime);
     const initial = Math.max(0, end - now);
     setTimeRemaining(initial);
 
-    // Debug logging
     console.log("POTD Timer Debug:", {
       currentTime: now.toISOString(),
       endTime: end.toISOString(),
@@ -139,11 +132,9 @@ export default function POTDBanner() {
     );
   }
 
-  // Safely extract problem data with fallbacks
   const problem = potd?.potd?.problem || potd?.problem || null;
   const userProgress = potd?.userProgress || null;
 
-  // Handle case where problem data is missing
   if (!problem) {
     return (
       <div
@@ -184,7 +175,7 @@ export default function POTDBanner() {
         borderColor: "rgba(248, 168, 68, 0.3)",
       }}
     >
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Flame className="w-6 h-6" style={{ color: "#F8A844" }} />
@@ -207,7 +198,7 @@ export default function POTDBanner() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Timer */}
+          {}
           <div
             className="flex items-center gap-2 px-3 py-1.5 rounded"
             style={{ backgroundColor: "rgba(10, 10, 8, 0.6)" }}
@@ -221,7 +212,7 @@ export default function POTDBanner() {
             </span>
           </div>
 
-          {/* User Status */}
+          {}
           {userProgress?.solved && (
             <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded"
@@ -239,7 +230,7 @@ export default function POTDBanner() {
         </div>
       </div>
 
-      {/* Problem Details */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <Link to={`/problems/${problem._id}?potd=true`} className="group">
@@ -252,7 +243,7 @@ export default function POTDBanner() {
           </Link>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Difficulty Badge */}
+            {}
             <span
               className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider"
               style={{
@@ -264,7 +255,7 @@ export default function POTDBanner() {
               {problem.difficulty}
             </span>
 
-            {/* Tags */}
+            {}
             {problem.tags?.slice(0, 3).map((tag) => (
               <span
                 key={tag}
@@ -279,7 +270,7 @@ export default function POTDBanner() {
               </span>
             ))}
 
-            {/* Attempts Counter */}
+            {}
             {userProgress &&
               !userProgress.solved &&
               userProgress.attempts > 0 && (
@@ -297,7 +288,7 @@ export default function POTDBanner() {
           </div>
         </div>
 
-        {/* CTA Button */}
+        {}
         <Link
           to={`/problems/${problem._id}?potd=true`}
           className="ml-6 flex items-center gap-2 px-6 py-3 rounded transition-all duration-200 group"

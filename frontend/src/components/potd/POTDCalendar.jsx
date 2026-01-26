@@ -7,12 +7,8 @@ import {
   Flame,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { getUserPOTDCalendar } from "../../services/potdApi";
+import { getUserPOTDCalendar } from "../../services/potd/potdApi";
 
-/**
- * POTD Calendar Component
- * Shows user's solved/missed POTD history in a calendar view
- */
 export default function POTDCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState([]);
@@ -29,8 +25,8 @@ export default function POTDCalendar() {
   const fetchCalendarData = async () => {
     try {
       setLoading(true);
-      const startDate = new Date(year, month, 1).toISOString();
-      const endDate = new Date(year, month + 1, 0).toISOString();
+      const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)).toISOString();
+      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)).toISOString();
 
       const response = await getUserPOTDCalendar(startDate, endDate);
       if (response.success) {
@@ -45,11 +41,11 @@ export default function POTDCalendar() {
   };
 
   const daysInMonth = useMemo(() => {
-    return new Date(year, month + 1, 0).getDate();
+    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   }, [year, month]);
 
   const firstDayOfMonth = useMemo(() => {
-    return new Date(year, month, 1).getDay();
+    return new Date(Date.UTC(year, month, 1)).getUTCDay();
   }, [year, month]);
 
   const calendarMap = useMemo(() => {
@@ -80,9 +76,9 @@ export default function POTDCalendar() {
     const status = getDayStatus(day);
     const today = new Date();
     const isToday =
-      day === today.getDate() &&
-      month === today.getMonth() &&
-      year === today.getFullYear();
+      day === today.getUTCDate() &&
+      month === today.getUTCMonth() &&
+      year === today.getUTCFullYear();
 
     let bgColor = "bg-gray-800/30";
     let icon = null;
@@ -127,7 +123,7 @@ export default function POTDCalendar() {
 
   return (
     <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-5 h-5 text-orange-500" />
@@ -152,7 +148,7 @@ export default function POTDCalendar() {
         </div>
       </div>
 
-      {/* Legend */}
+      {}
       <div className="flex items-center gap-4 mb-4 text-xs">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded bg-green-500/50"></div>
@@ -168,14 +164,14 @@ export default function POTDCalendar() {
         </div>
       </div>
 
-      {/* Calendar Grid */}
+      {}
       {loading ? (
         <div className="h-64 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
         </div>
       ) : (
         <>
-          {/* Day Headers */}
+          {}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {dayNames.map((day) => (
               <div
@@ -187,20 +183,20 @@ export default function POTDCalendar() {
             ))}
           </div>
 
-          {/* Calendar Days */}
+          {}
           <div className="grid grid-cols-7 gap-2">
-            {/* Empty cells for days before the first of the month */}
+            {}
             {Array.from({ length: firstDayOfMonth }).map((_, index) => (
               <div key={`empty-${index}`} className="aspect-square"></div>
             ))}
 
-            {/* Actual days */}
+            {}
             {Array.from({ length: daysInMonth }).map((_, index) => renderDay(index + 1))}
           </div>
         </>
       )}
 
-      {/* Summary */}
+      {}
       {summary && (
         <div className="mt-6 pt-4 border-t border-gray-700 grid grid-cols-3 gap-4 text-center">
           <div>

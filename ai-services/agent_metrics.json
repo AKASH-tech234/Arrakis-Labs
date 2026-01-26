@@ -1,982 +1,147 @@
 [
   {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 6.67,
-    "timestamp": 1768969811
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 8.12,
-    "timestamp": 1768969819
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 4.18,
-    "timestamp": 1768969823
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.57,
+    "timestamp": 1769339533
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 6.93,
-    "timestamp": 1768969830
+    "elapsed_seconds": 2.19,
+    "timestamp": 1769339534
   },
   {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 6.74,
-    "timestamp": 1768969837
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.82,
+    "timestamp": 1769339535
   },
   {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 0.03,
-    "timestamp": 1768969845
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768969845
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768969845
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.88,
+    "timestamp": 1769339535
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 0.03,
-    "timestamp": 1768969845
+    "elapsed_seconds": 2.31,
+    "timestamp": 1769339537
   },
   {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.03,
-    "timestamp": 1768969845
+    "agent": "hint_agent",
+    "elapsed_seconds": 2.02,
+    "timestamp": 1769339537
   },
   {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 8.96,
-    "timestamp": 1768987140
+    "agent": "hint_agent",
+    "elapsed_seconds": 2.12,
+    "timestamp": 1769339537
   },
   {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 11.56,
-    "timestamp": 1768987152
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.22,
-    "timestamp": 1768987160
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 0.04,
-    "timestamp": 1768987160
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768987160
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768987160
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.04,
+    "timestamp": 1769339541
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 13.85,
-    "timestamp": 1768987174
+    "elapsed_seconds": 36.45,
+    "timestamp": 1769339542
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 37.3,
+    "timestamp": 1769339545
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 10.59,
+    "timestamp": 1769339547
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 11.87,
+    "timestamp": 1769339553
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 14.01,
+    "timestamp": 1769339559
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 24.77,
+    "timestamp": 1769339572
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 15.28,
-    "timestamp": 1768987176
+    "elapsed_seconds": 49.72,
+    "timestamp": 1769339586
   },
   {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 6.78,
-    "timestamp": 1768987181
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.59,
-    "timestamp": 1768987185
+    "agent": "hint_agent",
+    "elapsed_seconds": 35.85,
+    "timestamp": 1769339589
   },
   {
     "agent": "feedback_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987667
+    "elapsed_seconds": 2.92,
+    "timestamp": 1769339960
   },
   {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987667
+    "agent": "feedback_agent",
+    "elapsed_seconds": 3.11,
+    "timestamp": 1769339960
   },
   {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987668
+    "agent": "feedback_agent",
+    "elapsed_seconds": 3.1,
+    "timestamp": 1769339960
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 3.09,
+    "timestamp": 1769339963
+  },
+  {
+    "agent": "feedback_agent",
+    "elapsed_seconds": 4.27,
+    "timestamp": 1769339965
+  },
+  {
+    "agent": "hint_agent",
+    "elapsed_seconds": 4.69,
+    "timestamp": 1769339969
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 0.03,
-    "timestamp": 1768987668
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768987668
+    "elapsed_seconds": 16.78,
+    "timestamp": 1769339980
   },
   {
     "agent": "feedback_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987669
+    "elapsed_seconds": 2.84,
+    "timestamp": 1769340121
   },
   {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987669
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987669
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.43,
+    "timestamp": 1769340122
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987669
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987669
+    "elapsed_seconds": 1.74,
+    "timestamp": 1769340124
   },
   {
     "agent": "feedback_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
+    "elapsed_seconds": 2.18,
+    "timestamp": 1769346837
   },
   {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
+    "agent": "hint_agent",
+    "elapsed_seconds": 1.56,
+    "timestamp": 1769346839
   },
   {
     "agent": "learning_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768987926
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 15.3,
-    "timestamp": 1768993265
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 6.54,
-    "timestamp": 1768993271
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 7.65,
-    "timestamp": 1768993279
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 13.55,
-    "timestamp": 1768993293
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.01,
-    "timestamp": 1768993293
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.64,
-    "timestamp": 1768993302
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 16.35,
-    "timestamp": 1768993318
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 8.66,
-    "timestamp": 1768993327
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 11.57,
-    "timestamp": 1768993502
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1768993502
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.14,
-    "timestamp": 1768993510
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768993510
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.02,
-    "timestamp": 1768993510
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769149046
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 6.71,
-    "timestamp": 1769149370
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 5.48,
-    "timestamp": 1769149375
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 4.73,
-    "timestamp": 1769149380
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 3.83,
-    "timestamp": 1769149384
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 3.34,
-    "timestamp": 1769149387
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 7.33,
-    "timestamp": 1769149394
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 5.73,
-    "timestamp": 1769149400
-  },
-  {
-    "agent": "weekly_report_agent",
-    "elapsed_seconds": 7.11,
-    "timestamp": 1769149407
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 3.23,
-    "timestamp": 1769149411
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 12.4,
-    "timestamp": 1769149429
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 7.61,
-    "timestamp": 1769149436
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 9.24,
-    "timestamp": 1769149446
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 10.01,
-    "timestamp": 1769149456
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 5.21,
-    "timestamp": 1769149461
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 8.41,
-    "timestamp": 1769149470
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.68,
-    "timestamp": 1769149479
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 10.29,
-    "timestamp": 1769149490
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 8.17,
-    "timestamp": 1769149498
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 10.69,
-    "timestamp": 1769149509
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 8.18,
-    "timestamp": 1769149517
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 14.37,
-    "timestamp": 1769149531
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 9.51,
-    "timestamp": 1769149541
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.81,
-    "timestamp": 1769149547
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 6.96,
-    "timestamp": 1769149554
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 7.73,
-    "timestamp": 1769149562
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.21,
-    "timestamp": 1769149571
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769149571
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769149805
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 12.71,
-    "timestamp": 1769149820
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.39,
-    "timestamp": 1769149825
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 7.89,
-    "timestamp": 1769149833
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 6.58,
-    "timestamp": 1769149840
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.97,
-    "timestamp": 1769149850
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 9.16,
-    "timestamp": 1769149859
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 8.4,
-    "timestamp": 1769149867
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 9.42,
-    "timestamp": 1769149877
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 10.43,
-    "timestamp": 1769149887
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 10.98,
-    "timestamp": 1769149898
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769149899
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769149970
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 8.61,
-    "timestamp": 1769149980
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.76,
-    "timestamp": 1769149986
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 6.7,
-    "timestamp": 1769149993
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 6.51,
-    "timestamp": 1769149999
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.39,
-    "timestamp": 1769150009
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769150009
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769150098
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 14.11,
-    "timestamp": 1769150114
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 6.65,
-    "timestamp": 1769150121
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.71,
-    "timestamp": 1769150129
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 8.31,
-    "timestamp": 1769150138
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.16,
-    "timestamp": 1769150147
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769150147
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769150167
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 8.58,
-    "timestamp": 1769150178
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.5,
-    "timestamp": 1769150184
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.9,
-    "timestamp": 1769150193
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 6.01,
-    "timestamp": 1769150199
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.94,
-    "timestamp": 1769150209
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769150209
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769161230
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 10.31,
-    "timestamp": 1769161247
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.62,
-    "timestamp": 1769161253
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.2,
-    "timestamp": 1769161261
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 7.58,
-    "timestamp": 1769161268
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 19.37,
-    "timestamp": 1769161288
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769161289
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 13.36,
-    "timestamp": 1769171847
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.09,
-    "timestamp": 1769171852
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 6.85,
-    "timestamp": 1769171859
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 11.04,
-    "timestamp": 1769171870
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 13.78,
-    "timestamp": 1769171873
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 5.96,
-    "timestamp": 1769171876
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 8.62,
-    "timestamp": 1769171882
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 8.76,
-    "timestamp": 1769171891
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769183684
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769183943
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 0.98,
-    "timestamp": 1769183982
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.92,
-    "timestamp": 1769183983
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.97,
-    "timestamp": 1769183984
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 0.96,
-    "timestamp": 1769183985
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 1.01,
-    "timestamp": 1769183986
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769183987
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 2.24,
-    "timestamp": 1769184621
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 2.2,
-    "timestamp": 1769185158
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 0.57,
-    "timestamp": 1769190434
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.56,
-    "timestamp": 1769190434
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.54,
-    "timestamp": 1769190435
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 0.63,
-    "timestamp": 1769190436
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 0.76,
-    "timestamp": 1769190436
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.75,
-    "timestamp": 1769190436
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 0.65,
-    "timestamp": 1769190437
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 0.56,
-    "timestamp": 1769190437
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 0.58,
-    "timestamp": 1769190438
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 0.57,
-    "timestamp": 1769190439
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769190846
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 9.42,
-    "timestamp": 1769190888
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.85,
-    "timestamp": 1769190893
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 9.97,
-    "timestamp": 1769190902
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 7.0,
-    "timestamp": 1769190909
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769190909
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 9.58,
-    "timestamp": 1769191056
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 6.53,
-    "timestamp": 1769191061
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 10.77,
-    "timestamp": 1769191070
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 12.88,
-    "timestamp": 1769191072
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 5.99,
-    "timestamp": 1769191074
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 6.86,
-    "timestamp": 1769191079
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 12.4,
-    "timestamp": 1769191085
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 6.43,
-    "timestamp": 1769191092
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769194306
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769194308
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769194359
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769194362
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769194408
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 26.56,
-    "timestamp": 1769194499
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 56.77,
-    "timestamp": 1769194499
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769194517
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 22.9,
-    "timestamp": 1769194520
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769194843
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 0.0,
-    "timestamp": 1769194879
-  },
-  {
-    "agent": "test_agent",
-    "elapsed_seconds": 1.5,
-    "timestamp": 1769194884
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 18.58,
-    "timestamp": 1769195232
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 16.95,
-    "timestamp": 1769195249
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 15.4,
-    "timestamp": 1769195264
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 12.13,
-    "timestamp": 1769195277
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 21.94,
-    "timestamp": 1769195299
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 16.41,
-    "timestamp": 1769195315
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 12.68,
-    "timestamp": 1769196696
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 20.21,
-    "timestamp": 1769196717
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 11.81,
-    "timestamp": 1769196729
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 15.08,
-    "timestamp": 1769196744
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 8.38,
-    "timestamp": 1769196752
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 9.7,
-    "timestamp": 1769197632
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 9.33,
-    "timestamp": 1769197642
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 7.88,
-    "timestamp": 1769197649
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 15.39,
-    "timestamp": 1769197665
-  },
-  {
-    "agent": "feedback_agent",
-    "elapsed_seconds": 17.64,
-    "timestamp": 1769197670
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 9.75,
-    "timestamp": 1769197675
-  },
-  {
-    "agent": "pattern_detection_agent",
-    "elapsed_seconds": 7.6,
-    "timestamp": 1769197678
-  },
-  {
-    "agent": "hint_compression_agent",
-    "elapsed_seconds": 6.72,
-    "timestamp": 1769197684
-  },
-  {
-    "agent": "learning_agent",
-    "elapsed_seconds": 12.93,
-    "timestamp": 1769197697
-  },
-  {
-    "agent": "difficulty_agent",
-    "elapsed_seconds": 8.25,
-    "timestamp": 1769197706
+    "elapsed_seconds": 1.9,
+    "timestamp": 1769346841
   }
 ]

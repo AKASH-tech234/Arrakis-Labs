@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-01-25T16:40:53.693390",
+  "config": {
+    "base_url": "http://localhost:8000",
+    "num_users": 10,
+    "duration_s": 10,
+    "requests_per_user": 5
+  },
+  "summary": {
+    "total_requests": 10,
+    "successful_requests": 0,
+    "failed_requests": 10,
+    "throughput_rps": 0.33,
+    "error_rate_pct": 100.0
+  },
+  "latency_ms": {
+    "avg": 30278.2,
+    "p50": 30278.1,
+    "p95": 30283.9,
+    "p99": 30283.9
+  },
+  "mim_metrics": {
+    "avg_decision_time_ms": 0.0,
+    "avg_llm_calls": 0.0
+  },
+  "passed": false
+}

@@ -1,30 +1,72 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# AI Services Dependencies
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LangChain & LLM Providers
+# ─────────────────────────────────────────────────────────────────────────────
 langchain_openai 
 langchain_core
-python-dotenv
-streamlit
 langchain_community
-langserve
+langchain_google_genai
+langchain_groq
+langchain_ollama
+langchain_chroma
+langgraph
+groq
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FastAPI & Web
+# ─────────────────────────────────────────────────────────────────────────────
 fastapi
 uvicorn
+langserve
 sse_starlette
-bs4 
-pypdf
-chromadb
-faiss_cpu
-groq
-langchain_groq
-beautifulsoup4
-sentence_transformers
-langgraph
-pydantic
+httpx
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Database & Cache
+# ─────────────────────────────────────────────────────────────────────────────
 redis
 pymongo
 motor
-httpx
-langchain_google_genai
-langchain_ollama
-langchain_chroma
+chromadb
+faiss_cpu
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ML & Data Science (MIM)
+# ─────────────────────────────────────────────────────────────────────────────
+numpy
+pandas
+scikit-learn
+lightgbm
+joblib
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NLP & Embeddings
+# ─────────────────────────────────────────────────────────────────────────────
+sentence_transformers
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Utilities
+# ─────────────────────────────────────────────────────────────────────────────
+python-dotenv
+pydantic
+bs4 
+beautifulsoup4
+pypdf
+streamlit
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dataset Loading (for MIM training)
+# ─────────────────────────────────────────────────────────────────────────────
+datasets
+huggingface_hub
+pyarrow
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Testing
+# ─────────────────────────────────────────────────────────────────────────────
 pytest
 pytest-asyncio
 pytest-cov
-httpx

@@ -2,13 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import adminContestApi from '../../services/admin/adminContestApi';
 
-/**
- * Admin Contest List Page
- * - Table view of all contests
- * - Quick actions (edit, delete, publish, start, end)
- * - Filters and search
- */
-
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-500/20 text-gray-400', label: 'Draft' },
   scheduled: { color: 'bg-blue-500/20 text-blue-400', label: 'Scheduled' },
@@ -56,7 +49,6 @@ export default function AdminContestList() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  // Modal state
   const [modal, setModal] = useState({ isOpen: false, action: null, contest: null });
 
   const fetchContests = useCallback(async () => {
@@ -163,7 +155,7 @@ export default function AdminContestList() {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-white">Contests</h1>
         <Link
@@ -174,7 +166,7 @@ export default function AdminContestList() {
         </Link>
       </div>
 
-      {/* Filters */}
+      {}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex gap-2">
           {['all', 'draft', 'scheduled', 'live', 'ended'].map((status) => (
@@ -200,7 +192,7 @@ export default function AdminContestList() {
         />
       </div>
 
-      {/* Error */}
+      {}
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
           {error}
@@ -208,7 +200,7 @@ export default function AdminContestList() {
         </div>
       )}
 
-      {/* Loading */}
+      {}
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -218,7 +210,7 @@ export default function AdminContestList() {
           No contests found. Create your first contest!
         </div>
       ) : (
-        /* Table */
+        
         <div className="bg-gray-800 rounded-lg overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-700">
@@ -327,7 +319,7 @@ export default function AdminContestList() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
+      {}
       <ConfirmModal
         isOpen={modal.isOpen}
         onConfirm={() => handleAction(modal.action, modal.contest)}

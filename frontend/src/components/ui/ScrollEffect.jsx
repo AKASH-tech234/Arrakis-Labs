@@ -6,9 +6,6 @@ export default function ScrollEffect() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [particles, setParticles] = useState([]);
 
-  /* ─────────────────────
-     Particle Generation
-  ───────────────────── */
   useEffect(() => {
     const newParticles = Array.from({ length: 28 }).map((_, i) => ({
       id: i,
@@ -21,9 +18,6 @@ export default function ScrollEffect() {
     setParticles(newParticles);
   }, []);
 
-  /* ─────────────────────
-     Scroll Listener
-  ───────────────────── */
   useEffect(() => {
     const handleScroll = () => {
       const max =
@@ -39,7 +33,7 @@ export default function ScrollEffect() {
 
   return (
     <>
-      {/* ───────── TOP PROGRESS BAR (SUBTLE) ───────── */}
+      {}
       <div
         className="fixed top-0 left-0 h-[2px] z-50 bg-gradient-to-r from-[#C17A2F] via-[#E3A94B] to-[#8A4F1D]"
         style={{
@@ -48,7 +42,7 @@ export default function ScrollEffect() {
         }}
       />
 
-      {/* ───────── BACKGROUND AMBIENT GLOW ───────── */}
+      {}
       <div
         className="fixed inset-0 pointer-events-none z-10"
         style={{
@@ -60,7 +54,7 @@ export default function ScrollEffect() {
         }}
       />
 
-      {/* ───────── PARTICLES (IDLE + SCROLL) ───────── */}
+      {}
       <div className="fixed inset-0 pointer-events-none z-20">
         {particles.map((p) => (
           <motion.div
@@ -86,7 +80,7 @@ export default function ScrollEffect() {
         ))}
       </div>
 
-      {/* ───────── SIDE LIGHT (VERY SOFT) ───────── */}
+      {}
       <div
         className="fixed left-0 top-0 w-[1px] h-full pointer-events-none z-30"
         style={{
@@ -104,7 +98,7 @@ export default function ScrollEffect() {
         }}
       />
 
-      {/* ───────── SCROLL INDICATOR ───────── */}
+      {}
       {scrollY < 1000 && (
         <motion.div
           className="fixed bottom-10 right-10 z-40 flex flex-col items-center gap-2 opacity-70"

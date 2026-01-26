@@ -1,16 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import contestApi from '../../services/contestApi';
+import contestApi from '../../services/contest/contestApi';
 import { useAuth } from '../../context/AuthContext';
-import { useContestTimer, useCountdownTimer } from '../../hooks/useContestTimer';
-import useContestWebSocket from '../../hooks/useContestWebSocket';
-
-/**
- * Contest Detail/Lobby Page
- * Pre-contest: Registration & countdown
- * During: Problem list & navigation to problems
- * Post: Results & analytics
- */
+import { useContestTimer, useCountdownTimer } from '../../hooks/contest/useContestTimer';
+import useContestWebSocket from '../../hooks/contest/useContestWebSocket';
 
 function Timer({ timeLeft, label, variant = 'default' }) {
   const formatTime = (seconds) => {
@@ -225,11 +218,8 @@ export default function ContestDetail() {
   const [registering, setRegistering] = useState(false);
   const [joining, setJoining] = useState(false);
 
-  // WebSocket rooms use the real contest id (not slug)
-  // to match Redis leaderboard keys and backend notifications.
   const wsContestId = contest?.isLive ? contest?.id : null;
 
-  // WebSocket for real-time updates
   const {
     isConnected,
     leaderboard: wsLeaderboard,
@@ -239,7 +229,7 @@ export default function ContestDetail() {
   } = useContestWebSocket(wsContestId, {
     token,
     onContestStart: () => {
-      // Refresh contest data
+      
       fetchContest();
     },
     onContestEnd: () => {
@@ -247,8 +237,6 @@ export default function ContestDetail() {
     },
   });
 
-
-  // Timers
   const { formattedCountdown, hasStarted } = useCountdownTimer(
     contest?.startTime,
     { serverTime, onStart: () => fetchContest() }
@@ -342,15 +330,15 @@ export default function ContestDetail() {
   const isParticipating = contest?.registration?.status === 'participating';
 
   const getTimerVariant = () => {
-    if (timeLeft <= 300) return 'danger'; // 5 minutes
-    if (timeLeft <= 900) return 'warning'; // 15 minutes
+    if (timeLeft <= 300) return 'danger'; 
+    if (timeLeft <= 900) return 'warning'; 
     return 'default';
   };
 
   return (
     <div className="min-h-screen bg-gray-900 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <Link to="/contests" className="text-blue-400 hover:underline text-sm mb-2 inline-block">
             ← Back to contests
@@ -388,17 +376,17 @@ export default function ContestDetail() {
           </div>
         </div>
 
-        {/* Announcements */}
+        {}
         <Announcements announcements={announcements} />
 
-        {/* Error message */}
+        {}
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
             {error}
           </div>
         )}
 
-        {/* Pre-contest: Countdown & Registration */}
+        {}
         {isUpcoming && (
           <div className="mb-8">
             <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
@@ -427,10 +415,10 @@ export default function ContestDetail() {
           </div>
         )}
 
-        {/* Live Contest */}
+        {}
         {isLive && (
           <>
-            {/* Timer Bar */}
+            {}
             <div className="mb-6 bg-gray-800 rounded-lg border border-gray-700 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -455,9 +443,9 @@ export default function ContestDetail() {
               </div>
             </div>
 
-            {/* Main Content Grid */}
+            {}
             <div className="grid lg:grid-cols-3 gap-6">
-              {/* Problems */}
+              {}
               <div className="lg:col-span-2">
                 {contest?.problems?.length > 0 ? (
                   <ProblemList
@@ -475,7 +463,7 @@ export default function ContestDetail() {
                 )}
               </div>
 
-              {/* Leaderboard */}
+              {}
               <div>
                 {contest.showLeaderboardDuringContest && (
                   <Leaderboard
@@ -489,10 +477,10 @@ export default function ContestDetail() {
           </>
         )}
 
-        {/* Post-contest */}
+        {}
         {hasEnded && (
           <div className="space-y-6">
-            {/* Final Standing */}
+            {}
             {contest.registration && (
               <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Your Result</h2>
@@ -534,7 +522,7 @@ export default function ContestDetail() {
               </div>
             )}
 
-            {/* Problems with solutions */}
+            {}
             {contest?.problems?.length > 0 && (
               <ProblemList
                 problems={contest.problems}
@@ -543,7 +531,7 @@ export default function ContestDetail() {
               />
             )}
 
-            {/* Editorial */}
+            {}
             {contest.editorial && (
               <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Editorial</h2>

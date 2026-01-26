@@ -1,5 +1,4 @@
-// src/components/charts/SubmissionSummary.jsx
-// Recent submissions list
+
 
 function formatTimeAgo(dateLike) {
   if (!dateLike) return "";
@@ -29,7 +28,7 @@ export default function SubmissionSummary({ submissions }) {
 
   return (
     <div className="divide-y divide-[#1A1814]">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between py-2 px-1">
         <span
           className="text-[#3D3D3D] text-[10px] uppercase tracking-wider"
@@ -53,7 +52,7 @@ export default function SubmissionSummary({ submissions }) {
         </div>
       </div>
 
-      {/* Submissions */}
+      {}
       {items.map((submission) => (
         <div
           key={submission.id}

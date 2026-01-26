@@ -1,5 +1,4 @@
-// src/components/feedback/index.js
-// Centralized exports for all feedback components
+
 
 export { default as AIFeedbackPanel } from "./AIFeedbackPanel";
 export {

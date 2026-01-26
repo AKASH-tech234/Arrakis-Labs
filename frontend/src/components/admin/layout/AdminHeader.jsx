@@ -1,5 +1,5 @@
-// src/components/admin/layout/AdminHeader.jsx
-// Top navigation bar for admin panel - Arrakis Labs Dune theme
+
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,6 @@ export default function AdminHeader() {
   const username = user?.email ? user.email.split("@")[0] : "admin";
   const displayName = user?.name || "Administrator";
 
-  // Mock notifications - replace with real data
   const notifications = [
     {
       id: 1,
@@ -42,7 +41,7 @@ export default function AdminHeader() {
       style={{ backgroundColor: "#0A0A08" }}
     >
       <nav className="h-full px-6 flex items-center justify-between">
-        {/* Brand */}
+        {}
         <Link to="/admin" className="flex items-center gap-3">
           <div className="flex flex-col">
             <span
@@ -60,7 +59,7 @@ export default function AdminHeader() {
           </div>
         </Link>
 
-        {/* Center - Quick Actions */}
+        {}
         <div className="flex items-center gap-4">
           <Link
             to="/admin/problems/new"
@@ -80,9 +79,9 @@ export default function AdminHeader() {
           </Link>
         </div>
 
-        {/* Right Section */}
+        {}
         <div className="flex items-center gap-4">
-          {/* View Site Link */}
+          {}
           <a
             href="/problems"
             target="_blank"
@@ -93,7 +92,7 @@ export default function AdminHeader() {
             View Site ↗
           </a>
 
-          {/* Notifications */}
+          {}
           <div className="relative">
             <button
               onClick={() => {
@@ -108,7 +107,7 @@ export default function AdminHeader() {
               )}
             </button>
 
-            {/* Notifications Dropdown */}
+            {}
             <AnimatePresence>
               {notificationsOpen && (
                 <motion.div
@@ -188,7 +187,7 @@ export default function AdminHeader() {
             </AnimatePresence>
           </div>
 
-          {/* Profile Dropdown */}
+          {}
           <div className="relative">
             <button
               onClick={() => {

@@ -1,5 +1,5 @@
-// src/components/charts/ProfileHeader.jsx
-// User profile header with minimal info
+
+
 import { motion } from "framer-motion";
 
 export default function ProfileHeader({ user }) {
@@ -10,7 +10,7 @@ export default function ProfileHeader({ user }) {
 
   return (
     <div className="flex items-start gap-8">
-      {/* Avatar */}
+      {}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -30,7 +30,7 @@ export default function ProfileHeader({ user }) {
         </div>
       </motion.div>
 
-      {/* User Info */}
+      {}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}

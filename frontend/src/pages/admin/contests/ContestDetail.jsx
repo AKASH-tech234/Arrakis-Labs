@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import adminApi from '../../../services/adminApi';
-
-/**
- * Admin Contest Detail View
- * View contest details, participants, submissions, send announcements
- */
+import adminApi from '../../../services/admin/adminApi';
 
 export default function ContestDetail() {
   const { id } = useParams();
@@ -124,7 +119,7 @@ export default function ContestDetail() {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link
@@ -172,7 +167,7 @@ export default function ContestDetail() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
           <p className="text-gray-400 text-sm">Participants</p>
@@ -192,7 +187,7 @@ export default function ContestDetail() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {}
       <div className="border-b border-gray-700 mb-6">
         <div className="flex gap-4">
           {['overview', 'participants', 'leaderboard', 'announcements'].map((tab) => (
@@ -211,10 +206,10 @@ export default function ContestDetail() {
         </div>
       </div>
 
-      {/* Tab Content */}
+      {}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Contest Info */}
+          {}
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Contest Settings</h3>
             <dl className="space-y-3">
@@ -241,7 +236,7 @@ export default function ContestDetail() {
             </dl>
           </div>
 
-          {/* Problems */}
+          {}
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Problems</h3>
             <div className="space-y-2">

@@ -1,8 +1,7 @@
-// src/pages/admin/Dashboard.jsx
-// Admin dashboard overview page - Arrakis Labs Dune theme
+
+
 import { motion } from "framer-motion";
 
-// Mock data - replace with real API calls
 const stats = [
   { label: "Total Problems", value: "247", change: "+12 this week", icon: "⬡" },
   { label: "Active Contests", value: "3", change: "2 scheduled", icon: "◇" },
@@ -70,7 +69,7 @@ const pendingItems = [
 export default function AdminDashboard() {
   return (
     <div className="space-y-8">
-      {/* Page Header */}
+      {}
       <div>
         <h1
           className="text-[#E8E4D9] text-xl uppercase tracking-[0.2em]"
@@ -86,7 +85,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => (
           <motion.div
@@ -124,9 +123,9 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Main Content Grid */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
+        {}
         <div
           className="lg:col-span-2 border border-[#1A1814]"
           style={{ backgroundColor: "#0D0D0B" }}
@@ -189,9 +188,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Right Column */}
+        {}
         <div className="space-y-6">
-          {/* Pending Actions */}
+          {}
           <div
             className="border border-[#1A1814]"
             style={{ backgroundColor: "#0D0D0B" }}
@@ -229,7 +228,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* System Status */}
+          {}
           <div
             className="border border-[#1A1814]"
             style={{ backgroundColor: "#0D0D0B" }}

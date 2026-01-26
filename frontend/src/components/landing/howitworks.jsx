@@ -1,5 +1,5 @@
-// src/components/landing/HowItWorks.jsx - Dune-Inspired
-// eslint-disable-next-line no-unused-vars
+
+
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
@@ -41,20 +41,15 @@ function StepCard({ step, index }) {
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ type: "spring", stiffness: 420, damping: 30, delay: index * 0.15 }}
 
-      /* ⚡ Faster hover response */
       whileHover={{
         y: -6,
         boxShadow: "0 0 60px rgba(245, 158, 11, 0.12)",
       }}
       whileTap={{ y: -4 }}
-      // transition={{
-      //   type: "spring",
-      //   stiffness: 420,
-      //   damping: 30,
-      // }}
+
       className="relative group"
     >
-      {/* Connector line */}
+      {}
       {index < steps.length - 1 && (
         <div className="hidden lg:block absolute top-6 left-[calc(100%+8px)] w-[calc(100%-16px)] h-px 
                         bg-gradient-to-r from-[#92400E]/40 to-transparent 
@@ -63,7 +58,7 @@ function StepCard({ step, index }) {
       )}
 
       <div className="relative">
-        {/* Step number */}
+        {}
         <div
           className="w-12 h-12 bg-gradient-to-br from-[#92400E] to-[#D97706] 
                      flex items-center justify-center mb-6 
@@ -116,7 +111,7 @@ export default function HowItWorks() {
       style={{ backgroundColor: "#0A0A08" }}
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-12">
-        {/* Section Header */}
+        {}
         <motion.div
           ref={headerRef}
           initial={{ opacity: 0, y: 20 }}
@@ -155,7 +150,7 @@ export default function HowItWorks() {
           </p>
         </motion.div>
 
-        {/* Steps Grid */}
+        {}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8">
           {steps.map((step, index) => (
             <StepCard key={step.number} step={step} index={index} />

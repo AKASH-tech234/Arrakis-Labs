@@ -1,5 +1,4 @@
-// src/components/admin/common/Pagination.jsx
-// Page navigation component - Arrakis Labs Dune theme
+
 
 export default function Pagination({
   currentPage,
@@ -14,7 +13,6 @@ export default function Pagination({
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-  // Calculate page numbers to show
   const getPageNumbers = () => {
     if (totalPages <= maxPageButtons) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -50,7 +48,7 @@ export default function Pagination({
 
   return (
     <div className="flex items-center justify-between py-4">
-      {/* Item count */}
+      {}
       {showItemCount && (
         <p
           className="text-[#78716C] text-xs uppercase tracking-wider"
@@ -60,9 +58,9 @@ export default function Pagination({
         </p>
       )}
 
-      {/* Page controls */}
+      {}
       <div className="flex items-center gap-1">
-        {/* Previous button */}
+        {}
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -75,7 +73,7 @@ export default function Pagination({
           ← Prev
         </button>
 
-        {/* Page numbers */}
+        {}
         {showPageNumbers && (
           <div className="flex items-center gap-1 mx-2">
             {pageNumbers.map((page, idx) =>
@@ -106,7 +104,7 @@ export default function Pagination({
           </div>
         )}
 
-        {/* Next button */}
+        {}
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}

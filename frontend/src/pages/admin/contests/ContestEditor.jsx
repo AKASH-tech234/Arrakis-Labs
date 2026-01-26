@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import adminApi from '../../../services/adminApi';
-
-/**
- * Admin Contest Editor
- * Create and edit contests
- */
+import adminApi from '../../../services/admin/adminApi';
 
 export default function ContestEditor() {
   const { id } = useParams();
@@ -54,8 +49,7 @@ export default function ContestEditor() {
       setLoading(true);
       const response = await adminApi.get(`/contests/${id}`);
       const contest = response.data.data;
-      
-      // Format datetime for input
+
       const startDate = new Date(contest.startTime);
       const localDateTime = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000)
         .toISOString()
@@ -111,11 +105,11 @@ export default function ContestEditor() {
 
   const addProblem = (problem) => {
     if (formData.problems.find(p => p.problemId === problem._id)) {
-      return; // Already added
+      return; 
     }
     
     const order = formData.problems.length;
-    const label = String.fromCharCode(65 + order); // A, B, C...
+    const label = String.fromCharCode(65 + order); 
     
     setFormData(prev => ({
       ...prev,
@@ -229,7 +223,7 @@ export default function ContestEditor() {
 
   return (
     <div className="p-6 max-w-5xl">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-4 mb-6">
         <Link
           to="/admin/contests"
@@ -256,7 +250,7 @@ export default function ContestEditor() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Info */}
+        {}
         <section className="bg-gray-800 rounded-lg border border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
           
@@ -322,11 +316,11 @@ export default function ContestEditor() {
           </div>
         </section>
 
-        {/* Problems */}
+        {}
         <section className="bg-gray-800 rounded-lg border border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Problems</h2>
           
-          {/* Selected Problems */}
+          {}
           {formData.problems.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-400 mb-3">Selected Problems ({formData.problems.length})</h3>
@@ -381,7 +375,7 @@ export default function ContestEditor() {
             </div>
           )}
 
-          {/* Problem Search */}
+          {}
           <div>
             <h3 className="text-sm font-medium text-gray-400 mb-3">Add Problems</h3>
             <input
@@ -418,7 +412,7 @@ export default function ContestEditor() {
           </div>
         </section>
 
-        {/* Scoring & Rules */}
+        {}
         <section className="bg-gray-800 rounded-lg border border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Scoring & Rules</h2>
           
@@ -526,7 +520,7 @@ export default function ContestEditor() {
           </div>
         </section>
 
-        {/* Submit */}
+        {}
         <div className="flex items-center justify-end gap-4">
           <Link
             to="/admin/contests"

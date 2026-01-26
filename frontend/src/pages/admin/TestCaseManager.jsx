@@ -7,7 +7,7 @@ import {
   updateTestCase,
   deleteTestCase,
   toggleTestCaseHidden,
-} from "../../services/adminApi";
+} from "../../services/admin/adminApi";
 import {
   ArrowLeft,
   Plus,
@@ -159,7 +159,7 @@ const TestCaseManager = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-4">
         <Link
           to="/admin/questions"
@@ -180,7 +180,7 @@ const TestCaseManager = () => {
         </button>
       </div>
 
-      {/* Error */}
+      {}
       {error && (
         <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-400" />
@@ -194,7 +194,7 @@ const TestCaseManager = () => {
         </div>
       )}
 
-      {/* Security Notice */}
+      {}
       <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
         <p className="text-sm text-amber-400">
           ⚠️ <strong>Hidden test cases</strong> are never exposed to users. They only see pass/fail results during submission.
@@ -203,7 +203,7 @@ const TestCaseManager = () => {
         </p>
       </div>
 
-      {/* New Test Case Form */}
+      {}
       {showNewForm && (
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 space-y-4">
           <div className="flex items-center justify-between">
@@ -286,7 +286,7 @@ const TestCaseManager = () => {
         </div>
       )}
 
-      {/* Test Cases List */}
+      {}
       {testCases.length === 0 ? (
         <div className="text-center py-12">
           <CheckCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
@@ -307,7 +307,7 @@ const TestCaseManager = () => {
               className="p-4 rounded-xl bg-gray-800/50 border border-gray-700"
             >
               {editingId === tc.id ? (
-                // Edit Form
+                
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Label</label>
@@ -369,7 +369,7 @@ const TestCaseManager = () => {
                   </div>
                 </div>
               ) : (
-                // Display
+                
                 <>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
