@@ -39,6 +39,9 @@ from app.rag.retriever import store_user_feedback
 # MIM v3.0
 from app.mim.mim_decision import MIMDecision
 
+# v3.2: Cognitive Profile Persistence
+from app.db.cognitive_profile_store import persist_cognitive_profile
+
 logger = logging.getLogger("async_workflow")
 
 
@@ -407,6 +410,13 @@ def store_memory_node(state: AsyncState) -> AsyncState:
     if diff_adj and hasattr(diff_adj, 'action'):
         memory_parts.append(f"Difficulty adjustment: {diff_adj.action}")
     
+    # v3.2: Add MIM root cause to memory
+    mim_decision = state.get("mim_decision")
+    if mim_decision:
+        root_cause = getattr(mim_decision, 'root_cause', None)
+        if root_cause:
+            memory_parts.append(f"Root cause: {root_cause}")
+    
     mistake_summary = " | ".join(memory_parts)
     
     try:
@@ -440,6 +450,69 @@ def store_memory_node(state: AsyncState) -> AsyncState:
     return state
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3.2: PERSIST COGNITIVE PROFILE NODE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def persist_profile_node(state: AsyncState) -> AsyncState:
+    """
+    ASYNC v3.2: Persist cognitive profile to MongoDB.
+    
+    THIS IS THE CRITICAL FIX:
+    - Previously: Profile was computed but NEVER persisted
+    - Now: Profile deltas are accumulated and stored in MongoDB
+    
+    Called AFTER learning and difficulty agents complete.
+    Uses accumulated data from MIM, learning, difficulty agents.
+    """
+    start = time.time()
+    logger.info("🧠 [ASYNC] persisting cognitive profile to MongoDB (v3.2)")
+    
+    user_id = state.get("user_id")
+    if not user_id:
+        logger.warning("⚠️ [ASYNC] persist_profile skipped - no user_id")
+        return state
+    
+    try:
+        # Get all the data to persist
+        mim_decision = state.get("mim_decision")
+        learning_rec = state.get("learning_recommendation")
+        difficulty_adj = state.get("difficulty_adjustment")
+        verdict = state.get("verdict", "unknown")
+        category = state.get("problem_category", "General")
+        
+        # Get problem difficulty
+        problem = state.get("problem") or {}
+        difficulty = problem.get("difficulty", "Medium") if isinstance(problem, dict) else "Medium"
+        
+        # Call the persistence function
+        success = persist_cognitive_profile(
+            user_id=user_id,
+            mim_decision=mim_decision,
+            learning_recommendation=learning_rec,
+            difficulty_adjustment=difficulty_adj,
+            verdict=verdict,
+            category=category,
+            difficulty=difficulty
+        )
+        
+        if success:
+            logger.info(f"✅ [ASYNC] Cognitive profile persisted for user={user_id}")
+        else:
+            logger.warning(f"⚠️ [ASYNC] Failed to persist cognitive profile for user={user_id}")
+            
+    except Exception as e:
+        logger.error(f"❌ [ASYNC] persist_profile failed: {e}")
+        logger.error(traceback.format_exc())
+    
+    elapsed = time.time() - start
+    if "_async_timings" not in state:
+        state["_async_timings"] = {}
+    state["_async_timings"]["persist_profile"] = elapsed
+    
+    return state
+
+
 def _async_timing_summary(state: AsyncState) -> AsyncState:
     """Final node: Log async workflow timing summary"""
     if state.get("_async_start"):
@@ -466,8 +539,9 @@ def build_async_workflow():
     Build ASYNC workflow graph.
     
     FLOW (all nodes are guarded and can skip):
-    learning → difficulty → weekly_report → store_memory → timing_summary → END
+    learning → difficulty → weekly_report → store_memory → persist_profile → timing_summary → END
     
+    v3.2: Added persist_profile node to save cognitive profile to MongoDB.
     This workflow runs in background and NEVER blocks user response.
     """
     graph = StateGraph(AsyncState)
@@ -476,6 +550,7 @@ def build_async_workflow():
     graph.add_node("difficulty", difficulty_node)
     graph.add_node("weekly_report", weekly_report_node)
     graph.add_node("store_memory", store_memory_node)
+    graph.add_node("persist_profile", persist_profile_node)  # v3.2: NEW
     graph.add_node("timing_summary", _async_timing_summary)
 
     graph.set_entry_point("learning")
@@ -484,7 +559,8 @@ def build_async_workflow():
     graph.add_edge("learning", "difficulty")
     graph.add_edge("difficulty", "weekly_report")
     graph.add_edge("weekly_report", "store_memory")
-    graph.add_edge("store_memory", "timing_summary")
+    graph.add_edge("store_memory", "persist_profile")  # v3.2: NEW
+    graph.add_edge("persist_profile", "timing_summary")  # v3.2: NEW
     graph.add_edge("timing_summary", END)
 
     return graph.compile()
