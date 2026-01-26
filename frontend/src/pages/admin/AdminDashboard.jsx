@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { getDashboardStats } from "../../services/admin/adminApi";
 import {
@@ -13,6 +14,8 @@ import {
   TrendingUp,
   AlertTriangle,
   Loader2,
+  Trophy,
+  Flame,
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -41,16 +44,16 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-2">
+      <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5" />
-        {error}
+        <span style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{error}</span>
       </div>
     );
   }
@@ -60,176 +63,366 @@ const AdminDashboard = () => {
       title: "Total Questions",
       value: stats?.questions?.total || 0,
       icon: FileText,
-      color: "bg-blue-500",
+      accent: true,
       link: "/admin/questions",
     },
     {
       title: "Total Test Cases",
       value: stats?.testCases?.total || 0,
       icon: CheckCircle,
-      color: "bg-green-500",
       subtext: `${stats?.testCases?.hidden || 0} hidden`,
     },
     {
       title: "Total Submissions",
       value: stats?.submissions?.total || 0,
       icon: TrendingUp,
-      color: "bg-purple-500",
     },
     {
       title: "Total Users",
       value: stats?.users || 0,
       icon: Users,
-      color: "bg-orange-500",
     },
   ];
 
   const difficultyBreakdown = [
-    { label: "Easy", count: stats?.questions?.byDifficulty?.Easy || 0, color: "text-green-400" },
-    { label: "Medium", count: stats?.questions?.byDifficulty?.Medium || 0, color: "text-yellow-400" },
-    { label: "Hard", count: stats?.questions?.byDifficulty?.Hard || 0, color: "text-red-400" },
+    { label: "Easy", count: stats?.questions?.byDifficulty?.Easy || 0, color: "text-[#78716C]", bg: "bg-[#78716C]" },
+    { label: "Medium", count: stats?.questions?.byDifficulty?.Medium || 0, color: "text-[#D97706]", bg: "bg-[#D97706]" },
+    { label: "Hard", count: stats?.questions?.byDifficulty?.Hard || 0, color: "text-[#92400E]", bg: "bg-[#92400E]" },
   ];
 
   const submissionBreakdown = [
     { label: "Accepted", count: stats?.submissions?.byStatus?.accepted || 0, icon: CheckCircle, color: "text-green-400" },
     { label: "Wrong Answer", count: stats?.submissions?.byStatus?.wrong_answer || 0, icon: XCircle, color: "text-red-400" },
-    { label: "TLE", count: stats?.submissions?.byStatus?.time_limit_exceeded || 0, icon: Clock, color: "text-yellow-400" },
+    { label: "TLE", count: stats?.submissions?.byStatus?.time_limit_exceeded || 0, icon: Clock, color: "text-[#D97706]" },
   ];
 
   return (
     <div className="space-y-8">
-      {}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">Welcome back, {admin?.email}</p>
-      </div>
+      {/* Header Section */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+          <h1 
+            className="text-2xl font-bold text-[#E8E4D9] tracking-wide"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Dashboard
+          </h1>
+        </div>
+        <p 
+          className="text-[#78716C] text-sm uppercase tracking-widest ml-3"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          Welcome back, {admin?.email}
+        </p>
+      </motion.div>
 
-      {}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
         <Link
           to="/admin/upload"
-          className="p-4 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-orange-500/30 hover:border-orange-500/50 transition-colors group"
+          className="group relative overflow-hidden rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#D97706]/10"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/20">
-              <Upload className="h-6 w-6 text-orange-400" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-[#D97706]/10 group-hover:bg-[#D97706]/20 transition-colors">
+              <Upload className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors">
+              <h3 
+                className="font-semibold text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
                 Upload CSV
               </h3>
-              <p className="text-sm text-gray-400">Bulk import questions</p>
+              <p 
+                className="text-xs text-[#78716C] uppercase tracking-wider mt-0.5"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Bulk import questions
+              </p>
             </div>
           </div>
         </Link>
 
         <Link
           to="/admin/questions/new"
-          className="p-4 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 hover:border-blue-500/50 transition-colors group"
+          className="group relative overflow-hidden rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#D97706]/10"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20">
-              <FileText className="h-6 w-6 text-blue-400" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-[#D97706]/10 group-hover:bg-[#D97706]/20 transition-colors">
+              <FileText className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <h3 className="font-medium text-white group-hover:text-blue-400 transition-colors">
+              <h3 
+                className="font-semibold text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
                 New Question
               </h3>
-              <p className="text-sm text-gray-400">Create manually</p>
+              <p 
+                className="text-xs text-[#78716C] uppercase tracking-wider mt-0.5"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Create manually
+              </p>
             </div>
           </div>
         </Link>
 
         <Link
           to="/admin/questions"
-          className="p-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 transition-colors group"
+          className="group relative overflow-hidden rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#D97706]/10"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/20">
-              <LayoutDashboard className="h-6 w-6 text-purple-400" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-[#D97706]/10 group-hover:bg-[#D97706]/20 transition-colors">
+              <LayoutDashboard className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <h3 className="font-medium text-white group-hover:text-purple-400 transition-colors">
+              <h3 
+                className="font-semibold text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
                 Manage Questions
               </h3>
-              <p className="text-sm text-gray-400">Edit & view all</p>
+              <p 
+                className="text-xs text-[#78716C] uppercase tracking-wider mt-0.5"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Edit & view all
+              </p>
             </div>
           </div>
         </Link>
-      </div>
+      </motion.div>
 
-      {}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Overview Section Header */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="flex items-center gap-2"
+      >
+        <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+        <h2 
+          className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          Performance Overview
+        </h2>
+      </motion.div>
+
+      {/* Stats Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         {statCards.map((stat, index) => (
           <div
             key={index}
-            className="p-5 rounded-xl bg-gray-800/50 border border-gray-700"
+            className={`rounded-xl border ${stat.accent ? 'border-[#D97706]/30 bg-[#D97706]/5' : 'border-[#1A1814] bg-[#0F0F0D]'} p-5 hover:border-[#D97706]/40 transition-colors`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">{stat.title}</p>
-                <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
+                <p 
+                  className="text-[10px] uppercase tracking-widest text-[#78716C] mb-1"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {stat.title}
+                </p>
+                <p 
+                  className="text-3xl font-bold text-[#E8E4D9]"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {stat.value}
+                </p>
                 {stat.subtext && (
-                  <p className="text-xs text-gray-500 mt-1">{stat.subtext}</p>
+                  <p 
+                    className="text-[10px] text-[#78716C] mt-1 uppercase tracking-wider"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    {stat.subtext}
+                  </p>
                 )}
               </div>
-              <div className={`p-3 rounded-xl ${stat.color}/20`}>
-                <stat.icon className={`h-6 w-6 ${stat.color.replace("bg-", "text-")}`} />
+              <div className={`p-3 rounded-lg ${stat.accent ? 'bg-[#D97706]/10' : 'bg-[#1A1814]'}`}>
+                <stat.icon className={`h-5 w-5 ${stat.accent ? 'text-[#D97706]' : 'text-[#78716C]'}`} />
               </div>
             </div>
             {stat.link && (
               <Link
                 to={stat.link}
-                className="mt-3 text-sm text-orange-400 hover:text-orange-300 inline-block"
+                className="mt-4 text-xs text-[#D97706] hover:text-[#F59E0B] inline-flex items-center gap-1 uppercase tracking-wider transition-colors"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                View all →
+                View all 
+                <span className="text-sm">→</span>
               </Link>
             )}
           </div>
         ))}
-      </div>
+      </motion.div>
 
-      {}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {}
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Questions by Difficulty</h3>
-          <div className="space-y-3">
+      {/* Analytics Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {/* Questions by Difficulty */}
+        <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-6 hover:border-[#D97706]/40 transition-colors">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-1 h-4 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+            <h3 
+              className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Questions by Difficulty
+            </h3>
+          </div>
+          <div className="space-y-4">
             {difficultyBreakdown.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <span className={`font-medium ${item.color}`}>{item.label}</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 rounded-full bg-gray-700 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${item.color.replace("text-", "bg-")}`}
-                      style={{
-                        width: `${stats?.questions?.total ? (item.count / stats.questions.total) * 100 : 0}%`,
-                      }}
+                <span 
+                  className={`font-semibold text-sm uppercase tracking-wider ${item.color}`}
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {item.label}
+                </span>
+                <div className="flex items-center gap-4">
+                  <div className="w-32 h-1.5 rounded-full bg-[#1A1814] overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${stats?.questions?.total ? (item.count / stats.questions.total) * 100 : 0}%` }}
+                      transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
+                      className={`h-full rounded-full ${item.bg}`}
                     />
                   </div>
-                  <span className="text-gray-400 w-8 text-right">{item.count}</span>
+                  <span 
+                    className="text-[#E8E4D9] w-8 text-right font-bold"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    {item.count}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {}
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Submissions by Status</h3>
-          <div className="space-y-3">
+        {/* Submissions by Status */}
+        <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-6 hover:border-[#D97706]/40 transition-colors">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-1 h-4 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+            <h3 
+              className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Submissions by Status
+            </h3>
+          </div>
+          <div className="space-y-4">
             {submissionBreakdown.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <item.icon className={`h-4 w-4 ${item.color}`} />
-                  <span className="text-gray-300">{item.label}</span>
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-[#0A0A08] hover:bg-[#1A1814]/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#1A1814]">
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                  </div>
+                  <span 
+                    className="text-[#E8E4D9] text-sm font-medium"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    {item.label}
+                  </span>
                 </div>
-                <span className={`font-medium ${item.color}`}>{item.count}</span>
+                <span 
+                  className={`font-bold text-lg ${item.color}`}
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {item.count}
+                </span>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Additional Quick Links */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+          <h2 
+            className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            More Actions
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link
+            to="/admin/potd"
+            className="group flex items-center gap-4 rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors"
+          >
+            <div className="p-2.5 rounded-lg bg-[#1A1814] group-hover:bg-[#D97706]/10 transition-colors">
+              <Flame className="h-5 w-5 text-[#78716C] group-hover:text-[#D97706] transition-colors" />
+            </div>
+            <div>
+              <h3 
+                className="text-[#E8E4D9] font-medium group-hover:text-[#F59E0B] transition-colors"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                POTD Scheduler
+              </h3>
+              <p 
+                className="text-[10px] text-[#78716C] uppercase tracking-wider"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Schedule problem of the day
+              </p>
+            </div>
+          </Link>
+          <Link
+            to="/admin/contests"
+            className="group flex items-center gap-4 rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors"
+          >
+            <div className="p-2.5 rounded-lg bg-[#1A1814] group-hover:bg-[#D97706]/10 transition-colors">
+              <Trophy className="h-5 w-5 text-[#78716C] group-hover:text-[#D97706] transition-colors" />
+            </div>
+            <div>
+              <h3 
+                className="text-[#E8E4D9] font-medium group-hover:text-[#F59E0B] transition-colors"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Manage Contests
+              </h3>
+              <p 
+                className="text-[10px] text-[#78716C] uppercase tracking-wider"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Create and manage competitions
+              </p>
+            </div>
+          </Link>
+        </div>
+      </motion.div>
     </div>
   );
 };
