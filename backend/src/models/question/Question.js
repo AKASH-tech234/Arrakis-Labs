@@ -64,6 +64,12 @@ const questionSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Problem type for UI category column (e.g., "Math", "Array")
+    categoryType: {
+      type: String,
+      default: null,
+      index: true,
+    },
     // Primary topic/category (e.g., "Arrays", "Dynamic Programming")
     topic: {
       type: String,

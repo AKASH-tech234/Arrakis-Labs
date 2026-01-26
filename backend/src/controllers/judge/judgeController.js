@@ -640,7 +640,7 @@ export const getPublicQuestions = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
-        .select("title difficulty tags examples createdAt")
+        .select("title difficulty tags categoryType examples createdAt")
         .lean(),
       Question.countDocuments(query),
     ]);
