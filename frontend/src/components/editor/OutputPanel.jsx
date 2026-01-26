@@ -55,13 +55,34 @@ function parseTestResults(output) {
     const data = typeof output === "string" ? JSON.parse(output) : output;
     
     if (data.results && Array.isArray(data.results)) {
+      // Determine the actual status based on results
+      let status = data.status;
+      if (!status) {
+        if (data.allPassed) {
+          status = "accepted";
+        } else {
+          // Check specific error types
+          const hasCompileError = data.results.some(r => r.compileError);
+          const hasRuntimeError = data.results.some(r => r.runtimeError);
+          const hasTLE = data.results.some(r => r.timedOut);
+          
+          if (hasCompileError) status = "compile_error";
+          else if (hasTLE) status = "time_limit_exceeded";
+          else if (hasRuntimeError) status = "runtime_error";
+          else status = "wrong_answer";
+        }
+      }
+      
       return {
         isSubmit: data.status !== undefined,
-        status: data.status || (data.allPassed ? "accepted" : "wrong_answer"),
+        status,
         results: data.results,
         passedCount: data.passedCount || 0,
         totalCount: data.totalCount || data.results.length,
         allPassed: data.allPassed || false,
+        firstFailingIndex: data.firstFailingIndex ?? -1,
+        submissionId: data.submissionId || null,
+        aiFeedback: data.aiFeedback || null,
       };
     }
     return null;
@@ -114,7 +135,7 @@ function StatusBadge({ passed, timedOut, compileError, runtimeError }) {
 
 // LeetCode-style test case display
 function TestCaseDisplay({ result, index, isSubmit }) {
-  const { stdin, expectedStdout, actualStdout, passed, timedOut, compileError, stderr, isHidden } = result;
+  const { stdin, expectedStdout, actualStdout, passed, timedOut, compileError, runtimeError, stderr, isHidden } = result;
   
   // Check if we have actual data to display (backend now exposes hidden test case data on failure)
   const hasData = stdin !== undefined || expectedStdout !== undefined || actualStdout !== undefined;
@@ -186,7 +207,7 @@ function TestCaseDisplay({ result, index, isSubmit }) {
         <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
           Status:
         </div>
-        <StatusBadge passed={passed} timedOut={timedOut} compileError={compileError} />
+        <StatusBadge passed={passed} timedOut={timedOut} compileError={compileError} runtimeError={runtimeError} />
       </div>
 
       {/* Error Output */}
@@ -206,53 +227,90 @@ function TestCaseDisplay({ result, index, isSubmit }) {
   );
 }
 
-// Submit result summary
+// Submit result summary - LeetCode-style
 function SubmitResultSummary({ parsedData, onViewTestCase }) {
-  const { status, passedCount, totalCount, results } = parsedData;
+  const { status, passedCount, totalCount, results, allPassed, submissionId } = parsedData;
   
   const firstFailingIndex = results.findIndex(r => !r.passed);
   
   const statusConfig = {
-    accepted: { color: "text-green-400", bg: "bg-green-500/10", label: "Accepted", icon: <Check className="w-5 h-5" /> },
-    wrong_answer: { color: "text-red-400", bg: "bg-red-500/10", label: "Wrong Answer", icon: <X className="w-5 h-5" /> },
-    time_limit_exceeded: { color: "text-yellow-400", bg: "bg-yellow-500/10", label: "Time Limit Exceeded", icon: <Clock className="w-5 h-5" /> },
-    compile_error: { color: "text-purple-400", bg: "bg-purple-500/10", label: "Compile Error", icon: <AlertTriangle className="w-5 h-5" /> },
-    runtime_error: { color: "text-red-400", bg: "bg-red-500/10", label: "Runtime Error", icon: <AlertTriangle className="w-5 h-5" /> },
+    accepted: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/30", label: "Accepted", icon: <Check className="w-6 h-6" /> },
+    wrong_answer: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", label: "Wrong Answer", icon: <X className="w-6 h-6" /> },
+    time_limit_exceeded: { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", label: "Time Limit Exceeded", icon: <Clock className="w-6 h-6" /> },
+    compile_error: { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", label: "Compile Error", icon: <AlertTriangle className="w-6 h-6" /> },
+    runtime_error: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", label: "Runtime Error", icon: <AlertTriangle className="w-6 h-6" /> },
   };
   
   const config = statusConfig[status] || statusConfig.wrong_answer;
   
   return (
     <div className="space-y-4">
-      {/* Main Status */}
-      <div className={`${config.bg} rounded-lg p-4 flex items-center gap-3`}>
-        <div className={config.color}>{config.icon}</div>
-        <div>
-          <div className={`text-lg font-semibold ${config.color}`} style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-            {config.label}
+      {/* Main Status - LeetCode-style header */}
+      <div className={`${config.bg} ${config.border} border rounded-lg p-5`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-full ${config.bg} flex items-center justify-center ${config.color}`}>
+            {config.icon}
           </div>
-          <div className="text-[#78716C] text-xs">
-            {passedCount} / {totalCount} test cases passed
+          <div className="flex-1">
+            <div className={`text-xl font-bold ${config.color}`} style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+              {allPassed ? "✓ " : "✗ "}{config.label}
+            </div>
+            <div className="text-[#78716C] text-sm mt-1">
+              {passedCount} / {totalCount} test cases passed
+            </div>
           </div>
         </div>
+        
+        {/* LeetCode-style stats grid for Accepted submissions */}
+        {allPassed && (
+          <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-green-500/20">
+            <div className="text-center">
+              <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                Runtime
+              </div>
+              <div className="text-[#E8E4D9] text-sm font-semibold">
+                — ms
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                Memory
+              </div>
+              <div className="text-[#E8E4D9] text-sm font-semibold">
+                — MB
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                Tests
+              </div>
+              <div className="text-green-400 text-sm font-semibold">
+                {passedCount}/{totalCount}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
-      {/* First Failing Test Case */}
-      {firstFailingIndex >= 0 && !results[firstFailingIndex].isHidden && (
-        <div className="border border-red-500/20 rounded-lg p-4 bg-red-500/5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-red-400 text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-              First Failing Test Case ({firstFailingIndex + 1} / {totalCount})
+      {/* First Failing Test Case - only for wrong answers */}
+      {firstFailingIndex >= 0 && (
+        <div className="border border-red-500/20 rounded-lg overflow-hidden bg-red-500/5">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-red-500/20 bg-red-500/10">
+            <span className="text-red-400 text-xs uppercase tracking-wider font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+              ✗ Failed Test Case {firstFailingIndex + 1} of {totalCount}
+              {results[firstFailingIndex]?.isHidden && " (Hidden)"}
             </span>
             <button
               onClick={() => onViewTestCase(firstFailingIndex)}
               className="text-[#F59E0B] text-xs hover:text-[#FBBF24] transition-colors"
             >
-              View Details →
+              View All Tests →
             </button>
           </div>
           
-          <TestCaseDisplay result={results[firstFailingIndex]} index={firstFailingIndex} isSubmit={true} />
+          <div className="p-4">
+            <TestCaseDisplay result={results[firstFailingIndex]} index={firstFailingIndex} isSubmit={true} />
+          </div>
         </div>
       )}
       
@@ -266,13 +324,13 @@ function SubmitResultSummary({ parsedData, onViewTestCase }) {
             <button
               key={idx}
               onClick={() => onViewTestCase(idx)}
-              className={`px-2 py-1 rounded text-xs transition-colors ${
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                 r.passed 
-                  ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                  : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                  ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30" 
+                  : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
               }`}
             >
-              {r.isHidden ? `#${idx + 1} (H)` : `#${idx + 1}`}
+              {r.passed ? "✓" : "✗"} {idx + 1}{r.isHidden ? " (H)" : ""}
             </button>
           ))}
         </div>
@@ -358,6 +416,49 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
 
         return (
           <div className="space-y-4">
+            {/* LeetCode-style "All Testcases Passed" Banner for Run */}
+            {!parsedData.isSubmit && parsedData.allPassed && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <div className="text-green-400 font-semibold text-sm" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                    All Testcases Passed
+                  </div>
+                  <div className="text-[#78716C] text-xs">
+                    {parsedData.passedCount} / {parsedData.totalCount} test cases passed — Ready to submit!
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LeetCode-style Status Banner for Submit */}
+            {parsedData.isSubmit && (
+              <div className={`rounded-lg p-4 flex items-center gap-3 ${
+                parsedData.allPassed 
+                  ? "bg-green-500/10 border border-green-500/30" 
+                  : "bg-red-500/10 border border-red-500/30"
+              }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  parsedData.allPassed ? "bg-green-500/20" : "bg-red-500/20"
+                }`}>
+                  {parsedData.allPassed 
+                    ? <Check className="w-5 h-5 text-green-400" />
+                    : <X className="w-5 h-5 text-red-400" />
+                  }
+                </div>
+                <div>
+                  <div className={`font-semibold text-sm ${parsedData.allPassed ? "text-green-400" : "text-red-400"}`} style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                    {parsedData.allPassed ? "✓ Accepted" : "✗ Wrong Answer"}
+                  </div>
+                  <div className="text-[#78716C] text-xs">
+                    {parsedData.passedCount} / {parsedData.totalCount} test cases passed
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Test Case Navigation */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -467,17 +568,26 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
         
         {/* Status Indicator */}
         {status !== "idle" && (
-          <div className={`flex items-center gap-2 px-3 py-1 rounded ${currentStatus.bg}`}>
+          <div className={`flex items-center gap-2 px-3 py-1 rounded ${
+            parsedData?.allPassed ? "bg-[#22C55E]/10" : currentStatus.bg
+          }`}>
             {status === "running" && (
               <div className="w-3 h-3 border-2 border-[#D97706] border-t-transparent rounded-full animate-spin" />
             )}
             {status === "success" && <Check className="w-3 h-3 text-[#22C55E]" />}
             {status === "error" && <X className="w-3 h-3 text-[#EF4444]" />}
             <span 
-              className={`text-[10px] uppercase tracking-wider ${currentStatus.color}`}
+              className={`text-[10px] uppercase tracking-wider ${
+                parsedData?.allPassed ? "text-[#22C55E]" : currentStatus.color
+              }`}
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {currentStatus.label}
+              {parsedData?.status === "accepted" ? "Accepted" : 
+               parsedData?.status === "wrong_answer" ? "Wrong Answer" :
+               parsedData?.status === "time_limit_exceeded" ? "TLE" :
+               parsedData?.status === "compile_error" ? "Compile Error" :
+               parsedData?.status === "runtime_error" ? "Runtime Error" :
+               currentStatus.label}
             </span>
             {parsedData && (
               <span className="text-[10px] text-[#78716C]">
@@ -495,4 +605,3 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
     </div>
   );
 }
-
