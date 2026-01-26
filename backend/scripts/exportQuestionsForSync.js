@@ -40,6 +40,7 @@ async function exportQuestions() {
         difficulty: 1,
         constraints: 1,
         tags: 1,
+        categoryType: 1,
         topic: 1,
         expectedApproach: 1,
         commonMistakes: 1,
@@ -63,6 +64,7 @@ async function exportQuestions() {
       // Current values (may be empty)
       currentData: {
         tags: q.tags || [],
+        categoryType: q.categoryType || null,
         topic: q.topic || null,
         expectedApproach: q.expectedApproach || null,
         commonMistakes: q.commonMistakes || [],
@@ -73,6 +75,7 @@ async function exportQuestions() {
 
       // Fields to fill (copy and edit these)
       toFill: {
+        categoryType: q.categoryType || "FILL_ME",
         topic: q.topic || "FILL_ME",
         expectedApproach: q.expectedApproach || "FILL_ME",
         commonMistakes:
@@ -89,6 +92,7 @@ async function exportQuestions() {
     // Calculate stats
     const stats = {
       totalQuestions: questions.length,
+      withCategoryType: questions.filter((q) => q.categoryType).length,
       withTopic: questions.filter((q) => q.topic).length,
       withExpectedApproach: questions.filter((q) => q.expectedApproach).length,
       withCommonMistakes: questions.filter((q) => q.commonMistakes?.length > 0)
@@ -102,6 +106,9 @@ async function exportQuestions() {
     };
 
     console.log("📈 Current Data Coverage:");
+    console.log(
+      `   - categoryType: ${stats.withCategoryType}/${stats.totalQuestions}`,
+    );
     console.log(`   - topic: ${stats.withTopic}/${stats.totalQuestions}`);
     console.log(
       `   - expectedApproach: ${stats.withExpectedApproach}/${stats.totalQuestions}`,
@@ -140,6 +147,7 @@ async function exportQuestions() {
 
     exportData.forEach((q) => {
       const missing = [];
+      if (q.toFill.categoryType === "FILL_ME") missing.push("categoryType");
       if (q.toFill.topic === "FILL_ME") missing.push("topic");
       if (q.toFill.expectedApproach === "FILL_ME")
         missing.push("expectedApproach");
