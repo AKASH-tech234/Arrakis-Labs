@@ -342,8 +342,10 @@ export const submitCode = async (req, res) => {
 
     const results = [];
     let compileErrorOccurred = false;
+    let firstFailingIndex = -1;
 
-    for (const tc of allTestCases) {
+    for (let i = 0; i < allTestCases.length; i++) {
+      const tc = allTestCases[i];
       try {
         const execution = await executePiston(
           code,
@@ -358,27 +360,24 @@ export const submitCode = async (req, res) => {
           execution.exitCode === 0 &&
           compareOutputs(execution.stdout, tc.expectedStdout);
 
-        if (tc.isHidden) {
-          results.push({
-            label: tc.label,
-            isHidden: true,
-            passed,
-            timedOut: execution.timedOut,
-            compileError: execution.compileError,
-          });
-        } else {
-          results.push({
-            label: tc.label,
-            isHidden: false,
-            stdin: tc.stdin,
-            expectedStdout: tc.expectedStdout,
-            actualStdout: execution.stdout.trim(),
-            stderr: execution.stderr,
-            passed,
-            timedOut: execution.timedOut,
-            compileError: execution.compileError,
-          });
+        // Track first failing test case
+        if (!passed && firstFailingIndex === -1) {
+          firstFailingIndex = i;
         }
+
+        // Always store full details - we decide what to expose in the response
+        results.push({
+          label: tc.label,
+          isHidden: tc.isHidden,
+          stdin: tc.stdin,
+          expectedStdout: tc.expectedStdout,
+          actualStdout: execution.stdout.trim(),
+          stderr: execution.stderr,
+          passed,
+          timedOut: execution.timedOut,
+          compileError: execution.compileError,
+          runtimeError: execution.runtimeError || false,
+        });
 
         if (execution.compileError) {
           compileErrorOccurred = true;
@@ -387,20 +386,23 @@ export const submitCode = async (req, res) => {
       } catch (error) {
         const isServiceError = error.message.includes("unavailable");
 
+        // Track first failing test case
+        if (firstFailingIndex === -1) {
+          firstFailingIndex = i;
+        }
+
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
+          stdin: tc.stdin,
+          expectedStdout: tc.expectedStdout,
+          actualStdout: "",
+          stderr: isServiceError
+            ? "Execution service temporarily unavailable"
+            : error.message,
           passed: false,
           error: true,
           serviceError: isServiceError,
-
-          ...(tc.isHidden
-            ? {}
-            : {
-                stderr: isServiceError
-                  ? "Execution service temporarily unavailable"
-                  : error.message,
-              }),
         });
 
         if (isServiceError) {
@@ -460,18 +462,17 @@ export const submitCode = async (req, res) => {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // AI FEEDBACK GATE: Only request AI for eligible verdicts
+    // AI FEEDBACK GATE: Request AI for all submissions (LeetCode-style)
     // ═══════════════════════════════════════════════════════════════════════════
-    // AI feedback should only run for:
-    // ✓ Wrong Answer - needs diagnosis
+    // AI feedback runs for ALL verdicts:
+    // ✓ Accepted - performance tips, time/space complexity analysis
+    // ✓ Wrong Answer - needs diagnosis + failing test case reference
     // ✓ TLE - needs algorithm optimization guidance
     // ✓ Runtime Error - needs safety/correctness feedback
-    //
-    // AI feedback should NOT run for:
-    // ✗ Accepted - success, no diagnosis needed
     // ✗ Compile Error - show raw compiler output, not AI
     // ✗ Internal Error - infrastructure issue, not code issue
     const AI_ELIGIBLE_STATUSES = [
+      "accepted",
       "wrong_answer",
       "time_limit_exceeded",
       "runtime_error",
@@ -501,6 +502,17 @@ export const submitCode = async (req, res) => {
           await import("../utils/userStatsAggregator.js");
         const userProfile = await getUserAIProfile(userId).catch(() => null);
 
+        // Build failing test case context for AI (if applicable)
+        const failingTestCase = firstFailingIndex >= 0 ? {
+          index: firstFailingIndex,
+          total: allTestCases.length,
+          isHidden: results[firstFailingIndex]?.isHidden || false,
+          input: results[firstFailingIndex]?.stdin || "",
+          expectedOutput: results[firstFailingIndex]?.expectedStdout || "",
+          actualOutput: results[firstFailingIndex]?.actualStdout || "",
+          error: results[firstFailingIndex]?.stderr || "",
+        } : null;
+
         // Call AI service with enriched context
         aiFeedback = await getAIFeedback({
           userId: userId.toString(),
@@ -511,6 +523,10 @@ export const submitCode = async (req, res) => {
           language,
           verdict: status,
           userHistorySummary,
+          // Failing test case context for targeted AI feedback
+          failingTestCase,
+          passedCount,
+          totalCount: allTestCases.length,
           // Enhanced context for AI personalization
           problem: {
             title: question.title,
@@ -549,22 +565,32 @@ export const submitCode = async (req, res) => {
       data: {
         submissionId: submission?._id,
         status,
-        results: results.map((r) => ({
-          label: r.label,
-          isHidden: r.isHidden,
-          passed: r.passed,
-          timedOut: r.timedOut,
-          compileError: r.compileError,
-
-          ...(r.isHidden
-            ? {}
-            : {
-                stdin: r.stdin,
-                expectedStdout: r.expectedStdout,
-                actualStdout: r.actualStdout,
-                stderr: r.stderr,
-              }),
-        })),
+        // LeetCode-style: expose hidden test case details on failure
+        // This allows users to see exactly where they failed
+        firstFailingIndex: !allPassed ? firstFailingIndex : null,
+        results: results.map((r, idx) => {
+          // CRITICAL: On wrong answer, expose ALL test case details (including hidden)
+          // LeetCode shows hidden test case input/output when submission fails
+          const shouldExposeDetails = !allPassed || !r.isHidden;
+          
+          return {
+            label: r.label,
+            isHidden: r.isHidden,
+            passed: r.passed,
+            timedOut: r.timedOut,
+            compileError: r.compileError,
+            runtimeError: r.runtimeError || false,
+            // Expose details for: all visible test cases, OR any test case when submission fails
+            ...(shouldExposeDetails
+              ? {
+                  stdin: r.stdin,
+                  expectedStdout: r.expectedStdout,
+                  actualStdout: r.actualStdout,
+                  stderr: r.stderr,
+                }
+              : {}),
+          };
+        }),
         passedCount,
         totalCount: allTestCases.length,
         allPassed,
@@ -575,7 +601,7 @@ export const submitCode = async (req, res) => {
               explanation: aiFeedback.explanation,
               improvementHint: aiFeedback.improvement_hint,
               detectedPattern: aiFeedback.detected_pattern,
-              feedbackType: aiFeedback.feedback_type || "error_feedback",
+              feedbackType: aiFeedback.feedback_type || (allPassed ? "success_feedback" : "error_feedback"),
               learningRecommendation: aiFeedback.learning_recommendation,
               difficultyAdjustment: aiFeedback.difficulty_adjustment,
               optimizationTips: aiFeedback.optimization_tips || [],
@@ -591,6 +617,12 @@ export const submitCode = async (req, res) => {
               correctCodeExplanation:
                 aiFeedback.correct_code_explanation || null,
               conceptReinforcement: aiFeedback.concept_reinforcement || null,
+              // Reference to the failing test case for UI linking
+              failingTestCaseRef: firstFailingIndex >= 0 ? {
+                index: firstFailingIndex,
+                label: results[firstFailingIndex]?.label || `Test Case ${firstFailingIndex + 1}`,
+                isHidden: results[firstFailingIndex]?.isHidden || false,
+              } : null,
             }
           : null,
       },

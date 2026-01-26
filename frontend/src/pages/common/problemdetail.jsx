@@ -231,7 +231,23 @@ export default function ProblemDetail() {
         ? await submitQuestion(payload)
         : await runQuestion(payload);
 
-      setOutput(JSON.stringify(data, null, 2));
+      // Format output for LeetCode-style display in OutputPanel
+      // The OutputPanel expects a specific structure with results array
+      const formattedOutput = {
+        status: isSubmit ? data.status : (data.allPassed ? "accepted" : "wrong_answer"),
+        results: data.results || [],
+        passedCount: data.passedCount || 0,
+        totalCount: data.totalCount || 0,
+        allPassed: data.allPassed || false,
+        // For submit: include first failing index for easy navigation
+        firstFailingIndex: data.firstFailingIndex ?? -1,
+        // Include AI feedback for submit results
+        aiFeedback: isSubmit ? data.aiFeedback : null,
+        // Include submission ID for linking
+        submissionId: data.submissionId || null,
+      };
+
+      setOutput(formattedOutput);
 
       const isAccepted = isSubmit
         ? data.status === "accepted"
@@ -261,8 +277,14 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
+          // Pass test case results for display in result panel
+          results: data.results || [],
+          passedCount: data.passedCount || 0,
+          totalCount: data.totalCount || 0,
+          firstFailingIndex: data.firstFailingIndex ?? -1,
           // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
           aiFeedback: data.aiFeedback || null,
+          backendSubmissionId: data.submissionId || null,
         };
 
         // Record submission in context (includes aiFeedback if present)
@@ -271,15 +293,13 @@ export default function ProblemDetail() {
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-        // ✨ FIX: Show AI feedback panel instead of navigating away immediately
-        // Only for non-accepted submissions - show hints progressively
-        if (!isAccepted && data.aiFeedback) {
-          setShowFeedback(true); // Show the side panel with hints
-          // If aiFeedback came from backend, use it directly
-          // Otherwise, fetch it via the hook
-        } else if (!isAccepted && aiServiceAvailable) {
-          // No aiFeedback from backend - fetch via hook
-          setShowFeedback(true);
+        // ✨ FIX: ALWAYS open submission result panel after Submit
+        // Panel visibility must NOT be conditional on verdict
+        // The panel should open for: Accepted, Wrong Answer, TLE, Runtime Error, etc.
+        setShowFeedback(true);
+
+        // Fetch AI feedback if not already included and service is available
+        if (!data.aiFeedback && aiServiceAvailable && !isAccepted) {
           fetchFeedback({
             questionId: id,
             code,
@@ -287,9 +307,6 @@ export default function ProblemDetail() {
             verdict: data.status || "wrong_answer",
             errorType: data.errorType,
           });
-        } else if (isAccepted) {
-          // Accepted - navigate to full results page
-          navigate(`/submissions/${submission.id}`);
         }
       }
     } catch (err) {
@@ -587,6 +604,8 @@ export default function ProblemDetail() {
                 }}
                 loading={feedbackLoading}
                 error={feedbackError}
+                // ✨ FIX: Pass submission data so panel can show results even without AI feedback
+                submissionData={lastSubmission}
                 feedback={
                   feedback ||
                   (lastSubmission?.aiFeedback
