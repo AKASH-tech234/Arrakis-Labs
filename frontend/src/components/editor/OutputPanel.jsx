@@ -116,7 +116,11 @@ function StatusBadge({ passed, timedOut, compileError, runtimeError }) {
 function TestCaseDisplay({ result, index, isSubmit }) {
   const { stdin, expectedStdout, actualStdout, passed, timedOut, compileError, stderr, isHidden } = result;
   
-  if (isHidden) {
+  // Check if we have actual data to display (backend now exposes hidden test case data on failure)
+  const hasData = stdin !== undefined || expectedStdout !== undefined || actualStdout !== undefined;
+  
+  // Only show "hidden" message if we truly have no data
+  if (isHidden && !hasData) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -132,6 +136,15 @@ function TestCaseDisplay({ result, index, isSubmit }) {
 
   return (
     <div className="space-y-4">
+      {/* Hidden test case indicator - LeetCode style */}
+      {isHidden && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+          <span className="text-yellow-400 text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+            Test Case {index + 1} (Hidden)
+          </span>
+        </div>
+      )}
+      
       {/* Input */}
       <div>
         <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
