@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import adminApi from '../../../services/admin/adminApi';
+import {
+  ArrowLeft,
+  Users,
+  Clock,
+  Calendar,
+  Award,
+  Edit,
+  Loader2,
+  Send,
+  Trophy,
+  AlertTriangle,
+} from 'lucide-react';
 
 export default function ContestDetail() {
   const { id } = useParams();
@@ -79,13 +92,13 @@ export default function ContestDetail() {
 
   const getStatusColor = (status) => {
     const colors = {
-      draft: 'bg-gray-500',
-      scheduled: 'bg-blue-500',
-      live: 'bg-green-500',
-      ended: 'bg-red-500',
-      cancelled: 'bg-gray-600',
+      draft: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20',
+      scheduled: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20',
+      live: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+      ended: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
     };
-    return colors[status] || 'bg-gray-500';
+    return colors[status] || 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20';
   };
 
   const formatDateTime = (date) => {
@@ -100,17 +113,22 @@ export default function ContestDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
+        </div>
+        <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+          Loading contest...
+        </p>
       </div>
     );
   }
 
   if (!contest) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-gray-400">Contest not found</p>
-        <Link to="/admin/contests" className="text-blue-400 hover:underline mt-2 inline-block">
+      <div className="py-12 text-center" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+        <p className="text-[#78716C]">Contest not found</p>
+        <Link to="/admin/contests" className="text-[#D97706] hover:text-[#F59E0B] mt-2 inline-block">
           Back to contests
         </Link>
       </div>
@@ -118,26 +136,31 @@ export default function ContestDetail() {
   }
 
   return (
-    <div className="p-6">
-      {}
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center justify-between"
+      >
         <div className="flex items-center gap-4">
           <Link
             to="/admin/contests"
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg"
+            className="p-2.5 rounded-lg border border-[#1A1814] bg-[#0F0F0D] hover:border-[#D97706]/40 text-[#78716C] hover:text-[#D97706] transition-all"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-white">{contest.name}</h1>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(contest.status)}`}>
-                {contest.status.toUpperCase()}
+              <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
+              <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">{contest.name}</h1>
+              <span className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${getStatusColor(contest.status)}`}>
+                {contest.status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
+                {contest.status}
               </span>
             </div>
-            <p className="text-gray-400 mt-1">{contest.description || 'No description'}</p>
+            <p className="text-[#78716C] mt-1 ml-3 text-sm">{contest.description || 'No description'}</p>
           </div>
         </div>
         
@@ -146,13 +169,13 @@ export default function ContestDetail() {
             <>
               <button
                 onClick={handleExtendTime}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm"
+                className="px-4 py-2 rounded-lg bg-[#D97706]/10 border border-[#D97706]/20 text-[#D97706] hover:bg-[#D97706]/20 text-sm font-semibold uppercase tracking-wider transition-all"
               >
                 Extend Time
               </button>
               <button
                 onClick={handleForceEnd}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+                className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-sm font-semibold uppercase tracking-wider transition-all"
               >
                 Force End
               </button>
@@ -160,95 +183,126 @@ export default function ContestDetail() {
           )}
           <Link
             to={`/admin/contests/${id}/edit`}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#D97706] text-white text-sm font-semibold uppercase tracking-wider transition-all"
           >
+            <Edit className="w-4 h-4" />
             Edit Contest
           </Link>
         </div>
-      </div>
+      </motion.div>
 
-      {}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-          <p className="text-gray-400 text-sm">Participants</p>
-          <p className="text-2xl font-bold text-white">{participants.length}</p>
+      {/* Stats Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-4"
+      >
+        <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-[#D97706]/10">
+              <Users className="w-4 h-4 text-[#D97706]" />
+            </div>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">Participants</p>
+          </div>
+          <p className="text-2xl font-bold text-[#E8E4D9]">{participants.length}</p>
         </div>
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-          <p className="text-gray-400 text-sm">Problems</p>
-          <p className="text-2xl font-bold text-white">{contest.problems?.length || 0}</p>
+        <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-[#D97706]/10">
+              <Award className="w-4 h-4 text-[#D97706]" />
+            </div>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">Problems</p>
+          </div>
+          <p className="text-2xl font-bold text-[#E8E4D9]">{contest.problems?.length || 0}</p>
         </div>
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-          <p className="text-gray-400 text-sm">Duration</p>
-          <p className="text-2xl font-bold text-white">{formatDuration(contest.duration)}</p>
+        <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-[#D97706]/10">
+              <Clock className="w-4 h-4 text-[#D97706]" />
+            </div>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">Duration</p>
+          </div>
+          <p className="text-2xl font-bold text-[#E8E4D9]">{formatDuration(contest.duration)}</p>
         </div>
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-          <p className="text-gray-400 text-sm">Start Time</p>
-          <p className="text-lg font-semibold text-white">{formatDateTime(contest.startTime)}</p>
+        <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-[#D97706]/10">
+              <Calendar className="w-4 h-4 text-[#D97706]" />
+            </div>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">Start Time</p>
+          </div>
+          <p className="text-lg font-semibold text-[#E8E4D9]">{formatDateTime(contest.startTime)}</p>
         </div>
-      </div>
+      </motion.div>
 
-      {}
-      <div className="border-b border-gray-700 mb-6">
+      {/* Tabs */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="border-b border-[#1A1814]"
+      >
         <div className="flex gap-4">
           {['overview', 'participants', 'leaderboard', 'announcements'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 font-medium text-sm border-b-2 -mb-px transition-colors ${
+              className={`px-4 py-3 font-semibold text-sm uppercase tracking-wider border-b-2 -mb-px transition-colors ${
                 activeTab === tab
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-gray-400 hover:text-white'
+                  ? 'border-[#D97706] text-[#D97706]'
+                  : 'border-transparent text-[#78716C] hover:text-[#E8E4D9]'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      {}
+      {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Contest Settings</h3>
+          {/* Contest Settings */}
+          <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
+            <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">Contest Settings</h3>
             <dl className="space-y-3">
               <div className="flex justify-between">
-                <dt className="text-gray-400">Ranking Type</dt>
-                <dd className="text-white">{contest.rankingType?.toUpperCase()}</dd>
+                <dt className="text-[#78716C]">Ranking Type</dt>
+                <dd className="text-[#E8E4D9]">{contest.rankingType?.toUpperCase()}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-400">Wrong Submission Penalty</dt>
-                <dd className="text-white">{contest.penaltyRules?.wrongSubmissionPenalty} min</dd>
+                <dt className="text-[#78716C]">Wrong Submission Penalty</dt>
+                <dd className="text-[#E8E4D9]">{contest.penaltyRules?.wrongSubmissionPenalty} min</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-400">Public</dt>
-                <dd className="text-white">{contest.isPublic ? 'Yes' : 'No'}</dd>
+                <dt className="text-[#78716C]">Public</dt>
+                <dd className="text-[#E8E4D9]">{contest.isPublic ? 'Yes' : 'No'}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-400">Registration Required</dt>
-                <dd className="text-white">{contest.requiresRegistration ? 'Yes' : 'No'}</dd>
+                <dt className="text-[#78716C]">Registration Required</dt>
+                <dd className="text-[#E8E4D9]">{contest.requiresRegistration ? 'Yes' : 'No'}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-400">Late Join Allowed</dt>
-                <dd className="text-white">{contest.allowLateJoin ? 'Yes' : 'No'}</dd>
+                <dt className="text-[#78716C]">Late Join Allowed</dt>
+                <dd className="text-[#E8E4D9]">{contest.allowLateJoin ? 'Yes' : 'No'}</dd>
               </div>
             </dl>
           </div>
 
-          {}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Problems</h3>
+          {/* Problems */}
+          <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
+            <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">Problems</h3>
             <div className="space-y-2">
               {contest.problems?.map((p) => (
-                <div key={p._id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div key={p._id} className="flex items-center justify-between p-3 bg-[#0F0F0D] border border-[#1A1814] rounded-lg">
                   <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 flex items-center justify-center bg-blue-600 rounded text-white font-bold">
+                    <span className="w-8 h-8 flex items-center justify-center bg-[#D97706] rounded-lg text-white font-bold text-sm">
                       {p.label}
                     </span>
-                    <span className="text-white">{p.problem?.title || 'Unknown'}</span>
+                    <span className="text-[#E8E4D9]">{p.problem?.title || 'Unknown'}</span>
                   </div>
-                  <span className="text-gray-400">{p.points} pts</span>
+                  <span className="text-[#D97706] font-semibold">{p.points} pts</span>
                 </div>
               ))}
             </div>
@@ -257,34 +311,34 @@ export default function ContestDetail() {
       )}
 
       {activeTab === 'participants' && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700">
+        <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden">
           <table className="w-full">
-            <thead className="border-b border-gray-700">
+            <thead className="bg-[#0F0F0D] border-b border-[#1A1814]">
               <tr>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">#</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">User</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Registered</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Joined</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Score</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Rank</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">#</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">User</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Registered</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Joined</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Score</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Rank</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-[#1A1814]">
               {participants.map((p, idx) => (
-                <tr key={p._id} className="hover:bg-gray-700/50">
-                  <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                  <td className="px-4 py-3 text-white">{p.user?.username || 'Unknown'}</td>
-                  <td className="px-4 py-3 text-gray-400">{formatDateTime(p.registeredAt)}</td>
-                  <td className="px-4 py-3 text-gray-400">
+                <tr key={p._id} className="hover:bg-[#0F0F0D] transition-colors">
+                  <td className="px-4 py-3 text-[#78716C]">{idx + 1}</td>
+                  <td className="px-4 py-3 text-[#E8E4D9]">{p.user?.username || 'Unknown'}</td>
+                  <td className="px-4 py-3 text-[#78716C]">{formatDateTime(p.registeredAt)}</td>
+                  <td className="px-4 py-3 text-[#78716C]">
                     {p.joinedAt ? formatDateTime(p.joinedAt) : '-'}
                   </td>
-                  <td className="px-4 py-3 text-white">{p.totalScore}</td>
-                  <td className="px-4 py-3 text-white">{p.finalRank || '-'}</td>
+                  <td className="px-4 py-3 text-[#E8E4D9]">{p.totalScore}</td>
+                  <td className="px-4 py-3 text-[#E8E4D9]">{p.finalRank || '-'}</td>
                 </tr>
               ))}
               {participants.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-[#78716C]">
                     No participants yet
                   </td>
                 </tr>
@@ -295,39 +349,39 @@ export default function ContestDetail() {
       )}
 
       {activeTab === 'leaderboard' && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700">
+        <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden">
           <table className="w-full">
-            <thead className="border-b border-gray-700">
+            <thead className="bg-[#0F0F0D] border-b border-[#1A1814]">
               <tr>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Rank</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">User</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Score</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Penalty</th>
-                <th className="px-4 py-3 text-left text-gray-400 font-medium">Problems</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Rank</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">User</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Score</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Penalty</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Problems</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-[#1A1814]">
               {leaderboard
                 .sort((a, b) => b.totalScore - a.totalScore || a.totalPenalty - b.totalPenalty)
                 .map((p, idx) => (
-                  <tr key={p._id} className="hover:bg-gray-700/50">
-                    <td className="px-4 py-3 text-white font-medium">
+                  <tr key={p._id} className="hover:bg-[#0F0F0D] transition-colors">
+                    <td className="px-4 py-3 text-[#E8E4D9] font-medium">
                       {idx + 1}
                       {idx === 0 && <span className="ml-1">🥇</span>}
                       {idx === 1 && <span className="ml-1">🥈</span>}
                       {idx === 2 && <span className="ml-1">🥉</span>}
                     </td>
-                    <td className="px-4 py-3 text-white">{p.user?.username || 'Unknown'}</td>
-                    <td className="px-4 py-3 text-green-400 font-medium">{p.totalScore}</td>
-                    <td className="px-4 py-3 text-red-400">{p.totalPenalty} min</td>
-                    <td className="px-4 py-3 text-gray-400">
+                    <td className="px-4 py-3 text-[#E8E4D9]">{p.user?.username || 'Unknown'}</td>
+                    <td className="px-4 py-3 text-emerald-400 font-semibold">{p.totalScore}</td>
+                    <td className="px-4 py-3 text-[#92400E]">{p.totalPenalty} min</td>
+                    <td className="px-4 py-3 text-[#78716C]">
                       {p.problemsAttempted?.size || 0} solved
                     </td>
                   </tr>
                 ))}
               {leaderboard.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-[#78716C]">
                     No scores yet
                   </td>
                 </tr>
@@ -338,9 +392,9 @@ export default function ContestDetail() {
       )}
 
       {activeTab === 'announcements' && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Send Announcement</h3>
-          <p className="text-gray-400 text-sm mb-4">
+        <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
+          <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-2">Send Announcement</h3>
+          <p className="text-[#78716C] text-sm mb-4">
             Send a real-time announcement to all participants in this contest.
           </p>
           <textarea
@@ -348,13 +402,14 @@ export default function ContestDetail() {
             onChange={(e) => setAnnouncement(e.target.value)}
             placeholder="Type your announcement message..."
             rows={4}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 resize-none mb-4"
+            className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 resize-none mb-4 transition-all"
           />
           <button
             onClick={handleSendAnnouncement}
             disabled={sendingAnnouncement || !announcement.trim()}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#D97706] text-white font-semibold uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
+            <Send className="w-4 h-4" />
             {sendingAnnouncement ? 'Sending...' : 'Send Announcement'}
           </button>
         </div>

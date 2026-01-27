@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
   LayoutDashboard,
@@ -66,74 +67,154 @@ const AdminSidebar = () => {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+        `relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
           isActive
-            ? "bg-orange-500/20 text-orange-400"
-            : "text-gray-400 hover:text-white hover:bg-gray-800"
+            ? "bg-gradient-to-r from-[#D97706]/15 to-transparent text-[#E8E4D9]"
+            : "text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/60"
         } ${collapsed ? "justify-center" : ""}`
       }
     >
-      <Icon className="h-5 w-5 flex-shrink-0" />
-      {!collapsed && <span className="font-medium">{label}</span>}
+      {({ isActive }) => (
+        <>
+          {/* Active indicator bar */}
+          {isActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-gradient-to-b from-[#F59E0B] via-[#D97706] to-[#92400E] rounded-full shadow-lg shadow-[#D97706]/30" />
+          )}
+          
+          <div
+            className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${
+              isActive
+                ? "bg-[#D97706]/20 shadow-inner"
+                : "bg-transparent group-hover:bg-[#1A1814]"
+            }`}
+          >
+            <Icon
+              className={`h-4 w-4 transition-colors ${
+                isActive
+                  ? "text-[#F59E0B]"
+                  : "text-[#78716C] group-hover:text-[#D97706]"
+              }`}
+            />
+          </div>
+          
+          {!collapsed && (
+            <span
+              className="text-xs tracking-wider font-medium whitespace-nowrap"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              {label}
+            </span>
+          )}
+          
+          {/* Pulsing dot for active state */}
+          {isActive && !collapsed && (
+            <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-[#D97706] shadow-lg shadow-[#D97706]/50 animate-pulse" />
+          )}
+        </>
+      )}
     </NavLink>
   );
 
   return (
     <aside
-      className={`bg-gray-800/50 border-r border-gray-700 flex flex-col transition-all duration-300 ${
-        collapsed ? "w-16" : "w-64"
+      className={`flex flex-col transition-all duration-300 border-r border-[#1A1814] ${
+        collapsed ? "w-[72px]" : "w-60"
       }`}
+      style={{
+        background: "linear-gradient(180deg, #0D0D0B 0%, #0A0A08 100%)",
+      }}
     >
-      {}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+      {/* Logo Header */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-[#1A1814]">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-orange-500/20">
-              <Shield className="h-5 w-5 text-orange-400" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#D97706] to-[#92400E] flex items-center justify-center shadow-lg shadow-[#D97706]/20">
+              <Shield className="w-5 h-5 text-[#0A0A08]" />
             </div>
-            <span className="font-bold text-white">Admin Panel</span>
+            <div className="flex flex-col">
+              <span
+                className="text-[#E8E4D9] font-semibold text-sm tracking-wider"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Admin Panel
+              </span>
+              <span
+                className="text-[#78716C] text-[10px] tracking-[0.15em] uppercase -mt-0.5"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Mentat Trials
+              </span>
+            </div>
           </div>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={`p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors ${
-            collapsed ? "mx-auto" : ""
-          }`}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
-          )}
-        </button>
+        {collapsed && (
+          <div className="w-full flex justify-center">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#D97706] to-[#92400E] flex items-center justify-center shadow-lg shadow-[#D97706]/20">
+              <Shield className="w-5 h-5 text-[#0A0A08]" />
+            </div>
+          </div>
+        )}
       </div>
 
-      {}
-      <nav className="flex-1 p-3 space-y-1">
+      {/* Collapse Toggle - positioned on edge */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-[#1A1814] bg-[#0D0D0B] 
+                   flex items-center justify-center text-[#78716C] hover:text-[#D97706] 
+                   hover:border-[#D97706]/50 hover:bg-[#D97706]/10 transition-all duration-200 shadow-lg z-10"
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronLeft className="h-3.5 w-3.5" />
+        )}
+      </button>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#1A1814] scrollbar-track-transparent">
         {navItems.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
       </nav>
 
-      {}
-      <div className="p-3 border-t border-gray-700">
-        {}
+      {/* User Section & Logout */}
+      <div className="p-3 border-t border-[#1A1814]">
+        {/* User info */}
         {!collapsed && (
-          <div className="px-3 py-2 mb-2">
-            <p className="text-sm text-white font-medium truncate">{admin?.email}</p>
-            <p className="text-xs text-gray-500 capitalize">{admin?.role?.replace("_", " ")}</p>
+          <div className="px-3 py-2 mb-2 rounded-lg bg-[#0F0F0D]">
+            <p 
+              className="text-xs text-[#E8E4D9] font-medium truncate"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              {admin?.email}
+            </p>
+            <p 
+              className="text-[10px] text-[#78716C] uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              {admin?.role?.replace("_", " ")}
+            </p>
           </div>
         )}
 
-        {}
+        {/* Logout button */}
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#78716C] hover:text-[#92400E] hover:bg-[#92400E]/10 transition-all duration-200 group ${
             collapsed ? "justify-center" : ""
           }`}
         >
-          <LogOut className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span className="font-medium">Logout</span>}
+          <div className="p-1.5 rounded-lg bg-transparent group-hover:bg-[#92400E]/10 transition-all">
+            <LogOut className="h-4 w-4 flex-shrink-0 group-hover:text-[#92400E]" />
+          </div>
+          {!collapsed && (
+            <span 
+              className="text-xs tracking-wider font-medium"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Logout
+            </span>
+          )}
         </button>
       </div>
     </aside>
