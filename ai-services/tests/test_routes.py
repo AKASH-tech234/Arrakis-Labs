@@ -299,11 +299,11 @@ class TestProgressiveHints:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MIM ENDPOINT TESTS
+# MIM ENDPOINT TESTS (V3.0)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestMIMEndpoints:
-    """Tests for MIM (Misconception Identification Model) endpoints."""
+    """Tests for MIM (Misconception Identification Model) endpoints - V3.0."""
 
     def test_mim_status_endpoint(self, test_client):
         """Test MIM status endpoint returns model information."""
@@ -314,10 +314,11 @@ class TestMIMEndpoints:
         data = response.json()
         
         if response.status_code == 200:
-            assert "status" in data or "model_status" in data
+            # V3.0: Status can return different structures
+            assert "is_trained" in data or "status" in data or "model_status" in data
 
-    @patch("app.mim.inference.MIMInference")
-    def test_mim_profile_endpoint(self, mock_mim, test_client):
+    @patch("app.mim.inference.MIMDecisionNode")
+    def test_mim_profile_endpoint(self, mock_node, test_client):
         """Test MIM profile endpoint returns user cognitive profile."""
         # Mock MIM response
         mock_instance = MagicMock()
@@ -327,7 +328,7 @@ class TestMIMEndpoints:
             "weaknesses": ["dp", "graphs"],
             "readiness_scores": {"Easy": 0.9, "Medium": 0.7, "Hard": 0.4}
         }
-        mock_mim.return_value = mock_instance
+        mock_node.return_value = mock_instance
         
         response = test_client.get("/ai/mim/profile/test_user_123")
         
@@ -362,15 +363,15 @@ class TestMIMEndpoints:
         # Should return some response (may fail if models not loaded)
         assert response.status_code in [200, 404, 500]
 
-    @patch("app.mim.training.MIMTrainer")
-    def test_mim_train_endpoint(self, mock_trainer, test_client):
+    @patch("app.mim.model.MIMModel")
+    def test_mim_train_endpoint(self, mock_model, test_client):
         """Test MIM training trigger endpoint."""
         mock_instance = MagicMock()
-        mock_instance.train_async.return_value = {"status": "training_started"}
-        mock_trainer.return_value = mock_instance
+        mock_instance.train.return_value = {"status": "training_started"}
+        mock_model.return_value = mock_instance
         
         response = test_client.post("/ai/mim/train")
         
         # Training endpoint exists and responds
-        # May require admin auth in production
-        assert response.status_code in [200, 202, 401, 403, 500]
+        # May require admin auth in production, or validation error if body required
+        assert response.status_code in [200, 202, 401, 403, 422, 500]
