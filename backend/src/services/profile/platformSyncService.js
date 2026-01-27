@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as cheerio from "cheerio";
 import PlatformProfile from "../../models/profile/PlatformProfile.js";
 import PlatformStats from "../../models/profile/PlatformStats.js";
 
@@ -18,6 +19,32 @@ function emptyDifficulty() {
     medium: { solved: 0, attempted: 0 },
     hard: { solved: 0, attempted: 0 },
   };
+}
+
+function buildEmptyExternalStats({ dataSource = "scrape" } = {}) {
+  return {
+    totalSolved: 0,
+    totalAttempted: 0,
+    last30DaysSolved: 0,
+    avgSolvedPerDay: 0,
+    contestsParticipated: 0,
+    currentRating: null,
+    highestRating: null,
+    difficulty: emptyDifficulty(),
+    skills: {},
+    daily: [],
+    dataSource,
+  };
+}
+
+function parseFirstInt(s) {
+  const m = String(s || "").match(/(\d[\d,]*)/);
+  if (!m) return null;
+  return Number(String(m[1]).replace(/,/g, "")) || null;
+}
+
+function normalizeWhitespace(s) {
+  return String(s || "").replace(/\s+/g, " ").trim();
 }
 
 async function fetchLeetCode(handle) {
@@ -188,6 +215,138 @@ async function fetchCodeforces(handle) {
   };
 }
 
+async function fetchCodeChef(handle) {
+  const url = `https://www.codechef.com/users/${encodeURIComponent(handle)}`;
+
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
+  console.info(`Fetching CodeChef stats for handle: ${handle}`);
+  console.info("[codechef] request", { url });
+
+  let res;
+  try {
+    res = await axios.get(url, {
+      headers,
+      timeout: 15000,
+      maxRedirects: 5,
+      validateStatus: () => true,
+    });
+  } catch (err) {
+    console.error("[codechef] request_failed", {
+      url,
+      message: err?.message,
+    });
+    return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: "FETCH_FAILED" };
+  }
+
+  const rawHtml = typeof res?.data === "string" ? res.data : "";
+
+  console.info("[codechef] response", {
+    url,
+    status: res?.status,
+    headers: res?.headers,
+    rawBodyLength: rawHtml.length,
+  });
+
+  if (!rawHtml || res?.status >= 400) {
+    const errorCode = res?.status === 404 ? "NOT_FOUND" : "FETCH_FAILED";
+    console.error("[codechef] bad_status_or_empty_body", {
+      url,
+      status: res?.status,
+      rawBodyLength: rawHtml.length,
+    });
+    return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: errorCode };
+  }
+
+  const blockedSignals = /(access denied|request blocked|captcha|cloudflare)/i;
+  if (blockedSignals.test(rawHtml)) {
+    console.error("[codechef] blocked_detected", {
+      url,
+      status: res?.status,
+      rawBodyLength: rawHtml.length,
+    });
+    return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: "FETCH_BLOCKED" };
+  }
+
+  try {
+    const $ = cheerio.load(rawHtml);
+
+    const ratingCandidates = [
+      $(".rating-number").first().text(),
+      $(".rating").first().text(),
+      $("[class*=rating]").filter((_, el) => normalizeWhitespace($(el).text()) === "Rating").next().text(),
+    ];
+
+    let currentRating = null;
+    for (const c of ratingCandidates) {
+      const n = parseFirstInt(c);
+      if (Number.isFinite(n)) {
+        currentRating = n;
+        break;
+      }
+    }
+
+    if (currentRating === null) {
+      const text = normalizeWhitespace($("body").text());
+      const m = text.match(/\bRating\b\s*[:\-]?\s*(\d{3,5})/i);
+      if (m) currentRating = Number(m[1]) || null;
+    }
+
+    const fullySolvedRegexes = [
+      /Total\s*Problems\s*Solved\s*[:\-]?\s*(\d[\d,]*)/i,
+      /Fully\s*Solved\s*\(\s*(\d[\d,]*)\s*\)/i,
+      /Fully\s*Solved\s*[:\-]?\s*(\d[\d,]*)/i,
+      /Problems\s*Solved\s*[:\-]?\s*(\d[\d,]*)/i,
+      /\"fully_solved\"\s*:\s*(\d+)/i,
+      /fully_solved\s*=\s*(\d+)/i,
+    ];
+
+    const bodyText = normalizeWhitespace($("body").text());
+    let totalSolved = null;
+    for (const re of fullySolvedRegexes) {
+      const m = bodyText.match(re) || rawHtml.match(re);
+      if (m?.[1]) {
+        totalSolved = Number(String(m[1]).replace(/,/g, "")) || null;
+        if (totalSolved !== null) break;
+      }
+    }
+
+    if (totalSolved === null) {
+      const possible = $("*:contains('Fully Solved')")
+        .first()
+        .parent()
+        .text();
+      totalSolved = parseFirstInt(possible);
+    }
+
+    if (!Number.isFinite(totalSolved)) {
+      console.error("[codechef] parse_failed", {
+        url,
+        parsed: { totalSolved, currentRating },
+      });
+      return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: "PARSE_FAILED" };
+    }
+
+    return {
+      ...buildEmptyExternalStats({ dataSource: "scrape" }),
+      totalSolved: totalSolved || 0,
+      currentRating,
+      highestRating: null,
+    };
+  } catch (err) {
+    console.error("[codechef] parse_exception", {
+      url,
+      message: err?.message,
+    });
+    return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: "PARSE_FAILED" };
+  }
+}
+
 export async function syncPlatformProfile(platformProfileId) {
   const profile = await PlatformProfile.findById(platformProfileId);
   if (!profile) throw new Error("Platform profile not found");
@@ -207,6 +366,8 @@ export async function syncPlatformProfile(platformProfileId) {
       fetchedData = await fetchLeetCode(profile.handle);
     } else if (profile.platform === "codeforces") {
       fetchedData = await fetchCodeforces(profile.handle);
+    } else if (profile.platform === "codechef") {
+      fetchedData = await fetchCodeChef(profile.handle);
     }
 
     if (fetchedData) {
@@ -235,15 +396,17 @@ export async function syncPlatformProfile(platformProfileId) {
         { upsert: true, new: true }
       );
 
-      profile.syncStatus = "success";
+      const hadError = Boolean(fetchedData?.error);
+      profile.syncStatus = hadError ? "error" : "success";
       profile.lastSyncAt = new Date();
-      profile.lastSyncError = null;
+      profile.lastSyncError = hadError ? String(fetchedData.error) : null;
       await profile.save();
 
       return {
         skipped: false,
         platform: profile.platform,
-        reason: "fetched",
+        reason: hadError ? "fetch_failed" : "fetched",
+        error: hadError ? String(fetchedData.error) : null,
         stats: updateData,
       };
     }
@@ -292,6 +455,27 @@ export async function syncPlatformProfile(platformProfileId) {
     profile.lastSyncError = err?.message || "Sync failed";
     profile.lastSyncAt = new Date();
     await profile.save();
+
+    if (profile.platform === "codechef") {
+      const updateData = {
+        ...buildEmptyExternalStats({ dataSource: "scrape" }),
+        lastSyncedAt: new Date(),
+      };
+
+      await PlatformStats.findOneAndUpdate(
+        { userId: profile.userId, platform: profile.platform },
+        { $set: updateData },
+        { upsert: true, new: true }
+      );
+
+      return {
+        skipped: false,
+        platform: profile.platform,
+        reason: "fetch_failed",
+        error: "FETCH_FAILED",
+        stats: updateData,
+      };
+    }
 
     throw err;
   }
