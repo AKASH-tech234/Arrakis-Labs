@@ -171,7 +171,28 @@ export default function ProblemRecommendations({
     try {
       console.log("[ProblemRecommendations] Fetching for user:", userId);
       const data = await getMIMRecommendations({ userId, limit });
-      setRecommendations(data?.recommendations || []);
+      
+      // Filter duplicates by problem_id AND title in frontend as safety net
+      const rawRecommendations = data?.recommendations || [];
+      const seenIds = new Set();
+      const seenTitles = new Set();
+      const uniqueRecommendations = rawRecommendations.filter(rec => {
+        const id = rec.problem_id;
+        const title = (rec.title || '').toLowerCase().trim();
+        
+        // Skip if we've seen this ID or title before
+        if (seenIds.has(id) || seenTitles.has(title)) {
+          console.log(`[ProblemRecommendations] Filtering duplicate: ${title} (id: ${id})`);
+          return false;
+        }
+        
+        if (id) seenIds.add(id);
+        if (title) seenTitles.add(title);
+        return true;
+      });
+      
+      console.log(`[ProblemRecommendations] Got ${rawRecommendations.length} recs, ${uniqueRecommendations.length} unique`);
+      setRecommendations(uniqueRecommendations);
     } catch (err) {
       console.error("[ProblemRecommendations] Error:", err);
       setError(err.message || "Failed to load recommendations");

@@ -144,9 +144,10 @@ app.use("/api/export", exportRoutes);
 app.use("/api/potd", potdRoutes);
 app.use("/api", discussionRoutes);
 
+// Serve exported PDFs - path relative to backend root
 app.use(
   "/exports",
-  express.static(path.resolve(__dirname, "../public/exports")),
+  express.static(path.resolve(__dirname, "../../public/exports")),
 );
 
 app.get("/api/questions", getPublicQuestions);

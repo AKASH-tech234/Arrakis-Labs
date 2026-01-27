@@ -9,11 +9,20 @@ import { computeAggregatedStats } from "../../services/profile/profileAggregatio
 
 const CATEGORY_ORDER = [
   "Arrays",
-  "Strings",
+  "Strings", 
   "Math",
   "Linked List",
   "Binary Search",
   "Recursion",
+  "Dynamic Programming",
+  "Two Pointers",
+  "Hash Table",
+  "Tree",
+  "Graph",
+  "Sorting",
+  "Greedy",
+  "Stack",
+  "Queue",
 ];
 
 function isoDate(d) {
@@ -26,18 +35,55 @@ function startOfUtcDay(d) {
   );
 }
 
-function pickCategoriesFromTags(tags = []) {
-  const normalized = tags.map((t) => String(t).toLowerCase());
-
+function pickCategoriesFromQuestion(question) {
   const matches = new Set();
+  
+  // Check categoryType field first (primary source)
+  if (question.categoryType) {
+    const catType = String(question.categoryType).trim();
+    // Try to match with CATEGORY_ORDER
+    const matchedCat = CATEGORY_ORDER.find(
+      c => c.toLowerCase() === catType.toLowerCase()
+    );
+    if (matchedCat) {
+      matches.add(matchedCat);
+    } else {
+      // Add as-is if it's a valid category name
+      matches.add(catType);
+    }
+  }
+  
+  // Check topic field
+  if (question.topic) {
+    const topic = String(question.topic).trim();
+    const matchedTopic = CATEGORY_ORDER.find(
+      c => c.toLowerCase() === topic.toLowerCase()
+    );
+    if (matchedTopic) {
+      matches.add(matchedTopic);
+    }
+  }
+  
+  // Also check tags for additional categories
+  const tags = question.tags || [];
+  const normalized = tags.map((t) => String(t).toLowerCase().trim());
+
   for (const tag of normalized) {
     if (tag.includes("array")) matches.add("Arrays");
     if (tag.includes("string")) matches.add("Strings");
     if (tag.includes("math")) matches.add("Math");
     if (tag.includes("linked")) matches.add("Linked List");
-    if (tag.includes("binary search") || tag.includes("binary"))
-      matches.add("Binary Search");
-    if (tag.includes("recursion")) matches.add("Recursion");
+    if (tag.includes("binary search")) matches.add("Binary Search");
+    if (tag.includes("recursion") || tag.includes("recursive")) matches.add("Recursion");
+    if (tag.includes("dynamic") || tag.includes("dp")) matches.add("Dynamic Programming");
+    if (tag.includes("two pointer")) matches.add("Two Pointers");
+    if (tag.includes("hash")) matches.add("Hash Table");
+    if (tag.includes("tree")) matches.add("Tree");
+    if (tag.includes("graph")) matches.add("Graph");
+    if (tag.includes("sort")) matches.add("Sorting");
+    if (tag.includes("greedy")) matches.add("Greedy");
+    if (tag.includes("stack")) matches.add("Stack");
+    if (tag.includes("queue")) matches.add("Queue");
   }
 
   return matches.size ? Array.from(matches) : [];
@@ -193,7 +239,7 @@ export async function getProfileAnalytics(req, res) {
     });
 
     const solvedQuestions = await Question.find({ _id: { $in: solvedIds } })
-      .select("difficulty tags")
+      .select("difficulty tags categoryType topic")
       .lean();
 
     const easyCount = solvedQuestions.filter(
@@ -214,7 +260,7 @@ export async function getProfileAnalytics(req, res) {
     const attemptedQuestions = await Question.find({
       _id: { $in: attemptedIds },
     })
-      .select("tags")
+      .select("tags categoryType topic")
       .lean();
 
     const categoryAgg = new Map(
@@ -222,7 +268,8 @@ export async function getProfileAnalytics(req, res) {
     );
 
     for (const q of attemptedQuestions) {
-      for (const c of pickCategoriesFromTags(q.tags || [])) {
+      const cats = pickCategoriesFromQuestion(q);
+      for (const c of cats) {
         const prev = categoryAgg.get(c) || { solved: 0, total: 0 };
         prev.total += 1;
         categoryAgg.set(c, prev);
@@ -230,17 +277,21 @@ export async function getProfileAnalytics(req, res) {
     }
 
     for (const q of solvedQuestions) {
-      for (const c of pickCategoriesFromTags(q.tags || [])) {
+      const cats = pickCategoriesFromQuestion(q);
+      for (const c of cats) {
         const prev = categoryAgg.get(c) || { solved: 0, total: 0 };
         prev.solved += 1;
         categoryAgg.set(c, prev);
       }
     }
 
-    const categories = CATEGORY_ORDER.map((name) => ({
-      name,
-      ...categoryAgg.get(name),
-    }));
+    // Filter out categories with no activity and sort by total
+    const categories = CATEGORY_ORDER
+      .map((name) => ({
+        name,
+        ...(categoryAgg.get(name) || { solved: 0, total: 0 }),
+      }))
+      .filter((c) => c.total > 0 || c.solved > 0);
 
     const recent = await Submission.find({ userId: user._id, isRun: false })
       .sort({ createdAt: -1 })
@@ -282,6 +333,91 @@ export async function getProfileAnalytics(req, res) {
       stats: statsMap.get(p.platform) || null,
     }));
 
+    // Calculate weekly submissions (last 7 days)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weeklySubmissions = await Submission.countDocuments({
+      userId: user._id,
+      isRun: false,
+      createdAt: { $gte: weekAgo },
+    });
+
+    // Calculate difficulty totals for progress bars
+    const [difficultyTotals] = await Question.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: "$difficulty",
+          count: { $sum: 1 },
+        },
+      },
+    ]).then((results) => {
+      const totals = { Easy: 0, Medium: 0, Hard: 0 };
+      results.forEach((r) => {
+        if (r._id && totals.hasOwnProperty(r._id)) {
+          totals[r._id] = r.count;
+        }
+      });
+      return [totals];
+    });
+
+    // Calculate accuracy by time of day
+    const timeAccuracyAgg = await Submission.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(user._id),
+          isRun: false,
+        },
+      },
+      {
+        $addFields: {
+          hour: { $hour: "$createdAt" },
+        },
+      },
+      {
+        $addFields: {
+          timeSlot: {
+            $switch: {
+              branches: [
+                { case: { $and: [{ $gte: ["$hour", 6] }, { $lt: ["$hour", 12] }] }, then: "morning" },
+                { case: { $and: [{ $gte: ["$hour", 12] }, { $lt: ["$hour", 18] }] }, then: "afternoon" },
+                { case: { $and: [{ $gte: ["$hour", 18] }, { $lt: ["$hour", 24] }] }, then: "evening" },
+              ],
+              default: "night",
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$timeSlot",
+          total: { $sum: 1 },
+          accepted: { $sum: { $cond: [{ $eq: ["$status", "accepted"] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    const accuracyByTime = {};
+    let bestTimeSlot = null;
+    let bestAccuracy = 0;
+
+    timeAccuracyAgg.forEach((slot) => {
+      const accuracy = slot.total > 0 ? (slot.accepted / slot.total) * 100 : 0;
+      accuracyByTime[slot._id] = {
+        accuracy,
+        attempts: slot.total,
+        isBest: false,
+      };
+      if (accuracy > bestAccuracy && slot.total >= 3) {
+        bestAccuracy = accuracy;
+        bestTimeSlot = slot._id;
+      }
+    });
+
+    if (bestTimeSlot && accuracyByTime[bestTimeSlot]) {
+      accuracyByTime[bestTimeSlot].isBest = true;
+    }
+
     return res.json({
       success: true,
       data: {
@@ -294,6 +430,9 @@ export async function getProfileAnalytics(req, res) {
           memberSince: user.createdAt
             ? String(new Date(user.createdAt).getFullYear())
             : "-",
+          stats: user.stats || {},
+          aiProfile: user.aiProfile || {},
+          learningRoadmap: user.learningRoadmap || null,
         },
         overview: {
           problemsSolved: solvedIds.length,
@@ -304,6 +443,15 @@ export async function getProfileAnalytics(req, res) {
           easyCount,
           mediumCount,
           hardCount,
+          // New fields for widgets
+          weeklySubmissions,
+          easySolved: easyCount,
+          easyTotal: difficultyTotals.Easy || 100,
+          mediumSolved: mediumCount,
+          mediumTotal: difficultyTotals.Medium || 200,
+          hardSolved: hardCount,
+          hardTotal: difficultyTotals.Hard || 100,
+          accuracyByTime,
         },
         activity: agg?.dailyActivity || [],
         combined: agg,

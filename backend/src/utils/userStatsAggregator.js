@@ -58,8 +58,13 @@ export async function getUserAIProfile(userId) {
       recurringPatterns: user.aiProfile?.recurringPatterns || [],
 
       // Skill levels per topic
+      // Note: After .lean(), Mongoose Map becomes a plain object, not an iterable
       skillLevels: user.aiProfile?.skillLevels
-        ? Object.fromEntries(user.aiProfile.skillLevels)
+        ? (user.aiProfile.skillLevels instanceof Map
+            ? Object.fromEntries(user.aiProfile.skillLevels)
+            : typeof user.aiProfile.skillLevels === 'object'
+              ? { ...user.aiProfile.skillLevels }
+              : {})
         : {},
 
       // Learning preferences

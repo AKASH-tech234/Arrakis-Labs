@@ -14,7 +14,17 @@ import {
   CognitiveProfile,
   ProblemRecommendations,
   LearningRoadmap,
+  SkillRadarChart,
 } from "../../components/mim";
+import {
+  DifficultyProgressBars,
+} from "../../components/profile/ProfileWidgets";
+import InsightsPatterns from "../../components/profile/InsightsPatterns";
+import {
+  TopicMasteryGrid,
+  NextProblemCard,
+  WeakAreaFocus,
+} from "../../components/profile/AdvancedProfileWidgets";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -81,22 +91,30 @@ export default function Profile({ username, readOnly = false } = {}) {
     if (readOnly) return;
     try {
       setExportingPdf(true);
-      const res = await apiClient.post("/export/pdf", {
-        format: "one_page",
+      
+      // Request PDF as blob for direct download
+      const response = await apiClient.post("/export/pdf", {
+        format: "two_page",
         includeQr: true,
+      }, {
+        responseType: 'blob'
       });
-      const fileUrl = res?.data?.data?.fileUrl;
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `arrakis_profile_${analytics?.user?.name || 'user'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-      if (!fileUrl) throw new Error("PDF export did not return a file URL");
-
-      const apiBase = String(apiClient?.defaults?.baseURL || "");
-      const origin = apiBase.replace(/\/?api\/?$/, "");
-      const absoluteUrl = `${origin}${fileUrl}`;
-      window.open(absoluteUrl, "_blank", "noopener,noreferrer");
-
-      setActionMessage("PDF generated");
+      setActionMessage("PDF downloaded");
       clearActionMessageSoon();
     } catch (err) {
+      console.error("PDF export error:", err);
       alert(
         err?.response?.data?.message || err?.message || "Failed to export PDF",
       );
@@ -250,7 +268,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
-          {/* Cognitive Profile - MIM */}
+          {/* Cognitive Profile & Skill Radar - MIM */}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -266,7 +284,12 @@ export default function Profile({ username, readOnly = false } = {}) {
                   AI Cognitive Profile
                 </h2>
               </div>
-              <CognitiveProfile userId={analytics.user._id} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <CognitiveProfile userId={analytics.user._id} compact />
+                <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
+                  <SkillRadarChart userId={analytics.user._id} />
+                </div>
+              </div>
             </motion.section>
           )}
 
@@ -526,6 +549,96 @@ export default function Profile({ username, readOnly = false } = {}) {
               </div>
             </motion.section>
           </motion.div>
+
+          {/* Progress Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.45 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+              <h2
+                className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                Difficulty Progress
+              </h2>
+            </div>
+            <DifficultyProgressBars
+              stats={{
+                easySolved: analytics?.overview?.easySolved || 0,
+                easyTotal: analytics?.overview?.easyTotal || 100,
+                mediumSolved: analytics?.overview?.mediumSolved || 0,
+                mediumTotal: analytics?.overview?.mediumTotal || 200,
+                hardSolved: analytics?.overview?.hardSolved || 0,
+                hardTotal: analytics?.overview?.hardTotal || 100,
+              }}
+            />
+          </motion.section>
+
+          {/* Insights & Patterns Section - Dynamic Component */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Insights & Patterns
+                </h2>
+              </div>
+              <InsightsPatterns userId={analytics.user._id} />
+            </motion.section>
+          )}
+
+          {/* Your Next Challenge - Prominent recommendation card */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.55 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Recommended For You
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <NextProblemCard userId={analytics.user._id} />
+                <WeakAreaFocus userId={analytics.user._id} />
+              </div>
+            </motion.section>
+          )}
+
+          {/* Topic Mastery Grid */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
+                <h2
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Topic Mastery
+                </h2>
+              </div>
+              <TopicMasteryGrid userId={analytics.user._id} />
+            </motion.section>
+          )}
         </div>
       </main>
     </div>

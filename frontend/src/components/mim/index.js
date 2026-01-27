@@ -25,4 +25,8 @@ export function refreshAllMIMComponents() {
     m.emitRecommendationsRefresh?.(),
   );
   import("./LearningRoadmap").then((m) => m.emitRoadmapRefresh?.());
+  // Also refresh InsightsPatterns from profile components
+  import("../profile/InsightsPatterns").then((m) => m.emitInsightsRefresh?.());
+  // Refresh advanced profile widgets (TopicMasteryGrid, NextProblemCard, WeakAreaFocus)
+  import("../profile/AdvancedProfileWidgets").then((m) => m.emitAdvancedWidgetsRefresh?.());
 }
