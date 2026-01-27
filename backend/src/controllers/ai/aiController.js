@@ -5,6 +5,7 @@ import {
   getAIFeedback,
   buildUserHistorySummary,
   checkAIServiceHealth,
+  transformMIMInsights,
 } from "../../services/ai/aiService.js";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -420,6 +421,11 @@ export const requestAIFeedback = async (req, res) => {
     const totalDuration = Date.now() - startTime;
     log.success(`Request completed in ${totalDuration}ms`);
 
+    // Transform MIM V3.0 insights for frontend
+    const transformedMIMInsights = transformMIMInsights(
+      aiFeedback.mim_insights,
+    );
+
     const responseBody = {
       success: true,
       data: {
@@ -434,8 +440,8 @@ export const requestAIFeedback = async (req, res) => {
         optimizationTips: aiFeedback.optimization_tips,
         complexityAnalysis: aiFeedback.complexity_analysis,
         edgeCases: aiFeedback.edge_cases,
-        // MIM insights from AI service (ML-based predictions)
-        mimInsights: aiFeedback.mim_insights || null,
+        // MIM V3.0 insights (transformed for frontend)
+        mimInsights: transformedMIMInsights,
         // v3.3: New fields for enhanced feedback
         rootCause: aiFeedback.root_cause || null,
         rootCauseSubtype: aiFeedback.root_cause_subtype || null,

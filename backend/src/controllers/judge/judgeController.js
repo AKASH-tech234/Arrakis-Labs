@@ -7,6 +7,7 @@ import { compareOutputs } from "../../utils/stdinConverter.js";
 import {
   getAIFeedback,
   buildUserHistorySummary,
+  transformMIMInsights,
 } from "../../services/ai/aiService.js";
 import {
   getAttemptNumber,
@@ -498,7 +499,7 @@ export const submitCode = async (req, res) => {
 
         // Get user's AI profile for personalization
         const { getUserAIProfile } =
-          await import("../utils/userStatsAggregator.js");
+          await import("../../utils/userStatsAggregator.js");
         const userProfile = await getUserAIProfile(userId).catch(() => null);
 
         // Call AI service with enriched context
@@ -581,8 +582,8 @@ export const submitCode = async (req, res) => {
               optimizationTips: aiFeedback.optimization_tips || [],
               complexityAnalysis: aiFeedback.complexity_analysis,
               edgeCases: aiFeedback.edge_cases || [],
-              // MIM insights from AI service (ML-based predictions)
-              mimInsights: aiFeedback.mim_insights || null,
+              // MIM V3.0 insights (transformed for frontend)
+              mimInsights: transformMIMInsights(aiFeedback.mim_insights),
               // v3.3: New fields for enhanced feedback
               rootCause: aiFeedback.root_cause || null,
               rootCauseSubtype: aiFeedback.root_cause_subtype || null,
