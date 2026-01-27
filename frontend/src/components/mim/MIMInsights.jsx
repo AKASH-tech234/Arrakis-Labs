@@ -2,7 +2,36 @@
 // Displays MIM root cause prediction and insights in feedback view
 import { motion, AnimatePresence } from "framer-motion";
 
+// V3.1 Taxonomy - Primary root causes and their subtypes
 const rootCauseLabels = {
+  // PRIMARY ROOT CAUSES (V3.1)
+  correctness: "Correctness Issue",
+  efficiency: "Efficiency Issue",
+  implementation: "Implementation Issue",
+  understanding_gap: "Understanding Gap",
+  problem_misinterpretation: "Problem Misinterpretation",
+
+  // SUBTYPES - Correctness
+  wrong_invariant: "Wrong Invariant",
+  incorrect_boundary: "Incorrect Boundary",
+  partial_case_handling: "Partial Case Handling",
+
+  // SUBTYPES - Efficiency
+  brute_force_under_constraints: "Brute Force Under Constraints",
+  premature_optimization: "Premature Optimization",
+
+  // SUBTYPES - Implementation
+  state_loss: "State Loss",
+
+  // SUBTYPES - Understanding Gap
+  misread_constraint: "Misread Constraint",
+
+  // SUBTYPES - Problem Misinterpretation (NEW)
+  wrong_input_format: "Wrong Input Format",
+  wrong_problem_entirely: "Wrong Problem Entirely",
+  misread_constraints: "Misread Constraints",
+
+  // LEGACY (for backward compatibility with old data)
   boundary_condition_blindness: "Boundary Condition Issue",
   off_by_one_error: "Off-by-One Error",
   integer_overflow: "Integer Overflow",
