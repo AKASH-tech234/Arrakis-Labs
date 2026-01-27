@@ -1,720 +1,890 @@
 # Backend Documentation
 
-> **Node.js Express API** - The core server handling authentication, code execution, contests, and AI integration.
+> **Mentat Trials Backend** - Node.js/Express API server handling authentication, problem management, code execution, contests, and AI service orchestration.
 
----
-
-## Overview
-
-The backend is a modular Express.js application that serves as the central hub for:
-
-- User authentication & authorization
-- Code execution via Piston API
-- Contest management & real-time leaderboards
-- AI service integration for feedback
-- Admin operations & analytics
-
-**Port**: 5000  
-**Database**: MongoDB  
-**Real-time**: WebSocket (ws)
-
----
-
-## Directory Structure
+## 📁 Directory Structure
 
 ```
-backend/
-├── src/
-│   ├── app.js                    # Main entry point
-│   ├── routes.js                 # Route aggregator (optional)
+backend/src/
+├── app.js                      # Application entry point & server setup
+│
+├── controllers/                # Request handlers
+│   ├── admin/
+│   │   ├── adminController.js          # Admin CRUD operations
+│   │   ├── adminContestController.js   # Contest management
+│   │   ├── adminPlatformStatsController.js
+│   │   └── adminPOTDController.js      # POTD scheduling
 │   │
-│   ├── controllers/              # Request handlers
-│   │   ├── authController.js
-│   │   ├── judgeController.js
-│   │   ├── aiController.js
-│   │   ├── adminController.js
-│   │   ├── contestController.js
-│   │   ├── contestJudgeController.js
-│   │   ├── adminContestController.js
-│   │   ├── profileController.js
-│   │   ├── profileAnalyticsController.js
-│   │   ├── questionController.js
-│   │   ├── testCaseController.js
-│   │   ├── csvController.js
-│   │   ├── exportController.js
-│   │   ├── potdController.js
-│   │   ├── adminPOTDController.js
-│   │   └── platformProfilesController.js
+│   ├── ai/
+│   │   └── aiController.js             # AI service proxy
 │   │
-│   ├── models/                   # Mongoose schemas
-│   │   ├── User.js
-│   │   ├── Question.js
-│   │   ├── Submission.js
-│   │   ├── TestCase.js
-│   │   ├── Contest.js
-│   │   ├── ContestSubmission.js
+│   ├── auth/
+│   │   └── authController.js           # Authentication logic
+│   │
+│   ├── contest/
+│   │   ├── contestController.js        # Contest operations
+│   │   ├── contestJudgeController.js   # Contest submissions
+│   │   └── contestProfileController.js # Contest stats
+│   │
+│   ├── judge/
+│   │   └── judgeController.js          # Code execution & judging
+│   │
+│   ├── potd/
+│   │   └── potdController.js           # Problem of the Day
+│   │
+│   ├── profile/
+│   │   ├── codingProfileController.js  # External profiles
+│   │   ├── exportController.js         # PDF export
+│   │   ├── platformProfilesController.js
+│   │   └── profileAnalyticsController.js
+│   │
+│   ├── question/
+│   │   ├── questionController.js       # Problem CRUD
+│   │   └── testCaseController.js       # Test case management
+│   │
+│   └── discussion/
+│       └── discussionController.js     # Solution discussions
+│
+├── middleware/
+│   ├── admin/
+│   │   ├── adminAuth.js        # Admin JWT verification
+│   │   ├── adminMiddleware.js  # Admin role checks
+│   │   └── auditLog.js         # Action logging
+│   │
+│   └── auth/
+│       └── authMiddleware.js   # User JWT verification
+│
+├── models/                     # Mongoose schemas
+│   ├── admin/
+│   │   ├── Admin.js            # Admin users
+│   │   └── AuditLog.js         # Admin action logs
+│   │
+│   ├── auth/
+│   │   └── User.js             # User accounts
+│   │
+│   ├── contest/
+│   │   ├── Contest.js          # Contest definitions
 │   │   ├── ContestRegistration.js
-│   │   ├── Admin.js
-│   │   ├── AuditLog.js
-│   │   ├── AggregatedStats.js
-│   │   ├── PlatformProfile.js
-│   │   ├── PlatformStats.js
-│   │   ├── POTDCalendar.js
-│   │   ├── PublishedPOTD.js
-│   │   ├── UserPOTDTracking.js
-│   │   ├── UserStreak.js
-│   │   └── PublicProfileSettings.js
+│   │   └── ContestSubmission.js
 │   │
-│   ├── routes/                   # API route definitions
-│   │   ├── authRoutes.js
+│   ├── discussion/
+│   │   ├── DiscussionMessage.js
+│   │   ├── DiscussionThread.js
+│   │   └── SolutionPost.js
+│   │
+│   ├── potd/
+│   │   ├── POTDCalendar.js     # POTD schedule
+│   │   ├── PublishedPOTD.js    # Published problems
+│   │   └── UserPOTDTracking.js # User streaks
+│   │
+│   ├── profile/
+│   │   ├── AggregatedStats.js  # Pre-computed stats
+│   │   ├── PlatformProfile.js  # External platform links
+│   │   ├── PlatformStats.js
+│   │   ├── PublicProfileSettings.js
+│   │   ├── Submission.js       # Code submissions
+│   │   └── UserStreak.js       # Activity streaks
+│   │
+│   └── question/
+│       ├── Question.js         # Problem definitions
+│       └── TestCase.js         # Test cases
+│
+├── routes/                     # Express routers
+│   ├── admin/
 │   │   ├── adminRoutes.js
-│   │   ├── contestRoutes.js
 │   │   ├── adminContestRoutes.js
+│   │   └── adminPOTDRoutes.js
+│   │
+│   ├── auth/
+│   │   ├── authRoutes.js
+│   │   └── devRoutes.js        # Development helpers
+│   │
+│   ├── contest/
+│   │   ├── contestRoutes.js
+│   │   └── contestProfileRoutes.js
+│   │
+│   ├── discussion/
+│   │   └── discussionRoutes.js
+│   │
+│   ├── potd/
+│   │   └── potdRoutes.js
+│   │
+│   ├── profile/
 │   │   ├── profileRoutes.js
 │   │   ├── publicRoutes.js
-│   │   ├── exportRoutes.js
-│   │   ├── potdRoutes.js
-│   │   ├── adminPOTDRoutes.js
-│   │   ├── mimRoutes.js
-│   │   └── aiProfileRoutes.js
+│   │   └── exportRoutes.js
 │   │
-│   ├── middleware/               # Express middleware
-│   │   ├── authMiddleware.js
-│   │   ├── adminMiddleware.js
-│   │   ├── adminAuth.js
-│   │   └── auditLog.js
-│   │
-│   ├── services/                 # Business logic services
-│   │   ├── aiService.js
-│   │   ├── leaderboardService.js
-│   │   ├── websocketServer.js
-│   │   ├── contestScheduler.js
-│   │   ├── potdScheduler.js
-│   │   └── profileAggregationService.js
-│   │
-│   ├── utils/                    # Helper utilities
-│   │   ├── stdinConverter.js
-│   │   └── userStatsAggregator.js
-│   │
-│   └── modules/                  # Feature modules (future)
-│       ├── ai/
-│       ├── judge/
-│       ├── problems/
-│       └── submissions/
+│   ├── aiProfileRoutes.js      # AI profile endpoints
+│   └── mimRoutes.js            # MIM direct endpoints
 │
-├── config/                       # Configuration files
-├── public/                       # Static assets
-├── .env                          # Environment variables
-└── package.json
+├── services/
+│   ├── ai/
+│   │   └── aiService.js        # AI service client
+│   │
+│   ├── contest/
+│   │   ├── contestScheduler.js     # Auto start/end contests
+│   │   ├── leaderboardService.js   # Real-time rankings
+│   │   └── websocketServer.js      # Live updates
+│   │
+│   ├── potd/
+│   │   └── potdScheduler.js    # Daily problem publishing
+│   │
+│   └── profile/
+│       ├── platformSyncService.js      # External profile sync
+│       └── profileAggregationService.js
+│
+└── utils/
+    ├── stdinConverter.js       # I/O format conversion
+    └── userStatsAggregator.js  # Stats computation
 ```
 
 ---
 
-## Core Components
+## 🔌 API Endpoints
 
-### app.js - Main Entry Point
+### Authentication (`/api/auth`)
 
-**Purpose**: Initializes the Express server with all middleware and route registrations.
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/signup` | Register new user | Public |
+| POST | `/signin` | Login user | Public |
+| POST | `/signout` | Logout user | User |
+| GET | `/me` | Get current user | User |
+| PUT | `/update-profile` | Update user profile | User |
+| PUT | `/change-password` | Change password | User |
+| GET | `/google` | Google OAuth start | Public |
+| GET | `/google/callback` | Google OAuth callback | Public |
+| GET | `/github` | GitHub OAuth start | Public |
+| GET | `/github/callback` | GitHub OAuth callback | Public |
 
-**Key Responsibilities**:
+### Problems (`/api/questions`)
 
-- CORS configuration with credentials support
-- Security middleware (helmet, rate-limiting, mongo-sanitize)
-- Body parsing with size limits
-- Cookie parsing for JWT tokens
-- Route registration for all API endpoints
-- WebSocket server initialization
-- MongoDB connection management
-- Scheduler initialization (contests, POTD)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/` | List all problems | User |
+| GET | `/:id` | Get problem details | User |
+| POST | `/run` | Run code against examples | User |
+| POST | `/submit` | Submit solution | User |
+| GET | `/submissions` | Get user submissions | User |
+| GET | `/submissions/:questionId` | Get submissions for problem | User |
 
-**Middleware Chain**:
+### AI Services (`/api/ai`)
 
-```
-Request → CORS → Helmet → Rate Limit → Body Parser → Mongo Sanitize → Routes
-```
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/feedback` | Request AI feedback | User |
+| GET | `/profile/:userId` | Get cognitive profile | User |
+| GET | `/recommendations/:userId` | Get problem recommendations | User |
+| GET | `/report/weekly/:userId` | Get weekly learning report | User |
+| GET | `/health` | AI service health check | Public |
 
----
+### Contests (`/api/contests`)
 
-## Controllers
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/` | List all contests | Public |
+| GET | `/:id` | Get contest details | Public |
+| POST | `/:id/register` | Register for contest | User |
+| GET | `/:id/problems` | Get contest problems | User |
+| GET | `/:id/problems/:problemId` | Get specific problem | User |
+| POST | `/:id/submit` | Submit contest solution | User |
+| GET | `/:id/leaderboard` | Get live leaderboard | Public |
+| GET | `/:id/my-submissions` | Get user's submissions | User |
 
-### authController.js
+### POTD (`/api/potd`)
 
-**Purpose**: Handles user authentication flows.
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/today` | Get today's problem | User |
+| GET | `/history` | Get POTD history | User |
+| GET | `/calendar/:year/:month` | Get month calendar | User |
+| GET | `/streak` | Get user's streak | User |
+| GET | `/leaderboard` | Get streak leaderboard | User |
+| POST | `/submit` | Submit POTD solution | User |
 
-| Function         | Description                                           |
-| ---------------- | ----------------------------------------------------- |
-| `signup`         | Creates new user with hashed password                 |
-| `signin`         | Validates credentials, issues JWT in HTTP-only cookie |
-| `logout`         | Clears authentication cookie                          |
-| `getMe`          | Returns current authenticated user                    |
-| `updateProfile`  | Updates user profile fields                           |
-| `changePassword` | Validates old password, updates to new                |
+### Profile (`/api/profile`)
 
-**Security Features**:
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/` | Get user profile | User |
+| GET | `/stats` | Get user statistics | User |
+| GET | `/submissions` | Get submission history | User |
+| GET | `/activity` | Get activity heatmap | User |
+| GET | `/export/pdf` | Export profile as PDF | User |
+| GET | `/public/:username` | Get public profile | Public |
 
-- Password hashing with bcrypt (salt rounds: 10)
-- JWT stored in HTTP-only cookies (prevents XSS)
-- Token expiry: 7 days (configurable)
+### Admin (`/api/admin`)
 
----
-
-### judgeController.js
-
-**Purpose**: Handles code execution and submission judging.
-
-| Function         | Description                                             |
-| ---------------- | ------------------------------------------------------- |
-| `runCode`        | Executes code against visible test cases                |
-| `submitCode`     | Executes code against all test cases (visible + hidden) |
-| `getSubmissions` | Retrieves user's submission history                     |
-
-**Piston Integration**:
-
-```javascript
-// Language mapping
-const LANGUAGE_MAP = {
-  python: { language: "python", version: "3.10.0" },
-  javascript: { language: "javascript", version: "18.15.0" },
-  java: { language: "java", version: "15.0.2" },
-  cpp: { language: "c++", version: "10.2.0" },
-  // ... more languages
-};
-```
-
-**Verdict Types**:
-
-- `Accepted` - All tests passed
-- `Wrong Answer` - Output mismatch
-- `Time Limit Exceeded` - Execution timeout
-- `Memory Limit Exceeded` - Memory exceeded
-- `Runtime Error` - Program crashed
-- `Compilation Error` - Code failed to compile
-
-**Retry Logic**:
-
-- 3 retries with exponential backoff for Piston API failures
-
----
-
-### aiController.js
-
-**Purpose**: Interfaces with the AI services for feedback generation.
-
-| Function              | Description                              |
-| --------------------- | ---------------------------------------- |
-| `requestFeedback`     | Calls AI service for submission feedback |
-| `getLearningInsights` | Retrieves aggregated learning data       |
-| `healthCheck`         | Verifies AI service availability         |
-
-**Request Flow**:
-
-1. Receives failed submission data
-2. Fetches user's recent submission history
-3. Builds `user_history_summary` string
-4. Calls `/ai/feedback` endpoint
-5. Returns structured feedback to frontend
-
-**Error Handling**:
-
-- Non-blocking: AI failure doesn't fail the submission
-- Timeout: 30 second limit for AI responses
-- Fallback: Generic feedback if AI unavailable
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/login` | Admin login | Public |
+| GET | `/dashboard` | Get dashboard stats | Admin |
+| GET | `/questions` | List all questions | Admin |
+| POST | `/questions` | Create question | Admin |
+| PUT | `/questions/:id` | Update question | Admin |
+| DELETE | `/questions/:id` | Delete question | Admin |
+| POST | `/questions/:id/test-cases` | Add test cases | Admin |
+| POST | `/upload/csv` | Bulk upload questions | Admin |
 
 ---
 
-### contestController.js
+## 📊 Data Models
 
-**Purpose**: User-facing contest operations.
-
-| Function             | Description                                  |
-| -------------------- | -------------------------------------------- |
-| `listContests`       | Returns all contests with status             |
-| `getContestById`     | Returns contest details + problems           |
-| `registerForContest` | Registers user before contest starts         |
-| `joinContest`        | Validates registration, returns contest data |
-| `getContestProblem`  | Returns specific problem in contest          |
-| `getLeaderboard`     | Returns current rankings                     |
-| `getUserStanding`    | Returns user's rank and score                |
-
-**Contest States**:
-
-- `scheduled` - Not yet started, registration open
-- `live` - In progress, submissions accepted
-- `ended` - Finished, final rankings available
-
----
-
-### contestJudgeController.js
-
-**Purpose**: Handles code execution within contests.
-
-| Function            | Description                       |
-| ------------------- | --------------------------------- |
-| `runContestCode`    | Runs code against visible tests   |
-| `submitContestCode` | Submits code, updates leaderboard |
-
-**Scoring Logic**:
-
-```javascript
-// Score calculation
-const score = problemsSolved * 1e12 - penaltyTime;
-
-// Penalty: Minutes from contest start + 20min per wrong attempt
-const penalty = timeSinceStart + wrongAttempts * 20;
-```
-
----
-
-### adminController.js
-
-**Purpose**: Admin panel operations for problem management.
-
-| Function          | Description                     |
-| ----------------- | ------------------------------- |
-| `adminLogin`      | Authenticates admin users       |
-| `getProblems`     | Lists all problems with filters |
-| `createProblem`   | Creates new problem             |
-| `updateProblem`   | Updates problem details         |
-| `deleteProblem`   | Soft deletes problem            |
-| `getProblemStats` | Returns submission statistics   |
-
----
-
-### potdController.js
-
-**Purpose**: Problem of the Day user operations.
-
-| Function          | Description                       |
-| ----------------- | --------------------------------- |
-| `getTodaysPOTD`   | Returns today's scheduled problem |
-| `getUserStreak`   | Returns user's POTD streak        |
-| `getPOTDCalendar` | Returns monthly POTD schedule     |
-
----
-
-### adminPOTDController.js
-
-**Purpose**: Admin POTD scheduling operations.
-
-| Function            | Description                  |
-| ------------------- | ---------------------------- |
-| `schedulePOTD`      | Schedules problem for a date |
-| `getScheduledPOTDs` | Lists all scheduled POTDs    |
-| `updatePOTD`        | Modifies scheduled POTD      |
-| `deletePOTD`        | Removes scheduled POTD       |
-
----
-
-### profileController.js & profileAnalyticsController.js
-
-**Purpose**: User profile and analytics management.
-
-| Function               | Description                     |
-| ---------------------- | ------------------------------- |
-| `getProfile`           | Returns user profile data       |
-| `updateProfile`        | Updates profile settings        |
-| `getSubmissionHistory` | Returns paginated submissions   |
-| `getAnalytics`         | Returns solving statistics      |
-| `getCategoryBreakdown` | Returns performance by category |
-
----
-
-## Models
-
-### User.js
-
-**Purpose**: User account schema.
+### User Model
 
 ```javascript
 {
-  username: String (unique, required),
-  email: String (unique, required),
-  password: String (hashed),
-  role: String ('user' | 'admin'),
+  name: String,                    // Display name
+  email: String,                   // Unique email
+  password: String,                // Hashed password (select: false)
+  role: "user" | "admin",
+  
+  profileImage: String,            // Avatar URL
+  googleId: String,                // OAuth ID
+  githubId: String,                // OAuth ID
+  
+  preferences: {
+    difficulty: "easy" | "medium" | "hard",
+    language: String,              // Default: "javascript"
+    theme: "light" | "dark",
+    emailNotifications: Boolean
+  },
+  
+  stats: {
+    totalSolved: Number,
+    totalAttempted: Number,
+    currentStreak: Number,
+    bestStreak: Number,
+    lastActivityDate: Date
+  },
+  
+  // AI-computed cognitive profile
+  aiProfile: {
+    weakTopics: [String],          // Topics needing work
+    strongTopics: [String],        // Mastered topics
+    commonMistakes: [String],      // Recurring patterns
+    recommendedDifficulty: String, // Current level
+    lastUpdated: Date
+  },
+  
   createdAt: Date,
-  profilePicture: String,
-  bio: String,
-  linkedProfiles: {
-    leetcode: String,
-    codeforces: String
-  }
+  updatedAt: Date
 }
 ```
 
----
-
-### Question.js
-
-**Purpose**: Problem definition schema.
+### Question Model
 
 ```javascript
 {
-  title: String,
-  slug: String (unique),
-  description: String (markdown),
-  difficulty: String ('easy' | 'medium' | 'hard'),
-  category: [String],
-  tags: [String],
-  constraints: String,
+  externalId: String,              // External reference
+  title: String,                   // Problem title
+  description: String,             // Problem statement (Markdown)
+  difficulty: "Easy" | "Medium" | "Hard",
+  constraints: String,             // Input constraints
+  
   examples: [{
     input: String,
     output: String,
     explanation: String
   }],
-  starterCode: {
-    python: String,
-    javascript: String,
-    java: String,
-    cpp: String
-  },
-  isPublic: Boolean,
-  createdBy: ObjectId (Admin)
+  
+  tags: [String],                  // Topic tags
+  categoryType: String,            // UI category (e.g., "Math")
+  topic: String,                   // Primary topic
+  
+  // AI-assist fields
+  expectedApproach: String,        // e.g., "Two pointers"
+  commonMistakes: [String],        // Known pitfalls
+  timeComplexityHint: String,      // Expected O() notation
+  spaceComplexityHint: String,
+  canonicalAlgorithms: [String],   // v3.2: Preferred algorithms
+  
+  // Statistics
+  totalSubmissions: Number,
+  acceptedSubmissions: Number,
+  
+  isActive: Boolean,
+  version: Number,                 // Optimistic concurrency
+  
+  createdBy: ObjectId,             // Admin reference
+  updatedBy: ObjectId,
+  createdAt: Date,
+  updatedAt: Date
 }
+
+// Virtuals
+acceptanceRate: (acceptedSubmissions / totalSubmissions * 100)
 ```
 
----
-
-### Submission.js
-
-**Purpose**: Code submission record.
+### Submission Model
 
 ```javascript
 {
-  user: ObjectId (User),
-  question: ObjectId (Question),
-  code: String,
-  language: String,
-  verdict: String,
-  runtime: Number (ms),
-  memory: Number (KB),
-  testCasesPassed: Number,
-  totalTestCases: Number,
-  errorMessage: String,
-  aiFeedback: {
-    explanation: String,
-    hints: [String],
-    pattern: String
-  },
-  submittedAt: Date
+  userId: ObjectId,                // User reference
+  questionId: ObjectId,            // Question reference
+  
+  code: String,                    // Submitted code (max 64KB)
+  language: "python" | "javascript" | "java" | "cpp",
+  
+  status: "pending" | "running" | "accepted" | "wrong_answer" |
+          "time_limit_exceeded" | "memory_limit_exceeded" |
+          "runtime_error" | "compile_error" | "internal_error",
+  
+  passedCount: Number,
+  totalCount: Number,
+  
+  testResults: [{
+    testCaseId: ObjectId,
+    passed: Boolean,
+    executionTime: Number,         // ms
+    memoryUsed: Number,            // MB
+    actualOutput: String,
+    error: String
+  }],
+  
+  totalExecutionTime: Number,
+  maxMemoryUsed: Number,
+  compileError: String,
+  
+  isRun: Boolean,                  // Run vs Submit
+  
+  // AI tracking fields
+  timeSpent: Number,               // Seconds on problem
+  hintsUsed: Number,
+  attemptNumber: Number,           // Which attempt
+  aiFeedbackReceived: Boolean,
+  
+  // Denormalized problem data
+  problemCategory: String,
+  problemDifficulty: String,
+  problemTags: [String],
+  
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
----
-
-### Contest.js
-
-**Purpose**: Contest definition schema.
+### Contest Model
 
 ```javascript
 {
-  title: String,
+  name: String,
+  slug: String,                    // URL-friendly ID
   description: String,
+  
   startTime: Date,
-  endTime: Date,
-  status: String ('scheduled' | 'live' | 'ended'),
-  problems: [ObjectId (Question)],
-  registeredUsers: [ObjectId (User)],
-  createdBy: ObjectId (Admin),
-  isPublic: Boolean
+  duration: Number,                // Minutes
+  
+  status: "draft" | "scheduled" | "active" | "ended" | "cancelled",
+  
+  problems: [{
+    problem: ObjectId,             // Question reference
+    order: Number,
+    label: String,                 // e.g., "A", "B", "C"
+    points: Number
+  }],
+  
+  scoringRules: {
+    problemPoints: Map<String, Number>,
+    defaultPoints: Number,
+    partialScoring: Boolean
+  },
+  
+  penaltyRules: {
+    wrongSubmissionPenalty: Number, // Minutes
+    penaltyOnlyAfterAC: Boolean,
+    maxPenaltyPerProblem: Number
+  },
+  
+  registrationRequired: Boolean,
+  maxParticipants: Number,
+  registeredCount: Number,
+  
+  isPublic: Boolean,
+  
+  createdBy: ObjectId,
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
 ---
 
-### ContestSubmission.js
+## 🔐 Authentication Flow
 
-**Purpose**: Contest-specific submission with scoring.
+### JWT-Based Authentication
 
 ```javascript
+// 1. User signs in
+POST /api/auth/signin
+{ email: "user@example.com", password: "..." }
+
+// 2. Server validates and returns JWT
 {
-  contest: ObjectId (Contest),
-  user: ObjectId (User),
-  problem: ObjectId (Question),
-  code: String,
-  language: String,
-  verdict: String,
-  score: Number,
-  penalty: Number,
-  submittedAt: Date
+  success: true,
+  token: "eyJhbGciOiJIUzI1NiIs...",
+  user: { id, name, email, role }
+}
+
+// 3. Client stores token and includes in requests
+Authorization: Bearer <token>
+
+// 4. Middleware validates token
+// middleware/auth/authMiddleware.js
+export const protect = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id);
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Token invalid' });
+  }
+};
+```
+
+### OAuth Flow (Google/GitHub)
+
+```
+1. User clicks "Sign in with Google"
+2. Redirect to /api/auth/google
+3. Google OAuth consent screen
+4. Callback to /api/auth/google/callback
+5. Server creates/updates user, generates JWT
+6. Redirect to frontend with token
+```
+
+---
+
+## ⚡ Code Execution Flow
+
+### Judge Controller (`controllers/judge/judgeController.js`)
+
+```javascript
+// POST /api/questions/submit
+export const submitCode = async (req, res) => {
+  const { questionId, code, language } = req.body;
+  const userId = req.user._id;
+  
+  // 1. Validate input
+  if (!LANGUAGE_MAP[language]) {
+    return res.status(400).json({ message: 'Unsupported language' });
+  }
+  
+  // 2. Get question and test cases
+  const question = await Question.findById(questionId);
+  const testCases = await TestCase.find({ questionId, isHidden: true });
+  
+  // 3. Create submission record
+  const submission = await Submission.create({
+    userId,
+    questionId,
+    code,
+    language,
+    status: 'running',
+    totalCount: testCases.length,
+    problemCategory: question.categoryType,
+    problemDifficulty: question.difficulty,
+    attemptNumber: await getAttemptNumber(userId, questionId)
+  });
+  
+  // 4. Execute code against each test case
+  const results = [];
+  for (const tc of testCases) {
+    const execution = await executePiston(code, language, tc.stdin);
+    const passed = compareOutputs(execution.stdout, tc.expectedStdout);
+    results.push({ testCaseId: tc._id, passed, ...execution });
+    
+    if (execution.compileError) break;
+  }
+  
+  // 5. Determine verdict
+  const passedCount = results.filter(r => r.passed).length;
+  const hasCompileError = results.some(r => r.compileError);
+  const hasTLE = results.some(r => r.timedOut);
+  
+  let status = 'accepted';
+  if (hasCompileError) status = 'compile_error';
+  else if (hasTLE) status = 'time_limit_exceeded';
+  else if (passedCount < testCases.length) status = 'wrong_answer';
+  
+  // 6. Update submission
+  submission.status = status;
+  submission.passedCount = passedCount;
+  submission.testResults = results;
+  await submission.save();
+  
+  // 7. Update question stats
+  await Question.findByIdAndUpdate(questionId, {
+    $inc: {
+      totalSubmissions: 1,
+      acceptedSubmissions: status === 'accepted' ? 1 : 0
+    }
+  });
+  
+  // 8. Return result (AI feedback requested separately)
+  return res.json({
+    success: true,
+    submission: submission.toUserResponse()
+  });
+};
+```
+
+### Piston API Integration
+
+```javascript
+// Execute code in sandboxed environment
+async function executePiston(code, language, stdin, timeLimit = 2000) {
+  const langConfig = LANGUAGE_MAP[language];
+  
+  const response = await axios.post(`${PISTON_URL}/execute`, {
+    language: langConfig.language,
+    version: langConfig.version,
+    files: [{ content: code }],
+    stdin: stdin || '',
+    run_timeout: timeLimit,
+    compile_timeout: 10000,
+    compile_memory_limit: 256 * 1024 * 1024,
+    run_memory_limit: 256 * 1024 * 1024
+  });
+  
+  return {
+    stdout: response.data.run?.stdout || '',
+    stderr: response.data.run?.stderr || '',
+    exitCode: response.data.run?.code || 0,
+    timedOut: response.data.run?.signal === 'SIGKILL',
+    compileError: !!response.data.compile?.stderr
+  };
+}
+
+// Supported languages
+const LANGUAGE_MAP = {
+  javascript: { language: 'javascript', version: '18.15.0' },
+  python: { language: 'python', version: '3.10.0' },
+  java: { language: 'java', version: '15.0.2' },
+  cpp: { language: 'cpp', version: '10.2.0' },
+  typescript: { language: 'typescript', version: '5.0.3' },
+  go: { language: 'go', version: '1.16.2' },
+  rust: { language: 'rust', version: '1.68.2' }
+};
+```
+
+---
+
+## 🤖 AI Service Integration
+
+### AI Service Client (`services/ai/aiService.js`)
+
+```javascript
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const AI_TIMEOUT_MS = 90000;
+
+// Request AI feedback for submission
+export async function getAIFeedback(submissionData) {
+  const response = await axios.post(
+    `${AI_SERVICE_URL}/ai/feedback`,
+    {
+      submission_id: submissionData.submissionId,
+      user_id: submissionData.userId,
+      problem_id: submissionData.problemId,
+      code: submissionData.code,
+      verdict: submissionData.verdict,
+      language: submissionData.language,
+      problem: submissionData.problem,
+      problem_category: submissionData.problemCategory,
+      user_history: submissionData.userHistory,
+      previous_attempts: submissionData.previousAttempts
+    },
+    { timeout: AI_TIMEOUT_MS }
+  );
+  
+  return response.data;
+}
+
+// Transform MIM V3.0 insights for frontend
+export function transformMIMInsights(mimInsights) {
+  if (!mimInsights) return null;
+  
+  return {
+    feedbackType: mimInsights.feedback_type,
+    
+    correctnessFeedback: mimInsights.correctness_feedback ? {
+      rootCause: mimInsights.correctness_feedback.root_cause,
+      subtype: mimInsights.correctness_feedback.subtype,
+      failureMechanism: mimInsights.correctness_feedback.failure_mechanism,
+      confidence: mimInsights.correctness_feedback.confidence,
+      isRecurring: mimInsights.correctness_feedback.is_recurring,
+      recurrenceCount: mimInsights.correctness_feedback.recurrence_count
+    } : null,
+    
+    performanceFeedback: mimInsights.performance_feedback ? {
+      rootCause: 'efficiency',
+      expectedComplexity: mimInsights.performance_feedback.expected_complexity,
+      observedComplexity: mimInsights.performance_feedback.observed_complexity,
+      optimizationDirection: mimInsights.performance_feedback.optimization_direction
+    } : null,
+    
+    reinforcementFeedback: mimInsights.reinforcement_feedback ? {
+      category: mimInsights.reinforcement_feedback.category,
+      technique: mimInsights.reinforcement_feedback.technique,
+      confidenceBoost: mimInsights.reinforcement_feedback.confidence_boost,
+      strengthSignal: mimInsights.reinforcement_feedback.strength_signal
+    } : null,
+    
+    // Legacy fields
+    rootCause: mimInsights.root_cause,
+    readiness: mimInsights.readiness,
+    isColdStart: mimInsights.is_cold_start,
+    modelVersion: mimInsights.model_version
+  };
 }
 ```
 
 ---
 
-## Routes
+## 🏆 Contest System
 
-### authRoutes.js (`/api/auth`)
-
-| Method | Endpoint           | Middleware | Handler          |
-| ------ | ------------------ | ---------- | ---------------- |
-| POST   | `/signup`          | -          | `signup`         |
-| POST   | `/signin`          | -          | `signin`         |
-| POST   | `/logout`          | `protect`  | `logout`         |
-| GET    | `/me`              | `protect`  | `getMe`          |
-| PUT    | `/update-profile`  | `protect`  | `updateProfile`  |
-| PUT    | `/change-password` | `protect`  | `changePassword` |
-
----
-
-### contestRoutes.js (`/api/contests`)
-
-| Method | Endpoint                    | Middleware             | Handler              |
-| ------ | --------------------------- | ---------------------- | -------------------- |
-| GET    | `/`                         | `optionalAuth`         | `listContests`       |
-| GET    | `/:id`                      | `optionalAuth`         | `getContestById`     |
-| POST   | `/:id/register`             | `protect`              | `registerForContest` |
-| POST   | `/:id/join`                 | `protect`              | `joinContest`        |
-| GET    | `/:id/problems/:pid`        | `protect`              | `getContestProblem`  |
-| POST   | `/:id/problems/:pid/run`    | `protect`, `rateLimit` | `runContestCode`     |
-| POST   | `/:id/problems/:pid/submit` | `protect`, `rateLimit` | `submitContestCode`  |
-| GET    | `/:id/leaderboard`          | `optionalAuth`         | `getLeaderboard`     |
-| GET    | `/:id/standing`             | `protect`              | `getUserStanding`    |
-
----
-
-### adminRoutes.js (`/api/admin`)
-
-| Method | Endpoint        | Middleware     | Handler         |
-| ------ | --------------- | -------------- | --------------- |
-| POST   | `/login`        | -              | `adminLogin`    |
-| GET    | `/problems`     | `adminProtect` | `getProblems`   |
-| POST   | `/problems`     | `adminProtect` | `createProblem` |
-| PUT    | `/problems/:id` | `adminProtect` | `updateProblem` |
-| DELETE | `/problems/:id` | `adminProtect` | `deleteProblem` |
-| POST   | `/upload-csv`   | `adminProtect` | `uploadCSV`     |
-
----
-
-## Middleware
-
-### authMiddleware.js
-
-**`protect`**: Requires valid JWT token.
+### Real-Time Leaderboard
 
 ```javascript
-// Extracts token from HTTP-only cookie
-// Verifies token validity
-// Attaches user to request: req.user
-// Returns 401 if invalid
+// services/contest/leaderboardService.js
+class LeaderboardService {
+  constructor() {
+    this.leaderboards = new Map(); // contestId -> sorted rankings
+  }
+  
+  // Update score after submission
+  async updateScore(contestId, userId, problemLabel, isAccepted, penalty) {
+    const contest = await Contest.findById(contestId);
+    const registration = await ContestRegistration.findOne({ contestId, userId });
+    
+    if (isAccepted && !registration.solvedProblems.includes(problemLabel)) {
+      registration.solvedProblems.push(problemLabel);
+      registration.score += contest.scoringRules.problemPoints.get(problemLabel);
+      registration.penalty += penalty;
+      await registration.save();
+      
+      // Broadcast update via WebSocket
+      wsServer.broadcastToContest(contestId, {
+        type: 'LEADERBOARD_UPDATE',
+        data: await this.getLeaderboard(contestId)
+      });
+    }
+  }
+  
+  // Get current rankings
+  async getLeaderboard(contestId, limit = 100) {
+    return ContestRegistration.find({ contestId })
+      .sort({ score: -1, penalty: 1, lastACTime: 1 })
+      .limit(limit)
+      .populate('userId', 'name profileImage');
+  }
+}
 ```
 
-**`optionalAuth`**: Attaches user if token exists, continues if not.
+### WebSocket Server
 
 ```javascript
-// Does not fail if no token
-// Used for public endpoints that show extra data to logged-in users
-```
-
----
-
-### adminMiddleware.js
-
-**`adminProtect`**: Requires admin JWT token.
-
-```javascript
-// Verifies admin-specific token
-// Attaches admin to request: req.admin
-// Returns 401 if not admin
-```
-
----
-
-### auditLog.js
-
-**Purpose**: Logs admin actions for accountability.
-
-```javascript
-// Creates AuditLog entry for sensitive operations
-// Records: admin, action, target, timestamp, IP
-```
-
----
-
-## Services
-
-### aiService.js
-
-**Purpose**: Client for AI services communication.
-
-```javascript
-class AIService {
-  // Calls FastAPI /ai/feedback endpoint
-  async getFeedback(submissionData, userHistory) {
-    return axios.post(`${AI_SERVICE_URL}/ai/feedback`, {
-      user_id,
-      problem_id,
-      code,
-      verdict,
-      error_type,
-      user_history_summary,
+// services/contest/websocketServer.js
+class WebSocketServer {
+  constructor() {
+    this.wss = null;
+    this.contestRooms = new Map(); // contestId -> Set<ws>
+  }
+  
+  initialize(server) {
+    this.wss = new WebSocket.Server({ server, path: '/ws/contest' });
+    
+    this.wss.on('connection', (ws, req) => {
+      const contestId = req.url.split('/').pop();
+      this.joinRoom(contestId, ws);
+      
+      ws.on('close', () => this.leaveRoom(contestId, ws));
     });
   }
-
-  // Fetches user's recent submissions for context
-  async buildHistorySummary(userId) {
-    // Returns: "Recent 20 submissions: 5 accepted, 15 failed..."
+  
+  broadcastToContest(contestId, message) {
+    const room = this.contestRooms.get(contestId);
+    if (room) {
+      room.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(message));
+        }
+      });
+    }
   }
 }
 ```
 
 ---
 
-### leaderboardService.js
+## 📅 Scheduled Tasks
 
-**Purpose**: Real-time leaderboard management.
-
-**Redis-Based** (if available):
+### Contest Scheduler
 
 ```javascript
-// Uses Redis sorted sets for O(log N) rank operations
-// Key: contest:{contestId}:leaderboard
-// Score: (problemsSolved * 1e12) - penalty
+// services/contest/contestScheduler.js
+class ContestScheduler {
+  start() {
+    // Check every minute for contests to start/end
+    setInterval(() => this.checkContests(), 60000);
+  }
+  
+  async checkContests() {
+    const now = new Date();
+    
+    // Start scheduled contests
+    const toStart = await Contest.find({
+      status: 'scheduled',
+      startTime: { $lte: now }
+    });
+    
+    for (const contest of toStart) {
+      contest.status = 'active';
+      await contest.save();
+      wsServer.broadcastToContest(contest._id, {
+        type: 'CONTEST_STARTED'
+      });
+    }
+    
+    // End active contests
+    const toEnd = await Contest.find({ status: 'active' });
+    
+    for (const contest of toEnd) {
+      const endTime = new Date(contest.startTime.getTime() + contest.duration * 60000);
+      if (now >= endTime) {
+        contest.status = 'ended';
+        await contest.save();
+        wsServer.broadcastToContest(contest._id, {
+          type: 'CONTEST_ENDED'
+        });
+      }
+    }
+  }
+}
 ```
 
-**MongoDB Fallback**:
+### POTD Scheduler
 
 ```javascript
-// Queries ContestSubmission aggregated by user
-// Calculates ranks in-memory
+// services/potd/potdScheduler.js
+class POTDScheduler {
+  start() {
+    // Run at midnight every day
+    cron.schedule('0 0 * * *', () => this.publishDailyProblem());
+  }
+  
+  async publishDailyProblem() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Check if already published
+    const existing = await PublishedPOTD.findOne({ date: today });
+    if (existing) return;
+    
+    // Get scheduled problem from calendar
+    const scheduled = await POTDCalendar.findOne({ date: today });
+    
+    if (scheduled) {
+      await PublishedPOTD.create({
+        date: today,
+        problemId: scheduled.problemId,
+        difficulty: scheduled.difficulty
+      });
+    }
+  }
+}
 ```
 
 ---
 
-### websocketServer.js
+## 🛡️ Security
 
-**Purpose**: Real-time WebSocket communication.
-
-**Events**:
+### Rate Limiting
 
 ```javascript
-// Client → Server
-{ type: 'join_contest', contestId: '...', token: '...' }
-{ type: 'leave_contest', contestId: '...' }
+// app.js
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 100,                   // 100 requests per window
+  skip: () => process.env.NODE_ENV !== 'production'
+});
 
-// Server → Client
-{ type: 'leaderboard_update', data: [...] }
-{ type: 'submission_status', data: {...} }
-{ type: 'contest_started', contestId: '...' }
-{ type: 'contest_ended', contestId: '...' }
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,                    // 10 auth attempts
+  message: { message: 'Too many authentication attempts' }
+});
+
+const codeLimiter = rateLimit({
+  windowMs: 60 * 1000,        // 1 minute
+  max: 20,                    // 20 submissions per minute
+  keyGenerator: (req) => req.user?._id?.toString() || req.ip
+});
 ```
 
-**Heartbeat**: Ping every 30 seconds to maintain connections.
-
----
-
-### contestScheduler.js
-
-**Purpose**: Automated contest state transitions.
+### Input Validation
 
 ```javascript
-// Runs every 30 seconds
-// Checks all contests:
-//   - If current time >= startTime && status === 'scheduled' → set 'live'
-//   - If current time >= endTime && status === 'live' → set 'ended', calculate ranks
-```
+// Mongoose sanitization
+app.use(mongoSanitize());
 
----
+// Code size limits
+const MAX_CODE_SIZE = 65536;    // 64KB
+const MAX_STDIN_SIZE = 1024 * 1024; // 1MB
 
-### potdScheduler.js
-
-**Purpose**: Daily POTD publishing.
-
-```javascript
-// Runs at midnight (configurable)
-// Publishes scheduled POTD for today
-// Updates PublishedPOTD collection
+if (code.length > MAX_CODE_SIZE) {
+  throw new Error('Code size exceeds maximum limit (64KB)');
+}
 ```
 
 ---
 
-## Environment Variables
+## 🔧 Environment Variables
 
-```env
+```bash
 # Server
 PORT=5000
 NODE_ENV=development
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/mentat-trials
+MONGODB_URI=mongodb://localhost:27017/mentat
 
 # Authentication
-JWT_SECRET=your_jwt_secret_here
-JWT_EXPIRES_IN=7d
+JWT_SECRET=your-super-secret-key
+JWT_EXPIRE=7d
 
-# CORS
-FRONTEND_URL=http://localhost:5173
-
-# Redis (optional)
-REDIS_URL=redis://localhost:6379
-
-# Piston API
-PISTON_API_URL=https://emkc.org/api/v2/piston
-
-# AI Services
+# External Services
 AI_SERVICE_URL=http://localhost:8000
+PISTON_URL=https://emkc.org/api/v2/piston
 
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
+# OAuth (optional)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+
+# Frontend
+FRONTEND_URL=http://localhost:5173
 ```
 
 ---
 
-## Rate Limiting
-
-| Endpoint Category   | Limit                  |
-| ------------------- | ---------------------- |
-| General API         | 100 req / 15 min       |
-| Auth endpoints      | 10 req / 15 min        |
-| Code execution      | 20 req / min           |
-| Contest submissions | 10 req / min / contest |
-
----
-
-## Error Handling
-
-**Standard Error Response**:
-
-```json
-{
-  "success": false,
-  "error": "Error message here",
-  "code": "ERROR_CODE"
-}
-```
-
-**Error Codes**:
-
-- `AUTH_REQUIRED` - No valid token
-- `INVALID_CREDENTIALS` - Wrong username/password
-- `NOT_FOUND` - Resource doesn't exist
-- `RATE_LIMITED` - Too many requests
-- `EXECUTION_ERROR` - Piston API error
-- `VALIDATION_ERROR` - Invalid input data
-
----
-
-## Testing
+## 🚀 Running the Server
 
 ```bash
-# Run tests
-npm test
-
-# Run with coverage
-npm run test:coverage
-```
-
----
-
-## Development
-
-```bash
-# Start with hot reload
+# Development
 npm run dev
 
-# Start production
+# Production
 npm start
 
-# Seed admin user
-npm run seed:admin
+# With specific port
+PORT=3000 npm start
 ```
+
+Server starts at `http://localhost:5000` by default.

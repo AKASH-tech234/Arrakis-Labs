@@ -1,872 +1,654 @@
 # Frontend Documentation
 
-> **React + Vite SPA** - Modern, responsive user interface for the competitive programming platform.
+> **Mentat Trials Frontend** - React-based Single Page Application for the AI-powered competitive programming platform.
 
----
-
-## Overview
-
-The frontend is a single-page application built with React 19 and Vite, featuring:
-
-- Monaco Editor for code writing
-- Real-time contest leaderboards via WebSocket
-- AI feedback visualization with progressive hint disclosure
-- MIM (Mistake Inference Model) insights dashboard
-- Admin panel for platform management
-
-**Port**: 5173  
-**Build Tool**: Vite  
-**Styling**: Tailwind CSS + Framer Motion
-
----
-
-## Directory Structure
+## 📁 Directory Structure
 
 ```
-frontend/
-├── src/
-│   ├── main.jsx                  # React entry point
-│   ├── App.jsx                   # Main router & providers
-│   ├── App.css                   # Global styles
-│   ├── index.css                 # Tailwind imports
-│   │
-│   ├── pages/                    # Route components
-│   │   ├── landing.jsx           # Homepage
-│   │   ├── login.jsx             # User login
-│   │   ├── signup.jsx            # User registration
-│   │   ├── problem.jsx           # Problem listing
-│   │   ├── problemdetail.jsx     # Problem solving view
-│   │   ├── profile.jsx           # User profile
-│   │   ├── submission.jsx        # Submission results
-│   │   │
-│   │   ├── admin/                # Admin pages
-│   │   │   ├── AdminLogin.jsx
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── ProblemEditor.jsx
-│   │   │   ├── ProblemList.jsx
-│   │   │   ├── ContestManagement.jsx
-│   │   │   ├── TestCaseManager.jsx
-│   │   │   ├── UserManagement.jsx
-│   │   │   ├── CSVImporter.jsx
-│   │   │   └── AdminPOTDScheduler.jsx
-│   │   │
-│   │   └── contest/              # Contest pages
-│   │       ├── ContestList.jsx
-│   │       ├── ContestDetail.jsx
-│   │       └── ContestProblem.jsx
-│   │
-│   ├── components/               # Reusable UI components
-│   │   ├── auth/                 # Authentication components
-│   │   │   ├── LoginForm.jsx
-│   │   │   └── SignupForm.jsx
-│   │   │
-│   │   ├── admin/                # Admin components
-│   │   │   ├── AdminNavbar.jsx
-│   │   │   ├── AdminSidebar.jsx
-│   │   │   ├── common/
-│   │   │   └── layout/
-│   │   │
-│   │   ├── editor/               # Code editor
-│   │   │   ├── CodeEditor.jsx
-│   │   │   └── OutputPanel.jsx
-│   │   │
-│   │   ├── feedback/             # AI feedback display
-│   │   │   ├── AIFeedbackPanel.jsx
-│   │   │   ├── AIFeedbackPanelV2.jsx
-│   │   │   ├── AIFeedbackModal.jsx
-│   │   │   ├── AIFeedbackIntegration.jsx
-│   │   │   ├── AILoadingScreen.jsx
-│   │   │   ├── ConfidenceBadge.jsx
-│   │   │   ├── LearningTimeline.jsx
-│   │   │   └── WeeklyReportUI.jsx
-│   │   │
-│   │   ├── mim/                  # MIM insights components
-│   │   │   ├── MIMInsights.jsx
-│   │   │   ├── CognitiveProfile.jsx
-│   │   │   ├── LearningRoadmap.jsx
-│   │   │   ├── ProblemRecommendations.jsx
-│   │   │   └── SkillRadarChart.jsx
-│   │   │
-│   │   ├── problem/              # Problem display
-│   │   │   ├── ProblemCard.jsx
-│   │   │   ├── ProblemList.jsx
-│   │   │   ├── ProblemDescription.jsx
-│   │   │   └── ProblemFilters.jsx
-│   │   │
-│   │   ├── charts/               # Analytics visualizations
-│   │   │   ├── ActivityHeatmap.jsx
-│   │   │   ├── CategoryChart.jsx
-│   │   │   ├── ProfileHeader.jsx
-│   │   │   ├── StatsOverview.jsx
-│   │   │   └── SubmissionSummary.jsx
-│   │   │
-│   │   ├── landing/              # Landing page sections
-│   │   │   ├── HERO3D.jsx
-│   │   │   ├── features.jsx
-│   │   │   ├── howitworks.jsx
-│   │   │   ├── cta.jsx
-│   │   │   └── footer.jsx
-│   │   │
-│   │   └── ui/                   # Shared UI components
-│   │       ├── animated-shader-hero.jsx
-│   │       ├── ArrakisLogo.jsx
-│   │       ├── button.jsx
-│   │       └── ScrollEffect.jsx
-│   │
-│   ├── context/                  # React Context providers
-│   │   ├── AuthContext.jsx
-│   │   ├── AdminAuthContext.jsx
-│   │   └── SubmissionContext.jsx
-│   │
-│   ├── hooks/                    # Custom React hooks
-│   │   ├── useAIFeedback.js
-│   │   ├── useAIFeedbackEnhanced.js
-│   │   ├── useConfidenceBadge.js
-│   │   ├── useContestTimer.js
-│   │   ├── useContestWebSocket.js
-│   │   ├── useLearningTimeline.js
-│   │   ├── useProfileAnalytics.js
-│   │   ├── useResizable.js
-│   │   └── useWeeklyReport.js
-│   │
-│   ├── services/                 # API clients
-│   │   ├── api.js
-│   │   ├── aiApi.js
-│   │   ├── adminApi.js
-│   │   ├── contestApi.js
-│   │   └── potdApi.js
-│   │
-│   ├── routes/                   # Route definitions
-│   │   └── adminRoutes.jsx
-│   │
-│   ├── layouts/                  # Page layouts
-│   │   └── MainLayout.jsx
-│   │
-│   ├── utils/                    # Helper utilities
-│   │   └── formatExampleInput.js
-│   │
-│   ├── lib/                      # Third-party integrations
-│   ├── styles/                   # Additional stylesheets
-│   ├── types/                    # TypeScript types (if used)
-│   └── assets/                   # Static assets
+frontend/src/
+├── main.jsx                    # Application entry point
+├── App.jsx                     # Root component with routing
+├── index.css                   # Global styles
 │
-├── public/                       # Public assets
-├── index.html                    # HTML template
-├── vite.config.js                # Vite configuration
-├── tailwind.config.js            # Tailwind configuration
-├── eslint.config.js              # ESLint configuration
-└── package.json
+├── components/                 # Reusable UI components
+│   ├── admin/                  # Admin panel components
+│   │   ├── AdminLayout.jsx     # Admin dashboard layout
+│   │   ├── AdminSidebar.jsx    # Admin navigation
+│   │   └── common/             # Shared admin components
+│   │       ├── ConfirmModal.jsx
+│   │       ├── DataTable.jsx
+│   │       ├── Drawer.jsx
+│   │       └── Pagination.jsx
+│   │
+│   ├── ai/                     # AI feedback components
+│   │   └── PatternHistory.jsx  # Historical pattern display
+│   │
+│   ├── auth/                   # Route guards
+│   │   ├── AdminRoute.jsx      # Admin-only routes
+│   │   ├── GuestRoute.jsx      # Unauthenticated routes
+│   │   └── ProtectedRoute.jsx  # Authenticated routes
+│   │
+│   ├── charts/                 # Data visualization
+│   │   ├── ActivityHeatmap.jsx # GitHub-style activity grid
+│   │   ├── CategoryChart.jsx   # Category breakdown
+│   │   ├── StatsOverview.jsx   # Stats dashboard
+│   │   └── SubmissionSummary.jsx
+│   │
+│   ├── editor/                 # Code editing
+│   │   ├── CodeEditor.jsx      # Monaco editor wrapper
+│   │   └── OutputPanel.jsx     # Execution results
+│   │
+│   ├── feedback/               # AI feedback display
+│   │   ├── AIFeedbackPanel.jsx     # Main feedback component
+│   │   ├── AIFeedbackPanelV2.jsx   # Enhanced version
+│   │   ├── AILoadingScreen.jsx     # Loading states
+│   │   ├── ConfidenceBadge.jsx     # ML confidence display
+│   │   ├── LearningTimeline.jsx    # Progress timeline
+│   │   └── WeeklyReportUI.jsx      # Weekly summaries
+│   │
+│   ├── mim/                    # MIM Intelligence components
+│   │   ├── CognitiveProfile.jsx       # User skill profile
+│   │   ├── LearningRoadmap.jsx        # Personalized path
+│   │   ├── MIMInsights.jsx            # Legacy insights
+│   │   ├── MIMInsightsV3.jsx          # V3 polymorphic display
+│   │   ├── ProblemRecommendations.jsx # Smart suggestions
+│   │   └── SkillRadarChart.jsx        # Skill visualization
+│   │
+│   ├── potd/                   # Problem of the Day
+│   │   ├── POTDBanner.jsx      # Featured POTD display
+│   │   ├── POTDCalendar.jsx    # Monthly calendar view
+│   │   ├── POTDCard.jsx        # Individual POTD card
+│   │   ├── StreakWidget.jsx    # Streak tracker
+│   │   └── StreakLeaderboard.jsx
+│   │
+│   ├── problem/                # Problem browsing
+│   │   ├── ProblemCard.jsx     # Problem list item
+│   │   ├── ProblemDescription.jsx  # Full problem view
+│   │   ├── ProblemFilters.jsx  # Search/filter UI
+│   │   ├── ProblemList.jsx     # Problem grid/list
+│   │   └── ProblemSubmissionsPanel.jsx
+│   │
+│   └── layout/                 # Layout components
+│       ├── AppHeader.jsx       # Main navigation header
+│       └── Header.jsx          # Alternative header
+│
+├── context/                    # React Context providers
+│   ├── AuthContext.jsx         # User authentication state
+│   ├── AdminAuthContext.jsx    # Admin authentication
+│   └── SubmissionContext.jsx   # Submission & AI feedback state
+│
+├── hooks/                      # Custom React hooks
+│   ├── admin/
+│   │   ├── useConfirmation.js  # Confirmation dialogs
+│   │   └── usePermission.js    # Permission checks
+│   ├── ai/
+│   │   ├── useAIFeedback.js         # Basic AI feedback
+│   │   └── useAIFeedbackEnhanced.js # Enhanced with events
+│   ├── common/
+│   │   ├── useConfidenceBadge.js
+│   │   └── useResizable.js     # Resizable panels
+│   ├── contest/
+│   │   ├── useContestTimer.js  # Countdown timer
+│   │   └── useContestWebSocket.js  # Live updates
+│   └── profile/
+│       ├── useLearningTimeline.js
+│       ├── useProfileAnalytics.js
+│       └── useWeeklyReport.js
+│
+├── pages/                      # Route pages
+│   ├── admin/                  # Admin pages
+│   │   ├── AdminDashboard.jsx
+│   │   ├── QuestionEditor.jsx
+│   │   ├── QuestionList.jsx
+│   │   ├── TestCaseManager.jsx
+│   │   ├── AdminPOTDScheduler.jsx
+│   │   └── contests/
+│   │
+│   ├── auth/                   # Authentication pages
+│   │   ├── login.jsx
+│   │   └── signup.jsx
+│   │
+│   ├── common/                 # Main user pages
+│   │   ├── landing.jsx         # Homepage
+│   │   ├── problem.jsx         # Problem library
+│   │   ├── problemdetail.jsx   # Problem solving view
+│   │   └── SubmissionResult.jsx # AI feedback display
+│   │
+│   ├── contest/                # Contest pages
+│   │   ├── ContestList.jsx
+│   │   ├── ContestDetail.jsx
+│   │   └── ContestProblem.jsx
+│   │
+│   ├── potd/                   # POTD pages
+│   │   ├── POTDHome.jsx
+│   │   ├── POTDHistory.jsx
+│   │   └── POTDLeaderboard.jsx
+│   │
+│   └── profile/                # User profile pages
+│       ├── profile.jsx         # Main profile
+│       └── codingProfile.jsx   # External profiles
+│
+├── services/                   # API service layers
+│   ├── admin/
+│   │   ├── adminApi.js         # Admin endpoints
+│   │   └── adminContestApi.js
+│   ├── ai/
+│   │   └── aiApi.js            # AI service calls
+│   ├── common/
+│   │   ├── api.js              # Base API config
+│   │   └── discussApi.js       # Discussion endpoints
+│   ├── contest/
+│   │   └── contestApi.js
+│   ├── potd/
+│   │   └── potdApi.js
+│   └── profile/
+│       └── codingProfileApi.js
+│
+└── types/                      # TypeScript-like type definitions
+    ├── ai.types.js             # AI response types
+    └── problem.types.js        # Problem types
 ```
 
 ---
 
-## Core Files
-
-### main.jsx - Entry Point
-
-**Purpose**: Bootstraps React application with StrictMode.
+## 🔀 Routing Structure
 
 ```jsx
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
+// App.jsx - Route Configuration
+<Routes>
+  {/* Public Routes */}
+  <Route path="/" element={<Landing />} />
+  <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+  <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
+  <Route path="/u/:username" element={<PublicProfile />} />
+  <Route path="/contests" element={<ContestList />} />
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+  {/* Protected Routes (Authenticated Users) */}
+  <Route path="/problems" element={<ProtectedRoute><ProblemLibrary /></ProtectedRoute>} />
+  <Route path="/problems/:id" element={<ProtectedRoute><ProblemDetail /></ProtectedRoute>} />
+  <Route path="/submissions/:id" element={<ProtectedRoute><SubmissionResult /></ProtectedRoute>} />
+  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+  <Route path="/coding-profile" element={<ProtectedRoute><CodingProfile /></ProtectedRoute>} />
+  <Route path="/potd" element={<ProtectedRoute><POTDHome /></ProtectedRoute>} />
+  <Route path="/contests/:contestId" element={<ProtectedRoute><ContestDetail /></ProtectedRoute>} />
+
+  {/* Admin Routes */}
+  <Route path="/admin/login" element={<AdminLogin />} />
+  <Route path="/admin" element={<AdminLayout />}>
+    <Route index element={<AdminDashboard />} />
+    <Route path="questions" element={<QuestionList />} />
+    <Route path="questions/:id" element={<QuestionEditor />} />
+    <Route path="contests" element={<AdminContestList />} />
+    <Route path="potd" element={<AdminPOTDScheduler />} />
+  </Route>
+</Routes>
 ```
 
 ---
 
-### App.jsx - Router & Providers
+## 🧠 State Management
 
-**Purpose**: Sets up routing, authentication context, and protected routes.
-
-**Structure**:
+### Context Providers Hierarchy
 
 ```jsx
-<BrowserRouter>
-  <AuthProvider>
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/problems" element={<Problems />} />
-      <Route path="/problems/:id" element={<ProblemDetail />} />
-
-      {/* Protected User Routes */}
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/contests" element={<ContestList />} />
-      <Route path="/contests/:id" element={<ContestDetail />} />
-
-      {/* Admin Routes */}
-      <Route path="/admin/*" element={<AdminRoutes />} />
-    </Routes>
-  </AuthProvider>
-</BrowserRouter>
+<AuthProvider>              {/* User authentication */}
+  <AdminAuthProvider>       {/* Admin authentication */}
+    <SubmissionProvider>    {/* Submissions & AI feedback */}
+      <Router>
+        <App />
+      </Router>
+    </SubmissionProvider>
+  </AdminAuthProvider>
+</AuthProvider>
 ```
 
----
+### SubmissionContext (Core State)
 
-## Pages
-
-### landing.jsx
-
-**Purpose**: Homepage with hero section, features, and call-to-action.
-
-**Sections**:
-
-- Hero with 3D animation
-- Features showcase
-- How it works explanation
-- Call-to-action for signup
-- Footer
-
----
-
-### problemdetail.jsx
-
-**Purpose**: Main problem-solving interface with code editor and AI feedback.
-
-**Layout**:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Problem Title                              Language ▼      │
-├───────────────────────────────┬─────────────────────────────┤
-│                               │                             │
-│   Problem Description         │     Monaco Code Editor      │
-│   - Description               │                             │
-│   - Examples                  │                             │
-│   - Constraints               │                             │
-│                               ├─────────────────────────────┤
-│                               │     Output Panel            │
-│                               │     - Test Results          │
-│                               │     - AI Feedback           │
-│                               │                             │
-└───────────────────────────────┴─────────────────────────────┘
-                    [Run Code]  [Submit]
-```
-
-**Features**:
-
-- Resizable panels
-- Syntax highlighting
-- Auto-complete
-- Test case display
-- AI feedback integration
-
----
-
-### contest/ContestProblem.jsx
-
-**Purpose**: Problem solving within a timed contest.
-
-**Additional Features**:
-
-- Contest timer
-- Live leaderboard sidebar
-- Submission count
-- Penalty tracking
-
----
-
-### profile.jsx
-
-**Purpose**: User profile dashboard with statistics and history.
-
-**Sections**:
-
-- Profile header with avatar
-- Stats overview (problems solved, streak, etc.)
-- Activity heatmap
-- Category performance chart
-- Recent submissions
-- MIM insights (if available)
-
----
-
-### admin/Dashboard.jsx
-
-**Purpose**: Admin overview with platform statistics.
-
-**Widgets**:
-
-- Total users count
-- Total problems count
-- Active contests
-- Recent submissions
-- Quick actions
-
----
-
-## Components
-
-### editor/CodeEditor.jsx
-
-**Purpose**: Monaco Editor wrapper for code editing.
-
-**Features**:
+The `SubmissionContext` manages the entire submission and AI feedback lifecycle:
 
 ```javascript
+// State Structure
 {
-  language: 'python' | 'javascript' | 'java' | 'cpp' | ...,
-  theme: 'vs-dark',
-  minimap: { enabled: false },
-  fontSize: 14,
-  automaticLayout: true,
-  tabSize: 4,
-  wordWrap: 'on'
-}
-```
-
-**Props**:
-| Prop | Type | Description |
-|------|------|-------------|
-| `code` | string | Current code content |
-| `onChange` | function | Called when code changes |
-| `language` | string | Programming language |
-| `readOnly` | boolean | Disable editing |
-
----
-
-### editor/OutputPanel.jsx
-
-**Purpose**: Displays code execution results.
-
-**Display States**:
-
-- **Idle**: "Run code to see output"
-- **Running**: Loading spinner
-- **Success**: Test case results (✅/❌ per case)
-- **Error**: Compilation/runtime error message
-- **AI Feedback**: Progressive hint display
-
----
-
-### feedback/AIFeedbackPanel.jsx
-
-**Purpose**: Displays AI-generated feedback with progressive disclosure.
-
-**Structure**:
-
-```
-┌─────────────────────────────────────────┐
-│  🧠 AI Feedback                         │
-├─────────────────────────────────────────┤
-│  Explanation                            │
-│  "Your solution fails because..."       │
-├─────────────────────────────────────────┤
-│  💡 Hints                               │
-│  [Hint 1] Conceptual hint               │
-│  [Hint 2] More specific (locked 🔒)     │
-│  [Hint 3] Detailed hint (locked 🔒)     │
-├─────────────────────────────────────────┤
-│  📈 Confidence: 85%                     │
-│  🎯 Detected Pattern: Off-by-one error  │
-└─────────────────────────────────────────┘
-```
-
-**Progressive Hint Logic**:
-
-- Hint 1: Always visible (conceptual)
-- Hint 2: Unlocked after 2nd attempt
-- Hint 3: Unlocked after 3rd attempt
-
----
-
-### feedback/ConfidenceBadge.jsx
-
-**Purpose**: Visual indicator of AI confidence level.
-
-**Levels**:
-| Score | Color | Label |
-|-------|-------|-------|
-| 80-100% | Green | High Confidence |
-| 60-79% | Yellow | Medium Confidence |
-| 0-59% | Red | Low Confidence |
-
----
-
-### feedback/LearningTimeline.jsx
-
-**Purpose**: Shows user's learning progress over time.
-
-**Visualization**: Timeline with milestones for:
-
-- Problems solved
-- Skills unlocked
-- Patterns identified
-- Streak achievements
-
----
-
-### mim/MIMInsights.jsx
-
-**Purpose**: Dashboard for ML-based predictions and recommendations.
-
-**Sections**:
-
-```
-┌───────────────────────────────────────────────────────────┐
-│  🧬 Cognitive Profile                                     │
-│  [Skill Radar Chart]                                      │
-├───────────────────────────────────────────────────────────┤
-│  📚 Recommended Problems                                  │
-│  - Problem A (targets: arrays, edge cases)                │
-│  - Problem B (targets: recursion)                         │
-├───────────────────────────────────────────────────────────┤
-│  🛤️ Learning Roadmap                                      │
-│  Step 1: Master basic arrays                              │
-│  Step 2: Learn two-pointers → ...                         │
-└───────────────────────────────────────────────────────────┘
-```
-
----
-
-### mim/SkillRadarChart.jsx
-
-**Purpose**: Radar chart visualization of user's skill areas.
-
-**Dimensions**:
-
-- Arrays & Strings
-- Dynamic Programming
-- Graphs & Trees
-- Math & Number Theory
-- Greedy Algorithms
-- Recursion & Backtracking
-
----
-
-### mim/ProblemRecommendations.jsx
-
-**Purpose**: AI-recommended problems based on skill gaps.
-
-**Display**:
-
-```jsx
-{
-  recommendations.map((rec) => (
-    <RecommendationCard
-      problem={rec.problem}
-      reason={rec.reason} // "Targets your weakness in edge cases"
-      difficulty={rec.difficulty}
-      estimatedTime={rec.time}
-    />
-  ));
-}
-```
-
----
-
-### charts/ActivityHeatmap.jsx
-
-**Purpose**: GitHub-style contribution heatmap showing solving activity.
-
-**Data**: Submissions per day for the past year  
-**Colors**: Intensity based on submission count
-
----
-
-### charts/CategoryChart.jsx
-
-**Purpose**: Bar/pie chart showing performance by problem category.
-
-**Metrics**:
-
-- Problems attempted per category
-- Acceptance rate per category
-- Time spent per category
-
----
-
-## Context Providers
-
-### AuthContext.jsx
-
-**Purpose**: Manages user authentication state globally.
-
-**State**:
-
-```javascript
-{
-  user: {
-    id: string,
-    username: string,
-    email: string,
-    role: 'user' | 'admin'
-  } | null,
-  isLoading: boolean,
-  isAuthenticated: boolean
-}
-```
-
-**Actions**:
-| Function | Description |
-|----------|-------------|
-| `login(credentials)` | Authenticates user, stores token |
-| `logout()` | Clears auth state and cookie |
-| `updateUser(data)` | Updates local user data |
-| `checkAuth()` | Validates existing session |
-
----
-
-### AdminAuthContext.jsx
-
-**Purpose**: Separate auth context for admin users.
-
-**Why Separate?**:
-
-- Different token storage
-- Different permission levels
-- Allows simultaneous user + admin sessions in development
-
----
-
-### SubmissionContext.jsx
-
-**Purpose**: Manages submission state across components.
-
-**State**:
-
-```javascript
-{
+  // Current submission data
   currentSubmission: {
-    code: string,
-    language: string,
-    status: 'idle' | 'running' | 'submitted',
-    result: Object | null
+    id: "sub_abc123",
+    questionId: "q_123",
+    verdict: "wrong_answer",  // accepted, wrong_answer, tle, etc.
+    language: "python",
+    code: "...",
+    runtime: 45,
+    memory: 12.5,
+    passedCount: 8,
+    totalCount: 10
   },
-  history: Array
+  
+  // Submission history (last 10)
+  submissionHistory: [...],
+  
+  // Code execution state
+  executionStatus: "idle" | "running" | "success" | "error",
+  executionOutput: {...},
+  executionError: null,
+  
+  // AI Feedback state
+  aiStatus: "idle" | "loading" | "success" | "error",
+  aiFeedback: {
+    hints: [...],           // Progressive hints
+    explanation: "...",     // Full explanation
+    detectedPattern: "...", // Pattern name
+    mimInsights: {...},     // MIM ML predictions
+    optimizationTips: [...],
+    complexityAnalysis: {...}
+  },
+  aiError: null,
+  
+  // UI state
+  revealedHintLevel: 1,     // How many hints revealed
+  showFullExplanation: false,
+  showAIPanel: false
 }
 ```
 
----
-
-## Custom Hooks
-
-### useAIFeedback.js
-
-**Purpose**: Manages AI feedback fetching and progressive hint disclosure.
+### Key Actions
 
 ```javascript
-const {
-  feedback, // AI feedback object
-  isLoading, // Loading state
-  error, // Error message
-  hintsUnlocked, // Number of hints revealed
-  unlockNextHint, // Function to reveal next hint
-  fetchFeedback, // Trigger feedback fetch
-} = useAIFeedback(submissionId);
-```
-
-**Progressive Disclosure**:
-
-```javascript
-// Hint unlocking logic
-const canUnlockHint = (hintIndex) => {
-  return attempts >= hintIndex + 1;
+// SubmissionContext Actions
+const actions = {
+  // Code execution
+  runCode(code, language, testCases),
+  
+  // Full submission
+  submitCode(questionId, code, language),
+  
+  // AI feedback
+  requestAIFeedback(),
+  retryAIFeedback(),
+  
+  // Progressive hints
+  revealNextHint(),
+  toggleExplanation(),
+  
+  // State management
+  clearSubmission(),
+  resetAIFeedback()
 };
 ```
 
 ---
 
-### useContestWebSocket.js
+## 🔄 Data Flow
 
-**Purpose**: Manages WebSocket connection for live contest updates.
+### Submission Flow
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  User Types │     │   Submit    │     │   Backend   │     │  Piston API │
+│    Code     │────▶│   Button    │────▶│   /submit   │────▶│  (Execute)  │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Display    │◀────│  AI Service │◀────│  Verdict +  │
+│  Feedback   │     │  /feedback  │     │  Results    │
+└─────────────┘     └─────────────┘     └─────────────┘
+```
+
+### AI Feedback Flow
+
+```javascript
+// 1. Submission completes
+dispatch({ type: 'SUBMISSION_COMPLETE', payload: { submission } });
+
+// 2. Auto-trigger AI feedback request
+useEffect(() => {
+  if (hasSubmission && aiStatus === 'idle' && !hasAIFeedback) {
+    requestAIFeedback();
+  }
+}, [hasSubmission, aiStatus, hasAIFeedback]);
+
+// 3. Request AI feedback from backend
+const requestAIFeedback = async () => {
+  dispatch({ type: 'AI_REQUEST_START' });
+  
+  const response = await fetch('/api/ai/feedback', {
+    method: 'POST',
+    body: JSON.stringify({
+      submission_id: currentSubmission.id,
+      user_id: user.id,
+      problem_id: currentSubmission.questionId,
+      code: currentSubmission.code,
+      verdict: currentSubmission.verdict,
+      // ... more context
+    })
+  });
+  
+  const feedback = await response.json();
+  dispatch({ type: 'AI_REQUEST_SUCCESS', payload: { feedback } });
+};
+
+// 4. Display in SubmissionResult.jsx
+```
+
+---
+
+## 🎨 Key Components
+
+### 1. CodeEditor (`components/editor/CodeEditor.jsx`)
+
+Monaco-based code editor with syntax highlighting:
+
+```jsx
+<CodeEditor
+  language="python"
+  value={code}
+  onChange={setCode}
+  theme="vs-dark"
+  options={{
+    minimap: { enabled: false },
+    fontSize: 14,
+    lineNumbers: 'on',
+    automaticLayout: true
+  }}
+/>
+```
+
+### 2. MIMInsightsV3 (`components/mim/MIMInsightsV3.jsx`)
+
+Displays MIM V3.0 polymorphic feedback:
+
+```jsx
+// Handles three feedback types:
+// 1. correctness_feedback - For WA/RE verdicts
+// 2. performance_feedback - For TLE/MLE verdicts  
+// 3. reinforcement_feedback - For accepted solutions
+
+<MIMInsightsV3 
+  insights={{
+    feedbackType: "correctness",
+    correctnessFeedback: {
+      rootCause: "correctness",
+      subtype: "off_by_one",
+      failureMechanism: "Loop bounds incorrect",
+      confidence: 0.85,
+      isRecurring: true,
+      recurrenceCount: 3
+    }
+  }}
+  expanded={true}
+/>
+```
+
+### 3. SubmissionResult (`pages/common/SubmissionResult.jsx`)
+
+Main feedback display page with:
+- Verdict badge and stats
+- Progressive hints (HintsView)
+- Full analysis (SummaryView)
+- MIM Intelligence panel
+
+```jsx
+// View states
+const [currentView, setCurrentView] = useState("initial");
+// "initial" → "hints" (for WA) or "summary" (for AC)
+
+// Auto-transition based on verdict
+useEffect(() => {
+  if (hasAIFeedback && currentView === "initial") {
+    setCurrentView(isAccepted ? "summary" : "hints");
+  }
+}, [hasAIFeedback, isAccepted]);
+```
+
+### 4. CognitiveProfile (`components/mim/CognitiveProfile.jsx`)
+
+Displays user's learning profile:
+- Skill radar chart
+- Strength/weakness topics
+- Dominant mistake patterns
+- Learning recommendations
+
+### 5. ProblemRecommendations (`components/mim/ProblemRecommendations.jsx`)
+
+Smart problem suggestions based on:
+- Current skill gaps
+- Difficulty readiness scores
+- Recent mistake patterns
+
+---
+
+## 🪝 Custom Hooks
+
+### useAIFeedbackEnhanced
+
+Enhanced AI feedback hook with event system:
 
 ```javascript
 const {
-  leaderboard, // Current leaderboard array
-  isConnected, // WebSocket connection status
-  error, // Connection error
-  myRank, // Current user's rank
+  feedback,
+  isLoading,
+  error,
+  requestFeedback,
+  retryFeedback,
+  
+  // Progressive hints
+  revealedLevel,
+  revealNextHint,
+  hasMoreHints,
+  
+  // MIM insights
+  mimInsights,
+  rootCause,
+  confidence
+} = useAIFeedbackEnhanced(submissionId);
+```
+
+### useContestWebSocket
+
+Real-time contest updates:
+
+```javascript
+const {
+  isConnected,
+  leaderboard,
+  submissions,
+  announcements,
+  timeRemaining
 } = useContestWebSocket(contestId);
 ```
 
-**Events Handled**:
+### useProfileAnalytics
 
-- `leaderboard_update` - Updates local leaderboard state
-- `contest_started` - Enables submission
-- `contest_ended` - Shows final results
-- `reconnect` - Auto-reconnects on disconnect
-
----
-
-### useContestTimer.js
-
-**Purpose**: Countdown timer for active contests.
+User analytics data:
 
 ```javascript
 const {
-  timeRemaining, // { hours, minutes, seconds }
-  isExpired, // Contest ended
-  formattedTime, // "01:23:45"
-} = useContestTimer(endTime);
-```
-
----
-
-### useProfileAnalytics.js
-
-**Purpose**: Fetches and processes user analytics data.
-
-```javascript
-const {
-  stats, // { solved, attempted, acceptanceRate }
-  categoryData, // Performance by category
-  activityData, // Daily submission counts
-  streak, // Current solving streak
-  isLoading,
+  stats,
+  activityHeatmap,
+  categoryBreakdown,
+  difficultyProgress,
+  recentSubmissions
 } = useProfileAnalytics(userId);
 ```
 
 ---
 
-### useResizable.js
+## 🔌 API Services
 
-**Purpose**: Enables resizable panels in the problem solving view.
+### AI API (`services/ai/aiApi.js`)
 
 ```javascript
-const {
-  leftWidth, // Left panel width (%)
-  rightWidth, // Right panel width (%)
-  handleDrag, // Mouse drag handler
-  resetLayout, // Reset to default
-} = useResizable(defaultLeftWidth);
+// Request AI feedback for submission
+export const getAIFeedback = async (submissionData) => {
+  return api.post('/ai/feedback', submissionData);
+};
+
+// Get user's cognitive profile
+export const getCognitiveProfile = async (userId) => {
+  return api.get(`/ai/profile/${userId}`);
+};
+
+// Get problem recommendations
+export const getRecommendations = async (userId) => {
+  return api.get(`/ai/recommendations/${userId}`);
+};
+
+// Get weekly learning report
+export const getWeeklyReport = async (userId) => {
+  return api.get(`/ai/report/weekly/${userId}`);
+};
 ```
 
----
-
-## Services
-
-### api.js
-
-**Purpose**: Base Axios instance with authentication headers.
+### Common API (`services/common/api.js`)
 
 ```javascript
+// Axios instance with auth interceptor
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
-  withCredentials: true, // Sends cookies
-  timeout: 30000,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  withCredentials: true
 });
 
-// Request interceptor for auth
+// Auto-attach auth token
 api.interceptors.request.use((config) => {
-  // Token handled via HTTP-only cookie
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
-
-// Response interceptor for errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized
-    }
-    return Promise.reject(error);
-  },
-);
 ```
 
 ---
 
-### aiApi.js
+## 🎯 MIM V3.0 Frontend Integration
 
-**Purpose**: AI service API endpoints.
+### Polymorphic Feedback Handling
 
 ```javascript
-export const aiApi = {
-  // Get AI feedback for submission
-  getFeedback: (submissionId) => api.get(`/ai/feedback/${submissionId}`),
+// MIMInsightsV3.jsx - Handles all feedback types
+function MIMInsightsV3({ insights }) {
+  const { feedbackType } = insights;
+  
+  switch (feedbackType) {
+    case 'correctness':
+    case 'implementation':
+    case 'understanding_gap':
+      return <CorrectnessFeedbackPanel data={insights.correctnessFeedback} />;
+      
+    case 'efficiency':
+      return <PerformanceFeedbackPanel data={insights.performanceFeedback} />;
+      
+    case 'reinforcement':
+      return <ReinforcementFeedbackPanel data={insights.reinforcementFeedback} />;
+      
+    default:
+      return <LegacyMIMPanel data={insights} />;
+  }
+}
+```
 
-  // Get MIM profile
-  getProfile: (userId) => api.get(`/ai/mim/profile/${userId}`),
+### Root Cause Display
 
-  // Get problem recommendations
-  getRecommendations: (userId) => api.get(`/ai/mim/recommend/${userId}`),
+```javascript
+// Properly extract root cause from object or string
+const rootCauseRaw = mimInsights.root_cause || mimInsights.rootCause;
+const rootCause = typeof rootCauseRaw === "object" && rootCauseRaw !== null
+  ? (rootCauseRaw.failure_cause || rootCauseRaw.failureCause)
+  : rootCauseRaw;
 
-  // Get weekly report
-  getWeeklyReport: (userId) => api.get(`/ai/weekly-report/${userId}`),
-};
+// Format for display
+const displayRootCause = rootCause
+  .replace(/_/g, " ")
+  .replace(/\b\w/g, (c) => c.toUpperCase());
+// "correctness" → "Correctness"
+// "off_by_one" → "Off By One"
 ```
 
 ---
 
-### contestApi.js
+## 🎨 Styling
 
-**Purpose**: Contest-related API endpoints.
-
-```javascript
-export const contestApi = {
-  // List all contests
-  getContests: () => api.get("/contests"),
-
-  // Get contest details
-  getContest: (id) => api.get(`/contests/${id}`),
-
-  // Register for contest
-  register: (id) => api.post(`/contests/${id}/register`),
-
-  // Get leaderboard
-  getLeaderboard: (id) => api.get(`/contests/${id}/leaderboard`),
-
-  // Submit code
-  submit: (contestId, problemId, data) =>
-    api.post(`/contests/${contestId}/problems/${problemId}/submit`, data),
-};
-```
-
----
-
-## Routing
-
-### Public Routes
-
-| Path            | Component       | Description       |
-| --------------- | --------------- | ----------------- |
-| `/`             | `Landing`       | Homepage          |
-| `/login`        | `Login`         | User login        |
-| `/signup`       | `Signup`        | User registration |
-| `/problems`     | `Problems`      | Problem listing   |
-| `/problems/:id` | `ProblemDetail` | Problem solving   |
-
-### Protected Routes (require auth)
-
-| Path                          | Component        | Description     |
-| ----------------------------- | ---------------- | --------------- |
-| `/profile`                    | `Profile`        | User dashboard  |
-| `/contests/:id/problems/:pid` | `ContestProblem` | Contest problem |
-
-### Admin Routes
-
-| Path                  | Component            | Description        |
-| --------------------- | -------------------- | ------------------ |
-| `/admin/login`        | `AdminLogin`         | Admin login        |
-| `/admin/dashboard`    | `Dashboard`          | Admin overview     |
-| `/admin/problems`     | `ProblemList`        | Problem management |
-| `/admin/problems/new` | `ProblemEditor`      | Create problem     |
-| `/admin/contests`     | `ContestManagement`  | Contest management |
-| `/admin/potd`         | `AdminPOTDScheduler` | POTD scheduling    |
-
----
-
-## State Management
-
-### Local State
-
-- Component-level `useState` for UI state
-- Form inputs, toggles, modals
-
-### Context State
-
-- Auth state (user, isAuthenticated)
-- Submission state (current code, results)
-
-### Server State
-
-- API data fetched on mount
-- Refreshed on user actions
-
-### WebSocket State
-
-- Real-time leaderboard updates
-- Contest status changes
-
----
-
-## Styling
-
-### Tailwind CSS
-
-**Configuration** (`tailwind.config.js`):
+### TailwindCSS Configuration
 
 ```javascript
-{
+// tailwind.config.js
+module.exports = {
   content: ['./src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        primary: {...},
-        secondary: {...}
+        // Arrakis theme colors
+        bg: '#0A0A08',
+        bgCard: '#0F0F0D',
+        border: '#1A1814',
+        borderLight: '#2A2A24',
+        textPrimary: '#E8E4D9',
+        textSecondary: '#A29A8C',
+        textMuted: '#78716C',
+        accent: '#D97706',      // Orange
+        accentHover: '#F59E0B',
+        success: '#22C55E',     // Green
+        error: '#EF4444',       // Red
+        warning: '#F59E0B',     // Yellow
+        info: '#3B82F6',        // Blue
       },
-      animation: {
-        'fade-in': '...',
-        'slide-up': '...'
+      fontFamily: {
+        display: ['Rajdhani', 'Orbitron', 'system-ui', 'sans-serif'],
       }
     }
-  },
-  plugins: []
-}
+  }
+};
 ```
 
-### Framer Motion
-
-**Usage**:
+### Animation with Framer Motion
 
 ```jsx
+// Common animation patterns
 <motion.div
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
-  exit={{ opacity: 0 }}
+  exit={{ opacity: 0, y: -20 }}
   transition={{ duration: 0.3 }}
 >
   {content}
 </motion.div>
+
+// Loading spinner
+<motion.div
+  animate={{ rotate: 360 }}
+  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+  className="w-12 h-12 border-2 rounded-full"
+  style={{ borderTopColor: COLORS.accent }}
+/>
 ```
 
 ---
 
-## Environment Variables
-
-```env
-# API Configuration
-VITE_API_URL=http://localhost:5000/api
-VITE_WS_URL=ws://localhost:5000
-
-# AI Services
-VITE_AI_SERVICE_URL=http://localhost:8000
-
-# Feature Flags
-VITE_ENABLE_MIM=true
-VITE_ENABLE_POTD=true
-```
-
----
-
-## Development
+## 🧪 Testing
 
 ```bash
-# Start development server
+# Run tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# E2E tests (if configured)
+npm run test:e2e
+```
+
+---
+
+## 📦 Build & Deploy
+
+```bash
+# Development
 npm run dev
 
-# Build for production
+# Production build
 npm run build
 
 # Preview production build
 npm run preview
-
-# Lint code
-npm run lint
 ```
 
----
-
-## Performance Optimizations
-
-- **Code Splitting**: Lazy loading for admin routes
-- **Memoization**: `useMemo` / `useCallback` for expensive operations
-- **Virtualization**: Long lists use virtual scrolling
-- **Image Optimization**: WebP format, lazy loading
-- **Bundle Analysis**: Vite build analyzer
+Build output is in `dist/` directory, ready for static hosting (Vercel, Netlify, etc.).
