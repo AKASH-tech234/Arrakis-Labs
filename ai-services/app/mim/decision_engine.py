@@ -40,6 +40,54 @@ logger = logging.getLogger("mim.decision_engine")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# v3.3: ROOT CAUSE SUBTYPES - Granular diagnosis
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ROOT_CAUSE_SUBTYPES = {
+    "algorithm_choice": {
+        "wrong_invariant": "Chosen approach doesn't preserve required invariant",
+        "wrong_data_structure": "Data structure doesn't support required operations efficiently",
+        "brute_force": "Naive approach exceeds time/space constraints",
+        "premature_optimization": "Optimized for wrong bottleneck, missed correctness",
+        "greedy_when_dp": "Greedy approach fails for overlapping subproblems",
+        "dp_when_greedy": "Over-complicated with DP when greedy suffices",
+    },
+    "boundary_condition_blindness": {
+        "empty_input": "Fails on empty/null input",
+        "single_element": "Fails on single element edge case",
+        "max_constraint": "Fails at maximum constraint boundary",
+    },
+    "off_by_one_error": {
+        "loop_bound": "Loop iterates one too many/few times",
+        "index_access": "Array index off by one",
+        "range_end": "Range end inclusive/exclusive confusion",
+    },
+    "time_complexity_issue": {
+        "nested_loops": "Unnecessary nested iteration",
+        "repeated_computation": "Same value computed multiple times",
+        "suboptimal_search": "Linear search where binary possible",
+    },
+    "logic_error": {
+        "condition_inversion": "Boolean condition inverted",
+        "state_corruption": "Variable state not properly maintained",
+        "missing_return": "Missing or wrong return statement",
+    },
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3.3: FAILURE MECHANISM TEMPLATES - Concrete explanations
+# ═══════════════════════════════════════════════════════════════════════════════
+
+FAILURE_MECHANISM_TEMPLATES = {
+    ("algorithm_choice", "wrong_invariant"): "Your {approach} doesn't maintain the {invariant} invariant required for correctness",
+    ("algorithm_choice", "brute_force"): "Your O({actual_complexity}) approach exceeds the O({expected_complexity}) constraint for n={input_size}",
+    ("algorithm_choice", "greedy_when_dp"): "Greedy fails because optimal substructure requires considering overlapping subproblems",
+    ("off_by_one_error", "loop_bound"): "Loop {loop_var} iterates {direction} by one, causing {effect}",
+    ("boundary_condition_blindness", "empty_input"): "When input is empty, your code {failure_behavior}",
+    ("time_complexity_issue", "nested_loops"): "Nested loops over {outer} and {inner} create O(n²) when O(n) is achievable",
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # EDGE CASE DETECTION RULES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -310,8 +358,12 @@ class MIMDecisionEngine:
             )
             
             # 5. Generate agent instructions
+            # v3.3: Pass code, verdict, problem_context for subtype inference
             feedback_instruction = self._generate_feedback_instruction(
-                root_cause_result, pattern, user_profile, performance_result
+                root_cause_result, pattern, user_profile, performance_result,
+                code=submission.get("code", ""),
+                verdict=submission.get("verdict", ""),
+                problem_context=problem_context,
             )
             hint_instruction = self._generate_hint_instruction(
                 root_cause_result, problem_context, user_profile
@@ -437,15 +489,82 @@ class MIMDecisionEngine:
             burnout_risk=burnout_risk,
         )
     
+    def _infer_subtype(
+        self,
+        root_cause: str,
+        code: str,
+        verdict: str,
+        problem_context: Optional[Dict[str, Any]],
+    ) -> tuple[Optional[str], Optional[str]]:
+        """
+        v3.3: Infer granular subtype and failure mechanism from code patterns.
+        
+        Returns:
+            (subtype, failure_mechanism)
+        """
+        subtypes = ROOT_CAUSE_SUBTYPES.get(root_cause, {})
+        if not subtypes:
+            return None, None
+        
+        code_lower = code.lower() if code else ""
+        
+        # Algorithm choice subtypes
+        if root_cause == "algorithm_choice":
+            # Check for brute force patterns
+            if "for" in code_lower and code_lower.count("for") >= 2:
+                # Nested loops suggest brute force
+                if verdict in ["time_limit_exceeded", "tle"]:
+                    return "brute_force", f"Nested loops create O(n²) or worse complexity"
+            
+            # Check for sorting when invariant matters
+            if "sort" in code_lower:
+                expected_approach = problem_context.get("expected_approach", "") if problem_context else ""
+                if "order" in expected_approach.lower() or "position" in expected_approach.lower():
+                    return "wrong_invariant", "Sorting destroys the original ordering/position information"
+            
+            # Check for greedy vs DP mismatch
+            expected_approach = problem_context.get("expected_approach", "") if problem_context else ""
+            if "dp" in expected_approach.lower() or "dynamic" in expected_approach.lower():
+                if "dp" not in code_lower and "memo" not in code_lower:
+                    return "greedy_when_dp", "This problem requires DP but you used a greedy approach"
+            
+            # Default to wrong_invariant if we detect correctness issue
+            if verdict == "wrong_answer":
+                return "wrong_invariant", "Your algorithm doesn't maintain required correctness invariant"
+        
+        # Off by one subtypes
+        elif root_cause == "off_by_one_error":
+            if "<=" in code or ">=" in code:
+                return "loop_bound", "Check if loop bound should be < or <= (off by one)"
+            if "[" in code and ("-1" in code or "+1" in code):
+                return "index_access", "Array index calculation may be off by one"
+        
+        # Time complexity subtypes
+        elif root_cause == "time_complexity_issue":
+            if code_lower.count("for") >= 2:
+                return "nested_loops", "Nested loops cause quadratic or worse complexity"
+            if verdict == "time_limit_exceeded":
+                return "suboptimal_search", "Consider more efficient search/lookup approach"
+        
+        return None, None
+    
     def _generate_feedback_instruction(
         self,
         root_cause_result: Dict[str, Any],
         pattern: PatternResult,
         user_profile: Optional[Dict[str, Any]],
         performance: Dict[str, Any],
+        code: str = "",
+        verdict: str = "",
+        problem_context: Optional[Dict[str, Any]] = None,
     ) -> FeedbackInstruction:
         """Generate pre-computed instruction for feedback_agent."""
         root_cause = root_cause_result["failure_cause"]
+        
+        # v3.3: Infer subtype and failure mechanism
+        subtype, failure_mechanism = self._infer_subtype(
+            root_cause, code, verdict, problem_context
+        )
         
         # Get edge cases for this root cause
         edge_cases = EDGE_CASE_RULES.get(root_cause, [])
@@ -476,6 +595,8 @@ class MIMDecisionEngine:
         
         return FeedbackInstruction(
             root_cause=root_cause,
+            root_cause_subtype=subtype,
+            failure_mechanism=failure_mechanism,
             root_cause_confidence=root_cause_result["confidence"],
             is_recurring_mistake=pattern.is_recurring,
             recurrence_count=pattern.recurrence_count,
@@ -658,9 +779,22 @@ def make_decision(
     """
     Convenience function for workflow integration.
     
+    v3.2: Automatically freezes the decision with a unique ID
+    to enforce single immutable MIM decision per submission.
+    
     Usage:
         from app.mim.decision_engine import make_decision
         decision = make_decision(submission, history, problem, memory, profile)
     """
+    import uuid
+    
     engine = get_decision_engine()
-    return engine.decide(submission, user_history, problem_context, user_memory, user_profile)
+    decision = engine.decide(submission, user_history, problem_context, user_memory, user_profile)
+    
+    # v3.2: Freeze decision with unique ID to enforce immutability
+    decision_id = f"mim_{uuid.uuid4().hex[:12]}"
+    decision.freeze(decision_id)
+    
+    logger.info(f"🔒 MIM decision frozen | id={decision_id} | root_cause={decision.root_cause}")
+    
+    return decision

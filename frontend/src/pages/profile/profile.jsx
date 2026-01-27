@@ -1,8 +1,6 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
 import AppHeader from "../../components/layout/AppHeader";
 import ProfileHeader from "../../components/charts/ProfileHeader";
 import StatsOverview from "../../components/charts/StatsOverview";
@@ -12,22 +10,11 @@ import SubmissionSummary from "../../components/charts/SubmissionSummary";
 import contestApi from "../../services/contest/contestApi";
 import apiClient from "../../services/common/api";
 import useProfileAnalytics from "../../hooks/profile/useProfileAnalytics";
-=======
-import AppHeader from "../components/layout/AppHeader";
-import ProfileHeader from "../components/charts/ProfileHeader";
-import StatsOverview from "../components/charts/StatsOverview";
-import ActivityHeatmap from "../components/charts/ActivityHeatmap";
-import CategoryChart from "../components/charts/CategoryChart";
-import SubmissionSummary from "../components/charts/SubmissionSummary";
 import {
   CognitiveProfile,
   ProblemRecommendations,
   LearningRoadmap,
-} from "../components/mim";
-import contestApi from "../services/contestApi";
-import apiClient from "../services/api";
-import useProfileAnalytics from "../hooks/useProfileAnalytics";
->>>>>>> model:frontend/src/pages/profile.jsx
+} from "../../components/mim";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -205,55 +192,26 @@ export default function Profile({ username, readOnly = false } = {}) {
   };
 
   return (
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#0A0A08" }}>
-      {}
-=======
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen"
       style={{ backgroundColor: "#0A0A08" }}
     >
-      {/* Background Effects */}
->>>>>>> model:frontend/src/pages/profile.jsx
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl"></div>
-        {}
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#92400E]/5 rounded-full blur-3xl"></div>
-        {}
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-[#D97706]/3 rounded-full blur-3xl"></div>
-      </div>
-
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
-      {}
-      <div 
-=======
-      {/* Grid Pattern Overlay */}
-      <div
->>>>>>> model:frontend/src/pages/profile.jsx
-        className="fixed inset-0 pointer-events-none z-0 opacity-5"
-        style={{
-          backgroundImage: `linear-gradient(to right, #D97706 1px, transparent 1px), linear-gradient(to bottom, #D97706 1px, transparent 1px)`,
-          backgroundSize: "50px 50px",
-        }}
-      ></div>
-
       <AppHeader />
 
-      <main className="pt-20 relative z-10">
-        <div className="max-w-5xl mx-auto px-6 lg:px-12 py-12">
-          {}
+      <main className="pt-16">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+          {/* Profile Header Card */}
           <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="mb-16 relative bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-8 hover:border-[#D97706]/40 transition-colors"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/40 transition-colors"
           >
-            <div className="absolute top-6 right-6 z-20 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleCopyProfileLink}
-                className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+                className="px-3 py-1.5 text-xs rounded-md bg-[#1A1814] hover:bg-[#D97706]/10 text-[#E8E4D9] transition-colors"
               >
                 Copy link
               </button>
@@ -262,35 +220,28 @@ export default function Profile({ username, readOnly = false } = {}) {
                   type="button"
                   disabled={exportingPdf}
                   onClick={handleExportPdf}
-                  className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-xs rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-[#0A0A08] font-semibold transition-colors disabled:opacity-60"
                 >
                   {exportingPdf ? "Exporting…" : "Export PDF"}
                 </button>
               )}
               {actionMessage && (
-                <div className="text-xs text-[#E8E4D9]/70 sm:ml-2 sm:self-center">
-                  {actionMessage}
-                </div>
+                <span className="text-[10px] text-[#78716C]">{actionMessage}</span>
               )}
             </div>
-            <div className="relative z-10">
-              <ProfileHeader user={analytics?.user} />
-            </div>
-            {}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <ProfileHeader user={analytics?.user} />
           </motion.div>
 
-          {}
+          {/* Performance Overview */}
           <motion.section
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-16"
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
               <h2
-                className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Performance Overview
@@ -299,21 +250,17 @@ export default function Profile({ username, readOnly = false } = {}) {
             <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
-<<<<<<< HEAD:frontend/src/pages/profile/profile.jsx
-          {}
-=======
           {/* Cognitive Profile - MIM */}
           {analytics?.user?._id && (
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.22 }}
-              className="mb-16"
+              transition={{ duration: 0.4, delay: 0.15 }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
                 <h2
-                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   AI Cognitive Profile
@@ -326,15 +273,14 @@ export default function Profile({ username, readOnly = false } = {}) {
           {/* Problem Recommendations - MIM */}
           {analytics?.user?._id && (
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.24 }}
-              className="mb-16"
+              transition={{ duration: 0.4, delay: 0.2 }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
                 <h2
-                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Recommended Problems
@@ -347,15 +293,14 @@ export default function Profile({ username, readOnly = false } = {}) {
           {/* Learning Roadmap - MIM */}
           {analytics?.user?._id && (
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.26 }}
-              className="mb-16"
+              transition={{ duration: 0.4, delay: 0.25 }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
                 <h2
-                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Learning Roadmap
@@ -366,18 +311,16 @@ export default function Profile({ username, readOnly = false } = {}) {
           )}
 
           {/* Contests - User Dashboard */}
->>>>>>> model:frontend/src/pages/profile.jsx
           <motion.section
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="mb-16"
+            transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
                 <h2
-                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Contests
@@ -385,57 +328,57 @@ export default function Profile({ username, readOnly = false } = {}) {
               </div>
               <Link
                 to="/contests"
-                className="text-sm text-[#D97706] hover:text-[#F59E0B] transition-colors"
+                className="text-xs text-[#D97706] hover:text-[#F59E0B] transition-colors"
               >
                 View all →
               </Link>
             </div>
 
-            <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 transition-colors">
+            <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
               {contestsLoading ? (
-                <div className="text-[#E8E4D9]/70">Loading contests…</div>
+                <div className="text-[#78716C] text-sm">Loading contests…</div>
               ) : contestsError ? (
-                <div className="text-red-300">{contestsError}</div>
+                <div className="text-red-400 text-sm">{contestsError}</div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Live */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-white font-semibold">Live now</h3>
-                      <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-[#E8E4D9] text-sm font-semibold">Live now</h3>
+                      <span className="text-[10px] text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded">
                         LIVE
                       </span>
                     </div>
 
                     {contests.live.length === 0 ? (
-                      <div className="text-[#E8E4D9]/60 text-sm">
+                      <div className="text-[#78716C] text-xs">
                         No live contests right now.
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {contests.live.map((contest) => (
                           <div
                             key={contest._id}
-                            className="p-4 rounded-lg border border-white/10 bg-black/20"
+                            className="p-3 rounded-lg border border-[#1A1814] bg-[#0A0A08]"
                           >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start justify-between gap-2">
                               <div>
-                                <div className="text-white font-medium">
+                                <div className="text-[#E8E4D9] text-sm font-medium">
                                   {contest.name}
                                 </div>
-                                <div className="text-[#E8E4D9]/60 text-xs mt-1">
+                                <div className="text-[#78716C] text-[10px] mt-0.5">
                                   Ends: {formatDate(contest.endTime)}
                                 </div>
                               </div>
                               <Link
                                 to={`/contests/${contest.slug || contest._id}`}
-                                className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors"
+                                className="px-2.5 py-1.5 text-xs rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-[#0A0A08] font-semibold transition-colors"
                               >
                                 Enter
                               </Link>
                             </div>
                             {contest.registration && (
-                              <div className="mt-2 text-xs text-blue-300">
+                              <div className="mt-1.5 text-[10px] text-blue-300">
                                 ✓ Registered
                               </div>
                             )}
@@ -445,21 +388,21 @@ export default function Profile({ username, readOnly = false } = {}) {
                     )}
                   </div>
 
-                  {}
+                  {/* Upcoming */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-white font-semibold">Upcoming</h3>
-                      <span className="text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-full">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-[#E8E4D9] text-sm font-semibold">Upcoming</h3>
+                      <span className="text-[10px] text-blue-300 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
                         SOON
                       </span>
                     </div>
 
                     {contests.upcoming.length === 0 ? (
-                      <div className="text-[#E8E4D9]/60 text-sm">
+                      <div className="text-[#78716C] text-xs">
                         No upcoming contests.
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {contests.upcoming.map((contest) => {
                           const isRegistered = Boolean(contest.registration);
                           const canRegister =
@@ -469,20 +412,20 @@ export default function Profile({ username, readOnly = false } = {}) {
                           return (
                             <div
                               key={contestId}
-                              className="p-4 rounded-lg border border-white/10 bg-black/20"
+                              className="p-3 rounded-lg border border-[#1A1814] bg-[#0A0A08]"
                             >
-                              <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start justify-between gap-2">
                                 <div>
-                                  <div className="text-white font-medium">
+                                  <div className="text-[#E8E4D9] text-sm font-medium">
                                     {contest.name}
                                   </div>
-                                  <div className="text-[#E8E4D9]/60 text-xs mt-1">
+                                  <div className="text-[#78716C] text-[10px] mt-0.5">
                                     Starts: {formatDate(contest.startTime)}
                                   </div>
                                 </div>
 
                                 {isRegistered ? (
-                                  <span className="px-3 py-2 text-sm rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-300">
+                                  <span className="px-2 py-1 text-[10px] rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-300">
                                     Registered
                                   </span>
                                 ) : canRegister ? (
@@ -496,7 +439,7 @@ export default function Profile({ username, readOnly = false } = {}) {
                                         ? undefined
                                         : () => handleRegister(contest)
                                     }
-                                    className="px-3 py-2 text-sm rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-black font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="px-2.5 py-1.5 text-xs rounded-md bg-[#D97706] hover:bg-[#F59E0B] text-[#0A0A08] font-semibold transition-colors disabled:opacity-60"
                                   >
                                     {busy[contestId]
                                       ? "Registering…"
@@ -505,7 +448,7 @@ export default function Profile({ username, readOnly = false } = {}) {
                                 ) : (
                                   <Link
                                     to={`/contests/${contest.slug || contest._id}`}
-                                    className="px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+                                    className="px-2 py-1 text-[10px] rounded-md bg-[#1A1814] hover:bg-[#D97706]/10 text-[#E8E4D9] transition-colors"
                                   >
                                     Details
                                   </Link>
@@ -522,71 +465,64 @@ export default function Profile({ username, readOnly = false } = {}) {
             </div>
           </motion.section>
 
-          {}
+          {/* Activity Calendar */}
           <motion.section
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mb-16"
+            transition={{ duration: 0.4, delay: 0.35 }}
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
               <h2
-                className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Activity Calendar
               </h2>
             </div>
-            <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300">
+            <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
               <ActivityHeatmap activity={analytics?.activity} />
             </div>
           </motion.section>
 
-          {}
+          {/* Category & Submissions Grid */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {}
+            {/* Category Breakdown */}
             <motion.section variants={itemVariants}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
                 <h2
-                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Category Breakdown
                 </h2>
               </div>
-              <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative z-10">
-                  <CategoryChart categories={analytics?.categories} />
-                </div>
+              <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
+                <CategoryChart categories={analytics?.categories} />
               </div>
             </motion.section>
 
-            {}
+            {/* Recent Submissions */}
             <motion.section variants={itemVariants}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
                 <h2
-                  className="text-[#E8E4D9] text-sm font-medium uppercase tracking-widest"
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
                   Recent Submissions
                 </h2>
               </div>
-              <div className="bg-gradient-to-br from-[#1A1814]/50 to-[#0A0A08]/50 backdrop-blur-sm border border-[#D97706]/20 rounded-xl p-6 hover:border-[#D97706]/40 hover:shadow-lg hover:shadow-[#D97706]/10 transition-all duration-300 group">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/3 to-[#92400E]/0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative z-10">
-                  <SubmissionSummary
-                    submissions={analytics?.recentSubmissions}
-                  />
-                </div>
+              <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
+                <SubmissionSummary
+                  submissions={analytics?.recentSubmissions}
+                />
               </div>
             </motion.section>
           </motion.div>

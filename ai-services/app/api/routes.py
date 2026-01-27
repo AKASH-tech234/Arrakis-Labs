@@ -12,6 +12,20 @@ from app.schemas.feedback import FeedbackResponse
 from app.graph.sync_workflow import sync_workflow
 from app.graph.async_workflow import async_workflow
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# GUARDRAILS - Idempotency & Verdict Protection
+# ═══════════════════════════════════════════════════════════════════════════════
+from app.guardrails.idempotency import (
+    is_duplicate_request,
+    mark_request_complete,
+)
+from app.guardrails.verdict_guards import (
+    VerdictGuard,
+    is_success_verdict,
+    get_success_path,
+    create_reinforcement_signal,
+)
+
 # -------------------------
 # Logging - Structured
 # -------------------------
@@ -304,9 +318,52 @@ def generate_ai_feedback(
     - learning
     - difficulty
     - memory storage
+    
+    GUARDRAILS:
+    - Idempotency: Duplicate requests return cached response
+    - Verdict Guards: Accepted submissions skip MIM diagnosis
     """
     start_time = time.time()
     submission_id = f"sub_{uuid.uuid4().hex[:12]}"
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL 1: IDEMPOTENCY - Prevent duplicate request processing
+    # ═══════════════════════════════════════════════════════════════════════════════
+    is_dup, cached_response = is_duplicate_request(
+        user_id=payload.user_id,
+        problem_id=payload.problem_id,
+        verdict=payload.verdict,
+        code=payload.code or "",
+    )
+    
+    if is_dup:
+        if cached_response:
+            print(f"🔄 DUPLICATE REQUEST - returning cached response")
+            log_event("duplicate_request_cached",
+                user_id=payload.user_id,
+                problem_id=payload.problem_id,
+                verdict=payload.verdict
+            )
+            # Convert cached dict to DTO
+            return AIFeedbackDTO(**cached_response)
+        else:
+            # In-flight - return a "processing" response
+            print(f"⏳ DUPLICATE REQUEST - still processing")
+            log_event("duplicate_request_in_flight",
+                user_id=payload.user_id,
+                problem_id=payload.problem_id,
+                verdict=payload.verdict
+            )
+            return AIFeedbackDTO(
+                success=True,
+                verdict=payload.verdict,
+                submission_id=submission_id,
+                hints=[HintLevel(level=1, content="Your submission is being analyzed...", hint_type="conceptual")],
+                explanation="Processing your submission. Results will appear shortly.",
+                detected_pattern=None,
+                mim_insights=None,
+                feedback_type="processing"
+            )
     
     print(f"\n{'='*80}")
     print(f"🎯 NEW FEEDBACK REQUEST")
@@ -326,18 +383,45 @@ def generate_ai_feedback(
         verdict=payload.verdict,
         language=payload.language
     )
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # GUARDRAIL 2: VERDICT GUARD - Check if this needs full pipeline
+    # ═══════════════════════════════════════════════════════════════════════════════
+    verdict_check = VerdictGuard.check(
+        verdict=payload.verdict,
+        difficulty=payload.problem.get("difficulty", "Medium") if payload.problem else "Medium",
+        has_user_history=False,  # Will be determined by workflow
+    )
+    
+    print(f"🛡️ VERDICT GUARD:")
+    print(f"   └─ Skip MIM: {verdict_check.skip_mim}")
+    print(f"   └─ Skip RAG: {verdict_check.skip_rag}")
+    print(f"   └─ Skip Hint: {verdict_check.skip_hint}")
+    print(f"   └─ Use Success Path: {verdict_check.use_success_path}")
+    print(f"   └─ Rationale: {verdict_check.rationale}")
 
     try:
         # -------------------------
-        # Build initial state
+        # Build initial state with guardrail flags
         # -------------------------
         state: Dict[str, Any] = payload.model_dump()
         state["submission_id"] = submission_id
         
+        # Pass guardrail decisions to workflow
+        state["_guardrails"] = {
+            "skip_mim": verdict_check.skip_mim,
+            "skip_rag": verdict_check.skip_rag,
+            "skip_hint": verdict_check.skip_hint,
+            "use_success_path": verdict_check.use_success_path,
+            "create_reinforcement": verdict_check.create_reinforcement,
+        }
+        
         print(f"🔄 Starting SYNC workflow...")
         log_event("workflow_starting",
             submission_id=submission_id,
-            workflow="sync"
+            workflow="sync",
+            skip_mim=verdict_check.skip_mim,
+            skip_rag=verdict_check.skip_rag
         )
 
         # -------------------------
@@ -373,11 +457,21 @@ def generate_ai_feedback(
         )
 
         # -------------------------
-        # ASYNC WORKFLOW (background)
+        # ASYNC WORKFLOW (background) - with crash protection
         # -------------------------
+        def safe_async_invoke(state_data):
+            """Wrapper to catch and log async workflow crashes."""
+            try:
+                async_workflow.invoke(state_data)
+                logger.info(f"✅ [ASYNC] Workflow completed successfully | submission_id={state_data.get('submission_id')}")
+            except Exception as e:
+                logger.error(f"❌ [ASYNC] Workflow CRASHED: {type(e).__name__}: {e}")
+                logger.error(traceback.format_exc())
+                # Don't re-raise - this is a background task
+        
         print(f"\n🚀 Scheduling ASYNC workflow (background)...")
         log_event("async_workflow_scheduling", submission_id=submission_id)
-        background_tasks.add_task(async_workflow.invoke, sync_result)
+        background_tasks.add_task(safe_async_invoke, sync_result)
 
         # -------------------------
         # Build Progressive Response
@@ -458,6 +552,17 @@ def generate_ai_feedback(
             verdict=payload.verdict,
             hint_count=len(hints),
             total_time_seconds=round(time.time() - start_time, 2)
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # GUARDRAIL: Cache response for idempotency
+        # ═══════════════════════════════════════════════════════════════════════════════
+        mark_request_complete(
+            user_id=payload.user_id,
+            problem_id=payload.problem_id,
+            verdict=payload.verdict,
+            code=payload.code or "",
+            response=response.model_dump()
         )
         
         return response
@@ -687,23 +792,76 @@ def get_mim_profile(
     """
     Get cognitive profile for a user from MIM.
     
+    v3.2: NOW READS FROM PERSISTENT COGNITIVE PROFILE
+    - Previously: Recomputed from raw submissions every time
+    - Now: Reads accumulated profile from user_cognitive_profiles collection
+    
     Returns data in format expected by frontend CognitiveProfile component:
     - strengths: list of strong topic areas
     - weaknesses: list of weak topic areas
     - readiness_scores: dict of difficulty -> readiness (0-1)
     - learning_trajectory: dict with trend info
+    - mistake_analysis: detailed mistake patterns (NEW)
+    - focus_areas: learning agent recommendations (NEW)
+    - recent_learning: recent learning recommendations (NEW)
     """
     try:
+        from app.db.cognitive_profile_store import get_profile_summary, load_cognitive_profile
         from app.db.mongodb import mongo_client
+        
+        # v3.2: Try to load from persistent store first
+        profile_summary = get_profile_summary(user_id)
+        
+        # Check if profile has any data
+        has_persisted_data = (
+            profile_summary.get("total_submissions_processed", 0) > 0 or
+            profile_summary.get("learning_trajectory", {}).get("total_submissions", 0) > 0
+        )
+        
+        if has_persisted_data:
+            logger.info(f"✅ [PROFILE] Returning persisted cognitive profile for user={user_id}")
+            
+            # Optionally include submission history
+            if include_history:
+                submissions = mongo_client.get_user_submissions(user_id=user_id, limit=history_limit)
+                history = []
+                for sub in submissions[:history_limit]:
+                    history.append({
+                        "submission_id": str(sub.get("_id", "")),
+                        "problem_id": sub.get("questionId"),
+                        "verdict": sub.get("status"),
+                        "created_at": sub.get("createdAt")
+                    })
+                profile_summary["submission_history"] = history
+            
+            return profile_summary
+        
+        # FALLBACK: No persisted profile yet, compute from submissions
+        logger.info(f"📊 [PROFILE] No persisted profile, computing from submissions for user={user_id}")
         
         # Get recent submissions for profile building
         submissions = mongo_client.get_user_submissions(user_id=user_id, limit=50)
         
         if not submissions:
             # Return empty profile structure - frontend handles "no data" state
-            return None
+            return {
+                "user_id": user_id,
+                "skill_level": "Beginner",
+                "learning_velocity": "stable",
+                "strengths": [],
+                "weaknesses": [],
+                "readiness_scores": {"Easy": 0.5, "Medium": 0.3, "Hard": 0.1},
+                "learning_trajectory": {
+                    "trend": "Building profile...",
+                    "total_submissions": 0,
+                    "success_rate": 0
+                },
+                "mistake_analysis": {"total_mistakes": 0, "top_mistakes": [], "recurring_patterns": []},
+                "focus_areas": [],
+                "is_persisted": False
+            }
         
-        # Analyze submissions to build profile
+        # Analyze submissions to build profile (legacy fallback)
         total = len(submissions)
         accepted = sum(1 for s in submissions if s.get("status") == "accepted")
         success_rate = (accepted / total * 100) if total > 0 else 0
@@ -715,7 +873,6 @@ def get_mim_profile(
         difficulty_performance = {"Easy": {"total": 0, "passed": 0}, "Medium": {"total": 0, "passed": 0}, "Hard": {"total": 0, "passed": 0}}
         
         for sub in submissions:
-            # Extract category from submission data
             tags = sub.get("tags", [])
             cat = sub.get("category") or (tags[0] if isinstance(tags, list) and tags else "General")
             diff = sub.get("difficulty") or "Medium"
@@ -743,9 +900,8 @@ def get_mim_profile(
         readiness_scores = {}
         for diff, stats in difficulty_performance.items():
             if stats["total"] > 0:
-                readiness_scores[diff] = stats["passed"] / stats["total"]
+                readiness_scores[diff] = round(stats["passed"] / stats["total"], 2)
             else:
-                # Default readiness based on level
                 readiness_scores[diff] = 0.5 if diff == "Easy" else 0.3 if diff == "Medium" else 0.1
         
         # Determine learning trend
@@ -763,16 +919,27 @@ def get_mim_profile(
         else:
             trend = "Building profile..."
         
-        # Return flat structure expected by CognitiveProfile.jsx
+        # Build response
         response = {
+            "user_id": user_id,
+            "skill_level": "Intermediate" if success_rate >= 40 else "Beginner",
+            "learning_velocity": "stable",
             "strengths": strong_topics[:5],
             "weaknesses": weak_topics[:5],
             "readiness_scores": readiness_scores,
             "learning_trajectory": {
                 "trend": trend,
                 "total_submissions": total,
-                "success_rate": round(success_rate, 2)
-            }
+                "success_rate": round(success_rate, 2),
+                "total_correct": accepted
+            },
+            "mistake_analysis": {
+                "total_mistakes": total - accepted,
+                "top_mistakes": [],
+                "recurring_patterns": []
+            },
+            "focus_areas": weak_topics[:3] if weak_topics else ["General practice"],
+            "is_persisted": False  # Indicates this is computed, not from persistent store
         }
         
         # Optionally include submission history
@@ -807,49 +974,89 @@ def get_mim_recommendations(
     """
     Get personalized problem recommendations for a user.
     
+    v3.2: NOW USES PERSISTED COGNITIVE PROFILE
+    - Previously: Recomputed weak areas from raw submissions
+    - Now: Uses accumulated weak_topics and mistake_counts from profile
+    
     Returns actual problems from the database based on user's weak areas.
     """
     try:
         from app.db.mongodb import mongo_client
+        from app.db.cognitive_profile_store import load_cognitive_profile
         
-        # Get user submissions to understand their profile
+        # v3.2: Load persisted cognitive profile
+        profile = load_cognitive_profile(user_id)
+        
+        # Get user submissions for solved problem IDs
         submissions = mongo_client.get_user_submissions(user_id=user_id, limit=50)
         
-        # Analyze user's performance
-        total = len(submissions)
-        accepted = sum(1 for s in submissions if s.get("status") == "accepted")
-        success_rate = (accepted / total * 100) if total > 0 else 50
+        # Use profile data if available, else compute from submissions
+        total_processed = profile.get("total_submissions_processed", 0)
         
-        # Determine user level and recommended difficulty
-        if success_rate >= 70:
-            level = "Advanced"
-            recommended_difficulty = "Hard"
-        elif success_rate >= 40:
-            level = "Intermediate"
-            recommended_difficulty = "Medium"
+        if total_processed > 0:
+            # Use persisted profile data
+            total_correct = profile.get("total_correct", 0)
+            success_rate = (total_correct / total_processed * 100) if total_processed > 0 else 50
+            
+            # Get weak topics from profile (sorted by count)
+            weak_topics_dict = profile.get("weak_topics", {})
+            weak_topics = sorted(weak_topics_dict.keys(), key=lambda x: weak_topics_dict[x], reverse=True)[:5]
+            
+            # Also include focus areas from learning agent
+            focus_areas = profile.get("focus_areas", [])
+            for area in focus_areas:
+                if area not in weak_topics:
+                    weak_topics.append(area)
+            weak_topics = weak_topics[:7]  # Cap at 7
+            
+            # Get readiness scores to determine difficulty
+            readiness = profile.get("readiness_scores", {})
+            skill_level = profile.get("current_skill_level", "Beginner")
+            
+            logger.info(f"✅ [RECOMMEND] Using persisted profile | weak_topics={weak_topics} | skill={skill_level}")
         else:
-            level = "Beginner"
-            recommended_difficulty = "Easy"
+            # Fallback: compute from submissions
+            total = len(submissions)
+            accepted = sum(1 for s in submissions if s.get("status") == "accepted")
+            success_rate = (accepted / total * 100) if total > 0 else 50
+            
+            # Compute weak topics from failures
+            category_failures = {}
+            for sub in submissions:
+                if sub.get("status") != "accepted":
+                    tags = sub.get("tags", [])
+                    cat = sub.get("category") or (tags[0] if isinstance(tags, list) and tags else "General")
+                    category_failures[cat] = category_failures.get(cat, 0) + 1
+            
+            weak_topics = sorted(category_failures.keys(), key=lambda x: category_failures[x], reverse=True)[:5]
+            skill_level = "Beginner"
+            readiness = {"Easy": 0.5, "Medium": 0.3, "Hard": 0.1}
         
-        # Override with filter if provided
+        # Determine recommended difficulty from profile or success rate
         if difficulty_filter:
             recommended_difficulty = difficulty_filter
+        elif total_processed > 0:
+            # Use readiness scores to determine difficulty
+            if readiness.get("Hard", 0) >= 0.5:
+                recommended_difficulty = "Hard"
+            elif readiness.get("Medium", 0) >= 0.5:
+                recommended_difficulty = "Medium"
+            else:
+                recommended_difficulty = "Easy"
+        else:
+            # Legacy: use success rate
+            if success_rate >= 70:
+                recommended_difficulty = "Hard"
+            elif success_rate >= 40:
+                recommended_difficulty = "Medium"
+            else:
+                recommended_difficulty = "Easy"
         
-        # Identify weak topics and solved problem IDs
-        weak_topics = []
-        category_failures = {}
+        # Get solved problem IDs
         solved_problem_ids = set()
-        
         for sub in submissions:
             if sub.get("status") == "accepted":
                 solved_problem_ids.add(sub.get("questionId"))
-            else:
-                tags = sub.get("tags", [])
-                cat = sub.get("category") or (tags[0] if isinstance(tags, list) and tags else "General")
-                category_failures[cat] = category_failures.get(cat, 0) + 1
-        
-        # Sort by failure count
-        weak_topics = sorted(category_failures.keys(), key=lambda x: category_failures[x], reverse=True)[:5]
         
         # Query actual problems from database
         recommendations = []
@@ -894,6 +1101,48 @@ def get_mim_recommendations(
                     )
                     problems.extend(more_problems)
                 
+                # v3.2: FALLBACK - If still not enough, try other difficulties
+                if len(problems) < num_recommendations:
+                    difficulty_fallbacks = ["Medium", "Hard", "Easy"]
+                    difficulty_fallbacks = [d for d in difficulty_fallbacks if d != recommended_difficulty]
+                    
+                    for fallback_diff in difficulty_fallbacks:
+                        if len(problems) >= num_recommendations:
+                            break
+                        alt_query = {
+                            "_id": {"$nin": list(solved_problem_ids)},
+                            "difficulty": fallback_diff
+                        }
+                        alt_problems = list(
+                            mongo_client.db.problems
+                            .find(alt_query)
+                            .limit(num_recommendations - len(problems))
+                        )
+                        problems.extend(alt_problems)
+                
+                # v3.2: FALLBACK - If user has solved most problems, suggest review
+                if len(problems) < num_recommendations and len(solved_problem_ids) > 10:
+                    # Recommend re-attempting problems they got wrong before
+                    failed_problem_ids = set()
+                    for sub in submissions:
+                        if sub.get("status") != "accepted":
+                            failed_problem_ids.add(sub.get("questionId"))
+                    
+                    # Remove problems they eventually solved
+                    review_ids = failed_problem_ids - solved_problem_ids
+                    
+                    if review_ids:
+                        review_query = {"_id": {"$in": list(review_ids)}}
+                        review_problems = list(
+                            mongo_client.db.problems
+                            .find(review_query)
+                            .limit(num_recommendations - len(problems))
+                        )
+                        # Mark these as review problems
+                        for p in review_problems:
+                            p["_is_review"] = True
+                        problems.extend(review_problems)
+                
                 # Build recommendations from actual problems
                 for i, prob in enumerate(problems[:num_recommendations]):
                     problem_id = str(prob.get("_id", ""))
@@ -902,7 +1151,17 @@ def get_mim_recommendations(
                     
                     # Calculate confidence based on whether it matches weak area
                     is_weak_area = any(t in weak_topics for t in tags) if tags else False
-                    confidence = 0.4 if is_weak_area else 0.6
+                    is_review = prob.get("_is_review", False)
+                    
+                    if is_review:
+                        confidence = 0.7
+                        reason = f"Review: You struggled with this {category} problem before. Try again!"
+                    elif is_weak_area:
+                        confidence = 0.4
+                        reason = f"Recommended to strengthen your {category} skills."
+                    else:
+                        confidence = 0.6
+                        reason = "Recommended to diversify your practice."
                     
                     recommendations.append({
                         "problem_id": problem_id,
@@ -910,7 +1169,8 @@ def get_mim_recommendations(
                         "difficulty": prob.get("difficulty", recommended_difficulty),
                         "category": category,
                         "confidence": confidence,
-                        "reason": f"Recommended to strengthen your {category} skills." if is_weak_area else "Recommended to diversify your practice."
+                        "reason": reason,
+                        "is_review": is_review
                     })
                     
             except Exception as db_err:
@@ -1097,7 +1357,7 @@ def get_mim_prediction(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MIM ROADMAP ENDPOINTS (V2.1)
+# MIM ROADMAP ENDPOINTS (V3.2)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/ai/mim/roadmap/{user_id}")
@@ -1108,12 +1368,17 @@ def get_learning_roadmap(
     """
     Get or generate a personalized learning roadmap for a user.
     
+    v3.2: NOW USES PERSISTED COGNITIVE PROFILE
+    - Uses accumulated mistake_counts, weak_topics, focus_areas
+    - Roadmap evolves based on learning agent recommendations
+    
     The roadmap includes:
     - 5-step micro-roadmap with immediate goals
     - Topic dependency graph (derived from co-occurrence)
     - Milestones achieved
     - Estimated time to target level
     - Difficulty adjustment recommendations
+    - Mistake patterns to address (NEW)
     
     Args:
         user_id: User identifier
@@ -1121,13 +1386,20 @@ def get_learning_roadmap(
     """
     try:
         from app.db.mongodb import mongo_client
+        from app.db.cognitive_profile_store import load_cognitive_profile
         from app.mim.difficulty_engine import compute_difficulty_adjustment
         from app.mim.roadmap import generate_learning_roadmap
+        
+        # v3.2: Load persisted cognitive profile
+        profile = load_cognitive_profile(user_id)
         
         # Get user submissions
         submissions = mongo_client.get_user_submissions(user_id=user_id, limit=100)
         
-        if not submissions:
+        # Check if we have profile data
+        total_processed = profile.get("total_submissions_processed", 0)
+        
+        if not submissions and total_processed == 0:
             # Cold start - generate default roadmap
             return {
                 "status": "cold_start",
@@ -1157,8 +1429,28 @@ def get_learning_roadmap(
                     "milestones": [],
                     "targetLevel": "Medium",
                     "estimatedWeeksToTarget": 8
-                }
+                },
+                "is_persisted": False
             }
+        
+        # v3.2: Extract profile data for roadmap generation
+        mistake_counts = profile.get("mistake_counts", {})
+        weak_topics_dict = profile.get("weak_topics", {})
+        strong_topics_dict = profile.get("strong_topics", {})
+        focus_areas = profile.get("focus_areas", [])
+        readiness_scores = profile.get("readiness_scores", {})
+        skill_level = profile.get("current_skill_level", "Beginner")
+        learning_velocity = profile.get("learning_velocity", "stable")
+        patterns = profile.get("patterns", {})
+        recent_learning = profile.get("recent_learning_recs", [])
+        recent_difficulty = profile.get("recent_difficulty_actions", [])
+        
+        # Sort by count
+        weak_topics = sorted(weak_topics_dict.keys(), key=lambda x: weak_topics_dict[x], reverse=True)[:5]
+        strong_topics = sorted(strong_topics_dict.keys(), key=lambda x: strong_topics_dict[x], reverse=True)[:5]
+        top_mistakes = sorted(mistake_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        logger.info(f"✅ [ROADMAP] Using persisted profile | weak={weak_topics} | skill={skill_level}")
         
         # Convert MongoDB submissions to dict format
         formatted_submissions = []
@@ -1172,49 +1464,66 @@ def get_learning_roadmap(
                 "created_at": sub.get("createdAt"),
             })
         
-        # Build user profile from submissions
-        total = len(formatted_submissions)
-        accepted = sum(1 for s in formatted_submissions if s.get("verdict", "").lower() == "accepted")
-        success_rate = accepted / total if total > 0 else 0.5
-        
-        # Identify weak and strong topics
-        category_stats = {}
-        for sub in formatted_submissions:
-            cat = sub.get("category", "General")
-            if cat not in category_stats:
-                category_stats[cat] = {"total": 0, "accepted": 0}
-            category_stats[cat]["total"] += 1
-            if sub.get("verdict", "").lower() == "accepted":
-                category_stats[cat]["accepted"] += 1
-        
-        weak_topics = [
-            cat for cat, stats in category_stats.items()
-            if stats["total"] >= 2 and (stats["accepted"] / stats["total"]) < 0.4
-        ][:5]
-        
-        strong_topics = [
-            cat for cat, stats in category_stats.items()
-            if stats["total"] >= 3 and (stats["accepted"] / stats["total"]) > 0.7
-        ][:5]
-        
-        user_profile = {
-            "user_id": user_id,
-            "weakTopics": weak_topics,
-            "strongTopics": strong_topics,
-            "successRate": success_rate,
-            "totalSubmissions": total,
-            "difficultyReadiness": {
-                "easy": min(1.0, success_rate + 0.3),
-                "medium": success_rate,
-                "hard": max(0.1, success_rate - 0.3),
+        # v3.2: Use persisted profile data if available
+        if total_processed > 0:
+            # Use profile-derived weak/strong topics
+            user_profile = {
+                "user_id": user_id,
+                "weakTopics": weak_topics or focus_areas[:5],
+                "strongTopics": strong_topics,
+                "successRate": profile.get("total_correct", 0) / total_processed if total_processed > 0 else 0.5,
+                "totalSubmissions": total_processed,
+                "difficultyReadiness": readiness_scores or {
+                    "Easy": 0.5, "Medium": 0.3, "Hard": 0.1
+                },
+                "mistakePatterns": [{"cause": c, "count": n} for c, n in top_mistakes],
+                "focusAreas": focus_areas,
+                "skillLevel": skill_level,
+                "learningVelocity": learning_velocity,
             }
-        }
+        else:
+            # Build user profile from submissions (legacy)
+            total = len(formatted_submissions)
+            accepted = sum(1 for s in formatted_submissions if s.get("verdict", "").lower() == "accepted")
+            success_rate = accepted / total if total > 0 else 0.5
+            
+            # Identify weak and strong topics from submissions
+            category_stats = {}
+            for sub in formatted_submissions:
+                cat = sub.get("category", "General")
+                if cat not in category_stats:
+                    category_stats[cat] = {"total": 0, "accepted": 0}
+                category_stats[cat]["total"] += 1
+                if sub.get("verdict", "").lower() == "accepted":
+                    category_stats[cat]["accepted"] += 1
+            
+            weak_topics = [
+                cat for cat, stats in category_stats.items()
+                if stats["total"] >= 2 and (stats["accepted"] / stats["total"]) < 0.4
+            ][:5]
+            
+            strong_topics = [
+                cat for cat, stats in category_stats.items()
+                if stats["total"] >= 3 and (stats["accepted"] / stats["total"]) > 0.7
+            ][:5]
+            
+            user_profile = {
+                "user_id": user_id,
+                "weakTopics": weak_topics,
+                "strongTopics": strong_topics,
+                "successRate": success_rate,
+                "totalSubmissions": total,
+                "difficultyReadiness": {
+                    "Easy": min(1.0, success_rate + 0.3),
+                    "Medium": success_rate,
+                    "Hard": max(0.1, success_rate - 0.3),
+                }
+            }
         
         # Compute difficulty adjustment
-        readiness = user_profile["difficultyReadiness"]
         difficulty_adjustment = compute_difficulty_adjustment(
             formatted_submissions[:20],  # Recent submissions
-            readiness,
+            user_profile.get("difficultyReadiness", {}),
             user_profile
         )
         
@@ -1227,16 +1536,36 @@ def get_learning_roadmap(
             existing_roadmap=None if regenerate else None  # TODO: Load from DB
         )
         
-        return {
-            "status": "success",
+        # v3.2: Enhanced response with profile data
+        response = {
             "roadmap": roadmap,
             "profile_summary": {
-                "totalSolved": accepted,
-                "successRate": round(success_rate, 2),
+                "totalSolved": user_profile.get("total_correct", 0) if total_processed > 0 else sum(1 for s in formatted_submissions if s.get("verdict", "").lower() == "accepted"),
+                "successRate": round(user_profile.get("successRate", 0.5), 2),
                 "weakTopics": weak_topics,
                 "strongTopics": strong_topics,
-            }
+            "status": "success",
+                "skillLevel": skill_level,
+                "learningVelocity": learning_velocity,
+            },
+            "is_persisted": total_processed > 0
         }
+        
+        # Add mistake patterns if available
+        if top_mistakes:
+            response["mistake_patterns"] = [
+                {"cause": c, "count": n} for c, n in top_mistakes
+            ]
+        
+        # Add recent learning recommendations if available
+        if recent_learning:
+            response["recent_learning"] = recent_learning[:2]
+        
+        # Add focus areas
+        if focus_areas:
+            response["focus_areas"] = focus_areas
+        
+        return response
         
     except Exception as e:
         logger.error(f"MIM roadmap generation failed: {e}")

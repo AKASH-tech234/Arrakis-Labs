@@ -1,10 +1,10 @@
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/auth/authMiddleware.js";
 import {
   getUserAIProfile,
   updateUserAIProfile,
 } from "../utils/userStatsAggregator.js";
-import Question from "../models/Question.js";
+import Question from "../models/question/Question.js";
 
 const router = express.Router();
 

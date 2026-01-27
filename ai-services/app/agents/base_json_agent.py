@@ -33,9 +33,14 @@ def run_json_agent(
     system_prompt: str,
     fallback,
     agent_name: str,
+    timeout_seconds: int = None,  # v3.1: Optional timeout for specific agents
+    max_context_chars: int = None,  # v3.1: Allow per-agent context limits
 ):
     logger.info(f"🤖 [{agent_name}] STARTED")
     start = time.time()
+    
+    # v3.1: Per-agent context limit
+    context_limit = max_context_chars if max_context_chars else MAX_CONTEXT_CHARS
 
     # -------------------------
     # CACHE CHECK (Redis-only)
@@ -64,8 +69,8 @@ def run_json_agent(
     # -------------------------
     # PREPARE CONTEXT
     # -------------------------
-    safe_context = context[:MAX_CONTEXT_CHARS]
-    logger.debug(f"   └─ Context length: {len(safe_context)} chars")
+    safe_context = context[:context_limit]
+    logger.debug(f"   └─ Context length: {len(safe_context)} chars (limit: {context_limit})")
 
     try:
         logger.debug("   └─ Getting LLM instance...")

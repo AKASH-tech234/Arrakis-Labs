@@ -1,42 +1,48 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Trophy, Plus, Search, Edit, Trash2, Rocket, Play, Ban, Square, Loader2 } from 'lucide-react';
 import adminContestApi from '../../services/admin/adminContestApi';
 
 const STATUS_BADGES = {
-  draft: { color: 'bg-gray-500/20 text-gray-400', label: 'Draft' },
-  scheduled: { color: 'bg-blue-500/20 text-blue-400', label: 'Scheduled' },
-  live: { color: 'bg-green-500/20 text-green-400', label: 'Live' },
-  ended: { color: 'bg-yellow-500/20 text-yellow-400', label: 'Ended' },
-  cancelled: { color: 'bg-red-500/20 text-red-400', label: 'Cancelled' },
+  draft: { color: 'bg-[#78716C]/20 text-[#78716C] border border-[#78716C]/30', label: 'Draft' },
+  scheduled: { color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30', label: 'Scheduled' },
+  live: { color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', label: 'Live' },
+  ended: { color: 'bg-[#D97706]/20 text-[#D97706] border border-[#D97706]/30', label: 'Ended' },
+  cancelled: { color: 'bg-red-500/20 text-red-400 border border-red-500/30', label: 'Cancelled' },
 };
 
 function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Confirm', danger = false }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
-        <p className="text-gray-400 mb-6">{message}</p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] p-6 max-w-md w-full mx-4 shadow-2xl"
+      >
+        <h3 className="text-lg font-semibold text-[#E8E4D9] mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{title}</h3>
+        <p className="text-[#78716C] mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            className="px-4 py-2 bg-[#1A1814] hover:bg-[#1A1814]/80 text-[#E8E4D9] rounded-lg transition-colors border border-[#1A1814]"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors font-medium ${
               danger
-                ? 'bg-red-600 hover:bg-red-500 text-white'
-                : 'bg-blue-600 hover:bg-blue-500 text-white'
+                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
+                : 'bg-[#D97706] hover:bg-[#D97706]/80 text-white'
             }`}
           >
             {confirmText}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -154,15 +160,25 @@ export default function AdminContestList() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 min-h-screen" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
       {}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Contests</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gradient-to-b from-[#D97706] to-[#D97706]/20 rounded-full" />
+          <div>
+            <h1 className="text-2xl font-bold text-[#E8E4D9] uppercase tracking-wider flex items-center gap-2">
+              <Trophy className="h-6 w-6 text-[#D97706]" />
+              Contests
+            </h1>
+            <p className="text-sm text-[#78716C]">Manage competitive programming contests</p>
+          </div>
+        </div>
         <Link
           to="/admin/contests/new"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#D97706] to-amber-600 hover:from-[#D97706]/90 hover:to-amber-600/90 text-white rounded-lg transition-all font-medium shadow-lg shadow-[#D97706]/20"
         >
-          + Create Contest
+          <Plus className="h-4 w-4" />
+          Create Contest
         </Link>
       </div>
 
@@ -173,102 +189,117 @@ export default function AdminContestList() {
             <button
               key={status}
               onClick={() => setFilter(status)}
-              className={`px-3 py-1.5 rounded text-sm capitalize ${
+              className={`px-4 py-2 rounded-lg text-sm capitalize transition-all font-medium ${
                 filter === status
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-[#D97706] text-white shadow-lg shadow-[#D97706]/20'
+                  : 'bg-[#0F0F0D] text-[#78716C] hover:text-[#E8E4D9] border border-[#1A1814] hover:border-[#D97706]/40'
               }`}
             >
               {status}
             </button>
           ))}
         </div>
-        <input
-          type="text"
-          placeholder="Search contests..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 max-w-xs bg-gray-700 text-white px-3 py-2 rounded"
-        />
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#78716C]" />
+          <input
+            type="text"
+            placeholder="Search contests..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#0F0F0D] text-[#E8E4D9] pl-10 pr-4 py-2.5 rounded-lg border border-[#1A1814] focus:border-[#D97706]/50 focus:outline-none focus:ring-1 focus:ring-[#D97706]/30 transition-all placeholder-[#78716C]"
+          />
+        </div>
       </div>
 
       {}
       {error && (
-        <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
-          {error}
-          <button onClick={() => setError(null)} className="float-right">×</button>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-4 flex items-center justify-between"
+        >
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="hover:text-red-300">×</button>
+        </motion.div>
       )}
 
       {}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="text-center py-16">
+          <Loader2 className="h-10 w-10 animate-spin text-[#D97706] mx-auto" />
+          <p className="text-[#78716C] mt-4">Loading contests...</p>
         </div>
       ) : contests.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          No contests found. Create your first contest!
+        <div className="text-center py-16 bg-[#0F0F0D] rounded-xl border border-[#1A1814]">
+          <Trophy className="h-12 w-12 text-[#78716C] mx-auto mb-4" />
+          <p className="text-[#78716C]">No contests found. Create your first contest!</p>
         </div>
       ) : (
         
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-700">
+            <thead className="bg-[#0A0A08]">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">Title</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">Start Time</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">Duration</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">Problems</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">Registrations</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-300">Actions</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Title</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Status</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Start Time</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Duration</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Problems</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Registrations</th>
+                <th className="px-4 py-4 text-right text-xs font-semibold text-[#78716C] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
-              {contests.map((contest) => (
-                <tr key={contest._id} className="hover:bg-gray-700/50">
-                  <td className="px-4 py-3">
+            <tbody className="divide-y divide-[#1A1814]">
+              {contests.map((contest, index) => (
+                <motion.tr 
+                  key={contest._id} 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="hover:bg-[#1A1814]/30 transition-colors"
+                >
+                  <td className="px-4 py-4">
                     <Link
                       to={`/admin/contests/${contest._id}`}
-                      className="text-white hover:text-blue-400"
+                      className="text-[#E8E4D9] hover:text-[#D97706] font-medium transition-colors"
                     >
                       {contest.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs ${STATUS_BADGES[contest.status]?.color}`}>
+                  <td className="px-4 py-4">
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${STATUS_BADGES[contest.status]?.color}`}>
                       {STATUS_BADGES[contest.status]?.label}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">
+                  <td className="px-4 py-4 text-[#78716C] text-sm">
                     {formatDate(contest.startTime)}
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">
+                  <td className="px-4 py-4 text-[#78716C] text-sm">
                     {contest.duration} min
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">
+                  <td className="px-4 py-4 text-[#78716C] text-sm">
                     {contest.problems?.length || 0}
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">
+                  <td className="px-4 py-4 text-[#78716C] text-sm">
                     {contest.registrationCount || 0}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => navigate(`/admin/contests/${contest._id}/edit`)}
-                        className="p-1.5 text-gray-400 hover:text-white"
+                        className="p-2 text-[#78716C] hover:text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-colors"
                         title="Edit"
                       >
-                        ✏️
+                        <Edit className="h-4 w-4" />
                       </button>
 
                       {contest.status === 'draft' && (
                         <button
                           onClick={() => openModal('publish', contest)}
-                          className="p-1.5 text-gray-400 hover:text-green-400"
+                          className="p-2 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                           title="Publish"
                         >
-                          🚀
+                          <Rocket className="h-4 w-4" />
                         </button>
                       )}
 
@@ -276,17 +307,17 @@ export default function AdminContestList() {
                         <>
                           <button
                             onClick={() => openModal('start', contest)}
-                            className="p-1.5 text-gray-400 hover:text-green-400"
+                            className="p-2 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                             title="Start Now"
                           >
-                            ▶️
+                            <Play className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => openModal('cancel', contest)}
-                            className="p-1.5 text-gray-400 hover:text-red-400"
+                            className="p-2 text-[#78716C] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                             title="Cancel"
                           >
-                            🚫
+                            <Ban className="h-4 w-4" />
                           </button>
                         </>
                       )}
@@ -294,25 +325,25 @@ export default function AdminContestList() {
                       {contest.status === 'live' && (
                         <button
                           onClick={() => openModal('end', contest)}
-                          className="p-1.5 text-gray-400 hover:text-yellow-400"
+                          className="p-2 text-[#78716C] hover:text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-colors"
                           title="End Now"
                         >
-                          ⏹️
+                          <Square className="h-4 w-4" />
                         </button>
                       )}
 
                       {['draft', 'cancelled'].includes(contest.status) && (
                         <button
                           onClick={() => openModal('delete', contest)}
-                          className="p-1.5 text-gray-400 hover:text-red-400"
+                          className="p-2 text-[#78716C] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Delete"
                         >
-                          🗑️
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

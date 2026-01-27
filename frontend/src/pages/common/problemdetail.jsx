@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -112,7 +111,9 @@ export default function ProblemDetail() {
       try {
         const submissions = await getMySubmissions({ questionId: id });
         const accepted = Array.isArray(submissions)
-          ? submissions.find((s) => String(s.status).toLowerCase() === "accepted")
+          ? submissions.find(
+              (s) => String(s.status).toLowerCase() === "accepted",
+            )
           : null;
 
         if (!mounted) return;
@@ -136,10 +137,7 @@ export default function ProblemDetail() {
   const problem = useMemo(() => {
     if (!problemRaw) return defaultProblem;
 
-    const category =
-      Array.isArray(problemRaw.tags) && problemRaw.tags.length > 0
-        ? problemRaw.tags[0]
-        : "General";
+    const category = problemRaw.categoryType || "Unknown";
 
     return {
       id: problemRaw._id,
@@ -149,6 +147,9 @@ export default function ProblemDetail() {
       category,
       description: problemRaw.description,
 
+      inputFormat: problemRaw.inputFormat || null,
+      outputFormat: problemRaw.outputFormat || null,
+
       constraints: Array.isArray(problemRaw.constraints)
         ? problemRaw.constraints
         : [],
@@ -157,10 +158,17 @@ export default function ProblemDetail() {
       testCases: Array.isArray(problemRaw.testCases)
         ? problemRaw.testCases
         : [],
+
+      // AI Metadata fields
+      topic: problemRaw.topic || null,
+      expectedApproach: problemRaw.expectedApproach || null,
+      canonicalAlgorithms: problemRaw.canonicalAlgorithms || [],
+      timeComplexityHint: problemRaw.timeComplexityHint || null,
+      spaceComplexityHint: problemRaw.spaceComplexityHint || null,
+      commonMistakes: problemRaw.commonMistakes || [],
     };
   }, [problemRaw]);
 
-<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
   const lastAcceptedSubmission = useMemo(() => {
     const verdict = String(lastSubmission?.verdict || "").toLowerCase();
     if (verdict === "accepted" && lastSubmission?.backendSubmissionId) {
@@ -168,11 +176,9 @@ export default function ProblemDetail() {
     }
     return lastAcceptedFromHistory;
   }, [lastSubmission, lastAcceptedFromHistory]);
-=======
   // Code validation constants
   const MIN_CODE_LENGTH = 10;
   const MAX_CODE_LENGTH = 65536; // 64KB
->>>>>>> model:frontend/src/pages/problemdetail.jsx
 
   const runOrSubmit = async (code, language, isSubmit = false) => {
     if (abortControllerRef.current) {
@@ -228,7 +234,23 @@ export default function ProblemDetail() {
         ? await submitQuestion(payload)
         : await runQuestion(payload);
 
-      setOutput(JSON.stringify(data, null, 2));
+      // Format output for LeetCode-style display in OutputPanel
+      // The OutputPanel expects a specific structure with results array
+      const formattedOutput = {
+        status: isSubmit ? data.status : (data.allPassed ? "accepted" : "wrong_answer"),
+        results: data.results || [],
+        passedCount: data.passedCount || 0,
+        totalCount: data.totalCount || 0,
+        allPassed: data.allPassed || false,
+        // For submit: include first failing index for easy navigation
+        firstFailingIndex: data.firstFailingIndex ?? -1,
+        // Include AI feedback for submit results
+        aiFeedback: isSubmit ? data.aiFeedback : null,
+        // Include submission ID for linking
+        submissionId: data.submissionId || null,
+      };
+
+      setOutput(formattedOutput);
 
       const isAccepted = isSubmit
         ? data.status === "accepted"
@@ -237,20 +259,15 @@ export default function ProblemDetail() {
       setStatus(isAccepted ? "success" : "error");
 
       if (isSubmit) {
-
         if (isPOTD && data?.submissionId) {
           try {
             await recordPOTDAttempt(undefined, data.submissionId);
-          } catch {
-            
-          }
+          } catch {}
 
           if (data.status === "accepted") {
             try {
               await solvePOTD(undefined, data.submissionId);
-            } catch {
-              
-            }
+            } catch {}
           }
         }
 
@@ -263,34 +280,29 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
-<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
+          // Pass test case results for display in result panel
+          results: data.results || [],
+          passedCount: data.passedCount || 0,
+          totalCount: data.totalCount || 0,
+          firstFailingIndex: data.firstFailingIndex ?? -1,
+          // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
+          aiFeedback: data.aiFeedback || null,
           backendSubmissionId: data.submissionId || null,
         };
 
-=======
-          // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
-          aiFeedback: data.aiFeedback || null,
-        };
-
         // Record submission in context (includes aiFeedback if present)
->>>>>>> model:frontend/src/pages/problemdetail.jsx
         const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-<<<<<<< HEAD:frontend/src/pages/common/problemdetail.jsx
-        navigate(`/submissions/${submission.id}`);
-=======
-        // ✨ FIX: Show AI feedback panel instead of navigating away immediately
-        // Only for non-accepted submissions - show hints progressively
-        if (!isAccepted && data.aiFeedback) {
-          setShowFeedback(true); // Show the side panel with hints
-          // If aiFeedback came from backend, use it directly
-          // Otherwise, fetch it via the hook
-        } else if (!isAccepted && aiServiceAvailable) {
-          // No aiFeedback from backend - fetch via hook
-          setShowFeedback(true);
+        // ✨ FIX: ALWAYS open submission result panel after Submit
+        // Panel visibility must NOT be conditional on verdict
+        // The panel should open for: Accepted, Wrong Answer, TLE, Runtime Error, etc.
+        setShowFeedback(true);
+
+        // Fetch AI feedback if not already included and service is available
+        if (!data.aiFeedback && aiServiceAvailable && !isAccepted) {
           fetchFeedback({
             questionId: id,
             code,
@@ -298,11 +310,7 @@ export default function ProblemDetail() {
             verdict: data.status || "wrong_answer",
             errorType: data.errorType,
           });
-        } else if (isAccepted) {
-          // Accepted - navigate to full results page
-          navigate(`/submissions/${submission.id}`);
         }
->>>>>>> model:frontend/src/pages/problemdetail.jsx
       }
     } catch (err) {
       if (err.name === "AbortError") {
@@ -321,13 +329,13 @@ export default function ProblemDetail() {
   const handleRun = (code, language) => runOrSubmit(code, language, false);
   const handleSubmit = (code, language) => runOrSubmit(code, language, true);
 
-  const [panelWidth, setPanelWidth] = useState(50); 
+  const [panelWidth, setPanelWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [previousWidth, setPreviousWidth] = useState(50);
   const containerRef = useRef(null);
 
-  const [outputHeight, setOutputHeight] = useState(180); 
+  const [outputHeight, setOutputHeight] = useState(180);
   const [isOutputDragging, setIsOutputDragging] = useState(false);
   const editorPanelRef = useRef(null);
 
@@ -498,14 +506,17 @@ export default function ProblemDetail() {
                           type="button"
                           onClick={() => {
                             setActiveTab(t.key);
-                            if (t.key === "discuss" && panelWidth < 5) setDiscussOpen(true);
+                            if (t.key === "discuss" && panelWidth < 5)
+                              setDiscussOpen(true);
                           }}
                           className={`px-3 py-2 rounded-lg border text-xs tracking-[0.25em] uppercase transition-all ${
                             activeTab === t.key
                               ? "border-[#D97706]/50 bg-[#0F0F0D] text-[#E8E4D9]"
                               : "border-[#1A1814] bg-[#0A0A08] text-[#A29A8C] hover:border-[#D97706]/30"
                           }`}
-                          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                          style={{
+                            fontFamily: "'Rajdhani', system-ui, sans-serif",
+                          }}
                         >
                           {t.label}
                         </button>
@@ -596,6 +607,8 @@ export default function ProblemDetail() {
                 }}
                 loading={feedbackLoading}
                 error={feedbackError}
+                // ✨ FIX: Pass submission data so panel can show results even without AI feedback
+                submissionData={lastSubmission}
                 feedback={
                   feedback ||
                   (lastSubmission?.aiFeedback

@@ -2,7 +2,33 @@
 // Displays user's personalized learning roadmap from MIM V2.1
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { getMIMRoadmap } from "../../services/aiApi";
+import { getMIMRoadmap } from "../../services/ai/aiApi";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROADMAP REFRESH EVENT SYSTEM
+// Allows roadmap to refresh after submissions
+// ═══════════════════════════════════════════════════════════════════════════════
+const roadmapRefreshListeners = new Set();
+
+export function emitRoadmapRefresh() {
+  console.log("[LearningRoadmap] Emitting refresh event");
+  roadmapRefreshListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {
+      console.error("[LearningRoadmap] Refresh listener error:", e);
+    }
+  });
+}
+
+function useRoadmapRefresh(onRefresh) {
+  useEffect(() => {
+    if (onRefresh) {
+      roadmapRefreshListeners.add(onRefresh);
+      return () => roadmapRefreshListeners.delete(onRefresh);
+    }
+  }, [onRefresh]);
+}
 
 // Phase icons and colors
 const PHASE_CONFIG = {
@@ -279,15 +305,18 @@ export default function LearningRoadmap({ userId, compact = false }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAllSteps, setShowAllSteps] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchRoadmap = useCallback(async () => {
     if (!userId) return;
 
     try {
+      console.log("[LearningRoadmap] Fetching roadmap for:", userId);
       const data = await getMIMRoadmap({ userId });
       setRoadmapData(data);
       setError(null);
     } catch (err) {
+      console.error("[LearningRoadmap] Error:", err);
       setError(err.message || "Failed to load roadmap");
     } finally {
       setLoading(false);
@@ -297,7 +326,15 @@ export default function LearningRoadmap({ userId, compact = false }) {
   useEffect(() => {
     setLoading(true);
     fetchRoadmap();
-  }, [fetchRoadmap]);
+  }, [fetchRoadmap, refreshKey]);
+
+  // Listen for refresh events (triggered after submissions)
+  const handleRefresh = useCallback(() => {
+    console.log("[LearningRoadmap] Refresh triggered");
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  useRoadmapRefresh(handleRefresh);
 
   if (loading) {
     return (

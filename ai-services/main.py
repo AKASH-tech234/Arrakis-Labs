@@ -105,6 +105,21 @@ try:
 except Exception as e:
     print(f"⚠️  MongoDB connection failed: {e}\n")
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# EAGER INITIALIZATION: Load embeddings model at startup (NOT per-request)
+# This prevents the "Cannot copy out of meta tensor" error and improves latency
+# ═══════════════════════════════════════════════════════════════════════════════
+print("🧠 Pre-loading embedding model (one-time initialization)...")
+try:
+    from app.rag.embeddings import get_embeddings
+    embeddings = get_embeddings()
+    # Force model load by embedding a test string
+    _ = embeddings.embed_query("initialization test")
+    print("✅ Embedding model loaded and ready\n")
+except Exception as e:
+    print(f"⚠️  Embedding model pre-load failed: {e}")
+    print("   └─ Embeddings will load lazily on first use\n")
+
 # -------------------------
 # FASTAPI APP
 # -------------------------

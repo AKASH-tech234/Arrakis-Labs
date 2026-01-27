@@ -1,8 +1,34 @@
 // src/components/mim/CognitiveProfile.jsx
 // Displays user's MIM cognitive profile with strengths and weaknesses
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMIMProfile } from "../../services/aiApi";
+import { getMIMProfile } from "../../services/ai/aiApi";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROFILE REFRESH EVENT SYSTEM
+// Allows profile components to refresh after submissions
+// ═══════════════════════════════════════════════════════════════════════════════
+const profileRefreshListeners = new Set();
+
+export function emitProfileRefresh() {
+  console.log("[CognitiveProfile] Emitting profile refresh event");
+  profileRefreshListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {
+      console.error("[CognitiveProfile] Refresh listener error:", e);
+    }
+  });
+}
+
+function useProfileRefresh(onRefresh) {
+  useEffect(() => {
+    if (onRefresh) {
+      profileRefreshListeners.add(onRefresh);
+      return () => profileRefreshListeners.delete(onRefresh);
+    }
+  }, [onRefresh]);
+}
 
 const SkillBar = ({
   label,
@@ -73,39 +99,43 @@ export default function CognitiveProfile({ userId, compact = false }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    console.log("[CognitiveProfile] userId:", userId);
+  // Fetch profile function - reusable for initial load and refresh
+  const fetchProfile = useCallback(async () => {
     if (!userId) {
       console.log("[CognitiveProfile] No userId, skipping fetch");
       return;
     }
 
-    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    console.log("[CognitiveProfile] Fetching MIM profile for:", userId);
-    getMIMProfile({ userId })
-      .then((data) => {
-        console.log("[CognitiveProfile] Received data:", data);
-        if (!cancelled) {
-          setProfile(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error("[CognitiveProfile] Error:", err);
-        if (!cancelled) {
-          setError(err.message || "Failed to load cognitive profile");
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    try {
+      console.log("[CognitiveProfile] Fetching MIM profile for:", userId);
+      const data = await getMIMProfile({ userId });
+      console.log("[CognitiveProfile] Received data:", data);
+      setProfile(data);
+    } catch (err) {
+      console.error("[CognitiveProfile] Error:", err);
+      setError(err.message || "Failed to load cognitive profile");
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile, refreshKey]);
+
+  // Listen for profile refresh events (triggered after submissions)
+  const handleRefresh = useCallback(() => {
+    console.log("[CognitiveProfile] Refresh triggered - reloading profile");
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  useProfileRefresh(handleRefresh);
 
   if (loading) {
     return (
@@ -148,7 +178,20 @@ export default function CognitiveProfile({ userId, compact = false }) {
     weaknesses = [],
     readiness_scores = {},
     learning_trajectory = {},
+    // v3.2: NEW fields from persisted profile
+    skill_level = null,
+    learning_velocity = null,
+    mistake_analysis = {},
+    focus_areas = [],
+    recent_learning = [],
+    last_mim = {},
+    is_persisted = false,
   } = profile;
+
+  // Helper to format mistake cause for display
+  const formatMistakeCause = (cause) => {
+    return cause.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   return (
     <motion.div
@@ -159,24 +202,71 @@ export default function CognitiveProfile({ userId, compact = false }) {
     >
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#D97706]/10">
-        <div className="flex items-center gap-2">
-          <span className="text-[#D97706]">🧠</span>
-          <h3
-            className="text-[#E8E4D9] text-sm uppercase tracking-wider"
-            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
-          >
-            Cognitive Profile
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[#D97706]">🧠</span>
+            <h3
+              className="text-[#E8E4D9] text-sm uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Cognitive Profile
+            </h3>
+            {is_persisted && (
+              <span className="text-[10px] px-2 py-0.5 bg-[#10B981]/20 text-[#10B981] rounded-full">
+                LIVE
+              </span>
+            )}
+          </div>
+          {skill_level && (
+            <span className="text-[#D97706] text-xs uppercase tracking-wider px-2 py-1 bg-[#D97706]/10 rounded">
+              {skill_level}
+            </span>
+          )}
         </div>
         {learning_trajectory?.trend && (
           <p className="text-[#78716C] text-xs mt-1">
             Trend:{" "}
-            <span className="text-[#D97706]">{learning_trajectory.trend}</span>
+            <span
+              className={`${
+                learning_trajectory.trend === "Improving"
+                  ? "text-[#10B981]"
+                  : learning_trajectory.trend === "Needs attention"
+                    ? "text-[#EF4444]"
+                    : "text-[#D97706]"
+              }`}
+            >
+              {learning_trajectory.trend}
+            </span>
+            {learning_velocity && learning_velocity !== "stable" && (
+              <span className="ml-2 text-[#78716C]">({learning_velocity})</span>
+            )}
           </p>
         )}
       </div>
 
       <div className="p-6">
+        {/* Focus Areas (v3.2) - Show prominently */}
+        {!compact && focus_areas.length > 0 && (
+          <div className="mb-6 p-4 bg-[#D97706]/5 rounded-lg border border-[#D97706]/20">
+            <h4
+              className="text-[#D97706] text-xs uppercase tracking-wider mb-2 flex items-center gap-2"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              <span>🎯</span> Current Focus Areas
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {focus_areas.slice(0, 3).map((area, i) => (
+                <span
+                  key={area}
+                  className="text-[#E8E4D9] text-xs px-3 py-1 bg-[#D97706]/20 rounded-full"
+                >
+                  {area}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Strengths & Weaknesses */}
         {!compact && (
           <>
@@ -226,6 +316,36 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </>
         )}
 
+        {/* Mistake Analysis (v3.2) */}
+        {!compact && mistake_analysis?.top_mistakes?.length > 0 && (
+          <div className="mb-6">
+            <h4
+              className="text-[#78716C] text-xs uppercase tracking-wider mb-3 flex items-center gap-2"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              <span>📊</span> Common Mistake Patterns
+            </h4>
+            <div className="space-y-2">
+              {mistake_analysis.top_mistakes.slice(0, 3).map((mistake, i) => (
+                <motion.div
+                  key={mistake.cause}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center justify-between p-2 bg-[#1A1814]/50 rounded border border-[#92400E]/20"
+                >
+                  <span className="text-[#E8E4D9] text-xs">
+                    {formatMistakeCause(mistake.cause)}
+                  </span>
+                  <span className="text-[#D97706] text-xs font-bold px-2 py-0.5 bg-[#D97706]/20 rounded">
+                    ×{mistake.count}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Learning Trajectory Stats */}
         {!compact && learning_trajectory && (
           <div className="mb-6">
@@ -272,25 +392,60 @@ export default function CognitiveProfile({ userId, compact = false }) {
                 </p>
               </motion.div>
 
-              {/* Trend */}
+              {/* Total Correct */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.3 }}
                 className="bg-[#1A1814]/50 rounded-lg p-3 text-center border border-[#D97706]/10"
               >
-                <p className="text-2xl">
-                  {learning_trajectory.trend === "Improving"
-                    ? "📈"
-                    : learning_trajectory.trend === "Declining"
-                      ? "📉"
-                      : "➡️"}
+                <p
+                  className="text-[#10B981] text-2xl font-bold"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {learning_trajectory.total_correct || 0}
                 </p>
                 <p className="text-[#78716C] text-[10px] uppercase tracking-wider">
-                  {learning_trajectory.trend || "Stable"}
+                  Solved
                 </p>
               </motion.div>
             </div>
+          </div>
+        )}
+
+        {/* Recent Learning Recommendations (v3.2) */}
+        {!compact && recent_learning?.length > 0 && (
+          <div className="mb-6">
+            <h4
+              className="text-[#78716C] text-xs uppercase tracking-wider mb-3 flex items-center gap-2"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              <span>💡</span> Recent Recommendations
+            </h4>
+            {recent_learning.slice(0, 1).map((rec, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-3 bg-[#1A1814]/50 rounded-lg border border-[#D97706]/10"
+              >
+                {rec.summary && (
+                  <p className="text-[#E8E4D9] text-xs mb-2">{rec.summary}</p>
+                )}
+                {rec.focus_areas?.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {rec.focus_areas.map((area) => (
+                      <span
+                        key={area}
+                        className="text-[10px] text-[#D97706] px-2 py-0.5 bg-[#D97706]/10 rounded"
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            ))}
           </div>
         )}
 
@@ -318,6 +473,23 @@ export default function CognitiveProfile({ userId, compact = false }) {
                 delay={i * 0.1}
               />
             ))}
+          </div>
+        )}
+
+        {/* Last MIM Analysis (v3.2) */}
+        {!compact && last_mim?.root_cause && (
+          <div className="mt-4 pt-4 border-t border-[#D97706]/10">
+            <p className="text-[#78716C] text-[10px] uppercase tracking-wider">
+              Last Analysis:{" "}
+              <span className="text-[#D97706]">
+                {formatMistakeCause(last_mim.root_cause)}
+              </span>
+              {last_mim.confidence && (
+                <span className="ml-2 text-[#78716C]">
+                  ({Math.round(last_mim.confidence * 100)}% confidence)
+                </span>
+              )}
+            </p>
           </div>
         )}
       </div>

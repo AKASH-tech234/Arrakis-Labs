@@ -4,15 +4,15 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
-import { verifyAdmin } from "../middleware/adminMiddleware.js";
+import { protect } from "../middleware/auth/authMiddleware.js";
+import { verifyAdmin } from "../middleware/admin/adminMiddleware.js";
 import {
   getMIMStatus,
   getMIMProfile,
   getMIMRecommendations,
   getMIMPrediction,
   triggerMIMTraining,
-} from "../services/aiService.js";
+} from "../services/ai/aiService.js";
 
 const router = express.Router();
 

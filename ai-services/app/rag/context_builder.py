@@ -6,6 +6,11 @@ This module builds STRUCTURED context that agents can reliably parse.
 
 CRITICAL: Agents receive explicit sections, NOT raw concatenated blobs.
 
+v3.1: Added focused context builders for specific agents:
+- build_feedback_context: Full context for feedback agent (main agent)
+- build_hint_context: Minimal context for hint agent (fast)
+- build_learning_context: Minimal context for learning agent
+
 Sections:
 1. PROBLEM CONTEXT - title, statement, constraints, expected approach
 2. USER PROFILE - common mistakes, weak topics, success rate
@@ -25,6 +30,181 @@ from app.schemas.submission import SubmissionContext
 from app.db.mongodb import mongo_client
 
 logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3.1: FOCUSED CONTEXT BUILDERS (Optimized per-agent)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def build_feedback_context_focused(
+    submission: SubmissionContext,
+    problem_context: Optional[Dict[str, Any]] = None,
+    user_profile: Optional[Dict[str, Any]] = None,
+    mim_decision = None,  # MIMDecision object
+) -> str:
+    """
+    Build FOCUSED context for feedback_agent.
+    
+    v3.1: Includes only what feedback needs:
+    - Problem constraints & expected approach
+    - User code (with line numbers)
+    - MIM root cause & instructions
+    - User weak topics (if recurring)
+    
+    v3.2: HARDENED null-safety for all optional fields
+    
+    Target: ~2500 chars for fast LLM inference
+    """
+    sections = []
+    
+    # 1. PROBLEM ESSENTIALS (constraints + expected approach) - NULL-SAFE
+    if problem_context and isinstance(problem_context, dict):
+        constraints = str(problem_context.get('constraints') or 'N/A')[:300]
+        expected = str(problem_context.get('expected_approach') or 'Not specified')[:200]
+        difficulty = str(problem_context.get('difficulty') or 'Medium')
+        sections.append(f"""PROBLEM:
+Difficulty: {difficulty}
+Constraints: {constraints}
+Expected Approach: {expected}""")
+    else:
+        sections.append("PROBLEM: Context not available - provide generic feedback")
+    
+    # 2. MIM INSTRUCTIONS (pre-computed analysis) - NULL-SAFE
+    if mim_decision is not None:
+        try:
+            # Safely access nested attributes with defaults
+            root_cause = getattr(mim_decision, 'root_cause', 'unknown') or 'unknown'
+            confidence = getattr(mim_decision, 'root_cause_confidence', 0.0) or 0.0
+            
+            # Safely access feedback_instruction
+            feedback_inst = getattr(mim_decision, 'feedback_instruction', None)
+            tone = 'encouraging'
+            is_recurring = False
+            recurrence_count = 0
+            edge_cases = []
+            
+            if feedback_inst is not None:
+                tone = getattr(feedback_inst, 'tone', 'encouraging') or 'encouraging'
+                is_recurring = getattr(feedback_inst, 'is_recurring_mistake', False) or False
+                recurrence_count = getattr(feedback_inst, 'recurrence_count', 0) or 0
+                edge_cases = getattr(feedback_inst, 'edge_cases_likely', []) or []
+            
+            # Safely access pattern
+            pattern = getattr(mim_decision, 'pattern', None)
+            if pattern is not None and is_recurring:
+                pattern_count = getattr(pattern, 'recurrence_count', recurrence_count) or recurrence_count
+            else:
+                pattern_count = recurrence_count
+            
+            recurring_note = ""
+            if is_recurring:
+                recurring_note = f"\n⚠️ RECURRING MISTAKE ({pattern_count}x before)"
+            
+            edge_cases_str = ', '.join(edge_cases[:3]) if edge_cases else 'Analyze from code'
+            
+            sections.append(f"""MIM DIAGNOSIS:
+Root Cause: {root_cause} (confidence: {confidence:.0%})
+Tone: {tone}{recurring_note}
+Edge Cases to Check: {edge_cases_str}""")
+        except Exception as e:
+            logger.warning(f"Failed to format MIM decision: {e}")
+            sections.append("MIM DIAGNOSIS: Not available")
+    
+    # 3. USER CODE (with line numbers - ESSENTIAL for specific feedback)
+    code = submission.code or ""
+    if code:
+        lines = code.split('\n')
+        numbered = '\n'.join([f"{i+1:3d}| {line}" for i, line in enumerate(lines[:50])])  # Max 50 lines
+        truncate_note = f"\n... [{len(lines) - 50} more lines]" if len(lines) > 50 else ""
+        sections.append(f"""USER CODE ({submission.language}):
+```
+{numbered}{truncate_note}
+```""")
+    else:
+        sections.append("USER CODE: ⚠️ EMPTY OR MISSING - Note this in feedback!")
+    
+    # 4. VERDICT & ERROR
+    sections.append(f"""SUBMISSION:
+Verdict: {submission.verdict}
+Error Type: {submission.error_type or 'N/A'}""")
+    
+    # 5. USER WEAK TOPICS (only if relevant)
+    if user_profile and user_profile.get('weak_topics'):
+        weak = ', '.join(user_profile['weak_topics'][:3])
+        sections.append(f"USER WEAK AREAS: {weak}")
+    
+    return '\n\n'.join(sections)
+
+
+def build_hint_context_minimal(
+    mim_decision,
+    feedback_hint: str = "",
+) -> str:
+    """
+    Build MINIMAL context for hint_agent.
+    
+    v3.1: ULTRA-LEAN - hints don't need deep reasoning.
+    v3.2: HARDENED null-safety
+    Target: < 500 chars for instant LLM inference
+    """
+    if mim_decision is not None:
+        try:
+            # Safely access hint_instruction with defaults
+            hint_inst = getattr(mim_decision, 'hint_instruction', None)
+            if hint_inst is not None:
+                direction = str(getattr(hint_inst, 'hint_direction', '') or 'Review your approach')[:150]
+                avoid_list = getattr(hint_inst, 'avoid_revealing', []) or []
+                avoid = ', '.join(avoid_list[:3]) if avoid_list else 'N/A'
+                return f"""COMPRESS THIS HINT:
+Direction: {direction}
+Avoid saying: {avoid}
+
+Output: ONE sentence, max 20 words, starts with action verb."""
+        except Exception as e:
+            logger.warning(f"Failed to format hint context from MIM: {e}")
+    
+    # Fallback - NULL-SAFE
+    feedback_hint = feedback_hint or ""
+    if feedback_hint and '.' in feedback_hint:
+        snippet = feedback_hint.split('.')[0][:100] + '.'
+    elif feedback_hint:
+        snippet = feedback_hint[:100]
+    else:
+        snippet = "Review approach."
+    return f"""COMPRESS: {snippet}
+Output: ONE sentence, max 20 words."""
+
+
+def build_learning_context_minimal(
+    mim_decision,
+    problem_category: str = "",
+) -> str:
+    """
+    Build MINIMAL context for learning_agent.
+    
+    v3.1: Only needs MIM's learning instruction.
+    v3.2: HARDENED null-safety
+    Target: < 400 chars
+    """
+    if mim_decision is not None:
+        try:
+            # Safely access learning_instruction with defaults
+            learning_inst = getattr(mim_decision, 'learning_instruction', None)
+            if learning_inst is not None:
+                focus_areas = getattr(learning_inst, 'focus_areas', []) or []
+                focus = ', '.join(focus_areas[:3]) if focus_areas else 'General practice'
+                gap = str(getattr(learning_inst, 'skill_gap', '') or 'Not identified')[:100]
+                return f"""EXPLAIN WHY THESE FOCUS AREAS MATTER:
+Focus Areas: {focus}
+Skill Gap: {gap}
+Category: {problem_category or 'General'}
+
+Output: 1-2 sentence rationale connecting focus areas to this mistake."""
+        except Exception as e:
+            logger.warning(f"Failed to format learning context from MIM: {e}")
+    
+    return f"""Category: {problem_category or 'General'}
+Provide generic learning recommendation."""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

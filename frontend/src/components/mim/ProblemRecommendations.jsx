@@ -1,9 +1,35 @@
 // src/components/mim/ProblemRecommendations.jsx
 // Displays MIM-recommended problems for the user
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMIMRecommendations } from "../../services/aiApi";
+import { getMIMRecommendations } from "../../services/ai/aiApi";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RECOMMENDATIONS REFRESH EVENT SYSTEM
+// Allows recommendations to refresh after submissions
+// ═══════════════════════════════════════════════════════════════════════════════
+const recommendationsRefreshListeners = new Set();
+
+export function emitRecommendationsRefresh() {
+  console.log("[ProblemRecommendations] Emitting refresh event");
+  recommendationsRefreshListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {
+      console.error("[ProblemRecommendations] Refresh listener error:", e);
+    }
+  });
+}
+
+function useRecommendationsRefresh(onRefresh) {
+  useEffect(() => {
+    if (onRefresh) {
+      recommendationsRefreshListeners.add(onRefresh);
+      return () => recommendationsRefreshListeners.delete(onRefresh);
+    }
+  }, [onRefresh]);
+}
 
 const difficultyStyles = {
   Easy: "text-[#78716C] group-hover:text-[#F59E0B]",
@@ -133,32 +159,39 @@ export default function ProblemRecommendations({
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
+  // Fetch recommendations function - reusable for initial load and refresh
+  const fetchRecommendations = useCallback(async () => {
     if (!userId) return;
 
-    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    getMIMRecommendations({ userId, limit })
-      .then((data) => {
-        if (!cancelled) {
-          setRecommendations(data?.recommendations || []);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err.message || "Failed to load recommendations");
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    try {
+      console.log("[ProblemRecommendations] Fetching for user:", userId);
+      const data = await getMIMRecommendations({ userId, limit });
+      setRecommendations(data?.recommendations || []);
+    } catch (err) {
+      console.error("[ProblemRecommendations] Error:", err);
+      setError(err.message || "Failed to load recommendations");
+    } finally {
+      setLoading(false);
+    }
   }, [userId, limit]);
+
+  // Initial fetch and refresh when refreshKey changes
+  useEffect(() => {
+    fetchRecommendations();
+  }, [fetchRecommendations, refreshKey]);
+
+  // Listen for refresh events (triggered after submissions)
+  const handleRefresh = useCallback(() => {
+    console.log("[ProblemRecommendations] Refresh triggered");
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  useRecommendationsRefresh(handleRefresh);
 
   // Don't render if no userId
   if (!userId) return null;

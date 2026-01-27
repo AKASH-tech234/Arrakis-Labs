@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 class SubmissionContext(BaseModel):
     user_id: str
@@ -9,5 +9,8 @@ class SubmissionContext(BaseModel):
     code: str
     language: str
     verdict: str
-    error_type: Optional[str]
-    user_history_summary: Optional[str]
+    error_type: Optional[str] = None
+    user_history_summary: Optional[str] = None
+    problem: Optional[Dict[str, Any]] = None
+    user_profile: Optional[Dict[str, Any]] = None
+    test_case: Optional[Dict[str, Any]] = None

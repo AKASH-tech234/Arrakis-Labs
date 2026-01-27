@@ -8,6 +8,14 @@ Tests for all AI agents in app/agents/
 import pytest
 from unittest.mock import MagicMock, patch
 from pydantic import BaseModel
+import importlib.util
+
+
+# v3.2: Check if archived agents exist (for backwards compatibility)
+def _agent_exists(module_name: str) -> bool:
+    """Check if an agent module exists (not archived)."""
+    spec = importlib.util.find_spec(module_name)
+    return spec is not None
 
 
 class TestFeedbackAgent:
@@ -97,6 +105,10 @@ class TestHintAgent:
         assert isinstance(key, str)
 
 
+@pytest.mark.skipif(
+    not _agent_exists("app.agents.pattern_detection_agent"),
+    reason="pattern_detection_agent archived - not in production workflow"
+)
 class TestPatternDetectionAgent:
     """Tests for the pattern detection agent."""
 
@@ -164,6 +176,10 @@ class TestLearningAgent:
         assert isinstance(result.rationale, str)
 
 
+@pytest.mark.skipif(
+    not _agent_exists("app.agents.difficulty_agent"),
+    reason="difficulty_agent archived - not in production workflow"
+)
 class TestDifficultyAgent:
     """Tests for the difficulty adjustment agent."""
 

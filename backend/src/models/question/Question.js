@@ -22,7 +22,6 @@ const exampleSchema = new mongoose.Schema(
 
 const questionSchema = new mongoose.Schema(
   {
-    
     externalId: {
       type: String,
       sparse: true,
@@ -49,25 +48,28 @@ const questionSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
-    
+
     examples: {
       type: [exampleSchema],
       default: [],
       validate: {
         validator: function (v) {
-          return v.length <= 10; 
+          return v.length <= 10;
         },
         message: "Cannot have more than 10 examples",
       },
     },
-    
+
     tags: {
       type: [String],
       default: [],
     },
-<<<<<<< HEAD:backend/src/models/question/Question.js
-    
-=======
+    // Problem type for UI category column (e.g., "Math", "Array")
+    categoryType: {
+      type: String,
+      default: null,
+      index: true,
+    },
     // Primary topic/category (e.g., "Arrays", "Dynamic Programming")
     topic: {
       type: String,
@@ -91,13 +93,18 @@ const questionSchema = new mongoose.Schema(
       type: String,
       default: null, // Expected memory complexity
     },
+    // v3.2: Canonical algorithms for AI feedback grounding
+    // e.g., ["bipartite_matching", "max_flow"] for task assignment problems
+    canonicalAlgorithms: {
+      type: [String],
+      default: [], // Preferred algorithms for this problem
+    },
     // For optimistic concurrency control
->>>>>>> model:backend/src/models/Question.js
     version: {
       type: Number,
       default: 1,
     },
-    
+
     totalSubmissions: {
       type: Number,
       default: 0,
@@ -106,12 +113,12 @@ const questionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    
+
     isActive: {
       type: Boolean,
       default: true,
     },
-    
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",

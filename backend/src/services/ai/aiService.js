@@ -1,14 +1,14 @@
 import axios from "axios";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
-const AI_TIMEOUT_MS = 90000; 
+const AI_TIMEOUT_MS = 90000;
 
 const LOG_PREFIX = {
-  INFO: "\x1b[36m[AI-SVC]\x1b[0m", 
-  SUCCESS: "\x1b[32m[AI-SVC]\x1b[0m", 
-  WARN: "\x1b[33m[AI-SVC]\x1b[0m", 
-  ERROR: "\x1b[31m[AI-SVC]\x1b[0m", 
-  HTTP: "\x1b[35m[AI-SVC]\x1b[0m", 
+  INFO: "\x1b[36m[AI-SVC]\x1b[0m",
+  SUCCESS: "\x1b[32m[AI-SVC]\x1b[0m",
+  WARN: "\x1b[33m[AI-SVC]\x1b[0m",
+  ERROR: "\x1b[31m[AI-SVC]\x1b[0m",
+  HTTP: "\x1b[35m[AI-SVC]\x1b[0m",
 };
 
 const log = {
@@ -93,8 +93,6 @@ export function buildUserHistorySummary(submissions) {
   return summary;
 }
 
-<<<<<<< HEAD:backend/src/services/ai/aiService.js
-=======
 /**
  * Request AI feedback for a submission
  * @param {Object} params - Submission context
@@ -110,7 +108,6 @@ export function buildUserHistorySummary(submissions) {
  * @param {Object|null} params.userProfile - User's AI profile for personalization
  * @returns {Promise<Object|null>} - AI feedback response or null on failure
  */
->>>>>>> model:backend/src/services/aiService.js
 export async function getAIFeedback({
   userId,
   problemId,

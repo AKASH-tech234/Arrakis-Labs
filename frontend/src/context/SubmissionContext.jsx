@@ -5,7 +5,14 @@ import {
   useCallback,
   useRef,
   useMemo,
+  useEffect,
 } from "react";
+
+// v3.2: Import event system for cross-component updates
+import { emitSubmissionUpdate } from "../hooks/ai/useAIFeedbackEnhanced";
+
+// v3.3: Import MIM refresh function to update profile after submissions
+import { refreshAllMIMComponents } from "../components/mim";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -184,8 +191,6 @@ export function SubmissionProvider({ children }) {
   const [state, dispatch] = useReducer(submissionReducer, initialState);
   const abortControllerRef = useRef(null);
 
-<<<<<<< HEAD
-=======
   // ═══════════════════════════════════════════════════════════════════════════
   // SUBMISSION HANDLERS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -195,7 +200,6 @@ export function SubmissionProvider({ children }) {
    * If aiFeedback is included (from backend response), it will be set directly
    * This avoids duplicate AI calls when backend already provides feedback
    */
->>>>>>> model
   const recordSubmission = useCallback((submissionData) => {
     const submission = {
       id:
@@ -236,12 +240,39 @@ export function SubmissionProvider({ children }) {
           submissionData.aiFeedback.mimInsights ||
           submissionData.aiFeedback.mim_insights ||
           null,
+        // v3.3: Enhanced feedback fields for full explanation
+        rootCause: submissionData.aiFeedback.rootCause || null,
+        rootCauseSubtype: submissionData.aiFeedback.rootCauseSubtype || null,
+        failureMechanism: submissionData.aiFeedback.failureMechanism || null,
+        correctCode: submissionData.aiFeedback.correctCode || null,
+        correctCodeExplanation:
+          submissionData.aiFeedback.correctCodeExplanation || null,
+        conceptReinforcement:
+          submissionData.aiFeedback.conceptReinforcement || null,
       };
 
       dispatch({
         type: ActionTypes.AI_REQUEST_SUCCESS,
         payload: { feedback: processedFeedback },
       });
+
+      // v3.2: Emit event for cross-component updates (MIM, profile, etc.)
+      emitSubmissionUpdate({
+        type: "submission_with_feedback",
+        questionId: submission.questionId,
+        submissionId: submission.id,
+        verdict: submission.verdict,
+        feedback: processedFeedback,
+        mimInsights: processedFeedback.mimInsights,
+        timestamp: Date.now(),
+      });
+
+      // v3.3: Refresh MIM profile components after AI feedback received
+      // This ensures profile/recommendations/roadmap update after each submission
+      console.log(
+        "[SubmissionContext] Triggering MIM profile refresh after submission",
+      );
+      setTimeout(() => refreshAllMIMComponents(), 1000);
     }
 
     return submission;
@@ -313,7 +344,6 @@ export function SubmissionProvider({ children }) {
         const data = await response.json();
 
         if (data.success && data.data) {
-          
           const processedFeedback = {
             success: true,
             verdict: data.data.verdict,
@@ -337,6 +367,24 @@ export function SubmissionProvider({ children }) {
             type: ActionTypes.AI_REQUEST_SUCCESS,
             payload: { feedback: processedFeedback },
           });
+
+          // v3.2: Emit event for cross-component updates (MIM, profile, etc.)
+          emitSubmissionUpdate({
+            type: "feedback_received",
+            questionId: submission.questionId,
+            submissionId: submission.id,
+            verdict: submission.verdict,
+            feedback: processedFeedback,
+            mimInsights: processedFeedback.mimInsights,
+            timestamp: Date.now(),
+          });
+
+          // v3.3: Refresh MIM profile components after AI feedback
+          console.log(
+            "[SubmissionContext] Triggering MIM profile refresh after AI feedback",
+          );
+          setTimeout(() => refreshAllMIMComponents(), 1000);
+
           return processedFeedback;
         } else {
           throw new Error(data.message || "Invalid response from AI service");
@@ -372,7 +420,7 @@ export function SubmissionProvider({ children }) {
 
   const retryAIFeedback = useCallback(async () => {
     resetAI();
-    
+
     await new Promise((resolve) => setTimeout(resolve, 100));
     return requestAIFeedback();
   }, [resetAI, requestAIFeedback]);
@@ -386,7 +434,6 @@ export function SubmissionProvider({ children }) {
   }, []);
 
   const showAIPanel = useCallback(() => {
-    
     dispatch({ type: ActionTypes.SHOW_AI_PANEL });
   }, []);
 
@@ -405,7 +452,6 @@ export function SubmissionProvider({ children }) {
     );
 
     return {
-      
       ...state,
 
       visibleHints,

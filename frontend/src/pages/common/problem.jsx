@@ -1,20 +1,11 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-<<<<<<< HEAD:frontend/src/pages/common/problem.jsx
 import AppHeader from "../../components/layout/AppHeader";
 import ProblemList from "../../components/problem/ProblemList";
 import ProblemFilters from "../../components/problem/ProblemFilters";
 import POTDBanner from "../../components/potd/POTDBanner";
+import { ProblemRecommendations } from "../../components/mim";
 import { getPublicQuestions } from "../../services/common/api";
-=======
-import AppHeader from "../components/layout/AppHeader";
-import ProblemList from "../components/problem/ProblemList";
-import ProblemFilters from "../components/problem/ProblemFilters";
-import POTDBanner from "../components/potd/POTDBanner";
-import { ProblemRecommendations } from "../components/mim";
-import { getPublicQuestions } from "../services/api";
->>>>>>> model:frontend/src/pages/problem.jsx
 
 // Get userId from localStorage (same pattern as other pages)
 function getCurrentUserId() {
@@ -52,8 +43,7 @@ export default function ProblemLibrary() {
 
         const { questions } = await getPublicQuestions({ limit: 1000 });
         const mapped = (questions || []).map((q) => {
-          const category =
-            Array.isArray(q.tags) && q.tags.length > 0 ? q.tags[0] : "General";
+          const category = q.categoryType || "Unknown";
           return {
             id: q._id,
             title: q.title,
@@ -153,9 +143,6 @@ export default function ProblemLibrary() {
             <POTDBanner />
           </motion.div>
 
-<<<<<<< HEAD:frontend/src/pages/common/problem.jsx
-          {}
-=======
           {/* MIM Recommendations (only shown if user is logged in) */}
           {userId && (
             <motion.div
@@ -173,7 +160,6 @@ export default function ProblemLibrary() {
           )}
 
           {/* Problem List */}
->>>>>>> model:frontend/src/pages/problem.jsx
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

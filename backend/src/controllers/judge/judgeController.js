@@ -4,24 +4,21 @@ import Question from "../../models/question/Question.js";
 import TestCase from "../../models/question/TestCase.js";
 import Submission from "../../models/profile/Submission.js";
 import { compareOutputs } from "../../utils/stdinConverter.js";
+import { inferIOFormatsFromTestCases } from "../../utils/ioFormatInference.js";
 import {
   getAIFeedback,
   buildUserHistorySummary,
-<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
 } from "../../services/ai/aiService.js";
-=======
-} from "../services/aiService.js";
 import {
   getAttemptNumber,
   updateUserAIProfile,
-} from "../utils/userStatsAggregator.js";
->>>>>>> model:backend/src/controllers/judgeController.js
+} from "../../utils/userStatsAggregator.js";
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000; 
-const MAX_CODE_SIZE = 65536; 
-const MAX_STDIN_SIZE = 1024 * 1024; 
+const RETRY_DELAY = 1000;
+const MAX_CODE_SIZE = 65536;
+const MAX_STDIN_SIZE = 1024 * 1024;
 
 const LANGUAGE_MAP = {
   javascript: { language: "javascript", version: "18.15.0" },
@@ -69,8 +66,8 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
           run_memory_limit: 256 * 1024 * 1024,
         },
         {
-          timeout: Math.max(timeLimit + 10000, 15000), 
-          validateStatus: (status) => status < 500, 
+          timeout: Math.max(timeLimit + 10000, 15000),
+          validateStatus: (status) => status < 500,
         },
       );
 
@@ -83,7 +80,7 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
       if (compile && compile.stderr) {
         return {
           stdout: "",
-          stderr: compile.stderr.slice(0, 10000), 
+          stderr: compile.stderr.slice(0, 10000),
           exitCode: compile.code || 1,
           timedOut: false,
           compileError: true,
@@ -97,7 +94,7 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
         run?.signal === "SIGABRT";
 
       return {
-        stdout: (run?.stdout || "").slice(0, 100000), 
+        stdout: (run?.stdout || "").slice(0, 100000),
         stderr: (run?.stderr || "").slice(0, 10000),
         exitCode: run?.code ?? 0,
         timedOut: run?.signal === "SIGKILL",
@@ -199,8 +196,8 @@ export const runCode = async (req, res) => {
 
         results.push({
           label: tc.label,
-          stdin: tc.stdin, 
-          expectedStdout: tc.expectedStdout, 
+          stdin: tc.stdin,
+          expectedStdout: tc.expectedStdout,
           actualStdout: execution.stdout.trim(),
           stderr: execution.stderr,
           passed,
@@ -212,7 +209,6 @@ export const runCode = async (req, res) => {
           break;
         }
       } catch (error) {
-        
         const isServiceError = error.message.includes("unavailable");
 
         results.push({
@@ -270,7 +266,7 @@ export const runCode = async (req, res) => {
 export const submitCode = async (req, res) => {
   try {
     const { questionId, code, language } = req.body;
-    const userId = req.user?._id; 
+    const userId = req.user?._id;
 
     console.log("\n" + "=".repeat(80));
     console.log("📝 CODE SUBMISSION");
@@ -347,8 +343,10 @@ export const submitCode = async (req, res) => {
 
     const results = [];
     let compileErrorOccurred = false;
+    let firstFailingIndex = -1;
 
-    for (const tc of allTestCases) {
+    for (let i = 0; i < allTestCases.length; i++) {
+      const tc = allTestCases[i];
       try {
         const execution = await executePiston(
           code,
@@ -363,51 +361,49 @@ export const submitCode = async (req, res) => {
           execution.exitCode === 0 &&
           compareOutputs(execution.stdout, tc.expectedStdout);
 
-        if (tc.isHidden) {
-          results.push({
-            label: tc.label,
-            isHidden: true,
-            passed,
-            timedOut: execution.timedOut,
-            compileError: execution.compileError,
-            
-          });
-        } else {
-          results.push({
-            label: tc.label,
-            isHidden: false,
-            stdin: tc.stdin,
-            expectedStdout: tc.expectedStdout,
-            actualStdout: execution.stdout.trim(),
-            stderr: execution.stderr,
-            passed,
-            timedOut: execution.timedOut,
-            compileError: execution.compileError,
-          });
+        // Track first failing test case
+        if (!passed && firstFailingIndex === -1) {
+          firstFailingIndex = i;
         }
+
+        // Always store full details - we decide what to expose in the response
+        results.push({
+          label: tc.label,
+          isHidden: tc.isHidden,
+          stdin: tc.stdin,
+          expectedStdout: tc.expectedStdout,
+          actualStdout: execution.stdout.trim(),
+          stderr: execution.stderr,
+          passed,
+          timedOut: execution.timedOut,
+          compileError: execution.compileError,
+          runtimeError: execution.runtimeError || false,
+        });
 
         if (execution.compileError) {
           compileErrorOccurred = true;
           break;
         }
       } catch (error) {
-        
         const isServiceError = error.message.includes("unavailable");
+
+        // Track first failing test case
+        if (firstFailingIndex === -1) {
+          firstFailingIndex = i;
+        }
 
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
+          stdin: tc.stdin,
+          expectedStdout: tc.expectedStdout,
+          actualStdout: "",
+          stderr: isServiceError
+            ? "Execution service temporarily unavailable"
+            : error.message,
           passed: false,
           error: true,
           serviceError: isServiceError,
-          
-          ...(tc.isHidden
-            ? {}
-            : {
-                stderr: isServiceError
-                  ? "Execution service temporarily unavailable"
-                  : error.message,
-              }),
         });
 
         if (isServiceError) {
@@ -422,7 +418,7 @@ export const submitCode = async (req, res) => {
 
     let status = "wrong_answer";
     if (hasServiceError) {
-      status = "runtime_error"; 
+      status = "runtime_error";
     } else if (compileErrorOccurred) {
       status = "compile_error";
     } else if (results.some((r) => r.timedOut)) {
@@ -451,9 +447,6 @@ export const submitCode = async (req, res) => {
         status,
         passedCount,
         totalCount: allTestCases.length,
-<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
-        
-=======
         // AI tracking fields
         attemptNumber,
         // Denormalized problem fields (immutable historical data)
@@ -461,7 +454,6 @@ export const submitCode = async (req, res) => {
         problemDifficulty: question.difficulty,
         problemTags: question.tags || [],
         // Don't store full test case results for security
->>>>>>> model:backend/src/controllers/judgeController.js
       });
 
       // Async update user's AI profile (non-blocking)
@@ -470,10 +462,29 @@ export const submitCode = async (req, res) => {
       );
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AI FEEDBACK GATE: Request AI for all submissions (LeetCode-style)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AI feedback runs for ALL verdicts:
+    // ✓ Accepted - performance tips, time/space complexity analysis
+    // ✓ Wrong Answer - needs diagnosis + failing test case reference
+    // ✓ TLE - needs algorithm optimization guidance
+    // ✓ Runtime Error - needs safety/correctness feedback
+    // ✗ Compile Error - show raw compiler output, not AI
+    // ✗ Internal Error - infrastructure issue, not code issue
+    const AI_ELIGIBLE_STATUSES = [
+      "accepted",
+      "wrong_answer",
+      "time_limit_exceeded",
+      "runtime_error",
+    ];
+
     let aiFeedback = null;
-    if (userId && status !== "accepted") {
+    if (userId && AI_ELIGIBLE_STATUSES.includes(status)) {
       try {
-        console.log("[Submit] Requesting AI feedback for failed submission...");
+        console.log(
+          `[Submit] Requesting AI feedback for ${status} submission...`,
+        );
 
         const recentSubmissions = await Submission.find({ userId })
           .sort({ createdAt: -1 })
@@ -487,15 +498,23 @@ export const submitCode = async (req, res) => {
           question.topic ||
           (question.tags?.length > 0 ? question.tags[0] : "General");
 
-<<<<<<< HEAD:backend/src/controllers/judge/judgeController.js
-=======
         // Get user's AI profile for personalization
         const { getUserAIProfile } =
           await import("../utils/userStatsAggregator.js");
         const userProfile = await getUserAIProfile(userId).catch(() => null);
 
+        // Build failing test case context for AI (if applicable)
+        const failingTestCase = firstFailingIndex >= 0 ? {
+          index: firstFailingIndex,
+          total: allTestCases.length,
+          isHidden: results[firstFailingIndex]?.isHidden || false,
+          input: results[firstFailingIndex]?.stdin || "",
+          expectedOutput: results[firstFailingIndex]?.expectedStdout || "",
+          actualOutput: results[firstFailingIndex]?.actualStdout || "",
+          error: results[firstFailingIndex]?.stderr || "",
+        } : null;
+
         // Call AI service with enriched context
->>>>>>> model:backend/src/controllers/judgeController.js
         aiFeedback = await getAIFeedback({
           userId: userId.toString(),
           problemId: questionId.toString(),
@@ -505,6 +524,10 @@ export const submitCode = async (req, res) => {
           language,
           verdict: status,
           userHistorySummary,
+          // Failing test case context for targeted AI feedback
+          failingTestCase,
+          passedCount,
+          totalCount: allTestCases.length,
           // Enhanced context for AI personalization
           problem: {
             title: question.title,
@@ -530,7 +553,6 @@ export const submitCode = async (req, res) => {
           console.log("[Submit] AI feedback unavailable (service may be down)");
         }
       } catch (aiError) {
-        
         console.error(
           "[Submit] AI feedback error (non-fatal):",
           aiError.message,
@@ -544,33 +566,43 @@ export const submitCode = async (req, res) => {
       data: {
         submissionId: submission?._id,
         status,
-        results: results.map((r) => ({
-          label: r.label,
-          isHidden: r.isHidden,
-          passed: r.passed,
-          timedOut: r.timedOut,
-          compileError: r.compileError,
+        // LeetCode-style: expose hidden test case details on failure
+        // This allows users to see exactly where they failed
+        firstFailingIndex: !allPassed ? firstFailingIndex : null,
+        results: results.map((r, idx) => {
+          // CRITICAL: On wrong answer, expose ALL test case details (including hidden)
+          // LeetCode shows hidden test case input/output when submission fails
+          const shouldExposeDetails = !allPassed || !r.isHidden;
           
-          ...(r.isHidden
-            ? {}
-            : {
-                stdin: r.stdin,
-                expectedStdout: r.expectedStdout,
-                actualStdout: r.actualStdout,
-                stderr: r.stderr,
-              }),
-        })),
+          return {
+            label: r.label,
+            isHidden: r.isHidden,
+            passed: r.passed,
+            timedOut: r.timedOut,
+            compileError: r.compileError,
+            runtimeError: r.runtimeError || false,
+            // Expose details for: all visible test cases, OR any test case when submission fails
+            ...(shouldExposeDetails
+              ? {
+                  stdin: r.stdin,
+                  expectedStdout: r.expectedStdout,
+                  actualStdout: r.actualStdout,
+                  stderr: r.stderr,
+                }
+              : {}),
+          };
+        }),
         passedCount,
         totalCount: allTestCases.length,
         allPassed,
-        
+
         aiFeedback: aiFeedback
           ? {
               hints: aiFeedback.hints || [],
               explanation: aiFeedback.explanation,
               improvementHint: aiFeedback.improvement_hint,
               detectedPattern: aiFeedback.detected_pattern,
-              feedbackType: aiFeedback.feedback_type || "error_feedback",
+              feedbackType: aiFeedback.feedback_type || (allPassed ? "success_feedback" : "error_feedback"),
               learningRecommendation: aiFeedback.learning_recommendation,
               difficultyAdjustment: aiFeedback.difficulty_adjustment,
               optimizationTips: aiFeedback.optimization_tips || [],
@@ -578,6 +610,20 @@ export const submitCode = async (req, res) => {
               edgeCases: aiFeedback.edge_cases || [],
               // MIM insights from AI service (ML-based predictions)
               mimInsights: aiFeedback.mim_insights || null,
+              // v3.3: New fields for enhanced feedback
+              rootCause: aiFeedback.root_cause || null,
+              rootCauseSubtype: aiFeedback.root_cause_subtype || null,
+              failureMechanism: aiFeedback.failure_mechanism || null,
+              correctCode: aiFeedback.correct_code || null,
+              correctCodeExplanation:
+                aiFeedback.correct_code_explanation || null,
+              conceptReinforcement: aiFeedback.concept_reinforcement || null,
+              // Reference to the failing test case for UI linking
+              failingTestCaseRef: firstFailingIndex >= 0 ? {
+                index: firstFailingIndex,
+                label: results[firstFailingIndex]?.label || `Test Case ${firstFailingIndex + 1}`,
+                isHidden: results[firstFailingIndex]?.isHidden || false,
+              } : null,
             }
           : null,
       },
@@ -635,7 +681,7 @@ export const getPublicQuestions = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
-        .select("title difficulty tags examples createdAt")
+        .select("title difficulty tags categoryType examples createdAt")
         .lean(),
       Question.countDocuments(query),
     ]);
@@ -683,10 +729,24 @@ export const getPublicQuestion = async (req, res) => {
       .sort({ order: 1 })
       .select("stdin expectedStdout label");
 
+    const allTestCasesForFormat = await TestCase.find({
+      questionId: req.params.id,
+      isActive: true,
+    })
+      .sort({ order: 1 })
+      .select("stdin expectedStdout")
+      .lean();
+
+    const { inputFormat, outputFormat } = inferIOFormatsFromTestCases(
+      allTestCasesForFormat,
+    );
+
     res.status(200).json({
       success: true,
       data: {
         ...question,
+        inputFormat,
+        outputFormat,
         testCases: visibleTestCases.map((tc) => ({
           label: tc.label,
           stdin: tc.stdin,

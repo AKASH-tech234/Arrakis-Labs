@@ -30,7 +30,17 @@ const QuestionEditor = () => {
     constraints: "",
     tags: [],
     examples: [{ input: "", output: "", explanation: "" }],
+    // AI Metadata fields
+    topic: "",
+    expectedApproach: "",
+    canonicalAlgorithms: [],
+    timeComplexityHint: "",
+    spaceComplexityHint: "",
+    commonMistakes: [],
   });
+
+  const [algorithmInput, setAlgorithmInput] = useState("");
+  const [mistakeInput, setMistakeInput] = useState("");
 
   const [tagInput, setTagInput] = useState("");
 
@@ -47,7 +57,17 @@ const QuestionEditor = () => {
               difficulty: q.difficulty || "Medium",
               constraints: q.constraints || "",
               tags: q.tags || [],
-              examples: q.examples?.length > 0 ? q.examples : [{ input: "", output: "", explanation: "" }],
+              examples:
+                q.examples?.length > 0
+                  ? q.examples
+                  : [{ input: "", output: "", explanation: "" }],
+              // AI Metadata fields
+              topic: q.topic || "",
+              expectedApproach: q.expectedApproach || "",
+              canonicalAlgorithms: q.canonicalAlgorithms || [],
+              timeComplexityHint: q.timeComplexityHint || "",
+              spaceComplexityHint: q.spaceComplexityHint || "",
+              commonMistakes: q.commonMistakes || [],
             });
           }
         } catch (err) {
@@ -79,11 +99,10 @@ const QuestionEditor = () => {
     }
 
     try {
-      
       const cleanedData = {
         ...formData,
         examples: formData.examples.filter(
-          (ex) => ex.input.trim() || ex.output.trim()
+          (ex) => ex.input.trim() || ex.output.trim(),
         ),
       };
 
@@ -144,6 +163,49 @@ const QuestionEditor = () => {
     setFormData((prev) => ({
       ...prev,
       tags: prev.tags.filter((t) => t !== tag),
+    }));
+  };
+
+  const handleAddAlgorithm = (e) => {
+    if (e.key === "Enter" && algorithmInput.trim()) {
+      e.preventDefault();
+      if (!formData.canonicalAlgorithms.includes(algorithmInput.trim())) {
+        setFormData((prev) => ({
+          ...prev,
+          canonicalAlgorithms: [
+            ...prev.canonicalAlgorithms,
+            algorithmInput.trim(),
+          ],
+        }));
+      }
+      setAlgorithmInput("");
+    }
+  };
+
+  const removeAlgorithm = (algo) => {
+    setFormData((prev) => ({
+      ...prev,
+      canonicalAlgorithms: prev.canonicalAlgorithms.filter((a) => a !== algo),
+    }));
+  };
+
+  const handleAddMistake = (e) => {
+    if (e.key === "Enter" && mistakeInput.trim()) {
+      e.preventDefault();
+      if (!formData.commonMistakes.includes(mistakeInput.trim())) {
+        setFormData((prev) => ({
+          ...prev,
+          commonMistakes: [...prev.commonMistakes, mistakeInput.trim()],
+        }));
+      }
+      setMistakeInput("");
+    }
+  };
+
+  const removeMistake = (mistake) => {
+    setFormData((prev) => ({
+      ...prev,
+      commonMistakes: prev.commonMistakes.filter((m) => m !== mistake),
     }));
   };
 
@@ -210,8 +272,8 @@ const QuestionEditor = () => {
                     ? level === "Easy"
                       ? "bg-green-500/20 text-green-400 border-2 border-green-500"
                       : level === "Medium"
-                      ? "bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500"
-                      : "bg-red-500/20 text-red-400 border-2 border-red-500"
+                        ? "bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500"
+                        : "bg-red-500/20 text-red-400 border-2 border-red-500"
                     : "bg-gray-800/50 text-gray-400 border border-gray-700 hover:border-gray-600"
                 }`}
               >
@@ -281,6 +343,157 @@ const QuestionEditor = () => {
           />
         </div>
 
+        {/* AI Metadata Section */}
+        <div className="border-t border-gray-700 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-orange-400 mb-4">
+            🤖 AI Metadata (for intelligent feedback)
+          </h3>
+
+          {/* Topic */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Topic
+            </label>
+            <select
+              value={formData.topic}
+              onChange={(e) => handleChange("topic", e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">Select a topic...</option>
+              <option value="Arrays">Arrays</option>
+              <option value="Strings">Strings</option>
+              <option value="Linked Lists">Linked Lists</option>
+              <option value="Trees">Trees</option>
+              <option value="Graphs">Graphs</option>
+              <option value="Dynamic Programming">Dynamic Programming</option>
+              <option value="Recursion">Recursion</option>
+              <option value="Sorting">Sorting</option>
+              <option value="Binary Search">Binary Search</option>
+              <option value="Hash Tables">Hash Tables</option>
+              <option value="Stacks">Stacks</option>
+              <option value="Queues">Queues</option>
+              <option value="Heaps">Heaps</option>
+              <option value="Two Pointers">Two Pointers</option>
+              <option value="Sliding Window">Sliding Window</option>
+              <option value="Greedy">Greedy</option>
+              <option value="Backtracking">Backtracking</option>
+              <option value="Bit Manipulation">Bit Manipulation</option>
+              <option value="Math">Math</option>
+              <option value="Design">Design</option>
+            </select>
+          </div>
+
+          {/* Expected Approach */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Expected Approach
+            </label>
+            <textarea
+              value={formData.expectedApproach}
+              onChange={(e) => handleChange("expectedApproach", e.target.value)}
+              rows={3}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+              placeholder="Describe the optimal approach (e.g., Use hash map to store complements for O(n) lookup...)"
+            />
+          </div>
+
+          {/* Canonical Algorithms */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Canonical Algorithms
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {formData.canonicalAlgorithms.map((algo, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm flex items-center gap-2"
+                >
+                  {algo}
+                  <button
+                    type="button"
+                    onClick={() => removeAlgorithm(algo)}
+                    className="hover:text-blue-300"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={algorithmInput}
+              onChange={(e) => setAlgorithmInput(e.target.value)}
+              onKeyDown={handleAddAlgorithm}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="e.g., hash_map, binary_search, dfs (Press Enter to add)"
+            />
+          </div>
+
+          {/* Complexity Hints - Row */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Time Complexity Hint
+              </label>
+              <input
+                type="text"
+                value={formData.timeComplexityHint}
+                onChange={(e) =>
+                  handleChange("timeComplexityHint", e.target.value)
+                }
+                className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="O(n), O(log n), O(n²)"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Space Complexity Hint
+              </label>
+              <input
+                type="text"
+                value={formData.spaceComplexityHint}
+                onChange={(e) =>
+                  handleChange("spaceComplexityHint", e.target.value)
+                }
+                className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="O(1), O(n)"
+              />
+            </div>
+          </div>
+
+          {/* Common Mistakes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Common Mistakes
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {formData.commonMistakes.map((mistake, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm flex items-center gap-2"
+                >
+                  {mistake}
+                  <button
+                    type="button"
+                    onClick={() => removeMistake(mistake)}
+                    className="hover:text-red-300"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={mistakeInput}
+              onChange={(e) => setMistakeInput(e.target.value)}
+              onKeyDown={handleAddMistake}
+              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="e.g., Off-by-one errors, Not handling edge cases (Press Enter to add)"
+            />
+          </div>
+        </div>
+
         {}
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -303,7 +516,9 @@ const QuestionEditor = () => {
                 className="p-4 rounded-lg bg-gray-800/50 border border-gray-700 space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Example {index + 1}</span>
+                  <span className="text-sm text-gray-400">
+                    Example {index + 1}
+                  </span>
                   {formData.examples.length > 1 && (
                     <button
                       type="button"
@@ -316,32 +531,44 @@ const QuestionEditor = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Input</label>
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      Input
+                    </label>
                     <input
                       type="text"
                       value={example.input}
-                      onChange={(e) => handleExampleChange(index, "input", e.target.value)}
+                      onChange={(e) =>
+                        handleExampleChange(index, "input", e.target.value)
+                      }
                       className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-600 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="nums = [2,7,11,15], target = 9"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Output</label>
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      Output
+                    </label>
                     <input
                       type="text"
                       value={example.output}
-                      onChange={(e) => handleExampleChange(index, "output", e.target.value)}
+                      onChange={(e) =>
+                        handleExampleChange(index, "output", e.target.value)
+                      }
                       className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-600 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="[0, 1]"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Explanation (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Explanation (optional)
+                  </label>
                   <input
                     type="text"
                     value={example.explanation}
-                    onChange={(e) => handleExampleChange(index, "explanation", e.target.value)}
+                    onChange={(e) =>
+                      handleExampleChange(index, "explanation", e.target.value)
+                    }
                     className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="Because nums[0] + nums[1] == 9, we return [0, 1]."
                   />

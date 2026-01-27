@@ -8,10 +8,10 @@ const generateAdminToken = (admin) => {
       id: admin._id,
       email: admin.email,
       role: admin.role,
-      isAdmin: true, 
+      isAdmin: true,
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.ADMIN_JWT_EXPIRY || "8h" } 
+    { expiresIn: process.env.ADMIN_JWT_EXPIRY || "8h" },
   );
 };
 
@@ -29,7 +29,6 @@ export const adminLogin = async (req, res) => {
     const admin = await Admin.findByCredentials(email, password);
 
     if (!admin) {
-      
       await AuditLog.log({
         action: "LOGIN",
         resourceType: "Admin",
@@ -50,7 +49,7 @@ export const adminLogin = async (req, res) => {
     const token = generateAdminToken(admin);
 
     const cookieOptions = {
-      expires: new Date(Date.now() + 8 * 60 * 60 * 1000), 
+      expires: new Date(Date.now() + 8 * 60 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -66,16 +65,19 @@ export const adminLogin = async (req, res) => {
       userAgent: req.get("User-Agent"),
     });
 
-    res.status(200).cookie("adminToken", token, cookieOptions).json({
-      success: true,
-      message: "Login successful",
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        role: admin.role,
-        lastLogin: admin.lastLogin,
-      },
-    });
+    res
+      .status(200)
+      .cookie("adminToken", token, cookieOptions)
+      .json({
+        success: true,
+        message: "Login successful",
+        admin: {
+          id: admin._id,
+          email: admin.email,
+          role: admin.role,
+          lastLogin: admin.lastLogin,
+        },
+      });
   } catch (error) {
     console.error("[Admin Login Error]:", error.message);
     res.status(500).json({
@@ -87,7 +89,6 @@ export const adminLogin = async (req, res) => {
 
 export const adminLogout = async (req, res) => {
   try {
-    
     res.clearCookie("adminToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -139,47 +140,84 @@ export const getAdminProfile = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    
-    const Question = (await import("../models/Question.js")).default;
-    const TestCase = (await import("../models/TestCase.js")).default;
-    const Submission = (await import("../models/Submission.js")).default;
+    // Import all required models
+    const Question = (await import("../../models/question/Question.js"))
+      .default;
+    const TestCase = (await import("../../models/question/TestCase.js"))
+      .default;
+    const Submission = (await import("../../models/profile/Submission.js"))
+      .default;
+    const User = (await import("../../models/auth/User.js")).default;
 
+    // Fetch all stats in parallel for performance
     const [
       totalQuestions,
       totalTestCases,
       hiddenTestCases,
       totalSubmissions,
-      recentQuestions,
+      totalUsers,
+      difficultyStats,
+      submissionStatusStats,
     ] = await Promise.all([
       Question.countDocuments({ isActive: true }),
       TestCase.countDocuments({ isActive: true }),
       TestCase.countDocuments({ isActive: true, isHidden: true }),
       Submission.countDocuments(),
-      Question.find({ isActive: true })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("title difficulty createdAt"),
+      User.countDocuments(),
+      Question.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: "$difficulty", count: { $sum: 1 } } },
+      ]),
+      Submission.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
     ]);
 
-    const difficultyStats = await Question.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: "$difficulty", count: { $sum: 1 } } },
-    ]);
+    // Transform difficulty stats to object
+    const byDifficulty = difficultyStats.reduce((acc, curr) => {
+      if (curr._id) {
+        acc[curr._id] = curr.count;
+      }
+      return acc;
+    }, { Easy: 0, Medium: 0, Hard: 0 });
 
+    // Transform submission status stats to object
+    const byStatus = submissionStatusStats.reduce((acc, curr) => {
+      if (curr._id) {
+        acc[curr._id] = curr.count;
+      }
+      return acc;
+    }, { 
+      accepted: 0, 
+      wrong_answer: 0, 
+      time_limit_exceeded: 0,
+      memory_limit_exceeded: 0,
+      runtime_error: 0,
+      compile_error: 0,
+      pending: 0,
+      running: 0,
+      internal_error: 0
+    });
+
+    // Return data in the format frontend expects
     res.status(200).json({
       success: true,
-      stats: {
-        totalQuestions,
-        totalTestCases,
-        hiddenTestCases,
-        visibleTestCases: totalTestCases - hiddenTestCases,
-        totalSubmissions,
-        difficultyDistribution: difficultyStats.reduce((acc, curr) => {
-          acc[curr._id] = curr.count;
-          return acc;
-        }, {}),
+      data: {
+        questions: {
+          total: totalQuestions,
+          byDifficulty,
+        },
+        testCases: {
+          total: totalTestCases,
+          hidden: hiddenTestCases,
+          visible: totalTestCases - hiddenTestCases,
+        },
+        submissions: {
+          total: totalSubmissions,
+          byStatus,
+        },
+        users: totalUsers,
       },
-      recentQuestions,
     });
   } catch (error) {
     console.error("[Dashboard Stats Error]:", error.message);

@@ -114,7 +114,7 @@ export const getQuestionById = async (req, res) => {
 
 export const updateQuestion = async (req, res) => {
   try {
-    const { title, description, difficulty, constraints, examples, tags } = req.body;
+    const { title, description, difficulty, constraints, examples, tags, categoryType } = req.body;
 
     const question = await Question.findOne({
       _id: req.params.id,
@@ -134,6 +134,7 @@ export const updateQuestion = async (req, res) => {
     if (constraints !== undefined) question.constraints = constraints;
     if (examples) question.examples = examples;
     if (tags) question.tags = tags;
+    if (categoryType !== undefined) question.categoryType = categoryType;
 
     question.updatedBy = req.admin._id;
     question.version += 1;
@@ -211,7 +212,7 @@ export const deleteQuestion = async (req, res) => {
 
 export const createQuestion = async (req, res) => {
   try {
-    const { title, description, difficulty, constraints, examples, tags } = req.body;
+    const { title, description, difficulty, constraints, examples, tags, categoryType } = req.body;
 
     if (!title || !description || !difficulty) {
       return res.status(400).json({
@@ -227,6 +228,7 @@ export const createQuestion = async (req, res) => {
       constraints: constraints || "",
       examples: examples || [],
       tags: tags || [],
+      categoryType: categoryType ?? null,
       createdBy: req.admin._id,
       updatedBy: req.admin._id,
     });

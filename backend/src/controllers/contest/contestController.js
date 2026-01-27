@@ -6,6 +6,7 @@ import TestCase from "../../models/question/TestCase.js";
 import leaderboardService from "../../services/contest/leaderboardService.js";
 import wsServer from "../../services/contest/websocketServer.js";
 import mongoose from "mongoose";
+import { inferIOFormatsFromTestCases } from "../../utils/ioFormatInference.js";
 
 function getContestLookup(contestId) {
   return mongoose.Types.ObjectId.isValid(contestId)
@@ -472,6 +473,18 @@ export const getContestProblem = async (req, res) => {
       .select("stdin expectedStdout label")
       .lean();
 
+    const allTestCasesForFormat = await TestCase.find({
+      questionId: problemId,
+      isActive: true,
+    })
+      .sort({ order: 1 })
+      .select("stdin expectedStdout")
+      .lean();
+
+    const { inputFormat, outputFormat } = inferIOFormatsFromTestCases(
+      allTestCasesForFormat,
+    );
+
     let userSubmissions = [];
     if (userId && registration) {
       userSubmissions = await ContestSubmission.find({
@@ -505,6 +518,9 @@ export const getContestProblem = async (req, res) => {
         constraints: problem.constraints,
         examples: problem.examples,
         tags: problem.tags,
+
+        inputFormat,
+        outputFormat,
         
         sampleTestCases: visibleTestCases.map((tc) => ({
           label: tc.label,

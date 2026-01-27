@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import Question from "../../models/question/Question.js";
 import Submission from "../../models/profile/Submission.js";
 import {
@@ -6,12 +7,157 @@ import {
   checkAIServiceHealth,
 } from "../../services/ai/aiService.js";
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// VALIDATION GATES - Prevent unnecessary AI workflow execution
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Verdicts that should trigger AI feedback
+const AI_ELIGIBLE_VERDICTS = [
+  "accepted",
+  "wrong_answer",
+  "time_limit_exceeded",
+  "runtime_error",
+];
+
+// Verdicts that should NOT trigger AI (show raw error instead)
+const SKIP_AI_VERDICTS = [
+  "compile_error",
+  "internal_error",
+  "pending",
+  "running",
+];
+
+// Cache for duplicate submission detection (in-memory, short-lived)
+const recentSubmissionCache = new Map();
+const CACHE_TTL_MS = 30000; // 30 seconds
+const MAX_CACHE_SIZE = 1000;
+
+/**
+ * Generate a unique hash for a submission to detect duplicates
+ */
+function generateSubmissionHash(userId, questionId, code, verdict) {
+  const codeHash = crypto
+    .createHash("md5")
+    .update(code || "")
+    .digest("hex");
+  return `${userId}:${questionId}:${codeHash}:${verdict}`;
+}
+
+/**
+ * Check if this is a duplicate submission within the cache window
+ */
+function isDuplicateSubmission(hash) {
+  const cached = recentSubmissionCache.get(hash);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.response;
+  }
+  return null;
+}
+
+/**
+ * Cache a successful AI response for duplicate detection
+ */
+function cacheSubmissionResponse(hash, response) {
+  // Prune old entries if cache is full
+  if (recentSubmissionCache.size >= MAX_CACHE_SIZE) {
+    const now = Date.now();
+    for (const [key, value] of recentSubmissionCache.entries()) {
+      if (now - value.timestamp > CACHE_TTL_MS) {
+        recentSubmissionCache.delete(key);
+      }
+    }
+  }
+  recentSubmissionCache.set(hash, {
+    response,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Validate required metadata for AI feedback
+ * Returns { valid: boolean, error?: string }
+ */
+function validateMetadata({ questionId, code, language, verdict, userId }) {
+  const errors = [];
+
+  if (!userId) errors.push("user_id");
+  if (!questionId) errors.push("problem_id");
+  if (!language) errors.push("language");
+  if (!verdict) errors.push("verdict");
+
+  if (errors.length > 0) {
+    return {
+      valid: false,
+      error: `Missing required fields: ${errors.join(", ")}`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validate code is not empty or whitespace-only
+ * Returns { valid: boolean, error?: string }
+ */
+function validateCode(code) {
+  if (!code) {
+    return {
+      valid: false,
+      error:
+        "No code provided. Please submit your code before requesting AI feedback.",
+    };
+  }
+
+  const trimmedCode = code.trim();
+  if (trimmedCode.length === 0) {
+    return {
+      valid: false,
+      error:
+        "Code is empty or contains only whitespace. Please write your solution first.",
+    };
+  }
+
+  // Minimum meaningful code check
+  if (trimmedCode.length < 10) {
+    return {
+      valid: false,
+      error: "Code is too short. Please write a meaningful solution.",
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Check if verdict is eligible for AI feedback
+ * Returns { eligible: boolean, reason?: string }
+ */
+function checkVerdictEligibility(verdict) {
+  const normalizedVerdict = String(verdict).toLowerCase().replace(/ /g, "_");
+
+  if (SKIP_AI_VERDICTS.includes(normalizedVerdict)) {
+    return {
+      eligible: false,
+      reason: `AI feedback is not available for '${verdict}' submissions. Please check the error output.`,
+    };
+  }
+
+  if (!AI_ELIGIBLE_VERDICTS.includes(normalizedVerdict)) {
+    return {
+      eligible: false,
+      reason: `Unknown verdict '${verdict}'. AI feedback requires a valid submission result.`,
+    };
+  }
+
+  return { eligible: true };
+}
+
 const LOG_PREFIX = {
-  INFO: "\x1b[36m[AI-CTRL]\x1b[0m", 
-  SUCCESS: "\x1b[32m[AI-CTRL]\x1b[0m", 
-  WARN: "\x1b[33m[AI-CTRL]\x1b[0m", 
-  ERROR: "\x1b[31m[AI-CTRL]\x1b[0m", 
-  DEBUG: "\x1b[35m[AI-CTRL]\x1b[0m", 
+  INFO: "\x1b[36m[AI-CTRL]\x1b[0m",
+  SUCCESS: "\x1b[32m[AI-CTRL]\x1b[0m",
+  WARN: "\x1b[33m[AI-CTRL]\x1b[0m",
+  ERROR: "\x1b[31m[AI-CTRL]\x1b[0m",
+  DEBUG: "\x1b[35m[AI-CTRL]\x1b[0m",
 };
 
 const log = {
@@ -89,6 +235,10 @@ export const requestAIFeedback = async (req, res) => {
 
   try {
     const userId = req.user?._id;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GATE 1: Authentication Check
+    // ═══════════════════════════════════════════════════════════════════════
     if (!userId) {
       log.warn("Unauthenticated request rejected");
       return res.status(401).json({
@@ -106,16 +256,79 @@ export const requestAIFeedback = async (req, res) => {
       codeLength: code?.length || 0,
     });
 
-    if (!questionId || !code || !language || !verdict) {
-      log.warn("Missing required fields", {
-        questionId: !!questionId,
-        code: !!code,
-        language: !!language,
-        verdict: !!verdict,
-      });
+    // ═══════════════════════════════════════════════════════════════════════
+    // GATE 2: Required Metadata Validation
+    // ═══════════════════════════════════════════════════════════════════════
+    const metadataValidation = validateMetadata({
+      questionId,
+      code,
+      language,
+      verdict,
+      userId: userId.toString(),
+    });
+
+    if (!metadataValidation.valid) {
+      log.warn("Invalid metadata", { error: metadataValidation.error });
       return res.status(400).json({
         success: false,
-        message: "questionId, code, language, and verdict are required",
+        message: metadataValidation.error,
+        gate: "metadata_validation",
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GATE 3: Empty Code Validation
+    // ═══════════════════════════════════════════════════════════════════════
+    const codeValidation = validateCode(code);
+    if (!codeValidation.valid) {
+      log.warn("Empty code rejected", { error: codeValidation.error });
+      return res.status(400).json({
+        success: false,
+        message: codeValidation.error,
+        gate: "empty_code",
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GATE 4: Verdict Eligibility Check (Skip AI for compile_error)
+    // ═══════════════════════════════════════════════════════════════════════
+    const verdictCheck = checkVerdictEligibility(verdict);
+    if (!verdictCheck.eligible) {
+      log.info("Verdict not eligible for AI feedback", {
+        verdict,
+        reason: verdictCheck.reason,
+      });
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: verdictCheck.reason,
+        gate: "verdict_ineligible",
+        skipped: true,
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GATE 5: Duplicate Submission Check (Return cached response)
+    // ═══════════════════════════════════════════════════════════════════════
+    const submissionHash = generateSubmissionHash(
+      userId.toString(),
+      questionId,
+      code,
+      verdict,
+    );
+
+    const cachedResponse = isDuplicateSubmission(submissionHash);
+    if (cachedResponse) {
+      log.info("Returning cached response for duplicate submission", {
+        hash: submissionHash.slice(0, 20),
+      });
+      return res.status(200).json({
+        ...cachedResponse,
+        meta: {
+          ...cachedResponse.meta,
+          cached: true,
+          gate: "duplicate_submission",
+        },
       });
     }
 
@@ -182,6 +395,8 @@ export const requestAIFeedback = async (req, res) => {
         commonMistakes: question.commonMistakes || [],
         timeComplexityHint: question.timeComplexityHint || null,
         spaceComplexityHint: question.spaceComplexityHint || null,
+        // v3.2: Add canonical algorithms for feedback grounding
+        canonicalAlgorithms: question.canonicalAlgorithms || [],
       },
     });
 
@@ -205,7 +420,7 @@ export const requestAIFeedback = async (req, res) => {
     const totalDuration = Date.now() - startTime;
     log.success(`Request completed in ${totalDuration}ms`);
 
-    res.status(200).json({
+    const responseBody = {
       success: true,
       data: {
         hints: aiFeedback.hints || [],
@@ -221,12 +436,24 @@ export const requestAIFeedback = async (req, res) => {
         edgeCases: aiFeedback.edge_cases,
         // MIM insights from AI service (ML-based predictions)
         mimInsights: aiFeedback.mim_insights || null,
+        // v3.3: New fields for enhanced feedback
+        rootCause: aiFeedback.root_cause || null,
+        rootCauseSubtype: aiFeedback.root_cause_subtype || null,
+        failureMechanism: aiFeedback.failure_mechanism || null,
+        correctCode: aiFeedback.correct_code || null,
+        correctCodeExplanation: aiFeedback.correct_code_explanation || null,
+        conceptReinforcement: aiFeedback.concept_reinforcement || null,
       },
       meta: {
         aiDurationMs: aiDuration,
         totalDurationMs: totalDuration,
       },
-    });
+    };
+
+    // Cache successful response for duplicate detection
+    cacheSubmissionResponse(submissionHash, responseBody);
+
+    res.status(200).json(responseBody);
   } catch (error) {
     log.error("Request failed", {
       error: error.message,
@@ -297,6 +524,19 @@ export const getAILearningSummary = async (req, res) => {
       language,
       verdict: "accepted",
       userHistorySummary,
+      // v3.2: Pass full problem context
+      problem: {
+        title: question.title,
+        difficulty: question.difficulty,
+        tags: question.tags || [],
+        topic: question.topic || problemCategory,
+        description: question.description,
+        expectedApproach: question.expectedApproach || null,
+        commonMistakes: question.commonMistakes || [],
+        timeComplexityHint: question.timeComplexityHint || null,
+        spaceComplexityHint: question.spaceComplexityHint || null,
+        canonicalAlgorithms: question.canonicalAlgorithms || [],
+      },
     });
 
     if (!aiFeedback) {
