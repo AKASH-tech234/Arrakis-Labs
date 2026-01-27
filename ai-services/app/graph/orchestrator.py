@@ -182,18 +182,18 @@ def orchestrator_node(state: Dict) -> Dict:
     async_agents = [k for k, v in plan.items() if v and k.startswith("run_") and k in ["run_learning", "run_difficulty", "run_weekly_report"]]
     
     logger.info(f"🧠 Orchestrator decision:")
-    logger.info(f"   └─ Verdict: {verdict}")
-    logger.info(f"   └─ Difficulty: {difficulty}")
-    logger.info(f"   └─ Is Accepted: {is_accepted}")
-    logger.info(f"   └─ Problem grounded: {is_problem_grounded}")
-    logger.info(f"   └─ User history: {has_user_history}")
-    logger.info(f"   └─ SYNC agents: {sync_agents}")
-    logger.info(f"   └─ ASYNC agents: {async_agents}")
+    logger.info(f"   - Verdict: {verdict}")
+    logger.info(f"   - Difficulty: {difficulty}")
+    logger.info(f"   - Is Accepted: {is_accepted}")
+    logger.info(f"   - Problem grounded: {is_problem_grounded}")
+    logger.info(f"   - User history: {has_user_history}")
+    logger.info(f"   - SYNC agents: {sync_agents}")
+    logger.info(f"   - ASYNC agents: {async_agents}")
     
-    print(f"\n🧠 [ORCHESTRATOR] Execution plan:")
-    print(f"   └─ Verdict: {verdict} | Accepted: {is_accepted}")
-    print(f"   └─ SYNC: {sync_agents}")
-    print(f"   └─ ASYNC: {async_agents}")
-    print(f"   └─ Problem grounded: {is_problem_grounded}")
+    print(f"\n[ORCHESTRATOR] Execution plan:")
+    print(f"   - Verdict: {verdict} | Accepted: {is_accepted}")
+    print(f"   - SYNC: {sync_agents}")
+    print(f"   - ASYNC: {async_agents}")
+    print(f"   - Problem grounded: {is_problem_grounded}")
     
     return state
