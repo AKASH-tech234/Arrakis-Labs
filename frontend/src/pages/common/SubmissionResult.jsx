@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmission } from "../../context/SubmissionContext";
 import AppHeader from "../../components/layout/AppHeader";
+import MIMInsightsV3 from "../../components/mim/MIMInsightsV3";
 
 const COLORS = {
   bg: "#0A0A08",
@@ -394,42 +395,70 @@ function SummaryView({ feedback, submission, onBackToHints }) {
           onToggle={() => toggleSection("complexity")}
           accentColor="#8B5CF6"
         >
-          <div className="grid grid-cols-2 gap-4">
-            <div
-              className="p-3 rounded-lg"
-              style={{ backgroundColor: `${COLORS.border}50` }}
+          {/* Handle both string and object format */}
+          {typeof feedback.complexityAnalysis === "string" ? (
+            <p
+              style={{ color: COLORS.textPrimary, fontFamily }}
+              className="text-sm leading-relaxed whitespace-pre-wrap"
             >
-              <span
-                className="text-xs uppercase tracking-wider"
-                style={{ color: COLORS.textMuted, fontFamily }}
+              {feedback.complexityAnalysis}
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: `${COLORS.border}50` }}
               >
-                Time
-              </span>
-              <p
-                className="text-lg font-mono mt-1"
-                style={{ color: COLORS.textPrimary }}
+                <span
+                  className="text-xs uppercase tracking-wider"
+                  style={{ color: COLORS.textMuted, fontFamily }}
+                >
+                  Time
+                </span>
+                <p
+                  className="text-lg font-mono mt-1"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  {feedback.complexityAnalysis.time || "N/A"}
+                </p>
+              </div>
+              <div
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: `${COLORS.border}50` }}
               >
-                {feedback.complexityAnalysis.time || "N/A"}
-              </p>
+                <span
+                  className="text-xs uppercase tracking-wider"
+                  style={{ color: COLORS.textMuted, fontFamily }}
+                >
+                  Space
+                </span>
+                <p
+                  className="text-lg font-mono mt-1"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  {feedback.complexityAnalysis.space || "N/A"}
+                </p>
+              </div>
             </div>
-            <div
-              className="p-3 rounded-lg"
-              style={{ backgroundColor: `${COLORS.border}50` }}
-            >
-              <span
-                className="text-xs uppercase tracking-wider"
-                style={{ color: COLORS.textMuted, fontFamily }}
-              >
-                Space
-              </span>
-              <p
-                className="text-lg font-mono mt-1"
-                style={{ color: COLORS.textPrimary }}
-              >
-                {feedback.complexityAnalysis.space || "N/A"}
-              </p>
-            </div>
-          </div>
+          )}
+        </CollapsibleSection>
+      )}
+
+      {/* Improvement Hint (if present) */}
+      {feedback?.improvementHint && (
+        <CollapsibleSection
+          title="Improvement Suggestion"
+          icon="💡"
+          expanded={true}
+          onToggle={() => {}}
+          accentColor={COLORS.info}
+        >
+          <p
+            style={{ color: COLORS.textPrimary, fontFamily }}
+            className="text-sm leading-relaxed whitespace-pre-wrap"
+          >
+            {feedback.improvementHint}
+          </p>
         </CollapsibleSection>
       )}
 
@@ -538,8 +567,48 @@ function CollapsibleSection({
 function MIMInsightsPanel({ mimInsights }) {
   if (!mimInsights) return null;
 
-  const rootCause = mimInsights.root_cause || mimInsights.rootCause;
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // V3.0 Detection: Check if we have polymorphic feedback data
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const hasV3Data =
+    mimInsights.feedbackType ||
+    mimInsights.feedback_type ||
+    mimInsights.correctnessFeedback ||
+    mimInsights.correctness_feedback ||
+    mimInsights.performanceFeedback ||
+    mimInsights.performance_feedback ||
+    mimInsights.reinforcementFeedback ||
+    mimInsights.reinforcement_feedback;
+
+  // If V3 data is present, use the dedicated V3 component
+  if (hasV3Data) {
+    // Normalize camelCase/snake_case for V3 component
+    const normalizedInsights = {
+      feedbackType: mimInsights.feedbackType || mimInsights.feedback_type,
+      correctnessFeedback:
+        mimInsights.correctnessFeedback || mimInsights.correctness_feedback,
+      performanceFeedback:
+        mimInsights.performanceFeedback || mimInsights.performance_feedback,
+      reinforcementFeedback:
+        mimInsights.reinforcementFeedback || mimInsights.reinforcement_feedback,
+      rootCause: mimInsights.rootCause || mimInsights.root_cause,
+      readiness: mimInsights.readiness,
+      isColdStart: mimInsights.isColdStart || mimInsights.is_cold_start,
+      modelVersion: mimInsights.modelVersion || mimInsights.model_version,
+    };
+    return <MIMInsightsV3 insights={normalizedInsights} expanded={true} />;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // Legacy V2 Display (fallback for older data)
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const rootCauseRaw = mimInsights.root_cause || mimInsights.rootCause;
+  // Handle both object format {failure_cause: "...", confidence: ...} and string format
+  const rootCause = typeof rootCauseRaw === "object" && rootCauseRaw !== null
+    ? (rootCauseRaw.failure_cause || rootCauseRaw.failureCause || JSON.stringify(rootCauseRaw))
+    : rootCauseRaw;
   const confidence =
+    (typeof rootCauseRaw === "object" && rootCauseRaw !== null ? rootCauseRaw.confidence : null) ||
     mimInsights.root_cause_confidence || mimInsights.confidence || 0;
   const pattern = mimInsights.pattern || {};
   const difficultyAction =

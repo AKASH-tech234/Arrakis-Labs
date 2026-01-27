@@ -1,0 +1,108 @@
+{
+  "timestamp": "2026-01-26T19:33:25.855653",
+  "data_path": "./data/mim/failure_transitions.parquet",
+  "total_samples": 706,
+  "model_a": {
+    "cv_metrics": {
+      "macro_f1_mean": 0.2219345062856247,
+      "macro_f1_std": 0.03725174925848783,
+      "log_loss_mean": 1.3237577271482919,
+      "log_loss_std": 0.029649647201049387
+    },
+    "test_metrics": {
+      "macro_f1": 0.2671069707081943,
+      "accuracy": 0.3893129770992366,
+      "log_loss": 1.323069436723248,
+      "classification_report": {
+        "correctness": {
+          "precision": 0.4050632911392405,
+          "recall": 0.7111111111111111,
+          "f1-score": 0.5161290322580645,
+          "support": 45.0
+        },
+        "efficiency": {
+          "precision": 0.37777777777777777,
+          "recall": 0.425,
+          "f1-score": 0.4,
+          "support": 40.0
+        },
+        "implementation": {
+          "precision": 0.5,
+          "recall": 0.045454545454545456,
+          "f1-score": 0.08333333333333333,
+          "support": 22.0
+        },
+        "understanding_gap": {
+          "precision": 0.2,
+          "recall": 0.041666666666666664,
+          "f1-score": 0.06896551724137931,
+          "support": 24.0
+        },
+        "accuracy": 0.3893129770992366,
+        "macro avg": {
+          "precision": 0.37071026722925454,
+          "recall": 0.3058080808080808,
+          "f1-score": 0.2671069707081943,
+          "support": 131.0
+        },
+        "weighted avg": {
+          "precision": 0.37510655887310634,
+          "recall": 0.3893129770992366,
+          "f1-score": 0.3260634518987736,
+          "support": 131.0
+        }
+      }
+    },
+    "feature_importance": {
+      "delta_attempts_same_category": 37.49503408744931,
+      "delta_root_cause_repeat_rate": 220.57224187534302,
+      "delta_complexity_mismatch": 0.0,
+      "delta_time_to_accept": 0.0,
+      "delta_optimization_transition": 0.0,
+      "is_cold_start": 90.46706837415695,
+      "category_encoded": 605.7680943752639,
+      "difficulty_encoded": 154.8142892254109
+    }
+  },
+  "model_b": {
+    "correctness": {
+      "samples": 231,
+      "classes": [
+        "state_loss",
+        "wrong_invariant",
+        "partial_case_handling",
+        "incorrect_boundary"
+      ],
+      "macro_f1": 0.13414634146341464,
+      "accuracy": 0.36666666666666664
+    },
+    "efficiency": {
+      "samples": 212,
+      "classes": [
+        "brute_force_under_constraints",
+        "premature_optimization"
+      ],
+      "macro_f1": 0.35434782608695653,
+      "accuracy": 0.45454545454545453
+    },
+    "implementation": {
+      "samples": 132,
+      "classes": [
+        "state_loss",
+        "partial_case_handling",
+        "incorrect_boundary"
+      ],
+      "macro_f1": 0.30864197530864196,
+      "accuracy": 0.45454545454545453
+    },
+    "understanding_gap": {
+      "samples": 131,
+      "classes": [
+        "wrong_invariant",
+        "misread_constraint"
+      ],
+      "macro_f1": 0.3939393939393939,
+      "accuracy": 0.65
+    }
+  }
+}

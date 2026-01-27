@@ -1,5 +1,0 @@
-{
-  "explanation": "The 'Wrong Answer' verdict indicates that the submitted solution produced an incorrect output for at least one test case. This typically happens when the algorithm implemented does not correctly handle all possible valid inputs, often failing on edge cases, specific constraints, or a misunderstanding of the problem's core requirements. Without the specific problem statement or code, it's likely a logical flaw in handling certain array configurations.",
-  "improvement_hint": "Carefully re-read the problem description to ensure a complete understanding of the requirements and constraints. Then, manually trace the logic of your code with a few diverse test cases, including edge cases like arrays of minimum length (1 element), arrays with all identical values, or arrays containing the minimum/maximum allowed values (-100, 100), to pinpoint where the current logic might deviate from the expected behavior.",
-  "detected_pattern": null
-}

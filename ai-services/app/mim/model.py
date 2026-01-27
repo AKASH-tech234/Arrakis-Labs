@@ -461,6 +461,8 @@ class MIMModel:
                 "learning_velocity": "stable"
             }
         """
+        import warnings
+        
         if not self.is_fitted:
             return self._fallback_performance(features)
         
@@ -471,8 +473,12 @@ class MIMModel:
         # Scale
         features_scaled = self.scaler.transform(features)
         
-        # Get success probability
-        success_prob = self.performance_model.predict_proba(features_scaled)[0][1]
+        # Suppress sklearn feature name warnings during prediction
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*feature names.*")
+            
+            # Get success probability
+            success_prob = self.performance_model.predict_proba(features_scaled)[0][1]
         
         # Calculate risk metrics from features
         # Feature indices: 55=success_rate_7d, 56=success_rate_30d, 52=submission_velocity_24h

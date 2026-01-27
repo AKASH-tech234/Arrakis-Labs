@@ -1,5 +1,0 @@
-{
-  "explanation": "The submission failed due to a Compile Error, which means the C++ compiler was unable to successfully translate the source code into an executable program. This typically occurs because of syntax errors, undeclared variables or functions, incorrect type usage, or missing necessary header files.",
-  "improvement_hint": "Examine the specific compiler error messages provided by the system. These messages usually pinpoint the exact line number and nature of the error, guiding you to the necessary correction in your C++ code.",
-  "detected_pattern": null
-}

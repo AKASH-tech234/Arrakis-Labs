@@ -1,358 +1,429 @@
 # Mentat Trials (Arrakis Labs)
 
-> **AI-Powered Competitive Programming & Learning Platform**  
-> Build coding mastery through intelligent feedback, real-time contests, and adaptive learning paths.
+> **AI-Powered Competitive Programming Platform** - Learn coding through intelligent feedback, personalized learning paths, and adaptive difficulty.
 
-<div align="center">
-
-![Version](https://img.shields.io/badge/version-2.0-blue)
-![Node](https://img.shields.io/badge/node-18+-green)
-![Python](https://img.shields.io/badge/python-3.10+-blue)
-![React](https://img.shields.io/badge/react-19-61dafb)
-
-</div>
-
----
-
-## 🎯 What is Mentat Trials?
-
-**Mentat Trials** is a full-stack competitive programming platform that combines traditional coding challenges with AI-driven personalized feedback. Unlike traditional platforms that only tell you pass/fail, we tell you **why** and **how to improve**.
-
-### The Problem We Solve
-
-| Traditional Platforms       | Mentat Trials                            |
-| --------------------------- | ---------------------------------------- |
-| Binary feedback (pass/fail) | Contextual AI feedback explaining _why_  |
-| Generic hints               | Progressive hints tailored to your level |
-| No memory of past mistakes  | RAG-based memory learns your patterns    |
-| Fixed difficulty            | Adaptive difficulty based on performance |
-| No learning path            | Personalized roadmaps & recommendations  |
-
----
-
-## ✨ Key Features
-
-### 🧠 AI-Powered Feedback System
-
-- **Progressive Hints**: Conceptual → Specific → Detailed (reveals more as you struggle)
-- **Pattern Detection**: Identifies recurring mistakes across submissions
-- **Memory System**: RAG-based retrieval remembers your past errors
-- **Confidence Scoring**: AI indicates how confident it is in each suggestion
-
-### 🎮 MIM (Mistake Inference Model)
-
-- **ML Predictions**: Predicts success probability before you submit
-- **Cognitive Profiling**: Builds a profile of your coding strengths/weaknesses
-- **Smart Recommendations**: Suggests problems based on your skill gaps
-- **Learning Roadmaps**: Personalized paths to improve weak areas
-
-### 🏆 Real-Time Contests
-
-- **Live Leaderboards**: WebSocket-driven updates in real-time
-- **Auto Scheduling**: Contests auto-start and auto-end
-- **Penalty Scoring**: Time-based penalties for wrong attempts
-- **Multi-Problem Format**: Complete problem sets in timed sessions
-
-### 📅 Problem of the Day (POTD)
-
-- **Daily Challenges**: Fresh problems scheduled by admins
-- **Streak Tracking**: Maintain your solving streak
-- **Calendar View**: See upcoming and past problems
-
-### ⚡ Code Execution
-
-- **Multi-Language**: Python, JavaScript, Java, C++, Go, Rust, TypeScript, C
-- **Sandboxed**: Secure execution via Piston API
-- **Detailed Results**: Test-by-test breakdown with visible/hidden cases
-
----
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)]()
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)]()
 
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            MENTAT TRIALS                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐     ┌─────────────────┐     ┌───────────────────────┐ │
-│  │    FRONTEND     │────▶│     BACKEND     │────▶│     AI SERVICES       │ │
-│  │  React + Vite   │     │ Express + MongoDB│    │  FastAPI + LangGraph  │ │
-│  │   Port: 5173    │◀────│    Port: 5000   │◀────│     Port: 8000        │ │
-│  └─────────────────┘     └────────┬────────┘     └───────────┬───────────┘ │
-│          │                        │                          │             │
-│          │                        ▼                          ▼             │
-│  ┌───────▼───────┐       ┌───────────────┐         ┌─────────────────────┐ │
-│  │   Monaco      │       │   Piston API  │         │   LangGraph Flow    │ │
-│  │   Editor      │       │  (Execution)  │         │  ┌───────────────┐  │ │
-│  │   + AI UI     │       └───────────────┘         │  │ Feedback Agent│  │ │
-│  └───────────────┘                                 │  │ Hint Agent    │  │ │
-│                                                    │  │ Pattern Agent │  │ │
-│                                                    │  │ Learning Agent│  │ │
-│                                                    │  └───────┬───────┘  │ │
-│                                                    │          ▼          │ │
-│                                                    │  ┌───────────────┐  │ │
-│                                                    │  │ MIM (ML)      │  │ │
-│                                                    │  │ + ChromaDB    │  │ │
-│                                                    │  └───────────────┘  │ │
-│                                                    └─────────────────────┘ │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              FRONTEND                                    │
+│                    React + Vite + TailwindCSS                           │
+│         (User Interface, Code Editor, AI Feedback Display)              │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │ HTTP/REST
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              BACKEND                                     │
+│                    Node.js + Express + MongoDB                          │
+│    (Auth, Problems, Submissions, Contests, POTD, User Profiles)         │
+└──────────────────┬──────────────────────────────────┬───────────────────┘
+                   │                                  │
+                   ▼                                  ▼
+┌──────────────────────────────┐    ┌─────────────────────────────────────┐
+│       CODE EXECUTION         │    │           AI SERVICES               │
+│      Piston API (Docker)     │    │    FastAPI + LangChain + LightGBM   │
+│   (Sandboxed Code Runner)    │    │  (MIM Engine, RAG, LLM Feedback)    │
+└──────────────────────────────┘    └─────────────────────────────────────┘
 ```
 
----
+## ✨ Key Features
 
-## 🔄 Core Workflows
-
-### Submission Flow (with AI Feedback)
-
-```
-User Submits Code
-       │
-       ▼
-┌──────────────────┐
-│  Backend Judge   │──────────┐
-│  (Piston API)    │          │
-└────────┬─────────┘          │
-         │                    │
-    ┌────▼────┐          ┌────▼────┐
-    │ PASSED  │          │ FAILED  │
-    └────┬────┘          └────┬────┘
-         │                    │
-         │              ┌─────▼─────────┐
-         │              │ AI Services   │
-         │              │               │
-         │              │ 1. Retrieve   │
-         │              │    Memory     │
-         │              │ 2. Analyze    │
-         │              │    Code       │
-         │              │ 3. Generate   │
-         │              │    Feedback   │
-         │              │ 4. Store      │
-         │              │    Pattern    │
-         │              └───────┬───────┘
-         │                      │
-         ▼                      ▼
-┌───────────────────────────────────────┐
-│        Return to Frontend             │
-│  - Verdict + Test Results             │
-│  - AI Feedback (if failed)            │
-│  - Progressive Hints                  │
-│  - Learning Recommendations           │
-└───────────────────────────────────────┘
-```
-
-### Contest Flow
-
-```
-Admin Creates Contest
-         │
-         ▼
-┌─────────────────┐
-│    SCHEDULED    │◀──── Users Register
-└────────┬────────┘
-         │ (Auto-transition at startTime)
-         ▼
-┌─────────────────┐
-│      LIVE       │──── Users Solve Problems
-│                 │──── Submissions Judged
-│                 │──── WebSocket Updates
-└────────┬────────┘
-         │ (Auto-transition at endTime)
-         ▼
-┌─────────────────┐
-│     ENDED       │──── Final Rankings
-└─────────────────┘
-```
-
----
-
-## 📁 Project Structure
-
-```
-arrakis-labs/
-├── backend/                 # Node.js Express API (Port 5000)
-│   └── src/
-│       ├── controllers/     # 16 controllers (auth, judge, contest, admin...)
-│       ├── models/          # 18 Mongoose models
-│       ├── routes/          # 12 route files
-│       ├── middleware/      # Auth, admin, audit logging
-│       ├── services/        # AI client, WebSocket, scheduler
-│       └── utils/           # Helpers
-│
-├── frontend/                # React + Vite SPA (Port 5173)
-│   └── src/
-│       ├── pages/           # 15+ pages (problems, contests, admin...)
-│       ├── components/      # UI components organized by feature
-│       │   ├── feedback/    # AI feedback display
-│       │   ├── mim/         # ML insights UI
-│       │   ├── editor/      # Code editor
-│       │   └── charts/      # Analytics visualizations
-│       ├── hooks/           # 10+ custom hooks
-│       ├── context/         # Auth & submission state
-│       └── services/        # API clients
-│
-├── ai-services/             # Python FastAPI (Port 8000)
-│   └── app/
-│       ├── agents/          # 8 LangGraph agents
-│       ├── graph/           # Workflow orchestration
-│       ├── mim/             # ML models & inference
-│       ├── rag/             # Vector store & retrieval
-│       ├── schemas/         # Pydantic models
-│       └── api/             # FastAPI routes
-│
-├── docs/                    # Documentation
-│   ├── BACKEND.md           # Backend deep-dive
-│   ├── FRONTEND.md          # Frontend deep-dive
-│   └── AI_SERVICES.md       # AI services deep-dive
-│
-└── vector_db/               # ChromaDB persistent storage
-```
-
-> 📚 **Deep Documentation**: See [docs/BACKEND.md](docs/BACKEND.md), [docs/FRONTEND.md](docs/FRONTEND.md), [docs/AI_SERVICES.md](docs/AI_SERVICES.md) for detailed component breakdowns.
-
----
+| Feature | Description |
+|---------|-------------|
+| **🧠 MIM Intelligence** | Machine Intelligence Model - ML-based root cause analysis, pattern detection, difficulty adaptation |
+| **💡 Progressive Hints** | Tiered hint system (conceptual → specific → solution) to guide learning |
+| **📊 Cognitive Profiling** | Tracks user strengths, weaknesses, and learning patterns |
+| **🎯 Smart Recommendations** | Personalized problem suggestions based on skill gaps |
+| **🏆 Contests** | Real-time competitive programming contests with live leaderboards |
+| **📅 POTD** | Problem of the Day with streak tracking and leaderboards |
+| **🔄 RAG Memory** | Retrieval-Augmented Generation for personalized feedback |
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** 18+
-- **Python** 3.10+
-- **MongoDB** (Atlas or local)
-- **Redis** (optional, for leaderboards)
+- Node.js ≥ 18.0.0
+- Python ≥ 3.10
+- MongoDB (local or Atlas)
+- Redis (optional, for caching)
 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/AKASH-tech234/Arrakis-Labs.git
-cd Arrakis-Labs
+git clone https://github.com/arrakis-labs/mentat-trials.git
+cd mentat-trials
+
+# Frontend
+cd frontend && npm install
+
+# Backend  
+cd ../backend && npm install
+
+# AI Services
+cd ../ai-services && pip install -r requirement.txt
 ```
 
-### 2. Backend Setup
+### 2. Environment Setup
 
 ```bash
-cd backend
-npm install
+# Backend (.env)
+MONGODB_URI=mongodb://localhost:27017/mentat
+JWT_SECRET=your-secret-key
+AI_SERVICE_URL=http://localhost:8000
+PISTON_URL=https://emkc.org/api/v2/piston
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your MongoDB URI, JWT_SECRET, etc.
-
-npm run dev
+# AI Services (.env)
+GROQ_API_KEY=your-groq-key
+GOOGLE_API_KEY=your-gemini-key
+MONGODB_URI=mongodb://localhost:27017/mentat
 ```
 
-### 3. Frontend Setup
+### 3. Run Services
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# Terminal 1: Backend
+cd backend && npm run dev
+
+# Terminal 2: AI Services
+cd ai-services && uvicorn main:app --reload --port 8000
+
+# Terminal 3: Frontend
+cd frontend && npm run dev
 ```
 
-### 4. AI Services Setup
+Access at: **http://localhost:5173**
 
-```bash
-cd ai-services
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # Linux/Mac
+## 📁 Project Structure
 
-pip install -r requirement.txt
-
-# Configure environment
-echo "GOOGLE_API_KEY=your_key_here" > .env
-
-uvicorn app.main:app --reload --port 8000
+```
+mentat-trials/
+├── frontend/          # React SPA (Vite + TailwindCSS)
+├── backend/           # Node.js API (Express + MongoDB)
+├── ai-services/       # Python AI Engine (FastAPI + LangChain)
+└── docs/              # Detailed documentation
+    ├── FRONTEND.md    # Frontend architecture & components
+    ├── BACKEND.md     # Backend API & data models
+    └── AI_SERVICES.md # MIM engine & AI pipeline
 ```
 
-### 5. Verify
+## 🔑 Core Concepts
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000/api/health
-- AI Services: http://localhost:8000/health
+### MIM (Machine Intelligence Model)
+
+The brain of the platform - analyzes submissions using ML to:
+- **Root Cause Classification**: Identifies why code fails (correctness, efficiency, implementation, understanding_gap)
+- **Pattern Detection**: Recognizes recurring mistake patterns
+- **Difficulty Adaptation**: Adjusts problem recommendations based on performance
+
+### Feedback Pipeline
+
+```
+Submission → Code Execution → MIM Analysis → LLM Enhancement → Progressive Hints
+                                  │
+                                  ├─ Root Cause (ML)
+                                  ├─ Pattern Match (Rules)
+                                  └─ Difficulty Action (Heuristics)
+```
+
+### User Learning Flow
+
+1. **Solve Problems** → Track performance per category/difficulty
+2. **Receive AI Feedback** → Understand mistakes with guided hints
+3. **Build Cognitive Profile** → System learns your strengths/weaknesses
+4. **Get Recommendations** → Personalized problems to address gaps
+5. **Track Progress** → Weekly reports, streaks, skill radar
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/FRONTEND.md](docs/FRONTEND.md) | Component architecture, hooks, state management |
+| [docs/BACKEND.md](docs/BACKEND.md) | API endpoints, data models, services |
+| [docs/AI_SERVICES.md](docs/AI_SERVICES.md) | MIM engine, taxonomy, training pipeline |
 
 ---
 
-## 🔌 API Endpoints
+## 🔄 Complete Data Flow
 
-### Authentication
+### Submission & Feedback Flow
 
-| Method | Endpoint           | Description       |
-| ------ | ------------------ | ----------------- |
-| POST   | `/api/auth/signup` | Register new user |
-| POST   | `/api/auth/signin` | Login             |
-| GET    | `/api/auth/me`     | Get current user  |
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                              USER SUBMITS CODE                                    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ FRONTEND (React)                                                                  │
+│ ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│ │ 1. CodeEditor captures code                                                  │  │
+│ │ 2. SubmissionContext.submitCode() dispatches                                 │  │
+│ │ 3. POST /api/questions/submit                                                │  │
+│ └─────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ BACKEND (Node.js/Express)                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│ │ judgeController.submitCode()                                                 │  │
+│ │ 1. Validate input & auth                                                     │  │
+│ │ 2. Fetch Question + TestCases from MongoDB                                   │  │
+│ │ 3. Create Submission record (status: "running")                              │  │
+│ │ 4. Execute code via Piston API (sandboxed Docker)                            │  │
+│ │ 5. Compare outputs, determine verdict                                        │  │
+│ │ 6. Update Submission (status: verdict)                                       │  │
+│ │ 7. Update Question stats (totalSubmissions++)                                │  │
+│ │ 8. Return verdict to frontend                                                │  │
+│ └─────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                      ┌─────────────────┴─────────────────┐
+                      ▼                                   ▼
+              [Verdict Returned]                 [AI Feedback Request]
+                      │                                   │
+                      ▼                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ AI SERVICES (FastAPI/Python)                                                      │
+│ ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│ │ POST /ai/feedback                                                            │  │
+│ │                                                                              │  │
+│ │ ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐           │  │
+│ │ │ 1. GUARDRAILS   │───▶│ 2. MIM ENGINE   │───▶│ 3. RAG MEMORY   │           │  │
+│ │ │ - Idempotency   │    │ - Root Cause    │    │ - Retrieve past │           │  │
+│ │ │ - Verdict Guard │    │ - Subtype       │    │   mistakes      │           │  │
+│ │ └─────────────────┘    │ - Pattern       │    │ - ChromaDB      │           │  │
+│ │                        │ - Difficulty    │    └─────────────────┘           │  │
+│ │                        └─────────────────┘             │                    │  │
+│ │                                 │                      │                    │  │
+│ │                                 ▼                      ▼                    │  │
+│ │                        ┌─────────────────────────────────────────┐          │  │
+│ │                        │ 4. LLM AGENTS (LangChain)               │          │  │
+│ │                        │ - Feedback Agent (explanation)          │          │  │
+│ │                        │ - Hint Agent (progressive hints)        │          │  │
+│ │                        │ Uses MIM decisions, adds language       │          │  │
+│ │                        └─────────────────────────────────────────┘          │  │
+│ │                                           │                                 │  │
+│ │                                           ▼                                 │  │
+│ │                        ┌─────────────────────────────────────────┐          │  │
+│ │                        │ 5. ASYNC WORKFLOW (Background)          │          │  │
+│ │                        │ - Store in RAG memory                   │          │  │
+│ │                        │ - Update cognitive profile              │          │  │
+│ │                        │ - Compute difficulty adjustment         │          │  │
+│ │                        └─────────────────────────────────────────┘          │  │
+│ └─────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ FRONTEND (React)                                                                  │
+│ ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│ │ SubmissionResult.jsx                                                         │  │
+│ │ 1. Display verdict badge                                                     │  │
+│ │ 2. Show progressive hints (HintsView)                                        │  │
+│ │ 3. Display MIM insights (MIMInsightsV3)                                      │  │
+│ │    - Root cause + confidence                                                 │  │
+│ │    - Pattern detection                                                       │  │
+│ │    - Difficulty recommendation                                               │  │
+│ │ 4. Full explanation (SummaryView)                                            │  │
+│ └─────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
 
-### Problems & Submissions
+### User Learning Journey
 
-| Method | Endpoint         | Description              |
-| ------ | ---------------- | ------------------------ |
-| GET    | `/api/questions` | List problems            |
-| POST   | `/api/run`       | Run code (visible tests) |
-| POST   | `/api/submit`    | Submit code (all tests)  |
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           USER LEARNING FLOW                                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
 
-### Contests
+    ┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐
+    │  SIGNUP   │────▶│  BROWSE   │────▶│   SOLVE   │────▶│  SUBMIT   │
+    │           │     │ PROBLEMS  │     │  PROBLEM  │     │   CODE    │
+    └───────────┘     └───────────┘     └───────────┘     └───────────┘
+                            │                                   │
+                            │                                   ▼
+                            │                          ┌───────────────┐
+                            │                          │   VERDICT     │
+                            │                          │ AC/WA/TLE/RE  │
+                            │                          └───────────────┘
+                            │                                   │
+            ┌───────────────┴───────────────┐                   │
+            ▼                               ▼                   │
+    ┌───────────────┐               ┌───────────────┐           │
+    │ POTD (Daily)  │               │   CONTESTS    │           │
+    │ - Streaks     │               │ - Leaderboard │           │
+    │ - Calendar    │               │ - Real-time   │           │
+    └───────────────┘               └───────────────┘           │
+                                                                │
+                                                                ▼
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                         AI FEEDBACK LOOP                                 │
+    │                                                                          │
+    │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
+    │  │   HINTS      │───▶│  EXPLANATION │───▶│   LEARNING   │               │
+    │  │ Progressive  │    │  Full detail │    │   INSIGHTS   │               │
+    │  │ reveal       │    │  on demand   │    │              │               │
+    │  └──────────────┘    └──────────────┘    └──────────────┘               │
+    │                                                  │                       │
+    │                                                  ▼                       │
+    │                              ┌──────────────────────────────┐            │
+    │                              │     COGNITIVE PROFILE        │            │
+    │                              │ - Strengths & Weaknesses     │            │
+    │                              │ - Recurring Patterns         │            │
+    │                              │ - Skill Radar Chart          │            │
+    │                              └──────────────────────────────┘            │
+    │                                                  │                       │
+    │                                                  ▼                       │
+    │                              ┌──────────────────────────────┐            │
+    │                              │   RECOMMENDATIONS            │            │
+    │                              │ - Next problems to solve     │            │
+    │                              │ - Difficulty adjustment      │            │
+    │                              │ - Focus areas                │            │
+    │                              └──────────────────────────────┘            │
+    │                                                  │                       │
+    └──────────────────────────────────────────────────┼───────────────────────┘
+                                                       │
+                                                       ▼
+                                              ┌───────────────┐
+                                              │ WEEKLY REPORT │
+                                              │ - Progress    │
+                                              │ - Patterns    │
+                                              │ - Next goals  │
+                                              └───────────────┘
+```
 
-| Method | Endpoint                        | Description          |
-| ------ | ------------------------------- | -------------------- |
-| GET    | `/api/contests`                 | List contests        |
-| POST   | `/api/contests/:id/register`    | Register for contest |
-| GET    | `/api/contests/:id/leaderboard` | Get leaderboard      |
+### Database Entity Relationships
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           MONGODB COLLECTIONS                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
+    │    USER      │          │   QUESTION   │          │   CONTEST    │
+    │──────────────│          │──────────────│          │──────────────│
+    │ _id          │          │ _id          │          │ _id          │
+    │ name         │          │ title        │          │ name         │
+    │ email        │          │ description  │          │ startTime    │
+    │ password     │          │ difficulty   │          │ duration     │
+    │ stats{}      │          │ tags[]       │          │ problems[]   │
+    │ aiProfile{}  │          │ examples[]   │          │ status       │
+    │ preferences{}│          │ constraints  │          │ scoringRules │
+    └──────┬───────┘          └──────┬───────┘          └──────┬───────┘
+           │                         │                         │
+           │    ┌────────────────────┼────────────────────┐    │
+           │    │                    │                    │    │
+           ▼    ▼                    ▼                    ▼    ▼
+    ┌──────────────┐          ┌──────────────┐    ┌──────────────────┐
+    │  SUBMISSION  │          │   TESTCASE   │    │ CONTEST_SUBMISSION│
+    │──────────────│          │──────────────│    │──────────────────│
+    │ _id          │          │ _id          │    │ _id              │
+    │ userId    ◄──┼──────────│ questionId ◄─┼────│ contestId      ◄─┤
+    │ questionId ◄─┤          │ stdin        │    │ userId         ◄─┤
+    │ code         │          │ expectedOut  │    │ problemId      ◄─┤
+    │ verdict      │          │ isHidden     │    │ verdict          │
+    │ testResults[]│          │ weight       │    │ points           │
+    │ attemptNumber│          └──────────────┘    └──────────────────┘
+    └──────────────┘
+
+           │
+           │ AI Services stores/retrieves
+           ▼
+    ┌──────────────────────────────────────────────────────────────────┐
+    │                      CHROMADB (Vector Store)                      │
+    │──────────────────────────────────────────────────────────────────│
+    │  Collection: user_mistakes                                        │
+    │  ┌─────────────────────────────────────────────────────────────┐ │
+    │  │ document: "[Array] Problem X: Off-by-one in loop bounds"    │ │
+    │  │ metadata: {user_id, problem_id, category, timestamp}        │ │
+    │  │ embedding: [0.12, -0.45, 0.78, ...]                         │ │
+    │  └─────────────────────────────────────────────────────────────┘ │
+    └──────────────────────────────────────────────────────────────────┘
+```
+
+### MIM V3.0 Decision Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         MIM POLYMORPHIC OUTPUT FLOW                              │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌─────────────────┐
+                              │   Submission    │
+                              │    Verdict      │
+                              └────────┬────────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ▼                  ▼                  ▼
+            ┌───────────┐      ┌───────────┐      ┌───────────┐
+            │  ACCEPTED │      │ WA / RE   │      │ TLE / MLE │
+            └─────┬─────┘      └─────┬─────┘      └─────┬─────┘
+                  │                  │                  │
+                  ▼                  ▼                  ▼
+    ┌─────────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+    │  REINFORCEMENT      │ │  CORRECTNESS    │ │  PERFORMANCE    │
+    │  FEEDBACK           │ │  FEEDBACK       │ │  FEEDBACK       │
+    │─────────────────────│ │─────────────────│ │─────────────────│
+    │ • category          │ │ • root_cause    │ │ • root_cause    │
+    │ • technique         │ │ • subtype       │ │   = "efficiency"│
+    │ • difficulty        │ │ • failure_mech  │ │ • subtype       │
+    │ • confidence_boost  │ │ • confidence    │ │ • expected_O()  │
+    │ • strength_signal   │ │ • is_recurring  │ │ • observed_O()  │
+    │ • next_challenge    │ │ • fix_direction │ │ • optimization  │
+    └─────────────────────┘ └─────────────────┘ └─────────────────┘
+                  │                  │                  │
+                  └──────────────────┼──────────────────┘
+                                     │
+                                     ▼
+                          ┌─────────────────────┐
+                          │   LLM AGENTS ADD    │
+                          │ Natural Language    │
+                          │    Explanation      │
+                          └─────────────────────┘
+```
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 18** + Vite + React Router
+- **TailwindCSS** + Framer Motion
+- **Monaco Editor** (Code editing)
+- **Recharts** (Visualizations)
+
+### Backend
+- **Node.js** + Express.js
+- **MongoDB** + Mongoose
+- **JWT** + bcrypt (Auth)
+- **WebSocket** (Live contests)
 
 ### AI Services
+- **FastAPI** + Pydantic
+- **LangChain** + LangGraph (Agent orchestration)
+- **LightGBM** (Root cause classifier)
+- **ChromaDB** (Vector store for RAG)
+- **Groq/Gemini** (LLM providers)
 
-| Method | Endpoint                     | Description           |
-| ------ | ---------------------------- | --------------------- |
-| POST   | `/ai/feedback`               | Generate AI feedback  |
-| GET    | `/ai/mim/profile/:user_id`   | Get cognitive profile |
-| GET    | `/ai/mim/recommend/:user_id` | Get recommendations   |
+## 🤝 Contributing
 
----
-
-## 🛡️ Security
-
-- **JWT Authentication**: HTTP-only cookies
-- **Role-Based Access**: User/Admin separation
-- **Rate Limiting**: API & code execution limits
-- **Input Sanitization**: MongoDB injection prevention
-- **CORS Protection**: Strict origin validation
-- **Sandboxed Execution**: Piston API isolation
-
----
-
-## 🤝 Tech Stack
-
-| Layer           | Technology                                   |
-| --------------- | -------------------------------------------- |
-| **Frontend**    | React 19, Vite, Monaco Editor, Framer Motion |
-| **Backend**     | Express.js, MongoDB, Mongoose, WebSocket     |
-| **AI Services** | FastAPI, LangGraph, LangChain, ChromaDB      |
-| **ML Models**   | scikit-learn, LightGBM                       |
-| **Execution**   | Piston API                                   |
-| **Cache**       | Redis (optional)                             |
-
----
-
-## 📈 Future Roadmap
-
-- [ ] Docker Compose for easy deployment
-- [ ] Kubernetes for production scaling
-- [ ] Code plagiarism detection
-- [ ] Team contests
-- [ ] Discussion forums
-- [ ] Mobile app
-
----
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is proprietary software developed by Arrakis Labs.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-<div align="center">
-
-**Built with 🧠 by Arrakis Labs**  
-_Master the art of coding through memory, reasoning, and adaptive intelligence._
-
-</div>
+<p align="center">
+  <b>Built with ❤️ by Arrakis Labs</b><br>
+  <i>"The spice must flow... and so must the code."</i>
+</p>

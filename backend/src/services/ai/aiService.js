@@ -41,6 +41,78 @@ const log = {
   },
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIM V3.0 - Transform AI Response for Frontend
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Transform MIM V3.0 insights for frontend consumption
+ * Handles polymorphic feedback structure (correctness, performance, reinforcement)
+ * @param {Object} mimInsights - Raw mim_insights from AI service
+ * @returns {Object} Transformed MIM insights
+ */
+export function transformMIMInsights(mimInsights) {
+  if (!mimInsights) return null;
+
+  const transformed = {
+    // V3.0 type discriminator
+    feedbackType: mimInsights.feedback_type || null,
+
+    // V3.0 polymorphic payloads (camelCase for frontend)
+    correctnessFeedback: mimInsights.correctness_feedback
+      ? {
+          rootCause: mimInsights.correctness_feedback.root_cause,
+          subtype: mimInsights.correctness_feedback.subtype,
+          failureMechanism: mimInsights.correctness_feedback.failure_mechanism,
+          confidence: mimInsights.correctness_feedback.confidence,
+          explanation: mimInsights.correctness_feedback.explanation,
+          fixDirection: mimInsights.correctness_feedback.fix_direction,
+          exampleFix: mimInsights.correctness_feedback.example_fix,
+          isRecurring: mimInsights.correctness_feedback.is_recurring,
+          recurrenceCount: mimInsights.correctness_feedback.recurrence_count,
+          relatedProblems:
+            mimInsights.correctness_feedback.related_problems || [],
+        }
+      : null,
+
+    performanceFeedback: mimInsights.performance_feedback
+      ? {
+          rootCause:
+            mimInsights.performance_feedback.root_cause || "efficiency",
+          subtype: mimInsights.performance_feedback.subtype,
+          failureMechanism: mimInsights.performance_feedback.failure_mechanism,
+          expectedComplexity:
+            mimInsights.performance_feedback.expected_complexity,
+          observedComplexity:
+            mimInsights.performance_feedback.observed_complexity,
+          optimizationDirection:
+            mimInsights.performance_feedback.optimization_direction,
+        }
+      : null,
+
+    reinforcementFeedback: mimInsights.reinforcement_feedback
+      ? {
+          category: mimInsights.reinforcement_feedback.category,
+          technique: mimInsights.reinforcement_feedback.technique,
+          difficulty: mimInsights.reinforcement_feedback.difficulty,
+          confidenceBoost: mimInsights.reinforcement_feedback.confidence_boost,
+          strengthSignal: mimInsights.reinforcement_feedback.strength_signal,
+        }
+      : null,
+
+    // Legacy fields (backward compatibility)
+    rootCause: mimInsights.root_cause,
+    readiness: mimInsights.readiness,
+    performanceForecast: mimInsights.performance_forecast,
+
+    // Metadata
+    isColdStart: mimInsights.is_cold_start || false,
+    modelVersion: mimInsights.model_version || "unknown",
+  };
+
+  return transformed;
+}
+
 const VERDICT_MAP = {
   accepted: "Accepted",
   wrong_answer: "Wrong Answer",

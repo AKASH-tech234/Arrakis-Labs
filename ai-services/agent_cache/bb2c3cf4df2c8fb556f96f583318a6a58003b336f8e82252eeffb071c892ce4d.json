@@ -1,5 +1,0 @@
-{
-  "explanation": "The submission failed due to Time Limit Exceeded. This suggests that the current solution's runtime complexity is higher than the allowed limit for this problem. The high complexity might be caused by inefficient algorithms or large data structures.",
-  "improvement_hint": "Consider optimizing the algorithm by reducing the number of nested loops, using more efficient data structures (like hash maps), or implementing a more optimal solution strategy.",
-  "detected_pattern": null
-}

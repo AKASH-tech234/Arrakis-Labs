@@ -1,5 +1,0 @@
-{
-  "explanation": "The submission failed due to a Time Limit Exceeded error, indicating that its time complexity is too high for the given input constraints (string length up to 5 * 10^4). For the 'longest substring without repeating characters' problem, an approach that iterates through all possible substrings and then checks each for uniqueness typically results in O(N^2) or O(N^3) time complexity, which is too slow for N = 5 * 10^4.",
-  "improvement_hint": "Consider using a sliding window technique to efficiently track the current substring without repeating characters. This approach allows you to process the string in a single pass, achieving optimal O(N) time complexity by efficiently expanding and contracting the window.",
-  "detected_pattern": "Sliding Window"
-}

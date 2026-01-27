@@ -305,8 +305,78 @@ def get_mock_submissions(user_id: str) -> list:
 # MAIN SEEDING FUNCTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def seed_user_submissions(user_id: str, clear_existing: bool = True):
-    """Seed submission data for a user into MongoDB"""
+def seed_vector_store(user_id: str, submissions: list):
+    """Store failed submissions in Pinecone for RAG retrieval."""
+    try:
+        from app.rag.vector_store import PineconeVectorStore
+        from app.rag.embeddings import get_embeddings
+        import hashlib
+        
+        print(f"\n🗃️  Seeding Pinecone vector store...")
+        
+        # Initialize vector store
+        vector_store = PineconeVectorStore(namespace="user_memory")
+        vector_store._ensure_initialized()
+        
+        embeddings = get_embeddings()
+        
+        stored = 0
+        failed_submissions = [s for s in submissions if s.get("verdict") != "accepted" and s.get("status") != "accepted"]
+        
+        print(f"   └─ Processing {len(failed_submissions)} failed submissions...")
+        
+        for sub in failed_submissions:
+            try:
+                # Create document text
+                text = f"""Problem: {sub.get('problemTitle', 'Unknown')}
+Category: {sub.get('problemCategory', 'General')}
+Verdict: {sub.get('verdict', sub.get('status', 'unknown'))}
+Error Type: {sub.get('errorType', 'unknown')}
+Code Snippet: {sub.get('code', '')[:300]}"""
+                
+                # Generate embedding
+                embedding = embeddings.embed_query(text)
+                
+                # Create unique ID
+                timestamp = sub.get('createdAt', datetime.utcnow())
+                if hasattr(timestamp, 'isoformat'):
+                    ts_str = timestamp.isoformat()
+                else:
+                    ts_str = str(timestamp)
+                doc_id = hashlib.md5(f"{user_id}_{sub.get('questionId', '')}_{ts_str}".encode()).hexdigest()
+                
+                # Store in Pinecone
+                vector_store._index.upsert(
+                    vectors=[{
+                        "id": doc_id,
+                        "values": embedding,
+                        "metadata": {
+                            "user_id": user_id,
+                            "problem_id": sub.get("questionId", ""),
+                            "problem_title": sub.get("problemTitle", ""),
+                            "category": sub.get("problemCategory", "General"),
+                            "verdict": sub.get("verdict", sub.get("status", "")),
+                            "error_type": sub.get("errorType", "unknown"),
+                            "text": text,
+                            "timestamp": ts_str,
+                        }
+                    }],
+                    namespace="user_memory"
+                )
+                stored += 1
+                
+            except Exception as e:
+                print(f"   ❌ Error storing: {e}")
+        
+        print(f"✅ Stored {stored} submissions in Pinecone")
+        return stored
+    except Exception as e:
+        print(f"❌ Vector store seeding failed: {e}")
+        return 0
+
+
+def seed_user_submissions(user_id: str, clear_existing: bool = False):
+    """Seed submission data for a user into MongoDB (APPEND by default)"""
     
     mongo_uri = os.getenv("MONGODB_URI")
     db_name = os.getenv("MONGODB_DB_NAME") or os.getenv("MONGODB_DB")
@@ -365,6 +435,12 @@ def seed_user_submissions(user_id: str, clear_existing: bool = True):
         print(f"   └─ Inefficient algorithms (2 occurrences)")
         print(f"{'='*70}\n")
         
+        # Also seed vector store for RAG
+        seed_vector_store(user_id, mock_submissions)
+        
+        # Verify data
+        verify_data(user_id, client, db_name)
+        
         return True
         
     except Exception as e:
@@ -374,12 +450,65 @@ def seed_user_submissions(user_id: str, clear_existing: bool = True):
         return False
 
 
+def verify_data(user_id: str, client=None, db_name=None):
+    """Verify data was properly stored in both MongoDB and Pinecone."""
+    from app.rag.vector_store import PineconeVectorStore
+    
+    print(f"\n{'='*70}")
+    print(f"🔍 VERIFICATION")
+    print(f"{'='*70}")
+    
+    # Verify MongoDB
+    if client and db_name:
+        db = client.get_database(db_name)
+        count = db.submissions.count_documents({"userId": user_id, "isRun": False})
+        print(f"   └─ MongoDB submissions: {count}")
+        
+        # Get verdict distribution
+        pipeline = [
+            {"$match": {"userId": user_id, "isRun": False}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+        ]
+        verdict_dist = list(db.submissions.aggregate(pipeline))
+        print(f"   └─ Verdict distribution:")
+        for v in verdict_dist:
+            print(f"      • {v['_id']}: {v['count']}")
+    
+    # Verify Pinecone
+    try:
+        vector_store = PineconeVectorStore(namespace="user_memory")
+        vector_store._ensure_initialized()
+        
+        # Search for user's documents
+        results = vector_store.similarity_search_with_relevance_scores(
+            query="programming problem submission error",
+            k=10,
+            filter={"user_id": user_id}
+        )
+        print(f"   └─ Pinecone vectors found: {len(results)}")
+        
+        if results:
+            print(f"   └─ Sample problems in vector store:")
+            for doc, score in results[:3]:
+                title = doc.metadata.get("problem_title", "Unknown")
+                verdict = doc.metadata.get("verdict", "Unknown")
+                print(f"      • {title} ({verdict}) - score: {score:.3f}")
+                
+    except Exception as e:
+        print(f"   ❌ Pinecone verification error: {e}")
+    
+    print(f"{'='*70}\n")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("❌ Usage: python scripts/seed_user_data.py <user_id>")
+        print("❌ Usage: python scripts/seed_user_data.py <user_id> [--clear]")
         print("   Example: python scripts/seed_user_data.py 678abc123def456789012345")
+        print("   Options:")
+        print("      --clear  Clear existing submissions before seeding (default: append)")
         sys.exit(1)
     
     user_id = sys.argv[1]
-    success = seed_user_submissions(user_id)
+    clear_existing = "--clear" in sys.argv
+    success = seed_user_submissions(user_id, clear_existing=clear_existing)
     sys.exit(0 if success else 1)

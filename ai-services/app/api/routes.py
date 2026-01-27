@@ -55,16 +55,61 @@ class HintLevel(BaseModel):
     content: str
     hint_type: str  # "conceptual", "specific", "approach", "solution"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIM V3.0 DTOs - Polymorphic Feedback Structure
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class MIMCorrectnessDTO(BaseModel):
+    """V3.0 Correctness Feedback - for failed submissions (not TLE)"""
+    root_cause: str  # correctness, implementation, understanding_gap
+    subtype: str  # specific failure subtype
+    failure_mechanism: str  # deterministic rule output
+    confidence: float  # 0.0 - 1.0
+    explanation: str  # personalized explanation
+    fix_direction: str  # strategy to fix
+    example_fix: str  # code example
+    is_recurring: bool  # repeated mistake?
+    recurrence_count: int  # how many times
+    related_problems: List[str] = []  # similar past problems
+
+class MIMPerformanceDTO(BaseModel):
+    """V3.0 Performance Feedback - for TLE/MLE submissions"""
+    root_cause: str = "efficiency"
+    subtype: str  # efficiency-related subtype
+    failure_mechanism: str
+    expected_complexity: str  # Big-O expected
+    observed_complexity: str  # Big-O observed
+    optimization_direction: str  # what algorithmic shift needed
+
+class MIMReinforcementDTO(BaseModel):
+    """V3.0 Reinforcement Feedback - for accepted submissions"""
+    category: str  # problem category
+    technique: str  # technique demonstrated
+    difficulty: str  # easy/medium/hard
+    confidence_boost: float  # 0.0 - 1.0
+    strength_signal: str  # what skill this reinforces
+
 class MIMInsightsDTO(BaseModel):
-    """MIM (Mistake Inference Model) predictions - Pure ML, NO LLM calls"""
+    """MIM V3.0 (Mistake Inference Model) - Polymorphic feedback structure"""
+    # Type discriminator
+    feedback_type: Optional[str] = None  # correctness, efficiency, implementation, understanding_gap, reinforcement
+    
+    # === V3.0 POLYMORPHIC PAYLOADS (exactly one populated) ===
+    correctness_feedback: Optional[MIMCorrectnessDTO] = None  # For failed submissions
+    performance_feedback: Optional[MIMPerformanceDTO] = None  # For TLE/MLE
+    reinforcement_feedback: Optional[MIMReinforcementDTO] = None  # For accepted
+    
+    # === LEGACY FIELDS (backward compatibility) ===
     root_cause: Optional[Dict[str, Any]] = None  # failure_cause, confidence, alternatives
     readiness: Optional[Dict[str, Any]] = None   # current_level, easy/medium/hard readiness
     performance_forecast: Optional[Dict[str, Any]] = None  # predicted_outcome, confidence
+    
+    # === METADATA ===
     is_cold_start: bool = False
     model_version: Optional[str] = None
 
 class AIFeedbackDTO(BaseModel):
-    """Clean, structured response for frontend consumption"""
+    """Clean, structured response for frontend consumption - V3.0 compatible"""
     success: bool
     verdict: str
     submission_id: str
@@ -83,7 +128,7 @@ class AIFeedbackDTO(BaseModel):
     complexity_analysis: Optional[str] = None
     edge_cases: Optional[List[str]] = None
     
-    # ✨ NEW: MIM Insights (Machine Learning predictions - NO LLM)
+    # ✨ MIM V3.0 Insights (Machine Learning predictions - NO LLM)
     mim_insights: Optional[MIMInsightsDTO] = None
     
     # Metadata
@@ -492,15 +537,73 @@ def generate_ai_feedback(
         else:
             feedback_type = "error_feedback"
         
-        # ✨ Build MIM insights DTO (Pure ML - NO LLM calls)
+        # ✨ Build MIM V3.0 insights DTO (Pure ML - NO LLM calls)
         mim_dto = None
+        mim_decision = sync_result.get("mim_decision")  # V3.0 MIMDecision object
+        
         if mim_insights_raw:
+            # Determine feedback type from MIM
+            mim_feedback_type = mim_insights_raw.get("type")
+            
+            # Build V3.0 polymorphic payloads
+            correctness_dto = None
+            performance_dto = None
+            reinforcement_dto = None
+            
+            # For reinforcement (accepted submissions)
+            if mim_feedback_type == "reinforcement" or mim_insights_raw.get("is_success"):
+                reinforcement_dto = MIMReinforcementDTO(
+                    category=payload.problem_category or "General",
+                    technique=detected_pattern or "problem_solving",
+                    difficulty=payload.problem.get("difficulty", "medium").lower() if payload.problem else "medium",
+                    confidence_boost=0.15,  # Default boost
+                    strength_signal=f"Successfully applied {detected_pattern or 'correct approach'}"
+                )
+                mim_feedback_type = "reinforcement"
+            
+            # For failed submissions with MIM decision
+            elif mim_decision:
+                root_cause = mim_decision.root_cause if hasattr(mim_decision, 'root_cause') else mim_insights_raw.get("root_cause", {}).get("failure_cause")
+                
+                if root_cause == "efficiency":
+                    # TLE/MLE - Performance feedback
+                    performance_dto = MIMPerformanceDTO(
+                        root_cause="efficiency",
+                        subtype=getattr(mim_decision, 'subtype', 'time_complexity'),
+                        failure_mechanism=getattr(mim_decision, 'failure_mechanism', 'inefficient_algorithm'),
+                        expected_complexity=getattr(mim_decision, 'expected_complexity', 'O(n log n)'),
+                        observed_complexity=getattr(mim_decision, 'observed_complexity', 'O(n²)'),
+                        optimization_direction=getattr(mim_decision, 'optimization_direction', 'Consider using a more efficient algorithm')
+                    )
+                    mim_feedback_type = "efficiency"
+                elif root_cause in ("correctness", "implementation", "understanding_gap"):
+                    # Correctness/Implementation/Understanding failures
+                    pattern = mim_decision.pattern if hasattr(mim_decision, 'pattern') else None
+                    correctness_dto = MIMCorrectnessDTO(
+                        root_cause=root_cause,
+                        subtype=getattr(mim_decision, 'subtype', 'logic_error'),
+                        failure_mechanism=getattr(mim_decision, 'failure_mechanism', 'incorrect_logic'),
+                        confidence=mim_decision.root_cause_confidence if hasattr(mim_decision, 'root_cause_confidence') else 0.5,
+                        explanation=feedback.explanation if feedback else "Review your logic carefully",
+                        fix_direction=feedback.improvement_hint if feedback else "Consider the edge cases",
+                        example_fix="",  # Filled by LLM if available
+                        is_recurring=pattern.is_recurring if pattern else False,
+                        recurrence_count=pattern.recurrence_count if pattern else 0,
+                        related_problems=pattern.related_problems if pattern and hasattr(pattern, 'related_problems') else []
+                    )
+                    mim_feedback_type = root_cause
+            
             mim_dto = MIMInsightsDTO(
+                feedback_type=mim_feedback_type,
+                correctness_feedback=correctness_dto,
+                performance_feedback=performance_dto,
+                reinforcement_feedback=reinforcement_dto,
+                # Legacy fields for backward compatibility
                 root_cause=mim_insights_raw.get("root_cause"),
                 readiness=mim_insights_raw.get("readiness"),
                 performance_forecast=mim_insights_raw.get("performance_forecast"),
                 is_cold_start=mim_insights_raw.get("is_cold_start", False),
-                model_version=mim_insights_raw.get("model_version")
+                model_version=mim_insights_raw.get("model_version", "v3.0")
             )
         
         # Extract rich feedback fields from FeedbackResponse

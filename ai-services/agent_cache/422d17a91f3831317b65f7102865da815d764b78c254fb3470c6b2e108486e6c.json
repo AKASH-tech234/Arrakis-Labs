@@ -1,5 +1,0 @@
-{
-  "explanation": "The 'Wrong Answer' verdict indicates that your solution produced an incorrect output for at least one of the hidden test cases. This suggests a logical flaw in your algorithm or its implementation. Without the specific code, it is impossible to pinpoint the exact error, but common issues in tree problems leading to wrong answers include incorrect handling of base cases in recursive functions, failure to account for edge cases (like an empty tree, a single-node tree, or a tree with only left/right children), or subtle miscalculations in the main logic.",
-  "improvement_hint": "Carefully review your algorithm's logic, paying close attention to how it handles edge cases such as an empty tree, a tree with a single node, or trees that are heavily skewed (e.g., all nodes are left children). Trace your code's execution manually with these specific small test cases to identify discrepancies between your expected output and the code's actual behavior.",
-  "detected_pattern": null
-}

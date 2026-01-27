@@ -19,10 +19,10 @@ def _agent_exists(module_name: str) -> bool:
 
 
 class TestFeedbackAgent:
-    """Tests for the feedback agent."""
+    """Tests for the feedback agent - V3.0 updated."""
 
     def test_feedback_agent_accepted_verdict(self, sample_accepted_submission):
-        """Test that accepted submissions return minimal feedback."""
+        """Test that accepted submissions return personalized positive feedback."""
         from app.agents.feedback_agent import feedback_agent
         
         result = feedback_agent(
@@ -30,8 +30,8 @@ class TestFeedbackAgent:
             payload=sample_accepted_submission
         )
         
-        assert result.explanation == "Your solution passed all test cases successfully."
-        assert result.improvement_hint == "No changes required."
+        # V3.0: Accepted submissions now get personalized feedback
+        assert "solution" in result.explanation.lower() or "correct" in result.explanation.lower()
         assert result.detected_pattern is None
 
     @patch("app.agents.feedback_agent.run_json_agent")

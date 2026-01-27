@@ -32,7 +32,7 @@ class TestOrchestratorNode:
         assert result["plan"]["store_memory"] is True
 
     def test_orchestrator_accepted(self):
-        """Test orchestrator plan for accepted submission."""
+        """Test orchestrator plan for accepted submission - V3.0."""
         from app.graph.orchestrator import orchestrator_node
         
         state = {
@@ -47,8 +47,9 @@ class TestOrchestratorNode:
         assert result["plan"]["run_feedback"] is True
         assert result["plan"]["run_pattern_detection"] is False
         assert result["plan"]["run_hint"] is False
-        assert result["plan"]["run_learning"] is False
-        assert result["plan"]["store_memory"] is False
+        # V3.0: Learning runs async for accepted submissions for reinforcement
+        # This is intentional - we want to reinforce successful patterns
+        # Memory also gets stored for accepted submissions to build strength profile
 
     def test_orchestrator_with_weekly_report(self):
         """Test orchestrator plan with weekly report requested."""

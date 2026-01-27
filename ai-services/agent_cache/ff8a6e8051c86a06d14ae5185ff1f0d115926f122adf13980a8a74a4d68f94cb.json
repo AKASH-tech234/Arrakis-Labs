@@ -1,4 +1,0 @@
-{
-  "action": "maintain",
-  "rationale": "The submission failed with a 'Wrong Answer', indicating a logical error or unhandled edge case in the solution. Since no specific error type or user weakness was identified, the most effective next step is to debug the current approach. An actionable improvement hint is to carefully re-read the problem statement, paying close attention to all constraints and requirements, and then manually test the code with various inputs, including common edge cases relevant to array problems."
-}

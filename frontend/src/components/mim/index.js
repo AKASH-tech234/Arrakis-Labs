@@ -9,6 +9,7 @@ export {
   emitRecommendationsRefresh,
 } from "./ProblemRecommendations";
 export { default as MIMInsights } from "./MIMInsights";
+export { default as MIMInsightsV3 } from "./MIMInsightsV3";
 export {
   default as LearningRoadmap,
   emitRoadmapRefresh,

@@ -1,5 +1,0 @@
-{
-  "explanation": "The submission failed due to exceeding the time limit. This suggests that the current algorithm used in the solution has a high time complexity, which is not efficient enough to solve the problem within the given time constraints.",
-  "improvement_hint": "Consider using a more optimized data structure or algorithm, such as a hash table, to reduce the time complexity of your solution. This can help improve its performance and avoid exceeding the time limit.",
-  "detected_pattern": null
-}

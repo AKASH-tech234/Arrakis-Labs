@@ -98,6 +98,7 @@ class MentatSyncState(TypedDict):
     
     # === MIM DECISION (NEW v3.0) ===
     mim_decision: Optional[MIMDecision]  # Full MIM decision with agent instructions
+    mim_insights: Optional[Dict[str, Any]]  # MIM insights for API response (dict format)
 
     # === AGENT OUTPUTS (shared for coordination) ===
     feedback: Optional[FeedbackResponse]

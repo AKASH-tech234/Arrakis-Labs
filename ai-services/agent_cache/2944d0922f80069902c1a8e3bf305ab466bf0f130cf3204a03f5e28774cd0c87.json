@@ -1,9 +1,0 @@
-{
-  "focus_areas": [
-    "Thorough Problem Statement Analysis and Requirement Elicitation",
-    "Systematic Identification and Handling of Edge Cases and Constraints",
-    "Constraint-Aware Data Type Selection (e.g., preventing integer overflow)",
-    "Manual Tracing and Debugging with Self-Generated Test Cases"
-  ],
-  "rationale": "The 'Wrong Answer' verdict on a 'Hard' problem, coupled with your consistent past mistakes on 'Easy' problems, strongly suggests a recurring issue with fully understanding problem requirements and thoroughly testing your logic, especially against edge cases and constraints. For a harder problem, these oversights are amplified, leading to incorrect behavior. The large input constraints (e.g., values up to 10^9, array length up to 10^5) also indicate that issues like integer overflow or inefficient algorithms, which are often missed without careful analysis, could be contributing factors. Your repeated pattern of needing to re-read problems and trace logic with diverse test cases points to a fundamental gap in your problem-solving process that needs to be addressed systematically."
-}

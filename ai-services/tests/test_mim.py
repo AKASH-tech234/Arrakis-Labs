@@ -699,44 +699,88 @@ class TestMIMEvaluator:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestMIMInference:
-    """Test MIM inference service."""
+    """Test MIM inference service (V3.0 - MIMDecisionNode)."""
     
     def test_inference_initialization(self):
         """Test inference service initializes."""
-        from app.mim.inference import MIMInference
+        from app.mim.inference import MIMDecisionNode
         
-        inference = MIMInference()
-        assert inference is not None
+        node = MIMDecisionNode()
+        assert node is not None
     
-    def test_predict_returns_mim_prediction(self, sample_submission, sample_user_history):
-        """Test predict() returns MIMPrediction object."""
-        from app.mim.inference import MIMInference
+    def test_predict_returns_mim_decision(self, sample_submission, sample_user_history):
+        """Test run_mim_inference() returns MIMOutput object."""
+        from app.mim.inference import run_mim_inference
+        from app.mim.output_schemas import MIMInput, MIMOutput
         
-        inference = MIMInference()
-        
-        prediction = inference.predict(
-            submission=sample_submission,
-            user_history=sample_user_history
+        # Build MIMInput from sample data
+        mim_input = MIMInput(
+            user_id=sample_submission["user_id"],
+            problem_id=sample_submission["problem_id"],
+            submission_id=sample_submission.get("submission_id", "test_sub_1"),
+            code=sample_submission["code"],
+            verdict=sample_submission.get("verdict", "wrong_answer"),
+            category=sample_submission.get("problem_category", "arrays"),
+            difficulty=sample_submission.get("problem_difficulty", "Medium"),
+            expected_complexity="O(n)",
+            constraints={"n": 10000},
+            problem_tags=["arrays"],
+            user_state_snapshot={
+                "dominant_failure_modes": ["correctness"],
+                "improving_areas": ["arrays"],
+                "stagnant_areas": [],
+            },
+            delta_features={
+                "delta_attempts_same_category": 0.0,
+                "delta_root_cause_repeat_rate": 0.0,
+                "is_cold_start": 1.0,
+            },
+            timestamp="2024-01-01T00:00:00Z",
         )
         
-        assert isinstance(prediction, MIMPrediction)
-        assert prediction.root_cause is not None
-        assert prediction.readiness is not None
-        assert prediction.performance_forecast is not None
+        output = run_mim_inference(mim_input)
+        
+        assert isinstance(output, MIMOutput)
+        # V3.0: Check that appropriate feedback is populated
+        assert output.feedback_type is not None
+        # For failed submissions, should have correctness or performance feedback
+        assert output.correctness_feedback is not None or output.performance_feedback is not None
     
     def test_predict_cold_start(self, sample_submission):
         """Test prediction for user with no history (cold start)."""
-        from app.mim.inference import MIMInference
+        from app.mim.inference import run_mim_inference
+        from app.mim.output_schemas import MIMInput, MIMOutput
         
-        inference = MIMInference()
-        
-        prediction = inference.predict(
-            submission=sample_submission,
-            user_history=[]  # No history
+        # Build MIMInput with cold start markers
+        mim_input = MIMInput(
+            user_id=sample_submission["user_id"],
+            problem_id=sample_submission["problem_id"],
+            submission_id=sample_submission.get("submission_id", "test_sub_1"),
+            code=sample_submission["code"],
+            verdict=sample_submission.get("verdict", "wrong_answer"),
+            category=sample_submission.get("problem_category", "arrays"),
+            difficulty=sample_submission.get("problem_difficulty", "Medium"),
+            expected_complexity="O(n)",
+            constraints={"n": 10000},
+            problem_tags=["arrays"],
+            user_state_snapshot={
+                "dominant_failure_modes": [],  # Empty for cold start
+                "improving_areas": [],
+                "stagnant_areas": [],
+            },
+            delta_features={
+                "delta_attempts_same_category": 0.0,
+                "delta_root_cause_repeat_rate": 0.0,
+                "is_cold_start": 1.0,  # Cold start flag
+            },
+            timestamp="2024-01-01T00:00:00Z",
         )
         
-        assert isinstance(prediction, MIMPrediction)
-        assert prediction.is_cold_start is True
+        output = run_mim_inference(mim_input)
+        
+        assert isinstance(output, MIMOutput)
+        # Cold start should still produce valid feedback
+        assert output.feedback_type is not None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -747,9 +791,10 @@ class TestMIMIntegration:
     """End-to-end integration tests."""
     
     def test_full_pipeline(self, sample_submission, sample_user_history, sample_problems):
-        """Test complete MIM pipeline: extract → predict → recommend."""
+        """Test complete MIM pipeline: extract → infer → recommend."""
         from app.mim.feature_extractor import MIMFeatureExtractor
-        from app.mim.inference import MIMInference
+        from app.mim.inference import run_mim_inference
+        from app.mim.output_schemas import MIMInput, MIMOutput
         from app.mim.recommender import MIMRecommender
         
         # 1. Feature extraction
@@ -757,13 +802,33 @@ class TestMIMIntegration:
         features = extractor.extract(sample_submission, sample_user_history)
         assert len(features) == 60
         
-        # 2. Prediction
-        inference = MIMInference()
-        prediction = inference.predict(
-            submission=sample_submission,
-            user_history=sample_user_history
+        # 2. MIM Decision (V3.0 - uses MIMInput)
+        mim_input = MIMInput(
+            user_id=sample_submission["user_id"],
+            problem_id=sample_submission["problem_id"],
+            submission_id=sample_submission.get("submission_id", "test_sub_1"),
+            code=sample_submission["code"],
+            verdict=sample_submission.get("verdict", "wrong_answer"),
+            category=sample_submission.get("problem_category", "arrays"),
+            difficulty=sample_submission.get("problem_difficulty", "Medium"),
+            expected_complexity="O(n)",
+            constraints={"n": 10000},
+            problem_tags=["arrays"],
+            user_state_snapshot={
+                "dominant_failure_modes": ["correctness"],
+                "improving_areas": ["arrays"],
+                "stagnant_areas": [],
+            },
+            delta_features={
+                "delta_attempts_same_category": 0.0,
+                "delta_root_cause_repeat_rate": 0.0,
+                "is_cold_start": 1.0,
+            },
+            timestamp="2024-01-01T00:00:00Z",
         )
-        assert isinstance(prediction, MIMPrediction)
+        output = run_mim_inference(mim_input)
+        assert isinstance(output, MIMOutput)
+        assert output.feedback_type is not None
         
         # 3. Get recommendations
         recommender = MIMRecommender()
@@ -781,7 +846,13 @@ class TestMIMIntegration:
         assert recommendations is not None
     
     def test_mim_imports_work(self):
-        """Test all MIM module imports work correctly."""
+        """Test all MIM module imports work correctly (V3.0)."""
+        # V3.0 imports
+        from app.mim.inference import MIMDecisionNode, run_mim_inference
+        from app.mim.output_schemas import MIMInput, MIMOutput
+        from app.mim.taxonomy.subtype_masks import ROOT_CAUSES, SUBTYPES, is_valid_pair
+        
+        # Legacy imports that still work
         from app.mim import (
             ROOT_CAUSE_CATEGORIES,
             MIMPrediction,
@@ -792,7 +863,6 @@ class TestMIMIntegration:
             MIMRecommendations,
             MIMModelMetrics,
             MIMStatus,
-            MIMInference,
             MIMModel,
             MIMFeatureExtractor,
             MIMRecommender,
@@ -802,7 +872,7 @@ class TestMIMIntegration:
         # All imports should succeed
         assert len(ROOT_CAUSE_CATEGORIES) == 15  # 14 categories + unknown
         assert MIMPrediction is not None
-        assert MIMInference is not None
+        assert MIMDecisionNode is not None  # V3.0 replaces MIMInference
         assert MIMRecommender is not None
         assert MIMEvaluator is not None
     
@@ -1182,6 +1252,7 @@ class TestMIMDecisionEngine:
     def test_make_decision_basic(self):
         """Test make_decision produces valid MIMDecision."""
         from app.mim.decision_engine import make_decision
+        from app.mim.taxonomy.subtype_masks import ROOT_CAUSES as V3_ROOT_CAUSES
         
         submission = {
             "user_id": "test_user",
@@ -1202,7 +1273,8 @@ class TestMIMDecisionEngine:
         
         assert decision is not None
         assert decision.root_cause is not None
-        assert decision.root_cause in ROOT_CAUSE_CATEGORIES
+        # V3.1: decision_engine migrates to new taxonomy (5 root causes)
+        assert decision.root_cause in V3_ROOT_CAUSES, f"Root cause '{decision.root_cause}' not in V3.1 taxonomy: {V3_ROOT_CAUSES}"
         assert 0 <= decision.root_cause_confidence <= 1
         assert decision.pattern is not None
         assert decision.difficulty_action is not None
