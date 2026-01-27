@@ -30,11 +30,93 @@ logger = logging.getLogger("mim.pattern_engine")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ROOT CAUSE TO PATTERN MAPPING
+# ROOT CAUSE TO PATTERN MAPPING (V3.1 TAXONOMY)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 ROOT_CAUSE_TO_PATTERNS = {
-    # MIM root cause → Abstract pattern names
+    # V3.1 ROOT CAUSES (primary categories)
+    "correctness": [
+        "incorrect algorithm logic",
+        "wrong invariant maintained",
+        "missing case handling",
+        "incorrect boundary condition",
+    ],
+    "efficiency": [
+        "O(n²) when O(n) expected",
+        "brute force when pattern exists",
+        "unnecessary nested loops",
+        "suboptimal data structure choice",
+    ],
+    "implementation": [
+        "off-by-one in loop termination",
+        "array index boundary error",
+        "state loss in iteration",
+        "type conversion error",
+    ],
+    "understanding_gap": [
+        "problem misunderstanding",
+        "constraint ignored",
+        "requirement missed",
+        "misread constraint value",
+    ],
+    "problem_misinterpretation": [
+        "wrong input format assumption",
+        "solving different problem entirely",
+        "misread constraints fundamentally",
+        "wrong output format produced",
+    ],
+    # SUBTYPES (for more specific pattern matching)
+    "wrong_invariant": [
+        "incorrect loop invariant",
+        "property not preserved",
+        "algorithm correctness flaw",
+    ],
+    "incorrect_boundary": [
+        "off-by-one error",
+        "fence post error",
+        "boundary condition missing",
+    ],
+    "partial_case_handling": [
+        "edge case missing",
+        "empty input not handled",
+        "single element edge case",
+    ],
+    "state_loss": [
+        "state overwritten incorrectly",
+        "variable scope issue",
+        "information lost in iteration",
+    ],
+    "brute_force_under_constraints": [
+        "brute force instead of optimization",
+        "unnecessary nested loops",
+        "exponential when polynomial exists",
+    ],
+    "premature_optimization": [
+        "optimized but incorrect",
+        "edge case broken by optimization",
+        "complexity reduced but wrong result",
+    ],
+    "misread_constraint": [
+        "constraint value ignored",
+        "limit misunderstood",
+        "modulo forgotten for large numbers",
+    ],
+    "wrong_input_format": [
+        "input parsing error",
+        "format assumption wrong",
+        "wrong data structure for input",
+    ],
+    "wrong_problem_entirely": [
+        "solving unrelated problem",
+        "output format completely wrong",
+        "algorithm for different problem type",
+    ],
+    "misread_constraints": [
+        "constraint values wrong",
+        "integer overflow from constraint",
+        "limits ignored in solution",
+    ],
+    # LEGACY MAPPINGS (for backward compatibility with old data)
     "boundary_condition_blindness": [
         "empty input not handled",
         "single element edge case",
@@ -65,45 +147,10 @@ ROOT_CAUSE_TO_PATTERNS = {
         "unnecessary nested loops",
         "brute force instead of optimization",
     ],
-    "recursion_issue": [
-        "missing recursion base case",
-        "stack overflow from deep recursion",
-        "incorrect recursive call",
-    ],
-    "comparison_error": [
-        "wrong comparison operator",
-        "strict vs non-strict comparison",
-        "floating point comparison error",
-    ],
     "algorithm_choice": [
         "wrong algorithm for problem type",
         "greedy when DP needed",
         "brute force when pattern exists",
-    ],
-    "edge_case_handling": [
-        "edge case missing",
-        "special input not handled",
-        "corner case forgotten",
-    ],
-    "input_parsing": [
-        "input parsing error",
-        "format mismatch",
-        "missing input validation",
-    ],
-    "misread_problem": [
-        "problem misunderstanding",
-        "constraint ignored",
-        "requirement missed",
-    ],
-    "partial_solution": [
-        "incomplete implementation",
-        "missing case handling",
-        "solution not fully developed",
-    ],
-    "type_error": [
-        "type conversion error",
-        "wrong data type used",
-        "implicit casting issue",
     ],
 }
 

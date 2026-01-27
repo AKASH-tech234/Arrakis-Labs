@@ -22,7 +22,7 @@ PHILOSOPHY:
 
 import time
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 
 from app.mim.feature_extractor import MIMFeatureExtractor, MIN_SUBMISSIONS_FOR_FULL_FEATURES
 from app.mim.model import MIMModel
@@ -35,237 +35,293 @@ from app.mim.mim_decision import (
     HintInstruction,
     LearningInstruction,
 )
+# V3.0: Import canonical taxonomy
+from app.mim.taxonomy.subtype_masks import (
+    ROOT_CAUSE_TO_SUBTYPES,
+    SUBTYPES,
+    is_valid_pair,
+    get_valid_subtypes,
+)
+from app.mim.taxonomy.root_causes import ROOT_CAUSES
+from app.mim.taxonomy.failure_mechanism_rules import derive_failure_mechanism
 
 logger = logging.getLogger("mim.decision_engine")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# v3.3: ROOT CAUSE SUBTYPES - Granular diagnosis
+# V3.0 CANONICAL TAXONOMY (from subtype_masks.py)
+# 4 ROOT_CAUSES: correctness, efficiency, implementation, understanding_gap
+# 7 SUBTYPES: wrong_invariant, incorrect_boundary, partial_case_handling,
+#             state_loss, brute_force_under_constraints, premature_optimization,
+#             misread_constraint
 # ═══════════════════════════════════════════════════════════════════════════════
 
-ROOT_CAUSE_SUBTYPES = {
-    "algorithm_choice": {
-        "wrong_invariant": "Chosen approach doesn't preserve required invariant",
-        "wrong_data_structure": "Data structure doesn't support required operations efficiently",
-        "brute_force": "Naive approach exceeds time/space constraints",
-        "premature_optimization": "Optimized for wrong bottleneck, missed correctness",
-        "greedy_when_dp": "Greedy approach fails for overlapping subproblems",
-        "dp_when_greedy": "Over-complicated with DP when greedy suffices",
-    },
-    "boundary_condition_blindness": {
-        "empty_input": "Fails on empty/null input",
-        "single_element": "Fails on single element edge case",
-        "max_constraint": "Fails at maximum constraint boundary",
-    },
-    "off_by_one_error": {
-        "loop_bound": "Loop iterates one too many/few times",
-        "index_access": "Array index off by one",
-        "range_end": "Range end inclusive/exclusive confusion",
-    },
-    "time_complexity_issue": {
-        "nested_loops": "Unnecessary nested iteration",
-        "repeated_computation": "Same value computed multiple times",
-        "suboptimal_search": "Linear search where binary possible",
-    },
-    "logic_error": {
-        "condition_inversion": "Boolean condition inverted",
-        "state_corruption": "Variable state not properly maintained",
-        "missing_return": "Missing or wrong return statement",
-    },
+# SUBTYPE DESCRIPTIONS for feedback generation
+SUBTYPE_DESCRIPTIONS = {
+    "wrong_invariant": "Loop or recursion invariant does not hold",
+    "incorrect_boundary": "Start/end conditions are wrong (off-by-one, inclusive/exclusive)",
+    "partial_case_handling": "Some valid input cases are not handled",
+    "state_loss": "Critical state not preserved across calls/iterations",
+    "brute_force_under_constraints": "Solution complexity exceeds what constraints allow",
+    "premature_optimization": "Optimized code that doesn't solve the problem correctly",
+    "misread_constraint": "Constraint value or meaning was misunderstood",
+    # V3.1: Problem misinterpretation subtypes
+    "wrong_input_format": "Code expects different input structure than problem provides",
+    "wrong_problem_entirely": "Solution is for a completely different problem",
+    "misread_constraints": "Constraints on input/output were misunderstood",
+}
+
+# OLD ROOT CAUSE → NEW ROOT CAUSE MIGRATION MAP (V3.1 updated)
+OLD_TO_NEW_ROOT_CAUSE = {
+    "algorithm_choice": "correctness",
+    "boundary_condition_blindness": "correctness",
+    "off_by_one_error": "implementation",
+    "time_complexity_issue": "efficiency",
+    "logic_error": "correctness",
+    "recursion_issue": "implementation",
+    "comparison_error": "implementation",
+    "integer_overflow": "implementation",
+    "wrong_data_structure": "efficiency",
+    "edge_case_handling": "correctness",
+    "input_parsing": "problem_misinterpretation",  # V3.1: Map to new category
+    "misread_problem": "problem_misinterpretation",  # V3.1: Map to new category  
+    "partial_solution": "correctness",
+    "type_error": "implementation",
+    # Direct mappings (V3.1: 5 categories now)
+    "correctness": "correctness",
+    "efficiency": "efficiency",
+    "implementation": "implementation",
+    "understanding_gap": "understanding_gap",
+    "problem_misinterpretation": "problem_misinterpretation",
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# v3.3: FAILURE MECHANISM TEMPLATES - Concrete explanations
+# V3.0 FAILURE MECHANISM TEMPLATES (using new taxonomy)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 FAILURE_MECHANISM_TEMPLATES = {
-    ("algorithm_choice", "wrong_invariant"): "Your {approach} doesn't maintain the {invariant} invariant required for correctness",
-    ("algorithm_choice", "brute_force"): "Your O({actual_complexity}) approach exceeds the O({expected_complexity}) constraint for n={input_size}",
-    ("algorithm_choice", "greedy_when_dp"): "Greedy fails because optimal substructure requires considering overlapping subproblems",
-    ("off_by_one_error", "loop_bound"): "Loop {loop_var} iterates {direction} by one, causing {effect}",
-    ("boundary_condition_blindness", "empty_input"): "When input is empty, your code {failure_behavior}",
-    ("time_complexity_issue", "nested_loops"): "Nested loops over {outer} and {inner} create O(n²) when O(n) is achievable",
+    # Correctness subtypes
+    ("correctness", "wrong_invariant"): "Your {approach} doesn't maintain the required correctness invariant",
+    ("correctness", "incorrect_boundary"): "Boundary condition at {location} is off by one or uses wrong comparison",
+    ("correctness", "partial_case_handling"): "Input case {missing_case} is not handled by your logic",
+    ("correctness", "state_loss"): "Critical state {state_name} is not preserved across {scope}",
+    # Efficiency subtypes
+    ("efficiency", "brute_force_under_constraints"): "Your O({actual}) approach exceeds the required O({expected}) for n={size}",
+    ("efficiency", "premature_optimization"): "Optimization introduced bug: {bug_description}",
+    # Implementation subtypes
+    ("implementation", "incorrect_boundary"): "Array index or loop bound {location} is off by one",
+    ("implementation", "state_loss"): "Variable {var_name} loses its value due to {reason}",
+    ("implementation", "partial_case_handling"): "Edge case {case} crashes or returns wrong value",
+    # Understanding gap subtypes
+    ("understanding_gap", "misread_constraint"): "Constraint {constraint} was misinterpreted as {misinterpretation}",
+    ("understanding_gap", "wrong_invariant"): "Conceptual misunderstanding of {concept} leads to wrong approach",
+    # V3.1: Problem misinterpretation subtypes
+    ("problem_misinterpretation", "wrong_input_format"): "Code expects {expected_format} but problem provides {actual_format}",
+    ("problem_misinterpretation", "wrong_problem_entirely"): "Solution solves a different problem than what was asked",
+    ("problem_misinterpretation", "misread_constraints"): "Constraint {constraint} was misread or ignored",
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# EDGE CASE DETECTION RULES
+# V3.1 EDGE CASE RULES (by root cause)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 EDGE_CASE_RULES = {
-    # Original 9
-    "boundary_condition_blindness": ["Empty input (n=0)", "Single element (n=1)", "Maximum constraint value"],
-    "off_by_one_error": ["First element", "Last element", "Loop boundary conditions"],
-    "integer_overflow": ["Large inputs near INT_MAX", "Multiplication results", "Sum accumulation"],
-    "wrong_data_structure": ["Access patterns", "Memory constraints", "Time complexity requirements"],
-    "time_complexity_issue": ["Large n (n > 10^5)", "Nested loops", "Repeated computations"],
-    "recursion_issue": ["Base case validation", "Maximum recursion depth", "Stack overflow"],
-    "comparison_error": ["Equality vs inequality", "Floating point precision", "Type coercion"],
-    "logic_error": ["Algorithm correctness", "State transitions", "Loop invariants"],
-    # New 6
-    "algorithm_choice": ["Problem constraints", "Expected time complexity", "Input size ranges"],
-    "edge_case_handling": ["Empty input", "Single element", "All same elements", "Negative values"],
-    "input_parsing": ["Whitespace handling", "Number formats", "Special characters", "Line endings"],
-    "misread_problem": ["Return type", "Output format", "Constraint interpretation"],
-    "partial_solution": ["Missing cases", "Incomplete coverage", "Partial implementation"],
-    "type_error": ["Integer vs float", "String vs number", "Array vs scalar"],
-    # Fallback
+    "correctness": [
+        "Empty input (n=0)",
+        "Single element (n=1)",
+        "All elements identical",
+        "Maximum/minimum constraint values",
+        "Negative numbers if allowed",
+    ],
+    "efficiency": [
+        "Large n (n > 10^5)",
+        "Worst-case input patterns",
+        "Dense graphs (m ≈ n²)",
+        "Long strings",
+    ],
+    "implementation": [
+        "First/last element access",
+        "Loop boundary conditions",
+        "Integer overflow potential",
+        "Null/undefined values",
+    ],
+    "understanding_gap": [
+        "Constraint edge values",
+        "Return type requirements",
+        "Output format exactness",
+        "Special input patterns",
+    ],
+    # V3.1: Problem misinterpretation edge cases
+    "problem_misinterpretation": [
+        "Input format exactly as specified",
+        "Output format requirements",
+        "Constraint values and their meaning",
+        "Problem statement nuances",
+    ],
     "unknown": [],
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# HINT DIRECTION GENERATOR
+# V3.0 HINT DIRECTIONS (by root cause + subtype)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 HINT_DIRECTIONS = {
-    # Original 9
-    "boundary_condition_blindness": {
-        "direction": "Consider what happens when your input is empty or has only one element",
-        "avoid": ["add check for empty", "if n == 0", "edge case handling"],
+    # ROOT CAUSES
+    "correctness": {
+        "direction": "Walk through your algorithm with a small example - does it produce the right answer?",
+        "avoid": ["the bug is", "fix line", "change to"],
     },
-    "off_by_one_error": {
-        "direction": "Trace through the first and last iterations of your loop carefully",
-        "avoid": ["< instead of <=", "change loop bound", "off by one"],
+    "efficiency": {
+        "direction": "Think about whether you can avoid redundant computation or use a more efficient approach",
+        "avoid": ["O(n)", "hashmap", "binary search", "specific algorithm"],
     },
-    "integer_overflow": {
-        "direction": "Think about what happens when numbers get very large",
-        "avoid": ["use long", "modulo", "overflow"],
+    "implementation": {
+        "direction": "Trace through the first and last iterations carefully - check your boundaries",
+        "avoid": ["< vs <=", "off by one", "change index"],
     },
-    "wrong_data_structure": {
-        "direction": "Consider if there's a data structure that gives faster lookup",
-        "avoid": ["hashmap", "set", "dictionary", "specific DS name"],
+    "understanding_gap": {
+        "direction": "Re-read the problem constraints carefully - what exactly is required?",
+        "avoid": ["the problem says", "you misread", "constraint is"],
     },
-    "time_complexity_issue": {
-        "direction": "Think about whether you can avoid checking every pair",
-        "avoid": ["O(n)", "linear", "hashmap", "two pointer", "specific algorithm"],
+    "problem_misinterpretation": {
+        "direction": "Compare your code's input parsing with the problem's expected format - are they aligned?",
+        "avoid": ["wrong problem", "misread", "input format is"],
     },
-    "logic_error": {
-        "direction": "Walk through your algorithm with a small example step by step",
-        "avoid": ["the bug is", "change line", "fix the condition"],
+    # SUBTYPES (more specific hints)
+    "wrong_invariant": {
+        "direction": "Consider what property must remain true throughout your algorithm",
+        "avoid": ["invariant is", "you need to maintain"],
     },
-    "recursion_issue": {
-        "direction": "Consider what happens at the very beginning and very end of recursion",
-        "avoid": ["base case", "return statement", "stack"],
+    "incorrect_boundary": {
+        "direction": "Check what happens at the very first and very last elements",
+        "avoid": ["off by one", "change <=", "boundary"],
     },
-    "comparison_error": {
-        "direction": "Check each comparison operator in your code - are they the right ones?",
-        "avoid": ["use <=", "change to >", "operator"],
+    "partial_case_handling": {
+        "direction": "What happens when the input is empty, has one element, or all same values?",
+        "avoid": ["add check", "handle case", "if empty"],
     },
-    # New 6
-    "algorithm_choice": {
-        "direction": "Think about whether a different approach might be more efficient",
-        "avoid": ["use DP", "use greedy", "specific algorithm name"],
+    "state_loss": {
+        "direction": "Is there any information you're losing that you need later?",
+        "avoid": ["store", "save state", "preserve"],
     },
-    "edge_case_handling": {
-        "direction": "Consider the simplest possible inputs - what would your code return?",
-        "avoid": ["add if statement", "check for", "handle case"],
+    "brute_force_under_constraints": {
+        "direction": "Can you precompute something to avoid checking every combination?",
+        "avoid": ["use hashmap", "sort first", "binary search"],
     },
-    "input_parsing": {
-        "direction": "Double-check how you're reading and processing the input format",
-        "avoid": ["split", "parse", "read line", "convert"],
+    "premature_optimization": {
+        "direction": "Does your optimized version handle all the cases correctly?",
+        "avoid": ["simplify", "brute force first", "correctness"],
     },
-    "misread_problem": {
-        "direction": "Re-read the problem statement carefully - what EXACTLY is being asked?",
-        "avoid": ["the problem says", "you misunderstood", "read again"],
+    "misread_constraint": {
+        "direction": "Re-read the constraints - what are the exact limits and requirements?",
+        "avoid": ["constraint is", "n is", "you misread"],
     },
-    "partial_solution": {
-        "direction": "Is your solution handling ALL cases the problem requires?",
-        "avoid": ["add case", "you missed", "incomplete"],
+    "wrong_input_format": {
+        "direction": "Look at the expected input format - is your code parsing it correctly?",
+        "avoid": ["input is", "parse as", "format is"],
     },
-    "type_error": {
-        "direction": "Think about the types of values flowing through your code",
-        "avoid": ["int to string", "cast", "convert type"],
+    "wrong_problem_entirely": {
+        "direction": "Verify your code is solving the right problem - compare expected output format",
+        "avoid": ["wrong problem", "should be solving", "problem is actually"],
     },
-    # Fallback
+    "misread_constraints": {
+        "direction": "Check the constraints again - what are the exact limits on values and sizes?",
+        "avoid": ["constraint says", "limit is", "maximum is"],
+    },
     "unknown": {
-        "direction": "Review your approach step by step to find where it diverges from expected behavior",
+        "direction": "Review your approach step by step to find where it diverges",
         "avoid": [],
     },
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FOCUS AREA GENERATOR
+# V3.0 FOCUS AREA MAP (by root cause + subtype)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 FOCUS_AREA_MAP = {
-    # Original 9
-    "boundary_condition_blindness": [
-        "Edge Case Analysis Techniques",
-        "Input Validation Patterns",
-        "Boundary Testing Methodology",
+    # ROOT CAUSES
+    "correctness": [
+        "Algorithm correctness verification",
+        "Systematic edge case enumeration",
+        "Loop invariant reasoning",
     ],
-    "off_by_one_error": [
-        "Loop Invariant Analysis",
-        "Array Index Boundary Practice",
-        "Iteration Pattern Verification",
+    "efficiency": [
+        "Algorithm complexity analysis",
+        "Optimization pattern recognition",
+        "Time-space tradeoff understanding",
     ],
-    "integer_overflow": [
-        "Large Number Handling",
-        "Modular Arithmetic",
-        "Type Range Awareness",
+    "implementation": [
+        "Boundary condition handling",
+        "Index arithmetic precision",
+        "State management practices",
     ],
-    "wrong_data_structure": [
-        "Data Structure Selection Guide",
-        "Time-Space Complexity Tradeoffs",
-        "Container Operation Costs",
+    "understanding_gap": [
+        "Problem constraint analysis",
+        "Requirement extraction techniques",
+        "Input-output specification matching",
     ],
-    "time_complexity_issue": [
-        "Algorithm Complexity Analysis",
-        "Optimization Techniques",
-        "Common O(n) Patterns",
+    "problem_misinterpretation": [
+        "Problem statement comprehension",
+        "Input/output format verification",
+        "Constraint and edge case alignment",
     ],
-    "logic_error": [
-        "Algorithm Correctness Verification",
-        "Dry Run Technique",
-        "Invariant Checking",
+    # SUBTYPES
+    "wrong_invariant": [
+        "Loop invariant identification",
+        "Correctness proof techniques",
+        "Property preservation under operations",
     ],
-    "recursion_issue": [
-        "Recursion Fundamentals",
-        "Base Case Design",
-        "Stack Space Analysis",
+    "incorrect_boundary": [
+        "Off-by-one error prevention",
+        "Inclusive vs exclusive range reasoning",
+        "Array boundary safety patterns",
     ],
-    "comparison_error": [
-        "Operator Semantics",
-        "Boolean Logic Verification",
-        "Precision-Aware Comparisons",
+    "partial_case_handling": [
+        "Edge case enumeration methodology",
+        "Input domain coverage analysis",
+        "Defensive programming patterns",
     ],
-    # New 6
-    "algorithm_choice": [
-        "Algorithm Pattern Recognition",
-        "Greedy vs DP Decision Making",
-        "Problem Classification Techniques",
+    "state_loss": [
+        "Variable lifetime tracking",
+        "State persistence patterns",
+        "Scope and mutation awareness",
     ],
-    "edge_case_handling": [
-        "Systematic Edge Case Enumeration",
-        "Input Constraint Analysis",
-        "Test Case Generation",
+    "brute_force_under_constraints": [
+        "Constraint-to-complexity mapping",
+        "Algorithm optimization techniques",
+        "Preprocessing and caching patterns",
     ],
-    "input_parsing": [
-        "Input Format Parsing Patterns",
-        "String Processing Techniques",
-        "Type Conversion Best Practices",
+    "premature_optimization": [
+        "Correctness-first development",
+        "Incremental optimization approach",
+        "Testing before optimizing",
     ],
-    "misread_problem": [
-        "Problem Statement Analysis",
-        "Constraint Extraction Techniques",
-        "Example Trace-Through Methods",
+    "misread_constraint": [
+        "Constraint extraction methodology",
+        "Problem statement close reading",
+        "Requirement verification habits",
     ],
-    "partial_solution": [
-        "Completeness Checking",
-        "Solution Coverage Analysis",
-        "Systematic Case Enumeration",
+    "wrong_input_format": [
+        "Input format recognition",
+        "Parser verification techniques",
+        "Format template matching",
     ],
-    "type_error": [
-        "Type System Understanding",
-        "Implicit Conversion Awareness",
-        "Type Safety Practices",
+    "wrong_problem_entirely": [
+        "Problem statement comprehension",
+        "Expected output verification",
+        "Solution-problem alignment",
     ],
-    # Fallback
+    "misread_constraints": [
+        "Constraint awareness training",
+        "Limit verification habits",
+        "Numeric overflow prevention",
+    ],
     "unknown": [
-        "General Debugging Techniques",
-        "Systematic Problem Solving",
-        "Code Review Practices",
+        "General debugging techniques",
+        "Systematic problem solving",
+        "Code review practices",
     ],
 }
 
@@ -342,9 +398,35 @@ class MIMDecisionEngine:
             readiness_result = self.model.predict_readiness(features)
             performance_result = self.model.predict_performance(features)
             
-            # 3. Run pattern engine
+            # V3.1: MIGRATE OLD ROOT CAUSE TO NEW TAXONOMY IMMEDIATELY
+            raw_root_cause = root_cause_result["failure_cause"]
+            migrated_root_cause = self._migrate_root_cause(raw_root_cause)
+            
+            # V3.1: Check for problem_misinterpretation before other analysis
+            # (cheap heuristic check on code vs problem schema)
+            misinterpretation = self._detect_problem_misinterpretation(
+                submission.get("code", ""),
+                problem_context,
+            )
+            if misinterpretation:
+                migrated_root_cause = "problem_misinterpretation"
+                root_cause_result = {
+                    **root_cause_result,
+                    "failure_cause": migrated_root_cause,
+                    "confidence": 0.85,
+                    "misinterpretation_details": misinterpretation,
+                }
+            else:
+                # Update the root_cause_result with migrated value
+                root_cause_result = {
+                    **root_cause_result,
+                    "failure_cause": migrated_root_cause,
+                    "_original_cause": raw_root_cause,  # Keep for debugging
+                }
+            
+            # 3. Run pattern engine (now with migrated root cause)
             pattern = self.pattern_engine.detect_pattern(
-                root_cause=root_cause_result["failure_cause"],
+                root_cause=migrated_root_cause,  # V3.1: Use migrated cause
                 root_cause_confidence=root_cause_result["confidence"],
                 verdict=submission.get("verdict", ""),
                 user_history=user_history,
@@ -374,7 +456,7 @@ class MIMDecisionEngine:
             
             # 6. Generate focus areas
             focus_areas = self._generate_focus_areas(
-                root_cause_result["failure_cause"],
+                migrated_root_cause,  # V3.1: Use migrated
                 readiness_result,
                 problem_context,
             )
@@ -384,8 +466,8 @@ class MIMDecisionEngine:
             inference_time = (time.time() - start_time) * 1000
             
             decision = MIMDecision(
-                # Core predictions
-                root_cause=root_cause_result["failure_cause"],
+                # Core predictions - V3.1: Always use migrated root cause
+                root_cause=migrated_root_cause,
                 root_cause_confidence=root_cause_result["confidence"],
                 root_cause_alternatives=root_cause_result.get("alternatives", []),
                 
@@ -411,7 +493,7 @@ class MIMDecisionEngine:
                 
                 # Metadata
                 is_cold_start=is_cold_start,
-                model_version=self.model.model_version,
+                model_version=f"v3.1-taxonomy-{self.model.model_version}-ml",  # v3.1 taxonomy with v2.0 ML model
                 inference_time_ms=inference_time,
             )
             
@@ -495,58 +577,183 @@ class MIMDecisionEngine:
         code: str,
         verdict: str,
         problem_context: Optional[Dict[str, Any]],
-    ) -> tuple[Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
-        v3.3: Infer granular subtype and failure mechanism from code patterns.
+        V3.0: Infer granular subtype and failure mechanism from code patterns.
+        
+        Uses the canonical taxonomy from subtype_masks.py:
+        - correctness: wrong_invariant, incorrect_boundary, partial_case_handling, state_loss
+        - efficiency: brute_force_under_constraints, premature_optimization
+        - implementation: incorrect_boundary, state_loss, partial_case_handling
+        - understanding_gap: misread_constraint, wrong_invariant
         
         Returns:
             (subtype, failure_mechanism)
         """
-        subtypes = ROOT_CAUSE_SUBTYPES.get(root_cause, {})
-        if not subtypes:
+        # V3.0: Migrate old root cause to new taxonomy if needed
+        new_root_cause = OLD_TO_NEW_ROOT_CAUSE.get(root_cause, root_cause)
+        
+        # Get valid subtypes for this root cause
+        valid_subtypes = ROOT_CAUSE_TO_SUBTYPES.get(new_root_cause)
+        if not valid_subtypes:
             return None, None
         
         code_lower = code.lower() if code else ""
+        category = problem_context.get("category", "") if problem_context else ""
         
-        # Algorithm choice subtypes
-        if root_cause == "algorithm_choice":
-            # Check for brute force patterns
-            if "for" in code_lower and code_lower.count("for") >= 2:
-                # Nested loops suggest brute force
-                if verdict in ["time_limit_exceeded", "tle"]:
-                    return "brute_force", f"Nested loops create O(n²) or worse complexity"
-            
-            # Check for sorting when invariant matters
+        # EFFICIENCY subtypes
+        if new_root_cause == "efficiency":
+            if verdict in ["time_limit_exceeded", "tle"]:
+                if code_lower.count("for") >= 2:
+                    return "brute_force_under_constraints", "Nested loops create O(n²) or worse complexity"
+                return "brute_force_under_constraints", "Solution exceeds time constraints"
+            else:
+                # Wrong answer but complexity-focused root cause → premature optimization
+                return "premature_optimization", "Optimization introduced correctness bug"
+        
+        # CORRECTNESS subtypes
+        elif new_root_cause == "correctness":
+            # Check for invariant issues
             if "sort" in code_lower:
-                expected_approach = problem_context.get("expected_approach", "") if problem_context else ""
-                if "order" in expected_approach.lower() or "position" in expected_approach.lower():
-                    return "wrong_invariant", "Sorting destroys the original ordering/position information"
+                return "wrong_invariant", "Sorting may destroy required ordering invariant"
             
-            # Check for greedy vs DP mismatch
-            expected_approach = problem_context.get("expected_approach", "") if problem_context else ""
-            if "dp" in expected_approach.lower() or "dynamic" in expected_approach.lower():
-                if "dp" not in code_lower and "memo" not in code_lower:
-                    return "greedy_when_dp", "This problem requires DP but you used a greedy approach"
+            # Check for boundary issues
+            if "<=" in code or ">=" in code or "-1" in code or "+1" in code:
+                if verdict == "wrong_answer":
+                    return "incorrect_boundary", "Boundary condition may be off by one"
             
-            # Default to wrong_invariant if we detect correctness issue
-            if verdict == "wrong_answer":
-                return "wrong_invariant", "Your algorithm doesn't maintain required correctness invariant"
+            # Check for partial case handling
+            if "if" in code_lower and ("return" in code_lower or "break" in code_lower):
+                if verdict == "wrong_answer":
+                    return "partial_case_handling", "Some input cases may not be handled"
+            
+            # Check for state loss
+            if "=" in code and ("for" in code_lower or "while" in code_lower):
+                if "memo" not in code_lower and "dp" not in code_lower:
+                    return "state_loss", "Variable state may not be preserved correctly"
+            
+            # Default
+            return "wrong_invariant", "Algorithm doesn't maintain required correctness property"
         
-        # Off by one subtypes
-        elif root_cause == "off_by_one_error":
-            if "<=" in code or ">=" in code:
-                return "loop_bound", "Check if loop bound should be < or <= (off by one)"
-            if "[" in code and ("-1" in code or "+1" in code):
-                return "index_access", "Array index calculation may be off by one"
+        # IMPLEMENTATION subtypes
+        elif new_root_cause == "implementation":
+            # Off-by-one patterns
+            if "<=" in code or ">=" in code or "[" in code and ("-1" in code or "+1" in code):
+                return "incorrect_boundary", "Array index or loop bound may be off by one"
+            
+            # State loss patterns
+            if "=" in code and ("for" in code_lower or "while" in code_lower):
+                return "state_loss", "Variable may be overwritten or lost in loop"
+            
+            # Default
+            return "partial_case_handling", "Edge case not handled in implementation"
         
-        # Time complexity subtypes
-        elif root_cause == "time_complexity_issue":
-            if code_lower.count("for") >= 2:
-                return "nested_loops", "Nested loops cause quadratic or worse complexity"
-            if verdict == "time_limit_exceeded":
-                return "suboptimal_search", "Consider more efficient search/lookup approach"
+        # UNDERSTANDING_GAP subtypes
+        elif new_root_cause == "understanding_gap":
+            # Check problem context for constraint issues
+            expected_complexity = problem_context.get("expected_complexity", "") if problem_context else ""
+            if expected_complexity and code_lower.count("for") > 1:
+                return "misread_constraint", f"Constraint requires {expected_complexity} but approach may be slower"
+            
+            # Default
+            return "misread_constraint", "Problem constraint or requirement may be misunderstood"
+        
+        # PROBLEM_MISINTERPRETATION subtypes (V3.1)
+        elif new_root_cause == "problem_misinterpretation":
+            # Get misinterpretation details if available
+            details = root_cause_result.get("misinterpretation_details", {}) if isinstance(root_cause_result, dict) else {}
+            subtype = details.get("subtype", "wrong_input_format")
+            reason = details.get("reason", "Code structure doesn't match problem requirements")
+            return subtype, reason
         
         return None, None
+    
+    def _detect_problem_misinterpretation(
+        self,
+        code: str,
+        problem_context: Optional[Dict[str, Any]],
+    ) -> Optional[Dict[str, str]]:
+        """
+        V3.1: Detect problem misinterpretation using cheap heuristics.
+        
+        Checks if code structure doesn't match problem input schema.
+        This runs BEFORE ML prediction and can override root cause.
+        
+        Returns:
+            Dict with subtype and reason if misinterpretation detected, None otherwise
+        """
+        if not code or not problem_context:
+            return None
+        
+        code_lower = code.lower()
+        
+        # Extract problem expectations
+        expected_inputs = problem_context.get("input_format", "")
+        expected_outputs = problem_context.get("output_format", "")
+        problem_title = problem_context.get("title", "").lower()
+        problem_tags = [t.lower() for t in problem_context.get("tags", [])]
+        
+        # Heuristic 1: Check for input format mismatch
+        # If problem expects array but code doesn't read array
+        if expected_inputs:
+            expects_array = any(kw in expected_inputs.lower() for kw in ["array", "list", "[]", "vector"])
+            expects_string = any(kw in expected_inputs.lower() for kw in ["string", "str"])
+            expects_graph = any(kw in expected_inputs.lower() for kw in ["edge", "node", "graph", "tree"])
+            
+            # Check what code actually parses
+            reads_array = any(kw in code_lower for kw in ["split()", ".split", "list(", "[]", "array"])
+            reads_graph = any(kw in code_lower for kw in ["edge", "adj", "graph", "node"])
+            
+            if expects_graph and not reads_graph:
+                return {
+                    "subtype": "wrong_input_format",
+                    "reason": f"Problem expects graph input but code doesn't process graph structure"
+                }
+            if expects_array and not reads_array and "input" in code_lower:
+                return {
+                    "subtype": "wrong_input_format", 
+                    "reason": "Problem expects array input but code doesn't read array"
+                }
+        
+        # Heuristic 2: Check for solving completely wrong problem
+        # Common patterns that indicate wrong problem understanding
+        problem_keywords = set()
+        if "sum" in problem_title:
+            problem_keywords.add("sum")
+        if "sort" in problem_title:
+            problem_keywords.add("sort")
+        if "search" in problem_title or "find" in problem_title:
+            problem_keywords.update(["search", "find", "index"])
+        if "tree" in problem_tags or "binary tree" in problem_title:
+            problem_keywords.update(["tree", "root", "left", "right", "node"])
+        if "graph" in problem_tags:
+            problem_keywords.update(["graph", "edge", "vertex", "adj"])
+        
+        if problem_keywords:
+            code_has_keywords = any(kw in code_lower for kw in problem_keywords)
+            if not code_has_keywords and len(code) > 50:
+                # Code doesn't seem to relate to problem at all
+                return {
+                    "subtype": "wrong_problem_entirely",
+                    "reason": f"Code doesn't contain expected elements for this problem type"
+                }
+        
+        # Heuristic 3: Check for constraint misreading
+        constraints = problem_context.get("constraints", "")
+        if constraints:
+            # Check if code handles the scale properly
+            if "10^9" in constraints or "1e9" in constraints or "10**9" in constraints:
+                if "mod" not in code_lower and "%" not in code and "int" in code_lower:
+                    return {
+                        "subtype": "misread_constraints",
+                        "reason": "Large numbers in constraints but no modulo operation"
+                    }
+        
+        return None
+    
+    def _migrate_root_cause(self, raw_root_cause: str) -> str:
+        """Migrate old root cause to new V3.1 taxonomy (5 categories)."""
+        return OLD_TO_NEW_ROOT_CAUSE.get(raw_root_cause, raw_root_cause)
     
     def _generate_feedback_instruction(
         self,
@@ -559,15 +766,31 @@ class MIMDecisionEngine:
         problem_context: Optional[Dict[str, Any]] = None,
     ) -> FeedbackInstruction:
         """Generate pre-computed instruction for feedback_agent."""
-        root_cause = root_cause_result["failure_cause"]
+        raw_root_cause = root_cause_result["failure_cause"]
         
-        # v3.3: Infer subtype and failure mechanism
+        # V3.0: Migrate to new taxonomy
+        root_cause = self._migrate_root_cause(raw_root_cause)
+        
+        # V3.0: Infer subtype and failure mechanism using new taxonomy
         subtype, failure_mechanism = self._infer_subtype(
             root_cause, code, verdict, problem_context
         )
         
-        # Get edge cases for this root cause
-        edge_cases = EDGE_CASE_RULES.get(root_cause, [])
+        # If no failure mechanism, try to derive using rules engine
+        if not failure_mechanism and subtype:
+            try:
+                mechanism_result = derive_failure_mechanism(
+                    root_cause=root_cause,
+                    subtype=subtype,
+                    code_signals={"technique": "unknown"},  # Basic signals
+                    problem_category=problem_context.get("category", "") if problem_context else "",
+                )
+                failure_mechanism = mechanism_result.get("failure_mechanism", "")
+            except Exception:
+                pass
+        
+        # Get edge cases for this root cause (using new taxonomy)
+        edge_cases = EDGE_CASE_RULES.get(root_cause, EDGE_CASE_RULES.get("unknown", []))
         
         # Determine tone based on user state
         burnout_risk = performance.get("burnout_risk", 0.0)
@@ -578,9 +801,9 @@ class MIMDecisionEngine:
         else:
             tone = "direct"
         
-        # Get complexity verdict if TLE-related
+        # Get complexity verdict if efficiency-related
         complexity_verdict = None
-        if root_cause == "time_complexity_issue":
+        if root_cause == "efficiency":
             complexity_verdict = "Solution appears to have suboptimal time complexity"
         
         # Check for similar past context
@@ -594,7 +817,7 @@ class MIMDecisionEngine:
                     break
         
         return FeedbackInstruction(
-            root_cause=root_cause,
+            root_cause=root_cause,  # V3.0: Now uses new 4-category taxonomy
             root_cause_subtype=subtype,
             failure_mechanism=failure_mechanism,
             root_cause_confidence=root_cause_result["confidence"],
@@ -602,7 +825,7 @@ class MIMDecisionEngine:
             recurrence_count=pattern.recurrence_count,
             similar_past_context=similar_past_context,
             complexity_verdict=complexity_verdict,
-            edge_cases_likely=edge_cases[:3],
+            edge_cases_likely=edge_cases[:3] if edge_cases else [],
             tone=tone,
         )
     
@@ -611,14 +834,19 @@ class MIMDecisionEngine:
         root_cause_result: Dict[str, Any],
         problem_context: Optional[Dict[str, Any]],
         user_profile: Optional[Dict[str, Any]],
+        subtype: Optional[str] = None,
     ) -> HintInstruction:
         """Generate pre-computed instruction for hint_agent."""
-        root_cause = root_cause_result["failure_cause"]
+        raw_root_cause = root_cause_result["failure_cause"]
+        root_cause = self._migrate_root_cause(raw_root_cause)
         
-        # Get hint direction from map
+        # V3.0: Try subtype-specific hint first, then root cause
         hint_config = HINT_DIRECTIONS.get(
-            root_cause,
-            {"direction": "Review your approach carefully", "avoid": []}
+            subtype,
+            HINT_DIRECTIONS.get(
+                root_cause,
+                {"direction": "Review your approach carefully", "avoid": []}
+            )
         )
         
         # Check if relates to user's weak topic
@@ -640,18 +868,26 @@ class MIMDecisionEngine:
         self,
         root_cause_result: Dict[str, Any],
         user_profile: Optional[Dict[str, Any]],
+        subtype: Optional[str] = None,
     ) -> LearningInstruction:
         """Generate pre-computed instruction for learning_agent."""
-        root_cause = root_cause_result["failure_cause"]
+        raw_root_cause = root_cause_result["failure_cause"]
+        root_cause = self._migrate_root_cause(raw_root_cause)
         
-        # Get focus areas from map
+        # V3.0: Try subtype-specific focus areas first, then root cause
         focus_areas = FOCUS_AREA_MAP.get(
-            root_cause,
-            ["General Problem-Solving Skills"]
+            subtype,
+            FOCUS_AREA_MAP.get(
+                root_cause,
+                ["General Problem-Solving Skills"]
+            )
         )[:3]
         
-        # Determine skill gap
-        skill_gap = root_cause.replace("_", " ").title()
+        # Determine skill gap using subtype description if available
+        if subtype and subtype in SUBTYPE_DESCRIPTIONS:
+            skill_gap = SUBTYPE_DESCRIPTIONS[subtype]
+        else:
+            skill_gap = root_cause.replace("_", " ").title()
         
         # Check connection to weak topics
         connects_to_weak = False
@@ -680,9 +916,12 @@ class MIMDecisionEngine:
         """Generate recommended focus areas."""
         focus_areas = []
         
+        # V3.0: Migrate root cause first
+        new_root_cause = self._migrate_root_cause(root_cause)
+        
         # Primary: from root cause
-        if root_cause in FOCUS_AREA_MAP:
-            focus_areas.extend(FOCUS_AREA_MAP[root_cause][:2])
+        if new_root_cause in FOCUS_AREA_MAP:
+            focus_areas.extend(FOCUS_AREA_MAP[new_root_cause][:2])
         
         # Secondary: from skill level
         current_level = readiness.get("current_level", "Medium")
