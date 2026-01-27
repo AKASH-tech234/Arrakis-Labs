@@ -1,7 +1,0 @@
-{
-  "focus_areas": [
-    "algorithmic-efficiency",
-    "data-structures"
-  ],
-  "rationale": "The submission failed due to Time Limit Exceeded, indicating that the current solution is not efficient enough for the given problem. To improve performance, consider simplifying the solution logic and reducing nested loops, as this can significantly reduce the time complexity."
-}

@@ -1,7 +1,0 @@
-{
-  "focus_areas": [
-    "Boundary Condition Handling",
-    "Systematic Test Case Generation for Edge Cases"
-  ],
-  "rationale": "Your consistent 'Wrong Answer' verdict, combined with a history of 'edge case missing' and 'boundary condition handling' issues, indicates a need to strengthen your approach to handling specific input scenarios."
-}

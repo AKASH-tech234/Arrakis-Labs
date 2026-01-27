@@ -1,4 +1,0 @@
-{
-  "action": "maintain",
-  "rationale": "The submission failed due to Time Limit Exceeded, indicating an inefficient algorithm for the given constraints. For string problems of this scale (length up to 5 * 10^4), an O(N^2) solution is typically too slow, and an O(N) approach is expected. This aligns with a past mistake where the user was advised to 'Simplify logic and retry' for a string problem, suggesting a recurring challenge with algorithmic efficiency. To improve, focus on optimizing the character tracking within the substring. Consider how to efficiently track characters within the current substring and update this tracking as you iterate through the string, avoiding redundant checks or nested loops."
-}

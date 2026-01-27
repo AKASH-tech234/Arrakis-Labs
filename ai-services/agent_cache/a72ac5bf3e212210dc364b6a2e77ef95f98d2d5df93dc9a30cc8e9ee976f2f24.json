@@ -1,4 +1,0 @@
-{
-  "pattern": "Failure to account for all boundary conditions and edge cases, especially those related to tree size (e.g., an empty tree) and node value ranges (e.g., negative, zero, or extreme values).",
-  "confidence": 0.75
-}
