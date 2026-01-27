@@ -70,7 +70,6 @@ const formatTestCaseObject = (obj) => {
 export default function OutputPanel({ output, status, height, onResizeStart, testCases = [], runResults }) {
   const [activeTab, setActiveTab] = useState("testcase");
   const [selectedTestCase, setSelectedTestCase] = useState(0);
-=======
 // Format input for display (handle arrays, objects, primitives)
 function formatInputDisplay(stdin) {
   if (!stdin) return "";
