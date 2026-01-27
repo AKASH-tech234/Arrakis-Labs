@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-01-26T18:00:10.144964",
+  "input_path": "data/mock_submissions.json",
+  "output_dir": "./data/mim_v3",
+  "total_submissions": 1015,
+  "failed_count": 706,
+  "accepted_count": 309,
+  "failure_validation": {
+    "valid": true,
+    "total_rows": 706,
+    "valid_rows": 706,
+    "invalid_rows": 0,
+    "errors": []
+  },
+  "reinforcement_validation": {
+    "valid": true,
+    "total_rows": 309,
+    "valid_rows": 309,
+    "invalid_rows": 0,
+    "errors": []
+  },
+  "cross_contamination": {
+    "valid": true,
+    "failure_count": 706,
+    "reinforcement_count": 309,
+    "overlap_count": 0,
+    "overlapping_ids": []
+  },
+  "success": true,
+  "failure_path": "data\\mim_v3\\mim_failure_transitions.parquet",
+  "reinforcement_path": "data\\mim_v3\\mim_reinforcement_events.parquet"
+}
