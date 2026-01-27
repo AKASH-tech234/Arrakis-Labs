@@ -20,7 +20,7 @@ const TabButton = ({ active, onClick, children, badge }) => (
   </button>
 );
 
-<<<<<<< HEAD
+
 const formatTestCaseValue = (value) => {
   // If it's a string that looks like JSON, parse it
   if (typeof value === "string") {
