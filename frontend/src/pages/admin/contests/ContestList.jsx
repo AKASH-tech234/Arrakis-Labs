@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import adminApi from '../../../services/admin/adminApi';
+import {
+  Plus,
+  Trophy,
+  Calendar,
+  Clock,
+  Users,
+  Loader2,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 export default function AdminContestList() {
   const { admin } = useAdminAuth();
@@ -36,15 +52,16 @@ export default function AdminContestList() {
 
   const getStatusBadge = (status) => {
     const styles = {
-      draft: 'bg-gray-500/20 text-gray-400',
-      scheduled: 'bg-blue-500/20 text-blue-400',
-      live: 'bg-green-500/20 text-green-400 animate-pulse',
-      ended: 'bg-purple-500/20 text-purple-400',
-      cancelled: 'bg-red-500/20 text-red-400',
+      draft: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20',
+      scheduled: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20',
+      live: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+      ended: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
     };
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || styles.draft}`}>
-        {status?.toUpperCase()}
+      <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg uppercase tracking-wider ${styles[status] || styles.draft}`}>
+        {status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
+        {status}
       </span>
     );
   };
@@ -91,101 +108,126 @@ export default function AdminContestList() {
 
   if (loading && contests.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
+        </div>
+        <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+          Loading contests...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      {}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Contests</h1>
-          <p className="text-gray-400 mt-1">Manage coding contests</p>
+    <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center justify-between"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
+          <div>
+            <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">Contests</h1>
+            <p className="text-[#78716C] text-sm uppercase tracking-widest">Manage coding contests</p>
+          </div>
         </div>
         <Link
           to="/admin/contests/new"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#D97706] text-white font-semibold transition-all shadow-lg shadow-[#D97706]/20 uppercase tracking-wider text-sm"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="h-5 w-5" />
           Create Contest
         </Link>
-      </div>
+      </motion.div>
 
-      {}
-      <div className="flex items-center gap-2 mb-6">
+      {/* Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="flex items-center gap-2"
+      >
         {['all', 'draft', 'scheduled', 'live', 'ended', 'cancelled'].map((status) => (
           <button
             key={status}
             onClick={() => { setFilter(status); setPage(1); }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-semibold uppercase tracking-wider transition-all ${
               filter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-[#D97706] text-white'
+                : 'bg-[#0F0F0D] text-[#78716C] border border-[#1A1814] hover:border-[#D97706]/40 hover:text-[#E8E4D9]'
             }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </button>
         ))}
-      </div>
+      </motion.div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
-      {}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+      {/* Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
+      >
         <table className="w-full">
-          <thead className="bg-gray-700/50">
+          <thead className="bg-[#0F0F0D]">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Contest
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Status
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Start Time
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Duration
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Problems
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Registered
               </th>
-              <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-right text-xs font-semibold text-[#78716C] uppercase tracking-widest">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-700">
+          <tbody className="divide-y divide-[#1A1814]">
             {contests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
+                <td colSpan={7} className="px-6 py-12 text-center text-[#78716C]">
                   No contests found
                 </td>
               </tr>
             ) : (
               contests.map((contest) => (
-                <tr key={contest._id} className="hover:bg-gray-700/50">
+                <tr key={contest._id} className="hover:bg-[#0F0F0D] transition-colors">
                   <td className="px-6 py-4">
                     <div>
                       <Link
                         to={`/admin/contests/${contest._id}`}
-                        className="text-white font-medium hover:text-blue-400"
+                        className="text-[#E8E4D9] font-medium hover:text-[#D97706] transition-colors"
                       >
                         {contest.name}
                       </Link>
-                      <p className="text-gray-500 text-sm truncate max-w-xs">
+                      <p className="text-[#78716C] text-sm truncate max-w-xs">
                         {contest.slug}
                       </p>
                     </div>
@@ -193,16 +235,16 @@ export default function AdminContestList() {
                   <td className="px-6 py-4">
                     {getStatusBadge(contest.status)}
                   </td>
-                  <td className="px-6 py-4 text-gray-300">
+                  <td className="px-6 py-4 text-[#E8E4D9]">
                     {formatDate(contest.startTime)}
                   </td>
-                  <td className="px-6 py-4 text-gray-300">
+                  <td className="px-6 py-4 text-[#E8E4D9]">
                     {contest.duration} min
                   </td>
-                  <td className="px-6 py-4 text-gray-300">
+                  <td className="px-6 py-4 text-[#E8E4D9]">
                     {contest.problems?.length || 0}
                   </td>
-                  <td className="px-6 py-4 text-gray-300">
+                  <td className="px-6 py-4 text-[#E8E4D9]">
                     {contest.stats?.registeredCount || 0}
                   </td>
                   <td className="px-6 py-4">
@@ -211,53 +253,42 @@ export default function AdminContestList() {
                         <>
                           <button
                             onClick={() => handlePublish(contest._id)}
-                            className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg"
+                            className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                             title="Publish"
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            <CheckCircle className="w-5 h-5" />
                           </button>
                           <Link
                             to={`/admin/contests/${contest._id}/edit`}
-                            className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg"
+                            className="p-2 text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-colors"
                             title="Edit"
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
+                            <Edit className="w-5 h-5" />
                           </Link>
                           <button
                             onClick={() => handleDelete(contest._id)}
-                            className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg"
+                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                             title="Delete"
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         </>
                       )}
                       {(contest.status === 'scheduled' || contest.status === 'live') && (
                         <button
                           onClick={() => handleCancel(contest._id)}
-                          className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg"
+                          className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Cancel"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          <XCircle className="w-5 h-5" />
                         </button>
                       )}
                       <Link
                         to={`/admin/contests/${contest._id}`}
-                        className="p-2 text-gray-400 hover:bg-gray-600 rounded-lg"
+                        className="p-2 text-[#78716C] hover:bg-[#1A1814] hover:text-[#E8E4D9] rounded-lg transition-colors"
                         title="View"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
+                        <Eye className="w-5 h-5" />
                       </Link>
                     </div>
                   </td>
@@ -266,12 +297,12 @@ export default function AdminContestList() {
             )}
           </tbody>
         </table>
-      </div>
+      </motion.div>
 
-      {}
+      {/* Pagination */}
       {pagination && pagination.pages > 1 && (
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-gray-400 text-sm">
+        <div className="flex items-center justify-between">
+          <p className="text-[#78716C] text-sm">
             Showing {(page - 1) * pagination.limit + 1} to{' '}
             {Math.min(page * pagination.limit, pagination.total)} of {pagination.total}
           </p>
@@ -279,19 +310,21 @@ export default function AdminContestList() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0F0F0D] border border-[#1A1814] text-[#78716C] hover:border-[#D97706]/40 hover:text-[#E8E4D9] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
+              <ChevronLeft className="w-4 h-4" />
               Previous
             </button>
-            <span className="text-gray-400">
+            <span className="text-[#78716C] px-3">
               Page {page} of {pagination.pages}
             </span>
             <button
               onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
               disabled={page === pagination.pages}
-              className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0F0F0D] border border-[#1A1814] text-[#78716C] hover:border-[#D97706]/40 hover:text-[#E8E4D9] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               Next
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>

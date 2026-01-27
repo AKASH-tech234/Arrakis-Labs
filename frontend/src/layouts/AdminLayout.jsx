@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import AdminHeader from "../components/admin/layout/AdminHeader";
 import AdminSidebar from "../components/admin/layout/AdminSidebar";
 
 export default function AdminLayout() {
@@ -10,19 +9,16 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
-      {}
-      <AdminHeader />
-
-      {}
+      {/* Sidebar with integrated header */}
       <AdminSidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
-      {}
+      {/* Main Content */}
       <main
-        className={`pt-14 transition-all duration-300 ${
-          sidebarCollapsed ? "pl-16" : "pl-56"
+        className={`min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? "pl-[72px]" : "pl-60"
         }`}
       >
         <div className="p-6 lg:p-8">

@@ -323,9 +323,9 @@ export default function AdminPOTDScheduler() {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="p-6 min-h-screen" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {}
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-1 h-8 bg-gradient-to-b from-[#D97706] to-[#D97706]/20 rounded-full" />
           <div>

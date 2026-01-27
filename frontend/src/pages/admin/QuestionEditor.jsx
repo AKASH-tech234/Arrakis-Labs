@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   getQuestionById,
   createQuestion,
@@ -12,6 +13,8 @@ import {
   Trash2,
   Loader2,
   AlertTriangle,
+  Bot,
+  FileText,
 } from "lucide-react";
 
 const QuestionEditor = () => {
@@ -211,54 +214,86 @@ const QuestionEditor = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
+        </div>
+        <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+          Loading question...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {}
-      <div className="flex items-center gap-4 mb-6">
+    <div className="max-w-4xl mx-auto space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center gap-4"
+      >
         <Link
           to="/admin/questions"
-          className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+          className="p-2.5 rounded-lg border border-[#1A1814] bg-[#0F0F0D] hover:border-[#D97706]/40 text-[#78716C] hover:text-[#D97706] transition-all"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-white">
-          {isEditing ? "Edit Question" : "New Question"}
-        </h1>
-      </div>
-
-      {}
-      {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-400" />
-          <span className="text-red-400">{error}</span>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
+            <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">
+              {isEditing ? "Edit Question" : "New Question"}
+            </h1>
+          </div>
+          <p className="text-[#78716C] text-sm uppercase tracking-widest ml-3">
+            {isEditing ? "Update question details" : "Create a new problem"}
+          </p>
         </div>
+      </motion.div>
+
+      {/* Error Alert */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center gap-3"
+        >
+          <div className="p-2 rounded-lg bg-red-500/10">
+            <AlertTriangle className="h-4 w-4 text-red-400" />
+          </div>
+          <span className="text-red-400 text-sm">{error}</span>
+        </motion.div>
       )}
 
-      {}
+      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
             Title *
           </label>
           <input
             type="text"
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
             placeholder="Two Sum"
           />
-        </div>
+        </motion.div>
 
-        {}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        {/* Difficulty */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+        >
+          <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
             Difficulty *
           </label>
           <div className="flex gap-3">
@@ -267,66 +302,78 @@ const QuestionEditor = () => {
                 key={level}
                 type="button"
                 onClick={() => handleChange("difficulty", level)}
-                className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-3 rounded-xl font-medium transition-all border-2 ${
                   formData.difficulty === level
                     ? level === "Easy"
-                      ? "bg-green-500/20 text-green-400 border-2 border-green-500"
+                      ? "bg-[#78716C]/10 text-[#78716C] border-[#78716C]"
                       : level === "Medium"
-                        ? "bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500"
-                        : "bg-red-500/20 text-red-400 border-2 border-red-500"
-                    : "bg-gray-800/50 text-gray-400 border border-gray-700 hover:border-gray-600"
+                        ? "bg-[#D97706]/10 text-[#D97706] border-[#D97706]"
+                        : "bg-[#92400E]/10 text-[#92400E] border-[#92400E]"
+                    : "bg-[#0F0F0D] text-[#78716C] border-[#1A1814] hover:border-[#78716C]/50"
                 }`}
               >
                 {level}
               </button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        {/* Description */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
             Description *
           </label>
           <textarea
             value={formData.description}
             onChange={(e) => handleChange("description", e.target.value)}
             rows={8}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all font-mono text-sm resize-none"
             placeholder="Given an array of integers nums and an integer target..."
           />
-        </div>
+        </motion.div>
 
-        {}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        {/* Constraints */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+        >
+          <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
             Constraints
           </label>
           <textarea
             value={formData.constraints}
             onChange={(e) => handleChange("constraints", e.target.value)}
             rows={4}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all font-mono text-sm resize-none"
             placeholder="2 <= nums.length <= 10^4&#10;-10^9 <= nums[i] <= 10^9"
           />
-        </div>
+        </motion.div>
 
-        {}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        {/* Tags */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
             Tags
           </label>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-3">
             {formData.tags.map((tag, index) => (
               <span
                 key={index}
-                className="px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm flex items-center gap-2"
+                className="px-3 py-1.5 rounded-lg bg-[#D97706]/10 text-[#D97706] text-sm flex items-center gap-2 border border-[#D97706]/20"
               >
                 {tag}
                 <button
                   type="button"
                   onClick={() => removeTag(tag)}
-                  className="hover:text-orange-300"
+                  className="hover:text-[#F59E0B] transition-colors"
                 >
                   ×
                 </button>
@@ -338,192 +385,221 @@ const QuestionEditor = () => {
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={handleAddTag}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
             placeholder="Press Enter to add tags..."
           />
-        </div>
+        </motion.div>
 
         {/* AI Metadata Section */}
-        <div className="border-t border-gray-700 pt-6 mt-6">
-          <h3 className="text-lg font-semibold text-orange-400 mb-4">
-            🤖 AI Metadata (for intelligent feedback)
-          </h3>
-
-          {/* Topic */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Topic
-            </label>
-            <select
-              value={formData.topic}
-              onChange={(e) => handleChange("topic", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="">Select a topic...</option>
-              <option value="Arrays">Arrays</option>
-              <option value="Strings">Strings</option>
-              <option value="Linked Lists">Linked Lists</option>
-              <option value="Trees">Trees</option>
-              <option value="Graphs">Graphs</option>
-              <option value="Dynamic Programming">Dynamic Programming</option>
-              <option value="Recursion">Recursion</option>
-              <option value="Sorting">Sorting</option>
-              <option value="Binary Search">Binary Search</option>
-              <option value="Hash Tables">Hash Tables</option>
-              <option value="Stacks">Stacks</option>
-              <option value="Queues">Queues</option>
-              <option value="Heaps">Heaps</option>
-              <option value="Two Pointers">Two Pointers</option>
-              <option value="Sliding Window">Sliding Window</option>
-              <option value="Greedy">Greedy</option>
-              <option value="Backtracking">Backtracking</option>
-              <option value="Bit Manipulation">Bit Manipulation</option>
-              <option value="Math">Math</option>
-              <option value="Design">Design</option>
-            </select>
-          </div>
-
-          {/* Expected Approach */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Expected Approach
-            </label>
-            <textarea
-              value={formData.expectedApproach}
-              onChange={(e) => handleChange("expectedApproach", e.target.value)}
-              rows={3}
-              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-              placeholder="Describe the optimal approach (e.g., Use hash map to store complements for O(n) lookup...)"
-            />
-          </div>
-
-          {/* Canonical Algorithms */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Canonical Algorithms
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.canonicalAlgorithms.map((algo, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm flex items-center gap-2"
-                >
-                  {algo}
-                  <button
-                    type="button"
-                    onClick={() => removeAlgorithm(algo)}
-                    className="hover:text-blue-300"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <input
-              type="text"
-              value={algorithmInput}
-              onChange={(e) => setAlgorithmInput(e.target.value)}
-              onKeyDown={handleAddAlgorithm}
-              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="e.g., hash_map, binary_search, dfs (Press Enter to add)"
-            />
-          </div>
-
-          {/* Complexity Hints - Row */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Time Complexity Hint
-              </label>
-              <input
-                type="text"
-                value={formData.timeComplexityHint}
-                onChange={(e) =>
-                  handleChange("timeComplexityHint", e.target.value)
-                }
-                className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="O(n), O(log n), O(n²)"
-              />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.35 }}
+          className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
+        >
+          <div className="p-4 border-b border-[#1A1814] bg-[#0F0F0D]/50 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-[#D97706]/10">
+              <Bot className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Space Complexity Hint
+              <h3 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-wider">
+                AI Metadata
+              </h3>
+              <p className="text-xs text-[#78716C]">For intelligent feedback</p>
+            </div>
+          </div>
+          
+          <div className="p-5 space-y-5">
+            {/* Topic */}
+            <div>
+              <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                Topic
               </label>
+              <select
+                value={formData.topic}
+                onChange={(e) => handleChange("topic", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+              >
+                <option value="">Select a topic...</option>
+                <option value="Arrays">Arrays</option>
+                <option value="Strings">Strings</option>
+                <option value="Linked Lists">Linked Lists</option>
+                <option value="Trees">Trees</option>
+                <option value="Graphs">Graphs</option>
+                <option value="Dynamic Programming">Dynamic Programming</option>
+                <option value="Recursion">Recursion</option>
+                <option value="Sorting">Sorting</option>
+                <option value="Binary Search">Binary Search</option>
+                <option value="Hash Tables">Hash Tables</option>
+                <option value="Stacks">Stacks</option>
+                <option value="Queues">Queues</option>
+                <option value="Heaps">Heaps</option>
+                <option value="Two Pointers">Two Pointers</option>
+                <option value="Sliding Window">Sliding Window</option>
+                <option value="Greedy">Greedy</option>
+                <option value="Backtracking">Backtracking</option>
+                <option value="Bit Manipulation">Bit Manipulation</option>
+                <option value="Math">Math</option>
+                <option value="Design">Design</option>
+              </select>
+            </div>
+
+            {/* Expected Approach */}
+            <div>
+              <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                Expected Approach
+              </label>
+              <textarea
+                value={formData.expectedApproach}
+                onChange={(e) => handleChange("expectedApproach", e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all text-sm resize-none"
+                placeholder="Describe the optimal approach (e.g., Use hash map to store complements for O(n) lookup...)"
+              />
+            </div>
+
+            {/* Canonical Algorithms */}
+            <div>
+              <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                Canonical Algorithms
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.canonicalAlgorithms.map((algo, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1.5 rounded-lg bg-[#0F0F0D] text-[#E8E4D9] text-sm flex items-center gap-2 border border-[#1A1814]"
+                  >
+                    {algo}
+                    <button
+                      type="button"
+                      onClick={() => removeAlgorithm(algo)}
+                      className="hover:text-[#D97706] transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
               <input
                 type="text"
-                value={formData.spaceComplexityHint}
-                onChange={(e) =>
-                  handleChange("spaceComplexityHint", e.target.value)
-                }
-                className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="O(1), O(n)"
+                value={algorithmInput}
+                onChange={(e) => setAlgorithmInput(e.target.value)}
+                onKeyDown={handleAddAlgorithm}
+                className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+                placeholder="e.g., hash_map, binary_search, dfs (Press Enter to add)"
+              />
+            </div>
+
+            {/* Complexity Hints - Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                  Time Complexity Hint
+                </label>
+                <input
+                  type="text"
+                  value={formData.timeComplexityHint}
+                  onChange={(e) =>
+                    handleChange("timeComplexityHint", e.target.value)
+                  }
+                  className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+                  placeholder="O(n), O(log n), O(n²)"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                  Space Complexity Hint
+                </label>
+                <input
+                  type="text"
+                  value={formData.spaceComplexityHint}
+                  onChange={(e) =>
+                    handleChange("spaceComplexityHint", e.target.value)
+                  }
+                  className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+                  placeholder="O(1), O(n)"
+                />
+              </div>
+            </div>
+
+            {/* Common Mistakes */}
+            <div>
+              <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                Common Mistakes
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.commonMistakes.map((mistake, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1.5 rounded-lg bg-[#92400E]/10 text-[#92400E] text-sm flex items-center gap-2 border border-[#92400E]/20"
+                  >
+                    {mistake}
+                    <button
+                      type="button"
+                      onClick={() => removeMistake(mistake)}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={mistakeInput}
+                onChange={(e) => setMistakeInput(e.target.value)}
+                onKeyDown={handleAddMistake}
+                className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+                placeholder="e.g., Off-by-one errors, Not handling edge cases (Press Enter to add)"
               />
             </div>
           </div>
+        </motion.div>
 
-          {/* Common Mistakes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Common Mistakes
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.commonMistakes.map((mistake, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm flex items-center gap-2"
-                >
-                  {mistake}
-                  <button
-                    type="button"
-                    onClick={() => removeMistake(mistake)}
-                    className="hover:text-red-300"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
+        {/* Examples Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
+        >
+          <div className="p-4 border-b border-[#1A1814] bg-[#0F0F0D]/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[#D97706]/10">
+                <FileText className="h-5 w-5 text-[#D97706]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-wider">
+                  Examples
+                </h3>
+                <p className="text-xs text-[#78716C]">Visible to users</p>
+              </div>
             </div>
-            <input
-              type="text"
-              value={mistakeInput}
-              onChange={(e) => setMistakeInput(e.target.value)}
-              onKeyDown={handleAddMistake}
-              className="w-full px-4 py-3 rounded-lg bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="e.g., Off-by-one errors, Not handling edge cases (Press Enter to add)"
-            />
-          </div>
-        </div>
-
-        {}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-300">
-              Examples (visible to users)
-            </label>
             <button
               type="button"
               onClick={addExample}
-              className="flex items-center gap-1 text-sm text-orange-400 hover:text-orange-300"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D97706]/10 text-[#D97706] text-sm font-medium hover:bg-[#D97706]/20 transition-colors"
             >
               <Plus className="h-4 w-4" />
               Add Example
             </button>
           </div>
-          <div className="space-y-4">
+          
+          <div className="p-5 space-y-4">
             {formData.examples.map((example, index) => (
               <div
                 key={index}
-                className="p-4 rounded-lg bg-gray-800/50 border border-gray-700 space-y-3"
+                className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814] space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">
+                  <span className="text-xs text-[#78716C] uppercase tracking-wider">
                     Example {index + 1}
                   </span>
                   {formData.examples.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeExample(index)}
-                      className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition-colors"
+                      className="p-1.5 hover:bg-red-500/10 text-[#78716C] hover:text-red-400 rounded-lg transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -531,7 +607,7 @@ const QuestionEditor = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
+                    <label className="text-xs text-[#78716C] uppercase tracking-wider mb-1.5 block">
                       Input
                     </label>
                     <input
@@ -540,12 +616,12 @@ const QuestionEditor = () => {
                       onChange={(e) =>
                         handleExampleChange(index, "input", e.target.value)
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-600 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 rounded-lg border border-[#1A1814] bg-[#0A0A08] text-[#E8E4D9] text-sm font-mono placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 transition-all"
                       placeholder="nums = [2,7,11,15], target = 9"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
+                    <label className="text-xs text-[#78716C] uppercase tracking-wider mb-1.5 block">
                       Output
                     </label>
                     <input
@@ -554,13 +630,13 @@ const QuestionEditor = () => {
                       onChange={(e) =>
                         handleExampleChange(index, "output", e.target.value)
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-600 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 rounded-lg border border-[#1A1814] bg-[#0A0A08] text-[#E8E4D9] text-sm font-mono placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 transition-all"
                       placeholder="[0, 1]"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">
+                  <label className="text-xs text-[#78716C] uppercase tracking-wider mb-1.5 block">
                     Explanation (optional)
                   </label>
                   <input
@@ -569,27 +645,32 @@ const QuestionEditor = () => {
                     onChange={(e) =>
                       handleExampleChange(index, "explanation", e.target.value)
                     }
-                    className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 rounded-lg border border-[#1A1814] bg-[#0A0A08] text-[#E8E4D9] text-sm placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 transition-all"
                     placeholder="Because nums[0] + nums[1] == 9, we return [0, 1]."
                   />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {}
-        <div className="flex gap-4 pt-4">
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.45 }}
+          className="flex gap-4 pt-4"
+        >
           <Link
             to="/admin/questions"
-            className="flex-1 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium text-center transition-colors"
+            className="flex-1 py-3.5 rounded-xl border border-[#1A1814] bg-[#0F0F0D] hover:border-[#78716C]/50 text-[#78716C] hover:text-[#E8E4D9] font-semibold text-center transition-all uppercase tracking-wider text-sm"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#D97706] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase tracking-wider text-sm"
           >
             {saving ? (
               <>
@@ -603,22 +684,27 @@ const QuestionEditor = () => {
               </>
             )}
           </button>
-        </div>
+        </motion.div>
       </form>
 
-      {}
+      {/* Test Cases Link */}
       {isEditing && (
-        <div className="mt-8 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-          <p className="text-sm text-blue-400">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.5 }}
+          className="p-4 rounded-xl border border-[#D97706]/20 bg-[#D97706]/5"
+        >
+          <p className="text-sm text-[#D97706]">
             💡 To manage test cases for this question, visit the{" "}
             <Link
               to={`/admin/questions/${id}/test-cases`}
-              className="underline hover:text-blue-300"
+              className="underline hover:text-[#F59E0B] transition-colors"
             >
               Test Cases Manager
             </Link>
           </p>
-        </div>
+        </motion.div>
       )}
     </div>
   );
