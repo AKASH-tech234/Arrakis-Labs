@@ -57,6 +57,12 @@ function pickRating(stats) {
   return Number.isFinite(stats.highestRating) ? stats.highestRating : null;
 }
 
+function statsErrorCode({ profile, stats }) {
+  if (profile?.syncStatus === "error") return "FETCH_FAILED";
+  if (!stats) return "NO_STATS";
+  return null;
+}
+
 function toDailyCountSeries(stats) {
   const daily = Array.isArray(stats?.daily) ? stats.daily : [];
   
@@ -120,6 +126,28 @@ export async function getCodingProfileSummary(req, res) {
 
       externalDailySeriesByPlatform[p.platform] = s ? toDailyCountSeries(s) : [];
 
+      const error = statsErrorCode({ profile: p, stats: s });
+
+      const shouldProvidePlaceholderStats = p.platform === "codechef";
+
+      const normalizedStats = s
+        ? {
+            totalSolved: s.totalSolved ?? null,
+            solved: s.totalSolved ?? null,
+            rating: pickRating(s),
+            lastSyncedAt: s.lastSyncedAt || null,
+            error,
+          }
+        : shouldProvidePlaceholderStats
+          ? {
+              totalSolved: 0,
+              solved: 0,
+              rating: null,
+              lastSyncedAt: null,
+              error,
+            }
+          : null;
+
       return {
         id: String(p._id),
         platform: p.platform,
@@ -130,13 +158,7 @@ export async function getCodingProfileSummary(req, res) {
         syncStatus: p.syncStatus,
         lastSyncAt: p.lastSyncAt,
         lastSyncError: p.lastSyncError,
-        stats: s
-          ? {
-              totalSolved: s.totalSolved ?? null,
-              rating: pickRating(s),
-              lastSyncedAt: s.lastSyncedAt || null,
-            }
-          : null,
+        stats: normalizedStats,
         activity: s ? toDailyCountSeries(s).slice(-365) : [],
       };
     });
