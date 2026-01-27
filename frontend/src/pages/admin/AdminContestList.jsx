@@ -1,43 +1,55 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, Plus, Search, Edit, Trash2, Rocket, Play, Ban, Square, Loader2 } from 'lucide-react';
+import { Trophy, Plus, Search, Edit, Trash2, Rocket, Play, Ban, Square, Loader2, Calendar, Clock, Users, FileText } from 'lucide-react';
 import adminContestApi from '../../services/admin/adminContestApi';
 
 const STATUS_BADGES = {
-  draft: { color: 'bg-[#78716C]/20 text-[#78716C] border border-[#78716C]/30', label: 'Draft' },
-  scheduled: { color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30', label: 'Scheduled' },
-  live: { color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', label: 'Live' },
-  ended: { color: 'bg-[#D97706]/20 text-[#D97706] border border-[#D97706]/30', label: 'Ended' },
-  cancelled: { color: 'bg-red-500/20 text-red-400 border border-red-500/30', label: 'Cancelled' },
+  draft: { color: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20', label: 'Draft', dot: 'bg-[#78716C]' },
+  scheduled: { color: 'bg-blue-500/10 text-blue-400 border border-blue-500/20', label: 'Scheduled', dot: 'bg-blue-400' },
+  live: { color: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', label: 'Live', dot: 'bg-emerald-400 animate-pulse' },
+  ended: { color: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20', label: 'Ended', dot: 'bg-[#D97706]' },
+  cancelled: { color: 'bg-red-500/10 text-red-400 border border-red-500/20', label: 'Cancelled', dot: 'bg-red-400' },
 };
 
 function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Confirm', danger = false }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
         className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] p-6 max-w-md w-full mx-4 shadow-2xl"
       >
-        <h3 className="text-lg font-semibold text-[#E8E4D9] mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{title}</h3>
-        <p className="text-[#78716C] mb-6">{message}</p>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2.5 rounded-lg ${danger ? 'bg-red-500/10' : 'bg-[#D97706]/10'}`}>
+            {danger ? (
+              <Trash2 className="h-5 w-5 text-red-400" />
+            ) : (
+              <Trophy className="h-5 w-5 text-[#D97706]" />
+            )}
+          </div>
+          <h3 className="text-lg font-semibold text-[#E8E4D9]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{title}</h3>
+        </div>
+        <p className="text-[#78716C] mb-6 text-sm" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-[#1A1814] hover:bg-[#1A1814]/80 text-[#E8E4D9] rounded-lg transition-colors border border-[#1A1814]"
+            className="px-4 py-2.5 bg-[#1A1814] hover:bg-[#1A1814]/80 text-[#E8E4D9] rounded-lg transition-all border border-[#1A1814] hover:border-[#78716C]/30 text-sm font-medium"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+            className={`px-4 py-2.5 rounded-lg transition-all font-medium text-sm ${
               danger
-                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
-                : 'bg-[#D97706] hover:bg-[#D97706]/80 text-white'
+                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:border-red-500/50'
+                : 'bg-gradient-to-r from-[#D97706] to-amber-600 hover:from-[#D97706]/90 hover:to-amber-600/90 text-white shadow-lg shadow-[#D97706]/20'
             }`}
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             {confirmText}
           </button>
@@ -160,39 +172,50 @@ export default function AdminContestList() {
   };
 
   return (
-    <div className="p-6 min-h-screen" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-gradient-to-b from-[#D97706] to-[#D97706]/20 rounded-full" />
-          <div>
-            <h1 className="text-2xl font-bold text-[#E8E4D9] uppercase tracking-wider flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-[#D97706]" />
+    <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      {/* Header Section */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
+            <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">
               Contests
             </h1>
-            <p className="text-sm text-[#78716C]">Manage competitive programming contests</p>
           </div>
+          <p className="text-[#78716C] text-sm uppercase tracking-widest ml-3">
+            Manage competitive programming contests
+          </p>
         </div>
         <Link
           to="/admin/contests/new"
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#D97706] to-amber-600 hover:from-[#D97706]/90 hover:to-amber-600/90 text-white rounded-lg transition-all font-medium shadow-lg shadow-[#D97706]/20"
+          className="group relative overflow-hidden flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#D97706] to-amber-600 hover:from-[#D97706]/90 hover:to-amber-600/90 text-white rounded-lg transition-all font-medium shadow-lg shadow-[#D97706]/20"
         >
           <Plus className="h-4 w-4" />
-          Create Contest
+          <span className="uppercase tracking-wider text-sm">Create Contest</span>
         </Link>
-      </div>
+      </motion.div>
 
-      {}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex gap-2">
+      {/* Filters & Search */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
+      >
+        <div className="flex flex-wrap gap-2">
           {['all', 'draft', 'scheduled', 'live', 'ended'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm capitalize transition-all font-medium ${
+              className={`px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition-all font-medium ${
                 filter === status
-                  ? 'bg-[#D97706] text-white shadow-lg shadow-[#D97706]/20'
-                  : 'bg-[#0F0F0D] text-[#78716C] hover:text-[#E8E4D9] border border-[#1A1814] hover:border-[#D97706]/40'
+                  ? 'bg-[#D97706]/20 text-[#F59E0B] border border-[#D97706]/40 shadow-lg shadow-[#D97706]/10'
+                  : 'bg-[#0F0F0D] text-[#78716C] hover:text-[#E8E4D9] border border-[#1A1814] hover:border-[#D97706]/30 hover:bg-[#1A1814]/50'
               }`}
             >
               {status}
@@ -206,148 +229,176 @@ export default function AdminContestList() {
             placeholder="Search contests..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#0F0F0D] text-[#E8E4D9] pl-10 pr-4 py-2.5 rounded-lg border border-[#1A1814] focus:border-[#D97706]/50 focus:outline-none focus:ring-1 focus:ring-[#D97706]/30 transition-all placeholder-[#78716C]"
+            className="w-full bg-[#0F0F0D] text-[#E8E4D9] pl-10 pr-4 py-2.5 rounded-lg border border-[#1A1814] focus:border-[#D97706]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/20 transition-all placeholder-[#78716C] text-sm"
           />
         </div>
-      </div>
+      </motion.div>
 
-      {}
+      {/* Error Alert */}
       {error && (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-4 flex items-center justify-between"
+          className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 flex items-center justify-between"
         >
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="hover:text-red-300">×</button>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-red-500/10">
+              <Ban className="h-4 w-4" />
+            </div>
+            <span className="text-sm">{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="hover:text-red-300 p-1 hover:bg-red-500/10 rounded transition-colors">×</button>
         </motion.div>
       )}
 
-      {}
+      {/* Contest List */}
       {loading ? (
-        <div className="text-center py-16">
-          <Loader2 className="h-10 w-10 animate-spin text-[#D97706] mx-auto" />
-          <p className="text-[#78716C] mt-4">Loading contests...</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-20"
+        >
+          <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
+            <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
+          </div>
+          <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider">Loading contests...</p>
+        </motion.div>
       ) : contests.length === 0 ? (
-        <div className="text-center py-16 bg-[#0F0F0D] rounded-xl border border-[#1A1814]">
-          <Trophy className="h-12 w-12 text-[#78716C] mx-auto mb-4" />
-          <p className="text-[#78716C]">No contests found. Create your first contest!</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-16 rounded-xl border border-[#1A1814] bg-[#0F0F0D]"
+        >
+          <div className="p-4 rounded-xl bg-[#1A1814] inline-block mb-4">
+            <Trophy className="h-10 w-10 text-[#78716C]" />
+          </div>
+          <p className="text-[#78716C] mb-4">No contests found</p>
+          <Link
+            to="/admin/contests/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#D97706]/10 text-[#D97706] hover:bg-[#D97706]/20 rounded-lg transition-colors border border-[#D97706]/30 text-sm font-medium uppercase tracking-wider"
+          >
+            <Plus className="h-4 w-4" />
+            Create your first contest
+          </Link>
+        </motion.div>
       ) : (
-        
-        <div className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-[#0A0A08]">
-              <tr>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Title</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Status</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Start Time</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Duration</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Problems</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-[#78716C] uppercase tracking-wider">Registrations</th>
-                <th className="px-4 py-4 text-right text-xs font-semibold text-[#78716C] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1A1814]">
-              {contests.map((contest, index) => (
-                <motion.tr 
-                  key={contest._id} 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="hover:bg-[#1A1814]/30 transition-colors"
-                >
-                  <td className="px-4 py-4">
-                    <Link
-                      to={`/admin/contests/${contest._id}`}
-                      className="text-[#E8E4D9] hover:text-[#D97706] font-medium transition-colors"
-                    >
-                      {contest.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${STATUS_BADGES[contest.status]?.color}`}>
-                      {STATUS_BADGES[contest.status]?.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-[#78716C] text-sm">
-                    {formatDate(contest.startTime)}
-                  </td>
-                  <td className="px-4 py-4 text-[#78716C] text-sm">
-                    {contest.duration} min
-                  </td>
-                  <td className="px-4 py-4 text-[#78716C] text-sm">
-                    {contest.problems?.length || 0}
-                  </td>
-                  <td className="px-4 py-4 text-[#78716C] text-sm">
-                    {contest.registrationCount || 0}
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => navigate(`/admin/contests/${contest._id}/edit`)}
-                        className="p-2 text-[#78716C] hover:text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-colors"
-                        title="Edit"
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="space-y-3"
+        >
+          {contests.map((contest, index) => (
+            <motion.div
+              key={contest._id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="group rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[#D97706]/5"
+            >
+              <div className="flex items-center justify-between">
+                {/* Left: Contest Info */}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="p-3 rounded-lg bg-[#1A1814] group-hover:bg-[#D97706]/10 transition-colors">
+                    <Trophy className="h-5 w-5 text-[#78716C] group-hover:text-[#D97706] transition-colors" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <Link
+                        to={`/admin/contests/${contest._id}`}
+                        className="text-[#E8E4D9] hover:text-[#F59E0B] font-semibold transition-colors truncate text-lg"
                       >
-                        <Edit className="h-4 w-4" />
-                      </button>
-
-                      {contest.status === 'draft' && (
-                        <button
-                          onClick={() => openModal('publish', contest)}
-                          className="p-2 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                          title="Publish"
-                        >
-                          <Rocket className="h-4 w-4" />
-                        </button>
-                      )}
-
-                      {contest.status === 'scheduled' && (
-                        <>
-                          <button
-                            onClick={() => openModal('start', contest)}
-                            className="p-2 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                            title="Start Now"
-                          >
-                            <Play className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => openModal('cancel', contest)}
-                            className="p-2 text-[#78716C] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Cancel"
-                          >
-                            <Ban className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-
-                      {contest.status === 'live' && (
-                        <button
-                          onClick={() => openModal('end', contest)}
-                          className="p-2 text-[#78716C] hover:text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-colors"
-                          title="End Now"
-                        >
-                          <Square className="h-4 w-4" />
-                        </button>
-                      )}
-
-                      {['draft', 'cancelled'].includes(contest.status) && (
-                        <button
-                          onClick={() => openModal('delete', contest)}
-                          className="p-2 text-[#78716C] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
+                        {contest.title}
+                      </Link>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium uppercase tracking-wider ${STATUS_BADGES[contest.status]?.color}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_BADGES[contest.status]?.dot}`} />
+                        {STATUS_BADGES[contest.status]?.label}
+                      </span>
                     </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <div className="flex items-center gap-4 text-xs text-[#78716C]">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {formatDate(contest.startTime)}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {contest.duration} min
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
+                        {contest.problems?.length || 0} problems
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5" />
+                        {contest.registrationCount || 0} registered
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-1 ml-4">
+                  <button
+                    onClick={() => navigate(`/admin/contests/${contest._id}/edit`)}
+                    className="p-2.5 text-[#78716C] hover:text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-all border border-transparent hover:border-[#D97706]/20"
+                    title="Edit"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+
+                  {contest.status === 'draft' && (
+                    <button
+                      onClick={() => openModal('publish', contest)}
+                      className="p-2.5 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all border border-transparent hover:border-emerald-500/20"
+                      title="Publish"
+                    >
+                      <Rocket className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  {contest.status === 'scheduled' && (
+                    <>
+                      <button
+                        onClick={() => openModal('start', contest)}
+                        className="p-2.5 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all border border-transparent hover:border-emerald-500/20"
+                        title="Start Now"
+                      >
+                        <Play className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('cancel', contest)}
+                        className="p-2.5 text-[#78716C] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20"
+                        title="Cancel"
+                      >
+                        <Ban className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+
+                  {contest.status === 'live' && (
+                    <button
+                      onClick={() => openModal('end', contest)}
+                      className="p-2.5 text-[#78716C] hover:text-[#D97706] hover:bg-[#D97706]/10 rounded-lg transition-all border border-transparent hover:border-[#D97706]/20"
+                      title="End Now"
+                    >
+                      <Square className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  {['draft', 'cancelled'].includes(contest.status) && (
+                    <button
+                      onClick={() => openModal('delete', contest)}
+                      className="p-2.5 text-[#78716C] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       )}
 
       {}
