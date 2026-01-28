@@ -263,8 +263,20 @@ async function fetchCodeChef(handle) {
     return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: errorCode };
   }
 
-  const blockedSignals = /(access denied|request blocked|captcha|cloudflare)/i;
-  if (blockedSignals.test(rawHtml)) {
+  // Note: normal CodeChef pages often include the word "cloudflare" (e.g. via scripts),
+  // so treating any occurrence as a block causes false positives.
+  const blockedSignals = /(access denied|request blocked|captcha)/i;
+  // Be careful: CodeChef pages are served via Cloudflare and often contain benign Cloudflare strings
+  // like "/cdn-cgi/speculation" or "data-cf-modified". Those are not block pages.
+  const cloudflareChallengeSignals =
+    /(attention required\s*!?\s*\|\s*cloudflare|checking your browser|cf-chl-|challenge-platform\/|cf-turnstile|g-recaptcha)/i;
+
+  const isLikelyBlocked =
+    blockedSignals.test(rawHtml) ||
+    cloudflareChallengeSignals.test(rawHtml) ||
+    ((res?.status === 403 || res?.status === 429) && /cloudflare/i.test(rawHtml));
+
+  if (isLikelyBlocked) {
     console.error("[codechef] blocked_detected", {
       url,
       status: res?.status,
@@ -347,6 +359,230 @@ async function fetchCodeChef(handle) {
   }
 }
 
+async function fetchAtCoder(handle) {
+  const apiUrl = `https://kenkoooo.com/atcoder/atcoder-api/v3/user_info?user=${encodeURIComponent(handle)}`;
+  const url = `https://atcoder.jp/users/${encodeURIComponent(handle)}`;
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
+  console.info(`Fetching AtCoder stats for handle: ${handle}`);
+  console.info("[atcoder] request", { apiUrl, url });
+
+  let acceptedCount = null;
+
+  try {
+    const apiRes = await axios.get(apiUrl, {
+      headers: { ...headers, Accept: "application/json,*/*;q=0.8" },
+      timeout: 15000,
+      validateStatus: () => true,
+    });
+
+    const bodyString =
+      typeof apiRes?.data === "string" ? apiRes.data : JSON.stringify(apiRes?.data || {});
+    console.info("[atcoder] response", {
+      url: apiUrl,
+      status: apiRes?.status,
+      headers: apiRes?.headers,
+      rawBodyLength: bodyString.length,
+    });
+
+    if (apiRes?.status === 200) {
+      const v = apiRes?.data?.accepted_count;
+      acceptedCount = Number.isFinite(v) ? v : Number(v);
+      if (!Number.isFinite(acceptedCount)) acceptedCount = null;
+    } else if (apiRes?.status === 404) {
+      return { ...buildEmptyExternalStats({ dataSource: "api" }), error: "NOT_FOUND" };
+    }
+  } catch (err) {
+    console.error("[atcoder] api_request_failed", { apiUrl, message: err?.message });
+  }
+
+  let res;
+  try {
+    res = await axios.get(url, {
+      headers,
+      timeout: 15000,
+      maxRedirects: 5,
+      validateStatus: () => true,
+    });
+  } catch (err) {
+    console.error("[atcoder] request_failed", { url, message: err?.message });
+    return {
+      ...buildEmptyExternalStats({ dataSource: acceptedCount !== null ? "api" : "scrape" }),
+      totalSolved: acceptedCount || 0,
+      error: acceptedCount !== null ? null : "FETCH_FAILED",
+    };
+  }
+
+  const rawHtml = typeof res?.data === "string" ? res.data : "";
+  console.info("[atcoder] response", {
+    url,
+    status: res?.status,
+    headers: res?.headers,
+    rawBodyLength: rawHtml.length,
+  });
+
+  if (!rawHtml || res?.status >= 400) {
+    const errorCode = res?.status === 404 ? "NOT_FOUND" : "FETCH_FAILED";
+    console.error("[atcoder] bad_status_or_empty_body", {
+      url,
+      status: res?.status,
+      rawBodyLength: rawHtml.length,
+    });
+    return {
+      ...buildEmptyExternalStats({ dataSource: acceptedCount !== null ? "api" : "scrape" }),
+      totalSolved: acceptedCount || 0,
+      error: acceptedCount !== null ? null : errorCode,
+    };
+  }
+
+  try {
+    const $ = cheerio.load(rawHtml);
+
+    const getProfileValue = (label) => {
+      const th = $("th")
+        .filter((_, el) => normalizeWhitespace($(el).text()).toLowerCase() === label.toLowerCase())
+        .first();
+      if (!th.length) return null;
+      const td = th.next("td");
+      return td.length ? normalizeWhitespace(td.text()) : null;
+    };
+
+    const ratingText = getProfileValue("Rating") || null;
+    const currentRating = parseFirstInt(ratingText);
+
+    if (acceptedCount === null) {
+      console.error("[atcoder] missing_accepted_count", { apiUrl });
+      return {
+        ...buildEmptyExternalStats({ dataSource: "scrape" }),
+        totalSolved: 0,
+        currentRating: Number.isFinite(currentRating) ? currentRating : null,
+        error: "FETCH_FAILED",
+      };
+    }
+
+    return {
+      ...buildEmptyExternalStats({ dataSource: "api" }),
+      totalSolved: acceptedCount || 0,
+      currentRating: Number.isFinite(currentRating) ? currentRating : null,
+      highestRating: null,
+    };
+  } catch (err) {
+    console.error("[atcoder] parse_exception", { url, message: err?.message });
+    return {
+      ...buildEmptyExternalStats({ dataSource: acceptedCount !== null ? "api" : "scrape" }),
+      totalSolved: acceptedCount || 0,
+      error: acceptedCount !== null ? null : "PARSE_FAILED",
+    };
+  }
+}
+
+async function fetchHackerRank(handle) {
+  const apiUrl = `https://www.hackerrank.com/rest/contests/master/hackers/${encodeURIComponent(handle)}/profile`;
+  const htmlUrl = `https://www.hackerrank.com/${encodeURIComponent(handle)}`;
+
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    Accept: "application/json,text/html;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
+  console.info(`Fetching HackerRank stats for handle: ${handle}`);
+  console.info("[hackerrank] request", { apiUrl, htmlUrl });
+
+  try {
+    const res = await axios.get(apiUrl, {
+      headers,
+      timeout: 15000,
+      validateStatus: () => true,
+    });
+
+    const bodyString =
+      typeof res?.data === "string" ? res.data : JSON.stringify(res?.data || {});
+    console.info("[hackerrank] response", {
+      url: apiUrl,
+      status: res?.status,
+      headers: res?.headers,
+      rawBodyLength: bodyString.length,
+    });
+
+    if (res?.status === 200 && res?.data) {
+      const model = res.data?.model || res.data;
+      const totalSolved =
+        Number(model?.total_solved) ||
+        Number(model?.solved_challenges) ||
+        Number(model?.totalChallengesSolved) ||
+        null;
+
+      if (Number.isFinite(totalSolved)) {
+        return {
+          ...buildEmptyExternalStats({ dataSource: "api" }),
+          totalSolved,
+          currentRating: null,
+          highestRating: null,
+        };
+      }
+
+      console.error("[hackerrank] parse_failed", {
+        url: apiUrl,
+        keys: Object.keys(model || {}),
+      });
+
+      return { ...buildEmptyExternalStats({ dataSource: "api" }), error: "PARSE_FAILED" };
+    }
+
+    if (res?.status === 404) {
+      return { ...buildEmptyExternalStats({ dataSource: "api" }), error: "NOT_FOUND" };
+    }
+  } catch (err) {
+    console.error("[hackerrank] api_request_failed", { apiUrl, message: err?.message });
+  }
+
+  try {
+    const res = await axios.get(htmlUrl, {
+      headers,
+      timeout: 15000,
+      maxRedirects: 5,
+      validateStatus: () => true,
+    });
+
+    const rawHtml = typeof res?.data === "string" ? res.data : "";
+    console.info("[hackerrank] response", {
+      url: htmlUrl,
+      status: res?.status,
+      headers: res?.headers,
+      rawBodyLength: rawHtml.length,
+    });
+
+    if (!rawHtml || res?.status >= 400) {
+      const errorCode = res?.status === 404 ? "NOT_FOUND" : "FETCH_FAILED";
+      return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: errorCode };
+    }
+
+    const m = rawHtml.match(/\b(total_solved|solved_challenges)\b\D{0,20}(\d{1,7})/i);
+    const totalSolved = m?.[2] ? Number(m[2]) || null : null;
+    if (!Number.isFinite(totalSolved)) {
+      console.error("[hackerrank] parse_failed", { url: htmlUrl });
+      return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: "PARSE_FAILED" };
+    }
+
+    return {
+      ...buildEmptyExternalStats({ dataSource: "scrape" }),
+      totalSolved,
+      currentRating: null,
+      highestRating: null,
+    };
+  } catch (err) {
+    console.error("[hackerrank] request_failed", { htmlUrl, message: err?.message });
+    return { ...buildEmptyExternalStats({ dataSource: "scrape" }), error: "FETCH_FAILED" };
+  }
+}
+
 export async function syncPlatformProfile(platformProfileId) {
   const profile = await PlatformProfile.findById(platformProfileId);
   if (!profile) throw new Error("Platform profile not found");
@@ -368,6 +604,10 @@ export async function syncPlatformProfile(platformProfileId) {
       fetchedData = await fetchCodeforces(profile.handle);
     } else if (profile.platform === "codechef") {
       fetchedData = await fetchCodeChef(profile.handle);
+    } else if (profile.platform === "atcoder") {
+      fetchedData = await fetchAtCoder(profile.handle);
+    } else if (profile.platform === "hackerrank") {
+      fetchedData = await fetchHackerRank(profile.handle);
     }
 
     if (fetchedData) {
@@ -456,7 +696,7 @@ export async function syncPlatformProfile(platformProfileId) {
     profile.lastSyncAt = new Date();
     await profile.save();
 
-    if (profile.platform === "codechef") {
+    if (["codechef", "atcoder", "hackerrank"].includes(profile.platform)) {
       const updateData = {
         ...buildEmptyExternalStats({ dataSource: "scrape" }),
         lastSyncedAt: new Date(),
