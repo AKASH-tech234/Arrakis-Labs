@@ -1169,29 +1169,53 @@ class TestPatternEngine:
         assert "off-by-one" in result.pattern_name.lower() or "loop" in result.pattern_name.lower()
     
     def test_detect_recurring_pattern(self):
-        """Test recurring pattern detection from history."""
+        """Test recurring pattern detection from history.
+        
+        Phase 2.2: Patterns need HIGH confidence (>=0.80) to be confirmed.
+        With medium/borderline confidence, pattern is SUSPECTED not CONFIRMED.
+        """
         from app.mim.pattern_engine import get_pattern_engine
+        from datetime import datetime, timezone, timedelta
         
         engine = get_pattern_engine()
         
-        # Simulate user history with same root cause
+        # Simulate user history with same root cause AND high confidence
+        now = datetime.now(timezone.utc)
         user_history = [
-            {"root_cause": "off_by_one_error", "verdict": "wrong_answer"},
-            {"root_cause": "off_by_one_error", "verdict": "wrong_answer"},
-            {"root_cause": "logic_error", "verdict": "wrong_answer"},
+            {
+                "root_cause": "off_by_one_error", 
+                "verdict": "wrong_answer",
+                "root_cause_confidence": 0.85,  # HIGH confidence
+                "createdAt": (now - timedelta(days=1)).isoformat(),
+            },
+            {
+                "root_cause": "off_by_one_error", 
+                "verdict": "wrong_answer",
+                "root_cause_confidence": 0.82,  # HIGH confidence
+                "createdAt": (now - timedelta(days=3)).isoformat(),
+            },
+            {
+                "root_cause": "logic_error", 
+                "verdict": "wrong_answer",
+                "root_cause_confidence": 0.75,
+                "createdAt": (now - timedelta(days=5)).isoformat(),
+            },
         ]
         
         result = engine.detect_pattern(
             root_cause="off_by_one_error",
-            root_cause_confidence=0.8,
+            root_cause_confidence=0.85,  # HIGH confidence for current
             verdict="wrong_answer",
             user_history=user_history,
             user_memory=None,
             problem_tags=None
         )
         
-        assert result.is_recurring is True
+        # Phase 2.2: With high confidence history, pattern should be detected
+        assert result.pattern_name is not None
         assert result.recurrence_count >= 2
+        # Pattern state should be at least SUSPECTED (may be CONFIRMED with enough evidence)
+        assert result.pattern_state in ("suspected", "confirmed", "stable")
     
     def test_detect_pattern_with_user_memory(self):
         """Test pattern detection uses RAG memory."""
@@ -1217,23 +1241,44 @@ class TestPatternEngine:
         # Memory should influence recurrence detection
     
     def test_detect_pattern_unknown_root_cause(self):
-        """Test pattern detection with unknown root cause."""
+        """Test pattern detection with unknown root cause.
+        
+        Phase 2.2: Low confidence (< 0.65) is BLOCKED by confidence gate.
+        This is correct behavior - we should not make pattern claims with low confidence.
+        """
         from app.mim.pattern_engine import get_pattern_engine
         
         engine = get_pattern_engine()
         
-        result = engine.detect_pattern(
+        # Test with LOW confidence - should be blocked
+        result_low = engine.detect_pattern(
             root_cause="unknown",
-            root_cause_confidence=0.3,
+            root_cause_confidence=0.3,  # LOW - will be blocked
             verdict="wrong_answer",
             user_history=[],
             user_memory=None,
             problem_tags=None
         )
         
-        # Should return a fallback pattern
-        assert result is not None
-        assert result.pattern_name is not None
+        # Phase 2.2: Low confidence should be gated - NO pattern claims
+        assert result_low is not None
+        assert result_low.confidence_gated is True
+        assert result_low.pattern_name is None
+        
+        # Test with MEDIUM confidence - should get verdict-based hint
+        result_medium = engine.detect_pattern(
+            root_cause="unknown",
+            root_cause_confidence=0.70,  # MEDIUM - not blocked
+            verdict="wrong_answer",
+            user_history=[],
+            user_memory=None,
+            problem_tags=None
+        )
+        
+        # With medium confidence, verdict-based fallback should work
+        assert result_medium is not None
+        assert result_medium.confidence_gated is False
+        assert result_medium.pattern_name is not None  # Verdict-based hint
 
 
 class TestMIMDecisionEngine:

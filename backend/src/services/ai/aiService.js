@@ -1,4 +1,12 @@
 import axios from "axios";
+import {
+  extractDiagnosis,
+  extractConfidence,
+  extractPattern,
+  extractDifficulty,
+  extractRAGMetadata,
+  buildCanonicalResponse,
+} from "../../types/AIFeedbackResponse.js";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const AI_TIMEOUT_MS = 90000;
@@ -48,17 +56,99 @@ const log = {
 /**
  * Transform MIM V3.0 insights for frontend consumption
  * Handles polymorphic feedback structure (correctness, performance, reinforcement)
+ * 
+ * PHASE 2.x UPGRADE: Now extracts and includes:
+ * - diagnosis: Root cause classification (FACT from MIM)
+ * - confidence: Calibrated confidence metadata (Phase 2.1)
+ * - pattern: Pattern state machine output (Phase 2.2)
+ * - difficulty: Difficulty policy decision (Phase 2.3)
+ * 
  * @param {Object} mimInsights - Raw mim_insights from AI service
  * @returns {Object} Transformed MIM insights
  */
 export function transformMIMInsights(mimInsights) {
   if (!mimInsights) return null;
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 2.x: Extract canonical fields using helper functions
+  // ═══════════════════════════════════════════════════════════════════════════
+  const diagnosis = extractDiagnosis(mimInsights);
+  const confidence = extractConfidence(mimInsights);
+  const pattern = extractPattern(mimInsights);
+  const difficulty = extractDifficulty(mimInsights);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OBSERVABILITY: Log confidence and pattern state for monitoring
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (confidence) {
+    log.info("MIM confidence extracted", {
+      level: confidence.confidence_level,
+      score: confidence.combined_confidence?.toFixed(2),
+      conservative: confidence.conservative_mode,
+      calibrated: confidence.calibration_applied,
+    });
+  }
+
+  if (pattern && pattern.state !== "none") {
+    log.info("MIM pattern state detected", {
+      state: pattern.state,
+      evidenceCount: pattern.evidence_count,
+      confidenceSupport: pattern.confidence_support,
+    });
+  }
+
+  if (difficulty) {
+    log.info("MIM difficulty decision", {
+      action: difficulty.action,
+      reason: difficulty.reason,
+      tier: difficulty.confidence_tier,
+    });
+  }
+
   const transformed = {
     // V3.0 type discriminator
     feedbackType: mimInsights.feedback_type || null,
 
-    // V3.0 polymorphic payloads (camelCase for frontend)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Phase 2.x canonical fields (camelCase for frontend)
+    // These are FACTS from MIM - frontend should treat them as authoritative
+    // ═══════════════════════════════════════════════════════════════════════════
+    diagnosis: diagnosis
+      ? {
+          rootCause: diagnosis.root_cause,
+          subtype: diagnosis.subtype,
+          failureMechanism: diagnosis.failure_mechanism,
+        }
+      : null,
+
+    confidence: confidence
+      ? {
+          combinedConfidence: confidence.combined_confidence,
+          confidenceLevel: confidence.confidence_level,
+          conservativeMode: confidence.conservative_mode,
+          calibrationApplied: confidence.calibration_applied,
+        }
+      : null,
+
+    pattern: pattern
+      ? {
+          state: pattern.state,
+          evidenceCount: pattern.evidence_count,
+          confidenceSupport: pattern.confidence_support,
+        }
+      : null,
+
+    difficulty: difficulty
+      ? {
+          action: difficulty.action,
+          reason: difficulty.reason,
+          confidenceTier: difficulty.confidence_tier,
+        }
+      : null,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // V3.0 polymorphic payloads (camelCase for frontend) - PRESERVED
+    // ═══════════════════════════════════════════════════════════════════════════
     correctnessFeedback: mimInsights.correctness_feedback
       ? {
           rootCause: mimInsights.correctness_feedback.root_cause,
@@ -334,10 +424,25 @@ export async function checkAIServiceHealth() {
   }
 }
 
+/**
+ * Extract RAG metadata from AI response
+ * @param {Object} aiResponse - Full AI service response
+ * @returns {Object} RAG metadata for frontend
+ */
+export function extractRAGMetadataFromResponse(aiResponse) {
+  const ragMeta = extractRAGMetadata(aiResponse);
+  return {
+    used: ragMeta.used,
+    relevance: ragMeta.relevance,
+  };
+}
+
 export default {
   getAIFeedback,
   buildUserHistorySummary,
   checkAIServiceHealth,
+  transformMIMInsights,
+  extractRAGMetadataFromResponse,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

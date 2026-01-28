@@ -8,12 +8,44 @@ Polymorphic: returns different feedback types based on submission verdict and ro
 """
 
 from pydantic import BaseModel, Field, model_validator
-from typing import Union, Literal, Optional
+from typing import Union, Literal, Optional, Dict, Any
 from datetime import datetime
 
 from .correctness_feedback import CorrectnessFeedback
 from .performance_feedback import PerformanceFeedback
 from .reinforcement_feedback import ReinforcementFeedback
+
+
+class ConfidenceMetadata(BaseModel):
+    """
+    Confidence calibration metadata (Phase 2.1).
+    
+    Provides transparency about prediction confidence for downstream consumers.
+    """
+    root_cause_confidence: float = Field(
+        ..., ge=0, le=1,
+        description="Calibrated confidence for root cause prediction"
+    )
+    subtype_confidence: float = Field(
+        ..., ge=0, le=1,
+        description="Calibrated confidence for subtype prediction"
+    )
+    combined_confidence: float = Field(
+        ..., ge=0, le=1,
+        description="Combined calibrated confidence"
+    )
+    confidence_level: Literal["high", "medium", "low"] = Field(
+        ...,
+        description="Confidence tier for decision-making"
+    )
+    conservative_mode: bool = Field(
+        ...,
+        description="True if confidence too low for aggressive decisions"
+    )
+    calibration_applied: bool = Field(
+        ...,
+        description="Whether isotonic calibration was applied"
+    )
 
 
 class MIMOutput(BaseModel):
@@ -81,6 +113,15 @@ class MIMOutput(BaseModel):
     inference_latency_ms: float = Field(..., ge=0, description="Inference time in milliseconds")
     model_version: str = Field(..., description="MIM model version used")
     timestamp: str = Field(..., description="ISO timestamp of inference")
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CONFIDENCE METADATA (Phase 2.1)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    confidence_metadata: Optional[ConfidenceMetadata] = Field(
+        default=None,
+        description="Calibrated confidence information (only for failed submissions)"
+    )
     
     # ═══════════════════════════════════════════════════════════════════════════
     # VALIDATORS

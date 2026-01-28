@@ -114,10 +114,15 @@ mentat-trials/
 
 ### MIM (Machine Intelligence Model)
 
+> 📚 **[Full MIM Specification →](./docs/MIM.md)**
+
 The brain of the platform - analyzes submissions using ML to:
 - **Root Cause Classification**: Identifies why code fails (correctness, efficiency, implementation, understanding_gap)
-- **Pattern Detection**: Recognizes recurring mistake patterns
-- **Difficulty Adaptation**: Adjusts problem recommendations based on performance
+- **Calibrated Confidence** (Phase 2.1): Provides calibrated confidence scores with three tiers (HIGH/MEDIUM/LOW)
+- **Pattern State Machine** (Phase 2.2): Tracks recurring mistakes with explicit states (NONE → SUSPECTED → CONFIRMED → STABLE)
+- **Difficulty Policy** (Phase 2.3): Safety-first difficulty adjustments based on confidence and pattern state
+
+**Key Principle**: MIM is deterministic - same inputs always produce same outputs. LLM agents receive MIM decisions and cannot override them.
 
 ### Feedback Pipeline
 
@@ -141,6 +146,7 @@ Submission → Code Execution → MIM Analysis → LLM Enhancement → Progressi
 
 | Document | Description |
 |----------|-------------|
+| [docs/MIM.md](docs/MIM.md) | **MIM Specification** - Authoritative diagnostic engine docs |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | Component architecture, hooks, state management |
 | [docs/BACKEND.md](docs/BACKEND.md) | API endpoints, data models, services |
 | [docs/AI_SERVICES.md](docs/AI_SERVICES.md) | MIM engine, taxonomy, training pipeline |

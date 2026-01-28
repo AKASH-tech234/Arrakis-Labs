@@ -22,10 +22,15 @@ AUTHORITATIVE DECISION TABLE (v3.1):
 ║ TLE         ║ Any       ║ ✅ YES   ║ ✅ YES  ║ ✅ YES    ║ Algorithm focus        ║
 ║ Runtime Err ║ Any       ║ ✅ YES   ║ ✅ YES  ║ ✅ YES    ║ Safety & correctness   ║
 ╚═════════════╩═══════════╩══════════╩═════════╩═══════════╩════════════════════════╝
+
+Architecture Upgrade:
+- Uses Phase 3.1 QueryBuilder for better RAG queries
+- Builds unified AgentInput from MIM outputs
+- Integrates confidence tier and pattern state for agents
 """
 
 import logging
-from typing import Dict
+from typing import Dict, Optional, Any
 
 logger = logging.getLogger("orchestrator")
 
@@ -38,6 +43,11 @@ def validate_rag_context(state: Dict) -> Dict:
     - If user_memory is empty, attempt retrieval
     - If retrieval fails, set a flag so agents know to use fallback
     - Never run agents without at least attempting RAG retrieval
+    
+    Architecture Upgrade:
+    - Uses Phase 3.1 QueryBuilder for better queries
+    - Extracts MIM diagnosis info for context-aware retrieval
+    - Stores RAG metadata for AgentInput
     """
     user_id = state.get("user_id", "")
     user_memory = state.get("user_memory", [])
@@ -55,22 +65,73 @@ def validate_rag_context(state: Dict) -> Dict:
         if not state.get("_rag_retrieval_attempted"):
             try:
                 from app.rag.retriever import retrieve_user_memory
+                from app.rag.quality_gates import get_query_builder
                 
-                # Build query from current submission
-                code = state.get("code", "")
+                # ─────────────────────────────────────────────────────────────
+                # Phase 3.1: Build better query using MIM context
+                # ─────────────────────────────────────────────────────────────
+                query_builder = get_query_builder()
+                
+                # Extract MIM diagnosis info if available
+                mim_output = state.get("mim_output")
+                root_cause = None
+                subtype = None
+                pattern_state = None
+                
+                if mim_output:
+                    cf = getattr(mim_output, 'correctness_feedback', None)
+                    pf = getattr(mim_output, 'performance_feedback', None)
+                    
+                    if cf:
+                        root_cause = cf.root_cause
+                        subtype = cf.subtype
+                    elif pf:
+                        root_cause = "efficiency"
+                        subtype = pf.subtype
+                    
+                    # Get pattern state from pattern result if available
+                    pattern_result = state.get("pattern_result")
+                    if pattern_result:
+                        pattern_state = getattr(pattern_result, 'pattern_state', None)
+                
+                # Build context-aware query
                 problem_category = state.get("problem_category", "")
                 verdict = state.get("verdict", "")
+                problem = state.get("problem", {})
+                problem_tags = problem.get("tags", []) if isinstance(problem, dict) else []
                 
-                query = f"User solving {problem_category} problem. Result: {verdict}. Code pattern analysis."
+                query = query_builder.build_query(
+                    root_cause=root_cause,
+                    subtype=subtype,
+                    category=problem_category,
+                    pattern_state=pattern_state,
+                    verdict=verdict,
+                    problem_tags=problem_tags,
+                )
                 
-                memories = retrieve_user_memory(user_id, query, k=5)
+                # Store query for debugging
+                state["_rag_query_used"] = query
+                
+                print(f"\n[RAG] Built query: '{query}'")
+                logger.info(f"RAG query built: '{query}' (root_cause={root_cause}, subtype={subtype})")
+                
+                # Retrieve with Phase 3.1 enhanced retrieval
+                memories = retrieve_user_memory(
+                    user_id=user_id, 
+                    query=query, 
+                    k=5,
+                    root_cause=root_cause,
+                    subtype=subtype,
+                    category=problem_category,
+                    pattern_state=pattern_state,
+                )
                 
                 if memories:
                     state["user_memory"] = memories
                     state["_rag_context_available"] = True
                     logger.info(f"✅ Retrieved {len(memories)} RAG memories for user {user_id}")
                 else:
-                    logger.info(f"ℹ️ No RAG memories found for user {user_id} (new user?)")
+                    logger.info(f"ℹ️ No RAG memories found for user {user_id} (may be gated by relevance)")
                 
                 state["_rag_retrieval_attempted"] = True
                 
@@ -83,6 +144,52 @@ def validate_rag_context(state: Dict) -> Dict:
         logger.debug(f"✅ RAG context available: {len(user_memory)} memories")
     
     return state
+
+
+def build_agent_input_from_state(state: Dict) -> Optional[Any]:
+    """
+    Build unified AgentInput from orchestrator state.
+    
+    This ensures all agents receive the same structured input
+    with MIM decisions, confidence tiers, and pattern states.
+    """
+    try:
+        from app.agents.agent_input import build_agent_input, AgentInput
+        
+        mim_output = state.get("mim_output")
+        if not mim_output:
+            return None
+        
+        pattern_result = state.get("pattern_result")
+        difficulty_result = state.get("difficulty_result")
+        rag_memories = state.get("user_memory", [])
+        rag_query = state.get("_rag_query_used", "")
+        
+        code = state.get("code", "")
+        problem = state.get("problem", {})
+        problem_description = problem.get("description", "") if isinstance(problem, dict) else ""
+        
+        agent_input = build_agent_input(
+            mim_output=mim_output,
+            pattern_result=pattern_result,
+            difficulty_result=difficulty_result,
+            rag_memories=rag_memories,
+            rag_query=rag_query,
+            code_snippet=code[:500] if code else "",
+            problem_description=problem_description[:500] if problem_description else "",
+        )
+        
+        # Log for debugging
+        agent_input.log()
+        
+        # Store in state for agents to use
+        state["_agent_input"] = agent_input
+        
+        return agent_input
+        
+    except Exception as e:
+        logger.error(f"Failed to build AgentInput: {e}")
+        return None
 
 
 def orchestrator_node(state: Dict) -> Dict:

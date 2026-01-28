@@ -2,6 +2,41 @@
 
 > **Mentat Trials AI Engine** - FastAPI-based ML/LLM service providing intelligent feedback, root cause analysis, pattern detection, and personalized learning recommendations.
 
+## 📋 Quick Links
+
+- **[MIM Specification](./MIM.md)** - Authoritative documentation for the MIM diagnostic engine
+- **[Backend Integration](./BACKEND.md)** - API contracts and backend integration
+- **[Frontend Integration](./FRONTEND.md)** - UX components and state management
+
+---
+
+## 🆕 Phase 2.x Upgrades
+
+### Phase 2.1: Confidence Calibration
+- Isotonic regression calibration for prediction confidence
+- Three-tier confidence levels: HIGH (≥0.80), MEDIUM (≥0.65), LOW (<0.65)
+- Conservative mode for low-confidence predictions
+
+### Phase 2.2: Pattern State Machine  
+- Explicit pattern states: NONE → SUSPECTED → CONFIRMED → STABLE
+- Confidence-gated state transitions
+- Temporal decay for pattern demotion
+
+### Phase 2.3: Difficulty Policy
+- Safety-first difficulty adjustments
+- Pattern-aware blocking (no increase with unresolved patterns)
+- Hysteresis for stability (requires consecutive eligible events)
+
+### Agent Explain-Only Rule
+- **CRITICAL**: LLM agents receive MIM decisions and CANNOT override them
+- Agents only add natural language explanations to MIM facts
+- This prevents hallucinated diagnoses and ensures consistency
+
+### RAG Quality Gates
+- Relevance threshold filtering for retrieved content
+- User memory isolation (per-user vector store partitions)
+- Staleness detection for old memories
+
 ## 📁 Directory Structure
 
 ```

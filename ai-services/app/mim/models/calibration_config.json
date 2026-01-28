@@ -1,0 +1,30 @@
+{
+  "version": "2.1.0",
+  "timestamp": "2026-01-28T18:03:12.689815",
+  "method": "isotonic",
+  "confidence_caps": {
+    "max_confidence": 0.9,
+    "high_confidence": 0.8,
+    "medium_confidence": 0.65,
+    "low_confidence": 0.5
+  },
+  "thresholds": {
+    "high_confidence": 0.95,
+    "medium_confidence": 0.5,
+    "low_confidence": 0.5,
+    "empirically_validated": true
+  },
+  "pre_calibration": {
+    "ece": 0.04398612721512511,
+    "mce": 0.5289386876190596,
+    "quality": "good"
+  },
+  "post_calibration": {
+    "ece": 0.004774823438869903,
+    "mce": 0.0785714285714284,
+    "quality": "good",
+    "ece_improvement": 0.03921130377625521
+  },
+  "validation_samples": 1420,
+  "test_samples": 2016
+}

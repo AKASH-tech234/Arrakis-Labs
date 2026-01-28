@@ -1,9 +1,22 @@
 // src/components/mim/MIMInsightsV3.jsx
 // MIM V3.0 - Polymorphic Feedback Display Component
 // Handles: correctness, performance, and reinforcement feedback types
+//
+// Phase 2.x Upgrade: Now displays canonical fields:
+// - diagnosis: Root cause classification (FACT from MIM)
+// - confidence: Calibrated confidence metadata (Phase 2.1)
+// - pattern: Pattern state machine output (Phase 2.2)
+// - difficulty: Difficulty policy decision (Phase 2.3)
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import {
+  CONFIDENCE_COLORS,
+  CONFIDENCE_LABELS,
+  PATTERN_STATE_MESSAGES,
+  getDifficultyMessage,
+  shouldShowPattern,
+} from "../../types/ai.types.js";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // V3.0 ROOT CAUSE LABELS
@@ -80,32 +93,149 @@ const SUBTYPE_LABELS = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CONFIDENCE BADGE COMPONENT
+// CONFIDENCE BADGE COMPONENT (Updated for Phase 2.1)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function ConfidenceBadge({ confidence }) {
-  const percentage = Math.round(confidence * 100);
-  let bgColor = "bg-[#78716C]/20";
-  let textColor = "text-[#78716C]";
-  let label = "Low";
+function ConfidenceBadge({ confidence, confidenceLevel }) {
+  // Use API-provided confidence level if available (Phase 2.1)
+  let level = confidenceLevel;
+  let percentage = null;
 
-  if (percentage >= 70) {
-    bgColor = "bg-[#22C55E]/20";
-    textColor = "text-[#22C55E]";
-    label = "High";
-  } else if (percentage >= 40) {
-    bgColor = "bg-[#D97706]/20";
-    textColor = "text-[#D97706]";
-    label = "Medium";
+  if (typeof confidence === "number") {
+    percentage = Math.round(confidence * 100);
+    // Derive level from score if not provided
+    if (!level) {
+      level = confidence >= 0.8 ? "high" : confidence >= 0.65 ? "medium" : "low";
+    }
   }
+
+  const color = CONFIDENCE_COLORS[level] || CONFIDENCE_COLORS.medium;
+  const label = CONFIDENCE_LABELS[level] || CONFIDENCE_LABELS.medium;
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${bgColor} ${textColor}`}
-      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase tracking-wider"
+      style={{
+        fontFamily: "'Rajdhani', system-ui, sans-serif",
+        backgroundColor: `${color}20`,
+        color: color,
+      }}
     >
-      {percentage}% {label}
+      {percentage !== null ? `${percentage}% ` : ""}{label}
     </span>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 2.x CANONICAL DISPLAY COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Displays Phase 2.1 confidence metadata
+ */
+function ConfidenceMetadataSection({ confidence }) {
+  if (!confidence) return null;
+
+  const { confidenceLevel, combinedConfidence, conservativeMode, calibrationApplied } = confidence;
+  const color = CONFIDENCE_COLORS[confidenceLevel] || CONFIDENCE_COLORS.medium;
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <ConfidenceBadge
+        confidence={combinedConfidence}
+        confidenceLevel={confidenceLevel}
+      />
+      {calibrationApplied && (
+        <span className="text-[#78716C] text-[10px]" title="Calibrated confidence">
+          ✓ calibrated
+        </span>
+      )}
+      {conservativeMode && (
+        <span className="text-[#F59E0B] text-[10px]">
+          (conservative mode)
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Displays Phase 2.2 pattern state
+ */
+function PatternStateSection({ pattern }) {
+  if (!pattern || !shouldShowPattern(pattern.state)) return null;
+
+  const { state, evidenceCount } = pattern;
+  const message = PATTERN_STATE_MESSAGES[state];
+
+  if (!message) return null;
+
+  const stateColors = {
+    suspected: "#F59E0B",
+    confirmed: "#EF4444",
+    stable: "#22C55E",
+  };
+  const color = stateColors[state] || "#78716C";
+
+  return (
+    <div
+      className="mt-3 p-2 rounded border"
+      style={{
+        backgroundColor: `${color}10`,
+        borderColor: `${color}30`,
+      }}
+    >
+      <p
+        className="text-xs"
+        style={{
+          color: color,
+          fontFamily: "'Rajdhani', system-ui, sans-serif",
+        }}
+      >
+        {state === "confirmed" || state === "stable" ? "⚠️ " : "🔍 "}
+        {message}
+        {(state === "confirmed" || state === "stable") && evidenceCount > 0 && (
+          <span className="ml-1 opacity-75">({evidenceCount}x)</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Displays Phase 2.3 difficulty decision
+ */
+function DifficultyDecisionSection({ difficulty }) {
+  if (!difficulty || difficulty.action === "maintain") return null;
+
+  const { action, reason } = difficulty;
+  const message = getDifficultyMessage(action, reason);
+
+  const actionColors = {
+    increase: "#22C55E",
+    decrease: "#3B82F6",
+  };
+  const color = actionColors[action] || "#78716C";
+  const icon = action === "increase" ? "📈" : "📉";
+
+  return (
+    <div
+      className="mt-3 p-2 rounded border"
+      style={{
+        backgroundColor: `${color}10`,
+        borderColor: `${color}30`,
+      }}
+    >
+      <p
+        className="text-xs"
+        style={{
+          color: color,
+          fontFamily: "'Rajdhani', system-ui, sans-serif",
+        }}
+      >
+        {icon} {message}
+      </p>
+    </div>
   );
 }
 
@@ -558,6 +688,11 @@ export default function MIMInsightsV3({ insights, expanded = true }) {
     correctnessFeedback,
     performanceFeedback,
     reinforcementFeedback,
+    // Phase 2.x canonical fields
+    diagnosis,
+    confidence,
+    pattern,
+    difficulty,
     // Legacy fields
     rootCause,
     readiness,
@@ -639,6 +774,33 @@ export default function MIMInsightsV3({ insights, expanded = true }) {
       {/* Content */}
       <div className="p-4">
         {renderFeedbackSection()}
+
+        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* Phase 2.x Canonical Sections */}
+        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        
+        {/* Phase 2.1: Confidence Metadata */}
+        {confidence && expanded && (
+          <div className="mt-4 pt-4 border-t border-[#3D3D3D]/30">
+            <p
+              className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Diagnosis Confidence
+            </p>
+            <ConfidenceMetadataSection confidence={confidence} />
+          </div>
+        )}
+
+        {/* Phase 2.2: Pattern State */}
+        {pattern && expanded && (
+          <PatternStateSection pattern={pattern} />
+        )}
+
+        {/* Phase 2.3: Difficulty Decision */}
+        {difficulty && expanded && (
+          <DifficultyDecisionSection difficulty={difficulty} />
+        )}
 
         {/* Readiness Section (Legacy) */}
         {readiness && expanded && (

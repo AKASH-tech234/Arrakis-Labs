@@ -6,6 +6,7 @@ import {
   buildUserHistorySummary,
   checkAIServiceHealth,
   transformMIMInsights,
+  extractRAGMetadataFromResponse,
 } from "../../services/ai/aiService.js";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -426,6 +427,25 @@ export const requestAIFeedback = async (req, res) => {
       aiFeedback.mim_insights,
     );
 
+    // Extract RAG metadata for frontend
+    const ragMetadata = extractRAGMetadataFromResponse(aiFeedback);
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // OBSERVABILITY: Log key MIM decisions for monitoring
+    // ═══════════════════════════════════════════════════════════════════════════════
+    if (transformedMIMInsights) {
+      log.info("MIM insights summary", {
+        userId: userId.toString(),
+        questionId,
+        feedbackType: transformedMIMInsights.feedbackType,
+        diagnosis: transformedMIMInsights.diagnosis?.rootCause || "none",
+        confidenceLevel: transformedMIMInsights.confidence?.confidenceLevel || "unknown",
+        patternState: transformedMIMInsights.pattern?.state || "none",
+        difficultyAction: transformedMIMInsights.difficulty?.action || "maintain",
+        ragUsed: ragMetadata.used,
+      });
+    }
+
     const responseBody = {
       success: true,
       data: {
@@ -440,9 +460,44 @@ export const requestAIFeedback = async (req, res) => {
         optimizationTips: aiFeedback.optimization_tips,
         complexityAnalysis: aiFeedback.complexity_analysis,
         edgeCases: aiFeedback.edge_cases,
-        // MIM V3.0 insights (transformed for frontend)
+        
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // NEW: Phase 2.x Canonical Fields (MIM FACTS - frontend treats as authoritative)
+        // ═══════════════════════════════════════════════════════════════════════════════
+        
+        // Diagnosis: Root cause classification from MIM (deterministic)
+        diagnosis: transformedMIMInsights?.diagnosis || null,
+        
+        // Confidence: Calibrated confidence metadata (Phase 2.1)
+        confidence: transformedMIMInsights?.confidence || null,
+        
+        // Pattern: Pattern state machine output (Phase 2.2)
+        pattern: transformedMIMInsights?.pattern || null,
+        
+        // Difficulty: Difficulty policy decision (Phase 2.3)
+        difficulty: transformedMIMInsights?.difficulty || null,
+        
+        // Feedback content from LLM agents
+        feedback: {
+          explanation: aiFeedback.explanation || null,
+          correctCode: aiFeedback.correct_code || null,
+          edgeCases: aiFeedback.edge_cases || null,
+        },
+        
+        // Hint from hint agent
+        hint: aiFeedback.improvement_hint 
+          ? { text: aiFeedback.improvement_hint }
+          : null,
+        
+        // RAG metadata
+        rag: ragMetadata,
+        
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // LEGACY: MIM V3.0 insights (backward compatibility)
+        // ═══════════════════════════════════════════════════════════════════════════════
         mimInsights: transformedMIMInsights,
-        // v3.3: New fields for enhanced feedback
+        
+        // v3.3: Legacy fields for enhanced feedback (backward compatibility)
         rootCause: aiFeedback.root_cause || null,
         rootCauseSubtype: aiFeedback.root_cause_subtype || null,
         failureMechanism: aiFeedback.failure_mechanism || null,

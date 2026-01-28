@@ -31,6 +31,9 @@ from app.mim.features.state_snapshot import build_user_state_snapshot
 from app.mim.taxonomy.root_causes import ROOT_CAUSES, migrate_old_root_cause
 from app.mim.taxonomy.subtype_masks import SUBTYPES, ROOT_CAUSE_TO_SUBTYPES, is_valid_pair
 
+# Phase 1.3: Code-signal bridge dataset materialization (deterministic)
+from app.mim.code_signals import extract_code_signals as extract_structural_code_signals
+
 logger = logging.getLogger(__name__)
 
 
@@ -115,6 +118,139 @@ class ReinforcementEventSample:
 # DATASET BUILDER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _extract_code_text(sub: Dict[str, Any]) -> str:
+    """Extract code text from a raw submission export with best-effort field mapping."""
+    for key in (
+        "code",
+        "user_code",
+        "userCode",
+        "source_code",
+        "sourceCode",
+        "submittedCode",
+        "solution",
+    ):
+        val = sub.get(key)
+        if isinstance(val, str) and val.strip():
+            return val
+    return ""
+
+
+def _code_signal_numeric_columns() -> List[str]:
+    """Authoritative code-signal numeric columns to materialize in v2 parquet."""
+    return [
+        # AST
+        "ast_max_loop_depth",
+        "ast_max_condition_depth",
+        "ast_total_loops",
+        "ast_total_conditions",
+        "ast_has_recursion",
+        "ast_off_by_one_risk",
+        # Pattern summary
+        "pattern_off_by_one_count",
+        "pattern_boundary_risk_count",
+        "pattern_inefficiency_count",
+        "pattern_correctness_risk",
+        "pattern_efficiency_risk",
+        "pattern_implementation_risk",
+        # Combined risks
+        "code_boundary_risk",
+        "code_efficiency_risk",
+        "code_implementation_risk",
+        "code_understanding_risk",
+    ]
+
+
+def _compute_code_signal_numeric_features(sub: Dict[str, Any]) -> Dict[str, float]:
+    """
+    Compute deterministic code-signal numeric features for a submission.
+
+    IMPORTANT:
+    - Excludes any label-proxy fields like `code_likely_root_cause`.
+    - Always returns all columns with safe defaults.
+    """
+    code = _extract_code_text(sub)
+    verdict = (sub.get("verdict") or "").lower()
+    tags = sub.get("tags") or sub.get("problem_tags") or sub.get("problemTags") or []
+    if isinstance(tags, str):
+        tags = [tags]
+    constraints = sub.get("constraints") or {}
+
+    out: Dict[str, float] = {k: 0.0 for k in _code_signal_numeric_columns()}
+
+    if not code.strip():
+        return out
+
+    try:
+        # IMPORTANT: training features must be verdict-neutral to avoid
+        # leakage-by-construction (especially on synthetic datasets).
+        # Verdict can be used at inference for explanation and mechanism narration,
+        # but the ML feature surface should primarily reflect code structure.
+        struct = extract_structural_code_signals(
+            code=code,
+            verdict="",  # verdict-neutral
+            problem_tags=tags,
+            constraints=constraints if isinstance(constraints, dict) else {},
+        )
+
+        # Derived training-time code risk scores (verdict-neutral)
+        # We intentionally do NOT use struct.boundary_risk/etc because those can
+        # incorporate verdict-based amplification.
+        code_boundary = max(
+            float(struct.ast_features.off_by_one_risk_score),
+            float(struct.detected_patterns.correctness_risk),
+        )
+        code_eff = float(struct.detected_patterns.efficiency_risk)
+        if struct.ast_features.has_nested_loops:
+            code_eff = min(1.0, code_eff + 0.2)
+        code_impl = float(struct.detected_patterns.implementation_risk)
+
+        # Understanding risk (verdict-neutral): varies based on how much structure is present
+        # vs what the problem tags imply. This is intentionally heuristic and conservative.
+        code_under = 0.1
+        if not struct.ast_features.parse_success:
+            code_under += 0.2
+        if struct.ast_features.total_loops == 0:
+            code_under += 0.1
+        if struct.ast_features.total_conditions == 0:
+            code_under += 0.05
+
+        # Tag-structure mismatch heuristic
+        tagset = {str(t).lower().replace(' ', '_') for t in (tags or [])}
+        if 'dynamic_programming' in tagset and not struct.ast_features.has_recursion:
+            code_under += 0.2
+        if 'binary_search' in tagset and not struct.ast_features.has_while_loop:
+            code_under += 0.15
+        if 'two_pointers' in tagset and struct.ast_features.max_loop_depth == 0:
+            code_under += 0.1
+
+        code_under = float(max(0.0, min(1.0, code_under)))
+
+        out.update({
+            "ast_max_loop_depth": float(struct.ast_features.max_loop_depth),
+            "ast_max_condition_depth": float(struct.ast_features.max_condition_depth),
+            "ast_total_loops": float(struct.ast_features.total_loops),
+            "ast_total_conditions": float(struct.ast_features.total_conditions),
+            "ast_has_recursion": float(struct.ast_features.has_recursion),
+            "ast_off_by_one_risk": float(struct.ast_features.off_by_one_risk_score),
+            "pattern_off_by_one_count": float(len(struct.detected_patterns.off_by_one_indicators)),
+            "pattern_boundary_risk_count": float(len(struct.detected_patterns.boundary_risks)),
+            "pattern_inefficiency_count": float(len(struct.detected_patterns.inefficiency_patterns)),
+            "pattern_correctness_risk": float(struct.detected_patterns.correctness_risk),
+            "pattern_efficiency_risk": float(struct.detected_patterns.efficiency_risk),
+            "pattern_implementation_risk": float(struct.detected_patterns.implementation_risk),
+            "code_boundary_risk": code_boundary,
+            "code_efficiency_risk": code_eff,
+            "code_implementation_risk": code_impl,
+            "code_understanding_risk": code_under,
+        })
+
+    except Exception:
+        # Conservative degradation: keep zeros
+        pass
+
+    return out
+
+
 class DatasetBuilder:
     """
     Builds training datasets from raw submission data.
@@ -164,21 +300,92 @@ class DatasetBuilder:
                 failed_submissions.append(sub)
         
         logger.info(f"Separated: {len(failed_submissions)} failed, {len(accepted_submissions)} accepted")
-        
+
+        # Phase 1.3 acceptance gate: enforce code presence rate before generating v2
+        # This prevents producing a misleading v2 dataset with degenerate code-signal columns.
+        code_total = len(raw_submissions)
+        code_present = 0
+        for sub in raw_submissions:
+            if _extract_code_text(sub).strip():
+                code_present += 1
+        code_present_rate = (code_present / code_total) if code_total else 0.0
+        logger.info(
+            f"code_present_rate={code_present_rate:.3f} ({code_present}/{code_total})"
+        )
+
         # Build datasets
         failure_df = self._build_failure_transitions(failed_submissions, accepted_submissions)
         reinforcement_df = self._build_reinforcement_events(accepted_submissions)
+
         
-        # Save to parquet
+        # Save to parquet (v1 outputs)
         failure_path = self.output_dir / "mim_failure_transitions.parquet"
         reinforcement_path = self.output_dir / "mim_reinforcement_events.parquet"
-        
+
         failure_df.to_parquet(failure_path, index=False)
         reinforcement_df.to_parquet(reinforcement_path, index=False)
-        
+
         logger.info(f"Saved: {failure_path} ({len(failure_df)} samples)")
         logger.info(f"Saved: {reinforcement_path} ({len(reinforcement_df)} samples)")
-        
+
+        # Phase 1.3: Also emit v2 failure transitions with baked code-signal numeric columns
+        # Hard gate: require >= 70% code presence in the raw export.
+        if code_present_rate < 0.70:
+            logger.error(
+                "Refusing to generate mim_failure_transitions_v2.parquet: "
+                f"code_present_rate={code_present_rate:.3f} < 0.70. "
+                "Export is missing code and violates the training data contract."
+            )
+            return failure_df, reinforcement_df
+
+        failure_df_v2 = self._build_failure_transitions_v2(failed_submissions, accepted_submissions)
+
+        # Additional acceptance gate: code-signal feature non-degeneracy
+        # Block if any code-signal column is near-constant across the dataset.
+        try:
+            degenerate = []
+            for c in _code_signal_numeric_columns():
+                if c not in failure_df_v2.columns:
+                    degenerate.append(f"{c} (missing)")
+                    continue
+                var = float(pd.Series(failure_df_v2[c]).var())
+                if var < 1e-6:
+                    degenerate.append(f"{c} (var={var:.2e})")
+            if degenerate:
+                logger.error(
+                    "Refusing to write mim_failure_transitions_v2.parquet: degenerate code-signal columns detected: "
+                    + ", ".join(degenerate)
+                )
+                return failure_df, reinforcement_df
+        except Exception as e:
+            logger.warning(f"Could not validate code-signal non-degeneracy: {e}")
+
+        failure_v2_path = self.output_dir / "mim_failure_transitions_v2.parquet"
+        failure_df_v2.to_parquet(failure_v2_path, index=False)
+        logger.info(f"Saved: {failure_v2_path} ({len(failure_df_v2)} samples)")
+
+        # Sidecar metadata for v2
+        try:
+            import hashlib
+            import json as _json
+            from app.mim.offline_eval.snapshot_metadata import get_snapshot_metadata
+
+            meta = get_snapshot_metadata(failure_v2_path)
+            schema_path = Path("app/mim/training/feature_schema_v2.json")
+            schema_hash = hashlib.sha256(schema_path.read_bytes()).hexdigest() if schema_path.exists() else None
+
+            sidecar = {
+                "schema_version": "v2",
+                "feature_schema_v2_sha256": schema_hash,
+                "source_export_path": submissions_json_path,
+                "dataset_snapshot": meta.to_dict(),
+            }
+            (self.output_dir / "mim_failure_transitions_v2_metadata.json").write_text(
+                _json.dumps(sidecar, indent=2)
+            )
+        except Exception as e:
+            logger.warning(f"Failed to write v2 dataset metadata: {e}")
+
         return failure_df, reinforcement_df
     
     def _build_failure_transitions(
@@ -289,6 +496,41 @@ class DatasetBuilder:
                 samples.append(asdict(sample))
         
         return pd.DataFrame(samples)
+
+    def _build_failure_transitions_v2(
+        self,
+        failed_submissions: List[Dict],
+        accepted_submissions: List[Dict],
+    ) -> pd.DataFrame:
+        """Build v2 failure transitions with baked code-signal numeric columns.
+
+        Notes:
+        - This does NOT change labels.
+        - This does NOT add label-proxy features (e.g., likely_root_cause).
+        - Safe degradation: missing code yields zeros.
+        """
+        df_v1 = self._build_failure_transitions(failed_submissions, accepted_submissions)
+
+        # Build lookup from submission_id to raw submission for code access
+        raw_by_id: Dict[str, Dict[str, Any]] = {}
+        for idx, sub in enumerate(failed_submissions):
+            sid = str(sub.get("_id") or sub.get("submission_id") or idx)
+            raw_by_id[sid] = sub
+
+        # Ensure columns exist
+        for c in _code_signal_numeric_columns():
+            if c not in df_v1.columns:
+                df_v1[c] = 0.0
+
+        # Populate per-row
+        for i, row in df_v1.iterrows():
+            sid = str(row.get("submission_id"))
+            raw = raw_by_id.get(sid, {})
+            feats = _compute_code_signal_numeric_features(raw)
+            for k, v in feats.items():
+                df_v1.at[i, k] = v
+
+        return df_v1
     
     def _build_reinforcement_events(
         self,

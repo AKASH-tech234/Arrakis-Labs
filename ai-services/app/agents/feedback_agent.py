@@ -1,10 +1,16 @@
 """
-Feedback Agent v3.3 - Concrete Failure Mechanism
+Feedback Agent v3.4 - Confidence & Pattern Aware
 =================================================
 
 PHILOSOPHY: Agent is the VOICE, MIM is the BRAIN.
 
-v3.3 UPGRADE:
+v3.4 UPGRADE (Architecture Upgrade):
+- Confidence-aware language (hedge for LOW/MEDIUM, direct for HIGH)
+- Pattern-state-aware recurrence language
+- Uses unified AgentInput when available
+- Explains difficulty decisions (never suggests different)
+
+v3.3 FEATURES (retained):
 - Uses MIM subtype for granular diagnosis
 - Explains concrete failure mechanism (not generic advice)
 - Generates correct code solution for "full explanation" section
@@ -12,18 +18,96 @@ v3.3 UPGRADE:
 
 RULES:
 - NEVER contradict MIM category or subtype
+- NEVER express more certainty than confidence tier allows
+- NEVER claim "confirmed" pattern when state is "suspected"
 - DO explain the concrete failure mechanism
 - DO cite specific code lines
 - DO provide correct code in full explanation mode
 """
 
 import logging
+from typing import Optional, Any
 from app.schemas.feedback import FeedbackResponse
 from app.agents.base_json_agent import run_json_agent
 from app.cache.cache_key import build_cache_key
 from app.utils.algorithm_detector import analyze_user_algorithm, detect_algorithm
 
 logger = logging.getLogger("feedback_agent")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIDENCE-AWARE LANGUAGE HELPERS (Architecture Upgrade)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_confidence_language_guidance(confidence_level: str) -> str:
+    """
+    Get language guidance based on confidence tier.
+    
+    HIGH: Direct language ("The error is...", "This is...")
+    MEDIUM: Moderate hedging ("This appears to be...", "Likely...")
+    LOW: Strong hedging ("This may be...", "Possibly...", "Consider...")
+    """
+    if confidence_level == "high":
+        return """
+CONFIDENCE LEVEL: HIGH - Use direct, confident language.
+✓ "The error is..." / "This is caused by..." / "Your code fails because..."
+✗ DO NOT use hedging words like "may", "might", "possibly"
+"""
+    elif confidence_level == "medium":
+        return """
+CONFIDENCE LEVEL: MEDIUM - Use moderate hedging.
+✓ "This appears to be..." / "The likely cause is..." / "This seems to be..."
+✗ DO NOT be too certain ("definitely", "certainly")
+✗ DO NOT be too uncertain ("might possibly", "could perhaps")
+"""
+    else:  # low
+        return """
+CONFIDENCE LEVEL: LOW - Use careful hedging.
+✓ "This may be..." / "One possible cause is..." / "Consider whether..."
+✓ "Based on the available information, this could be..."
+✗ DO NOT state things with certainty
+✗ Acknowledge uncertainty appropriately
+"""
+
+
+def get_pattern_language_guidance(pattern_state: str, pattern_name: Optional[str], recurrence_count: int) -> str:
+    """
+    Get recurrence language guidance based on pattern state.
+    
+    NONE: Do not mention recurrence
+    SUSPECTED: "This may be a recurring pattern..."
+    CONFIRMED: "This is a confirmed recurring pattern..."
+    STABLE: "This is a long-standing pattern..."
+    """
+    if pattern_state == "none":
+        return """
+PATTERN STATE: NONE - Do not mention recurrence or patterns.
+✗ DO NOT say "this is a recurring mistake"
+✗ DO NOT reference past mistakes unless RAG provides specific context
+"""
+    elif pattern_state == "suspected":
+        return f"""
+PATTERN STATE: SUSPECTED - Use tentative recurrence language.
+✓ "This may be a recurring pattern ({pattern_name})"
+✓ "We're seeing signs this could be a pattern you're developing"
+✗ DO NOT say "this is a confirmed pattern"
+✗ DO NOT be certain about recurrence
+"""
+    elif pattern_state == "confirmed":
+        return f"""
+PATTERN STATE: CONFIRMED - Use definite recurrence language.
+✓ "This is a confirmed recurring pattern ({pattern_name}, seen {recurrence_count} times)"
+✓ "We've observed this same mistake pattern multiple times"
+✓ Emphasize the importance of addressing this pattern
+"""
+    elif pattern_state == "stable":
+        return f"""
+PATTERN STATE: STABLE - This is a long-standing pattern.
+✓ "This is a persistent pattern you've been working on ({pattern_name})"
+✓ "This is a familiar challenge - let's focus on breaking through"
+✓ Be supportive but firm about the need to address it
+"""
+    return ""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -178,19 +262,47 @@ RULES (CRITICAL - NON-NEGOTIABLE)
 ✗ NEVER leave correct_code empty (always provide it)"""
 
 
-def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackResponse:
+def feedback_agent(
+    context: str, 
+    payload: dict, 
+    mim_decision=None,
+    agent_input: Optional[Any] = None,  # AgentInput from orchestrator
+) -> FeedbackResponse:
     """
     Generate feedback with concrete failure mechanism and correct code.
     
-    v3.3: Complete rewrite with:
+    v3.4: Architecture Upgrade with:
+    - Confidence-aware language (hedge for LOW/MEDIUM)
+    - Pattern-state-aware recurrence language
+    - Unified AgentInput support
+    
+    v3.3 features retained:
     - Subtype-aware diagnosis
     - Concrete failure mechanism
     - Correct code generation
     - Concept-level reinforcement
     """
+    # Extract confidence and pattern info from AgentInput if available
+    confidence_level = "medium"  # default
+    pattern_state = "none"  # default
+    pattern_name = None
+    recurrence_count = 0
+    
+    if agent_input:
+        confidence_level = agent_input.confidence.confidence_level
+        pattern_state = agent_input.pattern.pattern_state
+        pattern_name = agent_input.pattern.pattern_name
+        recurrence_count = agent_input.pattern.recurrence_count
+        
+        print(f"\n[FEEDBACK_AGENT] Using AgentInput:")
+        print(f"  └─ confidence_level: {confidence_level}")
+        print(f"  └─ pattern_state: {pattern_state}")
+        print(f"  └─ pattern_name: {pattern_name}")
+    
     logger.debug(
-        f"📨 feedback_agent v3.3 called | verdict={payload.get('verdict')} "
-        f"| has_mim={mim_decision is not None}"
+        f"📨 feedback_agent v3.4 called | verdict={payload.get('verdict')} "
+        f"| has_mim={mim_decision is not None} | conf_level={confidence_level} "
+        f"| pattern_state={pattern_state}"
     )
 
     # -------------------------
@@ -250,17 +362,21 @@ def feedback_agent(context: str, payload: dict, mim_decision=None) -> FeedbackRe
         subtype = mim_decision.feedback_instruction.root_cause_subtype or "unspecified"
         failure_mechanism = mim_decision.feedback_instruction.failure_mechanism or "Review the algorithm approach"
         
+        # ─────────────────────────────────────────────────────────────────────
+        # v3.4: Add confidence and pattern language guidance
+        # ─────────────────────────────────────────────────────────────────────
+        confidence_guidance = get_confidence_language_guidance(confidence_level)
+        pattern_guidance = get_pattern_language_guidance(pattern_state, pattern_name, recurrence_count)
+        
         mim_context = f"""
 ═══════════════════════════════════════════════════════════════════════════════
-MIM DIAGNOSIS (v3.3 - USE THIS, DON'T CONTRADICT)
+MIM DIAGNOSIS (v3.4 - USE THIS, DON'T CONTRADICT)
 ═══════════════════════════════════════════════════════════════════════════════
 ROOT_CAUSE: {mim_decision.root_cause}
 SUBTYPE: {subtype}
 FAILURE_MECHANISM: {failure_mechanism}
 CONFIDENCE: {mim_decision.root_cause_confidence:.0%}
 TONE: {mim_decision.feedback_instruction.tone}
-IS_RECURRING: {mim_decision.feedback_instruction.is_recurring_mistake}
-RECURRENCE_COUNT: {mim_decision.feedback_instruction.recurrence_count}
 
 USER'S ALGORITHM: {algo_analysis['user_algorithm']}
 CANONICAL ALGORITHMS: {', '.join(algo_analysis['canonical_algorithms'])}
@@ -268,12 +384,20 @@ CANONICAL ALGORITHMS: {', '.join(algo_analysis['canonical_algorithms'])}
 EDGE CASES TO CHECK: {', '.join(mim_decision.feedback_instruction.edge_cases_likely)}
 
 USER'S LANGUAGE: {language}
+
+═══════════════════════════════════════════════════════════════════════════════
+LANGUAGE CONTROL (v3.4 - CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+{confidence_guidance}
+{pattern_guidance}
 ═══════════════════════════════════════════════════════════════════════════════
 """
         enhanced_context = f"{mim_context}\n\n{enhanced_context}"
         
         logger.debug(f"   └─ MIM subtype: {subtype}")
         logger.debug(f"   └─ Failure mechanism: {failure_mechanism}")
+        logger.debug(f"   └─ Confidence level: {confidence_level}")
+        logger.debug(f"   └─ Pattern state: {pattern_state}")
 
     # -------------------------
     # Cache key

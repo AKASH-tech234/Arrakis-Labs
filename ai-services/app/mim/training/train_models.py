@@ -65,17 +65,42 @@ MODEL_DIR.mkdir(parents=True, exist_ok=True)
 ROOT_CAUSE_CLASSES = ["correctness", "efficiency", "implementation", "understanding_gap"]
 
 # Feature columns for Model A (ROOT_CAUSE)
+# Phase 1.2: Feature sanity audit flagged the following as REMOVE:
+#   - delta_complexity_mismatch
+#   - delta_time_to_accept
+#   - delta_optimization_transition
+# We keep them in the dataset for backward compatibility, but they are NOT used
+# as model inputs going forward.
 ROOT_CAUSE_FEATURES = [
     "delta_attempts_same_category",
-    "delta_root_cause_repeat_rate",
-    "delta_complexity_mismatch",
-    "delta_time_to_accept",
-    "delta_optimization_transition",
+    # Phase 1.3 v2 audit: delta_root_cause_repeat_rate flagged near-constant on synthetic v2 dataset.
+    # Removed from model inputs.
     "is_cold_start",
 ]
 
 # Additional categorical features (will be encoded)
 CATEGORICAL_FEATURES = ["category", "difficulty"]
+
+# Phase 1.3: baked code-signal numeric columns (v2 dataset)
+CODE_SIGNAL_FEATURES = [
+    "ast_max_loop_depth",
+    "ast_max_condition_depth",
+    "ast_total_loops",
+    "ast_total_conditions",
+    "ast_has_recursion",
+    "ast_off_by_one_risk",
+    "pattern_off_by_one_count",
+    "pattern_boundary_risk_count",
+    "pattern_inefficiency_count",
+    "pattern_correctness_risk",
+    "pattern_efficiency_risk",
+    "pattern_implementation_risk",
+    "code_boundary_risk",
+    "code_efficiency_risk",
+    "code_implementation_risk",
+    "code_understanding_risk",
+]
+
 
 # LightGBM hyperparameters for Model A
 LGBM_PARAMS_MODEL_A = {
@@ -205,9 +230,20 @@ class RootCauseModel:
             df["difficulty"].fillna("unknown")
         ).reshape(-1, 1)
         
+        # Code-signal numeric features (v2 dataset)
+        if all(c in df.columns for c in CODE_SIGNAL_FEATURES):
+            X_code = df[CODE_SIGNAL_FEATURES].values
+        else:
+            # Safe degradation: if training data missing code columns, use zeros.
+            X_code = np.zeros((len(df), len(CODE_SIGNAL_FEATURES)))
+
         # Combine features
-        X = np.hstack([X_delta, cat_encoded, diff_encoded])
-        self.feature_names = ROOT_CAUSE_FEATURES + ["category_encoded", "difficulty_encoded"]
+        X = np.hstack([X_delta, cat_encoded, diff_encoded, X_code])
+        self.feature_names = (
+            ROOT_CAUSE_FEATURES
+            + ["category_encoded", "difficulty_encoded"]
+            + CODE_SIGNAL_FEATURES
+        )
         
         # Labels
         y = self.label_encoder.transform(df["root_cause"])
@@ -414,7 +450,22 @@ class MaskedSubtypeModel:
         logger.info(f"Training with {num_classes} classes: {valid_subtypes}")
         
         # Prepare features (same as root cause model)
-        X = df[ROOT_CAUSE_FEATURES].values
+        X_delta = df[ROOT_CAUSE_FEATURES].values
+
+        # Reuse categorical encodings by fitting fresh per subtype model
+        cat_encoder = LabelEncoder()
+        diff_encoder = LabelEncoder()
+        cat_encoder.fit(df["category"].fillna("unknown"))
+        diff_encoder.fit(df["difficulty"].fillna("unknown"))
+        cat_encoded = cat_encoder.transform(df["category"].fillna("unknown")).reshape(-1, 1)
+        diff_encoded = diff_encoder.transform(df["difficulty"].fillna("unknown")).reshape(-1, 1)
+
+        if all(c in df.columns for c in CODE_SIGNAL_FEATURES):
+            X_code = df[CODE_SIGNAL_FEATURES].values
+        else:
+            X_code = np.zeros((len(df), len(CODE_SIGNAL_FEATURES)))
+
+        X = np.hstack([X_delta, cat_encoded, diff_encoded, X_code])
         
         # Encode labels for THIS root_cause only
         label_encoder = LabelEncoder()
@@ -541,6 +592,101 @@ class MaskedSubtypeModel:
 # TRAINING PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _leakage_by_construction_gate(
+    df: pd.DataFrame,
+    threshold_macro_f1: float = 0.95,
+    threshold_small_gbdt: float = 0.98,
+) -> Dict[str, Any]:
+    """Deterministic guardrail for synthetic datasets.
+
+    Why:
+    - Synthetic generators can accidentally create shortcuts where labels are
+      recoverable from a small number of deterministic structural features.
+
+    Gate design:
+    - Train a depth-1 stump AND a shallow depth-3 tree.
+    - If either achieves macro-F1 > threshold, the dataset is too separable and
+      is unsafe for baseline / calibration.
+
+    Returns a dict with metrics and pass/fail.
+    """
+    from sklearn.tree import DecisionTreeClassifier
+
+    # Use the same feature construction as Model A
+    m = RootCauseModel()
+    X, y = m._prepare_data(df)
+
+    # Train/test split (deterministic)
+    train_df = df[df["split"] == "train"]
+    test_df = df[df["split"] == "test"]
+    if len(train_df) == 0 or len(test_df) == 0:
+        # Fall back to random split if splits missing
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+    else:
+        X_train, y_train = m._prepare_data(train_df)
+        X_test, y_test = m._prepare_data(test_df)
+
+    stump = DecisionTreeClassifier(max_depth=1, random_state=42)
+    stump.fit(X_train, y_train)
+    y_pred_stump = stump.predict(X_test)
+    macro_stump = f1_score(y_test, y_pred_stump, average="macro")
+
+    tree3 = DecisionTreeClassifier(max_depth=3, random_state=42)
+    tree3.fit(X_train, y_train)
+    y_pred_tree3 = tree3.predict(X_test)
+    macro_tree3 = f1_score(y_test, y_pred_tree3, average="macro")
+
+    passed = bool(max(macro_stump, macro_tree3) <= threshold_macro_f1)
+
+    # Small GBDT gate (catches higher-order separability that stump/tree3 miss)
+    macro_small_gbdt = None
+    try:
+        import lightgbm as lgb
+
+        params = {
+            "objective": "multiclass",
+            "num_class": 4,
+            "metric": "multi_logloss",
+            "num_leaves": 8,
+            "learning_rate": 0.1,
+            "feature_fraction": 1.0,
+            "bagging_fraction": 1.0,
+            "bagging_freq": 0,
+            "verbose": -1,
+            "n_estimators": 30,
+            "max_depth": 3,
+        }
+        train_data = lgb.Dataset(X_train, label=y_train)
+        model = lgb.train(params, train_data)
+        y_prob = model.predict(X_test)
+        y_pred_gbdt = np.argmax(y_prob, axis=1)
+        macro_small_gbdt = float(f1_score(y_test, y_pred_gbdt, average="macro"))
+    except Exception:
+        pass
+
+    passed = bool(
+        max(macro_stump, macro_tree3) <= threshold_macro_f1
+        and (macro_small_gbdt is None or macro_small_gbdt <= threshold_small_gbdt)
+    )
+
+    return {
+        "type": "leakage_gate_tree",
+        "macro_f1_stump_depth_1": float(macro_stump),
+        "macro_f1_tree_depth_3": float(macro_tree3),
+        "macro_f1_small_gbdt": macro_small_gbdt,
+        "threshold_tree": threshold_macro_f1,
+        "threshold_small_gbdt": threshold_small_gbdt,
+        "passed": passed,
+        "note": (
+            "If failed, dataset is likely too separable (synthetic shortcut). "
+            "Improve synthetic realism before using results for baseline/calibration."
+        ),
+    }
+
+
 def train_v3_models(
     data_path: str,
     output_dir: str = None,
@@ -572,6 +718,20 @@ def train_v3_models(
     df = pd.read_parquet(data_path)
     report["total_samples"] = len(df)
     
+    # Leakage-by-construction gate (synthetic realism)
+    try:
+        gate = _leakage_by_construction_gate(df)
+        report["leakage_by_construction_gate"] = gate
+        if not gate.get("passed", True):
+            # Gate schema may evolve; log full payload deterministically.
+            logger.error(
+                "Training blocked by leakage-by-construction gate: "
+                + json.dumps(gate, sort_keys=True)
+            )
+            return report
+    except Exception as e:
+        logger.warning(f"Leakage-by-construction gate skipped due to error: {e}")
+
     # Validate taxonomy before training
     invalid_taxonomy = []
     for idx, row in df.iterrows():

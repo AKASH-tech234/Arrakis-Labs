@@ -1,0 +1,70 @@
+{
+  "schema_version": "v2",
+  "created_at_utc": "2026-01-28T00:00:00Z",
+  "principles": {
+    "deterministic_only": true,
+    "no_llm_influence": true,
+    "no_online_learning": true,
+    "taxonomy_stable": true
+  },
+  "notes": [
+    "This schema defines the MODEL INPUT feature set (not necessarily the full dataset columns).",
+    "Deprecated features may still exist in parquet snapshots for backward compatibility.",
+    "Code-signal features MUST be derived deterministically from submitted code and execution context.",
+    "Do NOT include any label proxies (e.g., heuristic 'likely_root_cause') as training features."
+  ],
+  "model_inputs": {
+    "root_cause": {
+      "numeric_features": [
+        "delta_attempts_same_category",
+        
+        "is_cold_start"
+      ],
+      "categorical_features": [
+        "category",
+        "difficulty"
+      ],
+      "code_signals_numeric": [
+        "ast_max_loop_depth",
+        "ast_max_condition_depth",
+        "ast_total_loops",
+        "ast_total_conditions",
+        "ast_has_recursion",
+        "ast_off_by_one_risk",
+        "pattern_off_by_one_count",
+        "pattern_boundary_risk_count",
+        "pattern_inefficiency_count",
+        "pattern_correctness_risk",
+        "pattern_efficiency_risk",
+        "pattern_implementation_risk",
+        "code_boundary_risk",
+        "code_efficiency_risk",
+        "code_implementation_risk",
+        "code_understanding_risk"
+      ],
+      "excluded_by_policy": [
+        "code_likely_root_cause",
+        "code_likely_root_confidence"
+      ]
+    },
+    "subtype": {
+      "depends_on": "root_cause",
+      "uses_same_features_as_root_cause": true,
+      "notes": [
+        "Subtype model(s) are conditioned on root_cause and masked by taxonomy.",
+        "We reuse the same feature groups; future revisions may specialize per root_cause."
+      ]
+    }
+  },
+  "drift_monitoring_hooks": {
+    "enabled": true,
+    "features": [
+      "ast_max_loop_depth",
+      "ast_off_by_one_risk",
+      "pattern_off_by_one_count",
+      "pattern_inefficiency_count",
+      "code_boundary_risk",
+      "code_efficiency_risk"
+    ]
+  }
+}

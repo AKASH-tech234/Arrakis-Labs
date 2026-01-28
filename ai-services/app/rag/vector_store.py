@@ -16,6 +16,8 @@ Configuration via .env:
 import logging
 import os
 from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timezone
+from dataclasses import dataclass
 from dotenv import load_dotenv
 
 logger = logging.getLogger("vector_store")
@@ -29,6 +31,160 @@ PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "arrakis-labs")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
 
 logger.info("🗃️  Initializing Pinecone vector store...")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 3.1: MEMORY QUALITY CONTROL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class MemoryQualityScore:
+    """Quality score for a memory document."""
+    score: float  # 0-1
+    components: Dict[str, float]
+    should_store: bool
+    reason: str
+
+
+class MemoryQualityScorer:
+    """
+    Phase 3.1: Deterministic quality scoring for RAG memories.
+    
+    Quality factors:
+    - MIM confidence (diagnosis reliability)
+    - Pattern recurrence (validated learning signal)
+    - User feedback (if available)
+    - Content completeness
+    
+    Guarantees:
+    - Deterministic (same inputs = same score)
+    - No LLM involvement in scoring
+    - Quality is a control signal, not a prediction
+    """
+    
+    # Quality thresholds
+    STORAGE_THRESHOLD = 0.6  # Minimum quality to store
+    HIGH_QUALITY_THRESHOLD = 0.8
+    
+    # Component weights
+    WEIGHTS = {
+        "mim_confidence": 0.35,
+        "pattern_recurrence": 0.25,
+        "content_completeness": 0.25,
+        "user_feedback": 0.15,
+    }
+    
+    def score(
+        self,
+        content: str,
+        metadata: Dict[str, Any],
+    ) -> MemoryQualityScore:
+        """
+        Compute quality score for a memory document.
+        
+        Parameters
+        ----------
+        content : str
+            Memory content text
+        metadata : dict
+            Memory metadata including mim_confidence, pattern info, etc.
+            
+        Returns
+        -------
+        MemoryQualityScore
+            Quality assessment with storage recommendation
+        """
+        components = {}
+        
+        # MIM confidence component
+        mim_conf = metadata.get("mim_confidence", 0.5)
+        components["mim_confidence"] = float(mim_conf)
+        
+        # Pattern recurrence component (validated signal)
+        is_recurring = metadata.get("is_recurring", False)
+        recurrence_count = metadata.get("recurrence_count", 0)
+        if is_recurring and recurrence_count >= 2:
+            components["pattern_recurrence"] = min(1.0, 0.5 + recurrence_count * 0.1)
+        elif is_recurring:
+            components["pattern_recurrence"] = 0.6
+        else:
+            components["pattern_recurrence"] = 0.3
+        
+        # Content completeness component
+        completeness = self._compute_content_completeness(content, metadata)
+        components["content_completeness"] = completeness
+        
+        # User feedback component (if available)
+        was_helpful = metadata.get("was_helpful")
+        if was_helpful is True:
+            components["user_feedback"] = 1.0
+        elif was_helpful is False:
+            components["user_feedback"] = 0.0
+        else:
+            components["user_feedback"] = 0.5  # Unknown
+        
+        # Weighted score
+        score = sum(
+            self.WEIGHTS[k] * components.get(k, 0.5)
+            for k in self.WEIGHTS
+        )
+        
+        # Storage decision
+        should_store = score >= self.STORAGE_THRESHOLD
+        
+        if not should_store:
+            reason = f"Quality {score:.2f} below threshold {self.STORAGE_THRESHOLD}"
+        elif score >= self.HIGH_QUALITY_THRESHOLD:
+            reason = f"High quality memory ({score:.2f})"
+        else:
+            reason = f"Acceptable quality ({score:.2f})"
+        
+        return MemoryQualityScore(
+            score=round(score, 3),
+            components=components,
+            should_store=should_store,
+            reason=reason,
+        )
+    
+    def _compute_content_completeness(
+        self,
+        content: str,
+        metadata: Dict[str, Any],
+    ) -> float:
+        """Compute content completeness score."""
+        score = 0.0
+        
+        # Content length (minimum useful length)
+        if len(content) >= 100:
+            score += 0.3
+        elif len(content) >= 50:
+            score += 0.15
+        
+        # Has root cause
+        if metadata.get("root_cause"):
+            score += 0.2
+        
+        # Has subtype
+        if metadata.get("subtype"):
+            score += 0.15
+        
+        # Has category context
+        if metadata.get("category"):
+            score += 0.1
+        
+        # Has problem reference
+        if metadata.get("problem_id") or metadata.get("questionId"):
+            score += 0.1
+        
+        # Has timestamp (for decay tracking)
+        if metadata.get("created_at") or metadata.get("timestamp"):
+            score += 0.15
+        
+        return min(1.0, score)
+
+
+# Global scorer instance
+_memory_scorer = MemoryQualityScorer()
 
 
 class PineconeVectorStore:
@@ -155,16 +311,20 @@ class PineconeVectorStore:
         self,
         documents: List[Any],
         ids: Optional[List[str]] = None,
+        enforce_quality_gate: bool = True,
     ) -> List[str]:
         """
-        Add documents to the vector store.
+        Add documents to the vector store with quality gating.
+        
+        Phase 3.1: Implements selective storage based on quality scores.
         
         Args:
             documents: List of LangChain Document objects
             ids: Optional list of document IDs
+            enforce_quality_gate: If True, filter low-quality documents
             
         Returns:
-            List of document IDs
+            List of document IDs (only stored documents)
         """
         self._ensure_initialized()
         
@@ -178,17 +338,60 @@ class PineconeVectorStore:
             if ids is None:
                 ids = [str(uuid.uuid4()) for _ in documents]
             
+            # Phase 3.1: Quality gating
+            filtered_docs = []
+            filtered_ids = []
+            quality_scores = []
+            
+            for doc, doc_id in zip(documents, ids):
+                if enforce_quality_gate and self.namespace == "user_memory":
+                    quality = _memory_scorer.score(doc.page_content, doc.metadata)
+                    quality_scores.append(quality)
+                    
+                    if not quality.should_store:
+                        logger.debug(f"🚫 Skipping low-quality memory: {quality.reason}")
+                        continue
+                    
+                    # Add quality score to metadata
+                    doc.metadata["quality_score"] = quality.score
+                    doc.metadata["quality_components"] = quality.components
+                
+                filtered_docs.append(doc)
+                filtered_ids.append(doc_id)
+            
+            if not filtered_docs:
+                logger.info(f"📭 No documents passed quality gate (0/{len(documents)})")
+                return []
+            
+            if len(filtered_docs) < len(documents):
+                logger.info(
+                    f"🔍 Quality gate: {len(filtered_docs)}/{len(documents)} documents passed"
+                )
+            
             # Prepare vectors
-            texts = [doc.page_content for doc in documents]
+            texts = [doc.page_content for doc in filtered_docs]
             embeddings = self._embeddings.embed_documents(texts)
             
-            # Prepare upsert data
+            # Prepare upsert data with TTL metadata
             vectors = []
-            for i, (doc, embedding, doc_id) in enumerate(zip(documents, embeddings, ids)):
+            now = datetime.now(timezone.utc).isoformat()
+            
+            for doc, embedding, doc_id in zip(filtered_docs, embeddings, filtered_ids):
                 metadata = {
                     "text": doc.page_content,
+                    "stored_at": now,
                     **doc.metadata
                 }
+                
+                # Phase 3.1: Set TTL based on quality
+                quality_score = doc.metadata.get("quality_score", 0.6)
+                if quality_score >= 0.8:
+                    metadata["ttl_days"] = 365  # High quality: 1 year
+                elif quality_score >= 0.7:
+                    metadata["ttl_days"] = 180  # Medium quality: 6 months
+                else:
+                    metadata["ttl_days"] = 90  # Lower quality: 3 months
+                
                 vectors.append({
                     "id": doc_id,
                     "values": embedding,
@@ -202,11 +405,56 @@ class PineconeVectorStore:
                 self._index.upsert(vectors=batch, namespace=self.namespace)
             
             logger.info(f"✅ Added {len(vectors)} documents to namespace '{self.namespace}'")
-            return ids
+            return filtered_ids
             
         except Exception as e:
             logger.error(f"❌ add_documents failed: {e}")
             return []
+    
+    def boost_memory(self, doc_id: str, boost_reason: str = "retrieved") -> bool:
+        """
+        Phase 3.1: Boost memory quality/TTL when it's successfully retrieved.
+        
+        Useful memories get extended retention.
+        """
+        self._ensure_initialized()
+        
+        try:
+            # Fetch current metadata
+            result = self._index.fetch(ids=[doc_id], namespace=self.namespace)
+            vectors = result.get("vectors", {})
+            
+            if doc_id not in vectors:
+                return False
+            
+            metadata = vectors[doc_id].get("metadata", {})
+            
+            # Increase TTL
+            current_ttl = metadata.get("ttl_days", 90)
+            metadata["ttl_days"] = min(365, current_ttl + 30)
+            
+            # Track retrieval count
+            retrieval_count = metadata.get("retrieval_count", 0) + 1
+            metadata["retrieval_count"] = retrieval_count
+            metadata["last_retrieved"] = datetime.now(timezone.utc).isoformat()
+            
+            # Boost quality score slightly
+            quality = metadata.get("quality_score", 0.6)
+            metadata["quality_score"] = min(1.0, quality + 0.02)
+            
+            # Update in Pinecone
+            self._index.update(
+                id=doc_id,
+                set_metadata=metadata,
+                namespace=self.namespace,
+            )
+            
+            logger.debug(f"📈 Boosted memory {doc_id}: ttl={metadata['ttl_days']}, retrievals={retrieval_count}")
+            return True
+            
+        except Exception as e:
+            logger.warning(f"Failed to boost memory {doc_id}: {e}")
+            return False
     
     def delete(self, filter: Dict[str, Any]) -> bool:
         """

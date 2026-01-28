@@ -178,6 +178,64 @@ backend/src/
 | GET | `/report/weekly/:userId` | Get weekly learning report | User |
 | GET | `/health` | AI service health check | Public |
 
+#### AI Feedback Response Contract (Phase 2.x)
+
+The `/feedback` endpoint returns a canonical response with MIM diagnostic data:
+
+```javascript
+{
+  "success": true,
+  "data": {
+    // === MIM FACTS (treat as authoritative) ===
+    "diagnosis": {
+      "rootCause": "correctness",           // correctness, efficiency, implementation, understanding_gap
+      "subtype": "off_by_one",              // Granular classification
+      "failureMechanism": "Loop boundary"   // Human-readable explanation
+    },
+    "confidence": {
+      "combinedConfidence": 0.82,           // 0.0 - 1.0, calibrated
+      "confidenceLevel": "high",            // "high", "medium", "low"
+      "conservativeMode": false,            // True if low confidence
+      "calibrationApplied": true            // Isotonic calibration used
+    },
+    "pattern": {
+      "state": "confirmed",                 // "none", "suspected", "confirmed", "stable"
+      "evidenceCount": 3,                   // Supporting instances
+      "confidenceSupport": "high"           // Pattern detection confidence
+    },
+    "difficulty": {
+      "action": "maintain",                 // "increase", "maintain", "decrease"
+      "reason": "pattern_unresolved",       // Why this decision
+      "confidenceTier": "high"              // Influencing confidence
+    },
+    
+    // === LLM-Generated Content ===
+    "feedback": {
+      "explanation": "Your loop...",        // Detailed explanation
+      "correctCode": "...",                 // Example fix (optional)
+      "edgeCases": [...]                    // Edge cases (optional)
+    },
+    "hint": { "text": "Consider..." },      // Hint from agent
+    
+    // === RAG Metadata ===
+    "rag": {
+      "used": true,                         // Whether RAG was used
+      "relevance": 0.67                     // Retrieval relevance
+    },
+    
+    // === Legacy Fields (backward compatibility) ===
+    "hints": [...],
+    "explanation": "...",
+    "mimInsights": {...}
+  }
+}
+```
+
+**Logging Requirements:**
+- Log `confidenceLevel` for all feedback requests
+- Log `pattern.state` when not "none"
+- Log `difficulty.action` when not "maintain"
+
 ### Contests (`/api/contests`)
 
 | Method | Endpoint | Description | Auth |

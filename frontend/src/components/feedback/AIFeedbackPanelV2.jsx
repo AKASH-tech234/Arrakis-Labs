@@ -3,6 +3,12 @@ import { useState } from "react";
 import MIMInsights from "../mim/MIMInsights"; // Legacy MIM insights component
 import MIMInsightsV3 from "../mim/MIMInsightsV3"; // ✨ V3.0 MIM insights component
 
+// Phase 2.x Components
+import { DiagnosisConfidenceBadge } from "./ConfidenceBadge";
+import PatternInsightPanel from "./PatternInsightPanel";
+import DifficultyStatusPanel from "./DifficultyStatusPanel";
+import MemoryIndicator from "./MemoryIndicator";
+
 const HINT_COLORS = {
   conceptual: { bg: "#3B82F6", text: "#DBEAFE", label: "Conceptual" },
   specific: { bg: "#F59E0B", text: "#FEF3C7", label: "Specific" },
@@ -599,7 +605,7 @@ export default function AIFeedbackPanelV2({
                   ))}
                 </div>
 
-                {}
+                {/* Reveal more hints button */}
                 {hasMoreHints && (
                   <RevealButton
                     label={nextHintLabel}
@@ -608,7 +614,46 @@ export default function AIFeedbackPanelV2({
                   />
                 )}
 
-                {}
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {/* Phase 2.x: New Canonical Feedback Components */}
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+
+                {/* RAG Memory Indicator - subtle note at top if memory was used */}
+                {feedback.rag?.used && (
+                  <div className="pt-2">
+                    <MemoryIndicator rag={feedback.rag} variant="block" />
+                  </div>
+                )}
+
+                {/* Pattern Insight Panel - shows pattern state (Phase 2.2) */}
+                {feedback.pattern && feedback.pattern.state !== "none" && (
+                  <div className="pt-4">
+                    <PatternInsightPanel
+                      pattern={feedback.pattern}
+                      patternName={feedback.diagnosis?.subtype}
+                    />
+                  </div>
+                )}
+
+                {/* Diagnosis Confidence Badge - shows confidence level (Phase 2.1) */}
+                {feedback.confidence && (
+                  <div className="pt-4 flex items-center gap-2">
+                    <span
+                      className="text-[#78716C] text-[10px] uppercase tracking-wider"
+                      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                    >
+                      Diagnosis confidence:
+                    </span>
+                    <DiagnosisConfidenceBadge
+                      confidenceLevel={feedback.confidence.confidenceLevel}
+                      confidenceScore={feedback.confidence.combinedConfidence}
+                      showCalibrated={feedback.confidence.calibrationApplied}
+                      size="small"
+                    />
+                  </div>
+                )}
+
+                {/* Legacy detected pattern display */}
                 {feedback.detectedPattern && (
                   <div className="pt-2">
                     <button
@@ -850,7 +895,7 @@ export default function AIFeedbackPanelV2({
                     </div>
                   )}
 
-                {}
+                {/* Optimization Tips */}
                 {feedback.optimizationTips?.length > 0 && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <h4
@@ -876,6 +921,18 @@ export default function AIFeedbackPanelV2({
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {/* Difficulty Status Panel (Phase 2.3) - Only show when difficulty changed */}
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {feedback.difficulty && (
+                  <div className="pt-4 border-t border-[#1A1814]">
+                    <DifficultyStatusPanel
+                      difficulty={feedback.difficulty}
+                      showOnlyWhenChanged={true}
+                    />
                   </div>
                 )}
               </div>

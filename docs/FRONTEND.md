@@ -521,6 +521,59 @@ api.interceptors.request.use((config) => {
 
 ## 🎯 MIM V3.0 Frontend Integration
 
+### Phase 2.x: Confidence-Aware UX
+
+The frontend now receives calibrated confidence levels from MIM and must adjust UI accordingly.
+
+#### Confidence Level Rules
+
+| Level | Color | Badge Text | Language Style |
+|-------|-------|------------|----------------|
+| HIGH (≥0.80) | Green (#22C55E) | "High confidence diagnosis" | Direct, assertive |
+| MEDIUM (≥0.65) | Yellow (#F59E0B) | "Likely issue" | Cautious |
+| LOW (<0.65) | Grey (#78716C) | "Exploratory feedback" | Hedging ("may", "possibly") |
+
+```jsx
+// Example: Adjust tone based on confidence
+const prefix = feedback.isLowConfidence ? "This may be" : "This is";
+const message = `${prefix} an off-by-one error`;
+```
+
+### Phase 2.x: Pattern Semantics
+
+Pattern states have specific UI treatments:
+
+| State | Show UI? | Message | Show Count? |
+|-------|----------|---------|-------------|
+| `none` | ❌ No | - | No |
+| `suspected` | ✅ Yes | "This may be a recurring pattern" | No |
+| `confirmed` | ✅ Yes | "This is a confirmed recurring issue" | Yes |
+| `stable` | ✅ Yes | "You've encountered this pattern before and improved" | Optional |
+
+**CRITICAL**: Never use word "recurring" unless state === "confirmed" or "stable"
+
+### Phase 2.x: Difficulty Explanation Rules
+
+| Rule | Description |
+|------|-------------|
+| ❌ Never | Say "you should try harder problems" |
+| ✅ Always | Only explain system decisions |
+| ✅ Always | Use predefined messages from `DIFFICULTY_MESSAGES` |
+
+Example messages:
+- `maintain + pattern_unresolved` → "Difficulty maintained to reinforce correctness"
+- `increase + consistent_success` → "Difficulty increased due to consistent success"
+- `decrease + struggling` → "Difficulty adjusted to strengthen fundamentals"
+
+### New UI Components (Phase 2.x)
+
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| `DiagnosisConfidenceBadge` | Shows confidence level | `components/feedback/ConfidenceBadge.jsx` |
+| `PatternInsightPanel` | Shows pattern state | `components/feedback/PatternInsightPanel.jsx` |
+| `DifficultyStatusPanel` | Shows difficulty decision | `components/feedback/DifficultyStatusPanel.jsx` |
+| `MemoryIndicator` | Shows RAG usage | `components/feedback/MemoryIndicator.jsx` |
+
 ### Polymorphic Feedback Handling
 
 ```javascript
