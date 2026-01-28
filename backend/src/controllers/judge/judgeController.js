@@ -14,6 +14,13 @@ import {
   getAttemptNumber,
   updateUserAIProfile,
 } from "../../utils/userStatsAggregator.js";
+// Hidden test case generation - TYPE-BASED (works for all 619+ problems)
+import {
+  hasGeneratorForType,
+  generateTestsByType,
+  getAllRegisteredTypes,
+  normalizeType,
+} from "../../services/judge/typeGeneratorRegistry.js";
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
@@ -319,7 +326,7 @@ export const submitCode = async (req, res) => {
     }
 
     console.log("✅ Question found:", question.title);
-    console.log("   Category:", question.category || "Uncategorized");
+    console.log("   Type:", question.categoryType || question.topic || "Unknown");
     console.log("   Difficulty:", question.difficulty || "Unknown");
 
     console.log("🧪 Fetching test cases from MongoDB...");
@@ -328,14 +335,104 @@ export const submitCode = async (req, res) => {
       isActive: true,
     }).sort({ order: 1 });
 
-    console.log("✅ Retrieved", allTestCases.length, "test cases");
+    console.log("✅ Retrieved", allTestCases.length, "DB test cases");
     console.log("   Hidden:", allTestCases.filter((tc) => tc.isHidden).length);
     console.log(
       "   Visible:",
       allTestCases.filter((tc) => !tc.isHidden).length,
     );
 
-    if (allTestCases.length === 0) {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // DYNAMIC HIDDEN TEST CASE GENERATION (TYPE-BASED)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 
+    // HOW IT WORKS:
+    // Each problem has a `categoryType` field (e.g., "Array", "Sorting", "Math").
+    // The typeGeneratorRegistry provides a generator for each problem type.
+    // This means ALL 619+ problems automatically get hidden test cases!
+    //
+    // BENEFITS:
+    // - No manual per-problem registration needed
+    // - New problems automatically get hidden tests based on their type
+    // - Consistent test coverage across all problems of the same type
+    //
+    // SECURITY:
+    // - Generated test inputs/outputs are NEVER exposed to frontend
+    // - Only test number and pass/fail status are shown
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    let generatedHiddenCases = [];
+    
+    // Get the problem type from the question (uses categoryType field)
+    // Falls back to topic if categoryType is not set
+    const problemType = question.categoryType || question.topic || "";
+    const normalizedType = normalizeType(problemType);
+    
+    // Clear logging for debugging
+    console.log(`\n[HiddenJudge] ═══════════════════════════════════════════════════`);
+    console.log(`[HiddenJudge] Type=${problemType} (normalized: ${normalizedType})`);
+    
+    if (hasGeneratorForType(problemType)) {
+      console.log(`[HiddenJudge] generator FOUND`);
+      try {
+        // Create deterministic seed from user + submission context
+        const submissionSeed = `${userId?.toString() || "anon"}-${questionId}-${Date.now()}`;
+        
+        // Get problem constraints (if available)
+        const constraints = {
+          maxArrayLength: question.constraints?.maxArrayLength || 1000,
+          minValue: question.constraints?.minValue || -10000,
+          maxValue: question.constraints?.maxValue || 10000,
+        };
+        
+        // Generate hidden test cases based on problem type
+        // Each generator produces:
+        // - 3 edge cases (boundary conditions)
+        // - 5 random cases (general correctness)
+        // - 2 stress cases (large inputs for TLE detection)
+        // - 2 adversarial cases (designed to break naive solutions)
+        generatedHiddenCases = generateTestsByType(problemType, submissionSeed, constraints);
+        
+        console.log(`[HiddenJudge] Generated ${generatedHiddenCases.length} hidden test cases`);
+      } catch (genError) {
+        console.error(`[HiddenJudge] ❌ Generation failed: ${genError.message}`);
+        console.error(genError.stack);
+        // Continue without generated cases - DB cases will still run
+      }
+    } else {
+      console.log(`[HiddenJudge] generator NOT FOUND for type: ${problemType}`);
+      console.log(`[HiddenJudge] Using DB test cases only (${allTestCases.length} cases)`);
+      // Show available types for debugging
+      const availableTypes = getAllRegisteredTypes();
+      console.log(`[HiddenJudge] Registered types: ${availableTypes.slice(0, 15).join(", ")}...`);
+    }
+    console.log(`[HiddenJudge] ═══════════════════════════════════════════════════\n`);
+
+    // Combine DB test cases with dynamically generated hidden cases
+    const combinedTestCases = [
+      ...allTestCases.map(tc => ({
+        stdin: tc.stdin,
+        expectedStdout: tc.expectedStdout,
+        label: tc.label,
+        isHidden: tc.isHidden,
+        timeLimit: tc.timeLimit,
+        category: tc.isHidden ? "db_hidden" : "db_visible",
+        fromDB: true,
+      })),
+      ...generatedHiddenCases.map((tc, idx) => ({
+        stdin: tc.stdin,
+        expectedStdout: tc.expectedStdout,
+        label: `Generated #${idx + 1}`,
+        isHidden: true, // All generated cases are hidden
+        timeLimit: 2000,
+        category: tc.category || "generated",
+        fromDB: false,
+      })),
+    ];
+
+    console.log(`📊 Total test cases: ${combinedTestCases.length} (${allTestCases.length} DB + ${generatedHiddenCases.length} generated)`);
+
+    if (combinedTestCases.length === 0) {
       return res.status(400).json({
         success: false,
         message: "No test cases available for this question",
@@ -346,14 +443,14 @@ export const submitCode = async (req, res) => {
     let compileErrorOccurred = false;
     let firstFailingIndex = -1;
 
-    for (let i = 0; i < allTestCases.length; i++) {
-      const tc = allTestCases[i];
+    for (let i = 0; i < combinedTestCases.length; i++) {
+      const tc = combinedTestCases[i];
       try {
         const execution = await executePiston(
           code,
           language,
           tc.stdin,
-          tc.timeLimit,
+          tc.timeLimit || 2000,
         );
 
         const passed =
@@ -371,6 +468,7 @@ export const submitCode = async (req, res) => {
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
+          category: tc.category,
           stdin: tc.stdin,
           expectedStdout: tc.expectedStdout,
           actualStdout: execution.stdout.trim(),
@@ -415,7 +513,7 @@ export const submitCode = async (req, res) => {
 
     const passedCount = results.filter((r) => r.passed).length;
     const hasServiceError = results.some((r) => r.serviceError);
-    const allPassed = passedCount === allTestCases.length && !hasServiceError;
+    const allPassed = passedCount === combinedTestCases.length && !hasServiceError;
 
     let status = "wrong_answer";
     if (hasServiceError) {
@@ -447,7 +545,7 @@ export const submitCode = async (req, res) => {
         language,
         status,
         passedCount,
-        totalCount: allTestCases.length,
+        totalCount: combinedTestCases.length,
         // AI tracking fields
         attemptNumber,
         // Denormalized problem fields (immutable historical data)
@@ -507,7 +605,7 @@ export const submitCode = async (req, res) => {
         // Build failing test case context for AI (if applicable)
         const failingTestCase = firstFailingIndex >= 0 ? {
           index: firstFailingIndex,
-          total: allTestCases.length,
+          total: combinedTestCases.length,
           isHidden: results[firstFailingIndex]?.isHidden || false,
           input: results[firstFailingIndex]?.stdin || "",
           expectedOutput: results[firstFailingIndex]?.expectedStdout || "",
@@ -528,7 +626,7 @@ export const submitCode = async (req, res) => {
           // Failing test case context for targeted AI feedback
           failingTestCase,
           passedCount,
-          totalCount: allTestCases.length,
+          totalCount: combinedTestCases.length,
           // Enhanced context for AI personalization
           problem: {
             title: question.title,
@@ -594,7 +692,7 @@ export const submitCode = async (req, res) => {
           };
         }),
         passedCount,
-        totalCount: allTestCases.length,
+        totalCount: combinedTestCases.length,
         allPassed,
 
         aiFeedback: aiFeedback

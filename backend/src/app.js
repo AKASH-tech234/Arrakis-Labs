@@ -31,6 +31,8 @@ import {
   getPublicQuestion,
 } from "./controllers/judge/judgeController.js";
 
+import { submitWithHiddenTests } from "./services/judge/hiddenJudgeController.js";
+
 import {
   requestAIFeedback,
   getAILearningSummary,
@@ -154,6 +156,7 @@ app.get("/api/questions/:id", getPublicQuestion);
 
 app.post("/api/run", codeLimiter, runCode);
 app.post("/api/submit", protect, codeLimiter, submitCode);
+app.post("/api/submit/hidden", protect, codeLimiter, submitWithHiddenTests);
 app.get("/api/submissions", protect, getSubmissions);
 
 app.get("/api/ai/health", getAIHealth);
