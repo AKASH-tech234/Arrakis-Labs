@@ -779,13 +779,39 @@ class MIMDecisionEngine:
         # If no failure mechanism, try to derive using rules engine
         if not failure_mechanism and subtype:
             try:
-                mechanism_result = derive_failure_mechanism(
-                    root_cause=root_cause,
-                    subtype=subtype,
-                    code_signals={"technique": "unknown"},  # Basic signals
-                    problem_category=problem_context.get("category", "") if problem_context else "",
+                # Phase 1.1: Use real deterministic code signals (no placeholders)
+                from app.mim.features.signal_extractor import extract_code_signals as _extract_legacy_signals
+                sig_obj = _extract_legacy_signals(
+                    code=code or "",
+                    verdict=verdict or "",
+                    constraints=problem_context.get("constraints") if problem_context else None,
+                    problem_tags=problem_context.get("tags") if problem_context else None,
                 )
-                failure_mechanism = mechanism_result.get("failure_mechanism", "")
+                sig_dict = sig_obj.to_dict()
+
+                # Compatibility: derive_failure_mechanism signature differs between modules.
+                import inspect
+                params = set(inspect.signature(derive_failure_mechanism).parameters.keys())
+
+                if {"root_cause", "subtype", "category", "signals"}.issubset(params):
+                    failure_mechanism = derive_failure_mechanism(
+                        root_cause=root_cause,
+                        subtype=subtype,
+                        category=problem_context.get("category", "") if problem_context else "",
+                        signals=sig_dict,
+                    )
+                else:
+                    # Legacy signature fallback
+                    mechanism_result = derive_failure_mechanism(
+                        root_cause=root_cause,
+                        subtype=subtype,
+                        code_signals=sig_dict,
+                        problem_category=problem_context.get("category", "") if problem_context else "",
+                    )
+                    if isinstance(mechanism_result, dict):
+                        failure_mechanism = mechanism_result.get("failure_mechanism", "")
+                    else:
+                        failure_mechanism = str(mechanism_result)
             except Exception:
                 pass
         

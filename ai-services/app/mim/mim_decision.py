@@ -128,6 +128,12 @@ class PatternResult(BaseModel):
     Result from deterministic pattern detection.
     
     NO LLM CALL - computed from user history lookup.
+    
+    Phase 2.2 Additions:
+    - pattern_state: Explicit state (NONE/SUSPECTED/CONFIRMED/STABLE)
+    - evidence_strength: Weighted evidence metrics
+    - confidence_support: How confidence supports the pattern claim
+    - Confidence gating: Low confidence cannot form patterns
     """
     pattern_name: Optional[str] = Field(
         default=None,
@@ -154,6 +160,35 @@ class PatternResult(BaseModel):
         default="none",
         description="How pattern was detected"
     )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PHASE 2.2: Extended Pattern Fields
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    pattern_state: Literal["none", "suspected", "confirmed", "stable"] = Field(
+        default="none",
+        description="Explicit pattern state (Phase 2.2)"
+    )
+    evidence_strength: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Weighted evidence metrics (count, mean_confidence, recency)"
+    )
+    confidence_support: Optional[str] = Field(
+        default=None,
+        description="How confidence supports this pattern (all_high, some_high, medium_only)"
+    )
+    confidence_gated: bool = Field(
+        default=False,
+        description="True if pattern was blocked due to low confidence"
+    )
+    
+    def is_actionable(self) -> bool:
+        """Check if pattern is strong enough for action (CONFIRMED or STABLE)."""
+        return self.pattern_state in ("confirmed", "stable")
+    
+    def is_suspected_only(self) -> bool:
+        """Check if pattern is suspected but not confirmed."""
+        return self.pattern_state == "suspected"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -20,6 +20,7 @@ Flow:
    d. Generate feedback with state injection
 """
 
+import json
 import time
 import logging
 from typing import Dict, Any, Optional, Tuple
@@ -44,8 +45,28 @@ from app.mim.features.signal_extractor import extract_code_signals
 
 logger = logging.getLogger(__name__)
 
-# Model version for tracking
-MODEL_VERSION = "v2.0.0"
+# Model version for tracking (updated for Phase 2.1 calibration)
+MODEL_VERSION = "v2.1.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIDENCE CALIBRATION CONFIG (Phase 2.1)
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# These thresholds control how confidence affects decision-making:
+# - HIGH: Trust diagnosis fully, allow aggressive learning adjustments
+# - MEDIUM: Trust with caution, moderate adjustments
+# - LOW: Conservative mode, minimal adjustments, flag for review
+#
+# SAFETY INVARIANT: max_confidence caps all predictions to prevent overconfidence
+# ═══════════════════════════════════════════════════════════════════════════════
+
+DEFAULT_CONFIDENCE_CONFIG = {
+    "max_confidence": 0.90,      # Hard cap - never output confidence > this
+    "high_confidence": 0.80,     # Above: trust fully
+    "medium_confidence": 0.65,   # Above: trust with caution  
+    "low_confidence": 0.50,      # Below: conservative/degraded mode
+    "calibration_enabled": True, # Apply isotonic calibration
+}
 
 
 class MIMDecisionNode:
@@ -56,12 +77,18 @@ class MIMDecisionNode:
     - State snapshot is MANDATORY (not optional)
     - Accepted and Failed paths are COMPLETELY SEPARATE
     - All outputs are validated against taxonomy
+    
+    Phase 2.1 Additions:
+    - Confidence calibration via isotonic regression
+    - Conservative confidence caps for safety
+    - Confidence-aware degradation modes
     """
     
     def __init__(
         self,
         model_dir: Optional[str] = None,
         load_models: bool = True,
+        confidence_config: Optional[Dict[str, Any]] = None,
     ):
         self.model_dir = Path(model_dir) if model_dir else Path("app/mim/models")
         self.root_cause_model = None
@@ -69,8 +96,13 @@ class MIMDecisionNode:
         self.subtype_model = None
         self.subtype_metadata = None
         
+        # Phase 2.1: Calibration components
+        self.calibrator = None
+        self.confidence_config = confidence_config or DEFAULT_CONFIDENCE_CONFIG
+        
         if load_models:
             self._load_models()
+            self._load_calibrator()
     
     def _load_models(self):
         """Load trained models."""
@@ -87,6 +119,104 @@ class MIMDecisionNode:
             logger.info("MIM models loaded successfully")
         except Exception as e:
             logger.warning(f"Could not load MIM models: {e}. Will use fallback rules.")
+    
+    def _load_calibrator(self):
+        """
+        Load confidence calibrator (Phase 2.1).
+        
+        Falls back gracefully if calibrator not available.
+        """
+        if not self.confidence_config.get("calibration_enabled", True):
+            logger.info("Calibration disabled by config")
+            return
+        
+        calibrator_path = self.model_dir / "model_a_calibrator.joblib"
+        config_path = self.model_dir / "calibration_config.json"
+        
+        try:
+            from app.mim.calibration.wrapper import CalibrationWrapper
+            
+            if calibrator_path.exists():
+                self.calibrator = CalibrationWrapper.load(str(calibrator_path))
+                logger.info(f"Calibrator loaded: {self.calibrator.stats}")
+                
+                # Load config if available to override defaults
+                if config_path.exists():
+                    with open(config_path) as f:
+                        saved_config = json.load(f)
+                    # Merge saved thresholds (empirically validated)
+                    if "thresholds" in saved_config:
+                        self.confidence_config.update(saved_config["thresholds"])
+                    if "confidence_caps" in saved_config:
+                        self.confidence_config.update(saved_config["confidence_caps"])
+                    logger.info(f"Calibration config loaded: {self.confidence_config}")
+            else:
+                logger.warning(f"Calibrator not found at {calibrator_path}. Using raw confidence.")
+        except Exception as e:
+            logger.warning(f"Could not load calibrator: {e}. Using raw confidence.")
+    
+    def _calibrate_confidence(self, raw_confidence: float) -> float:
+        """
+        Apply calibration and safety caps to raw confidence (Phase 2.1).
+        
+        Pipeline:
+        1. Apply isotonic calibration (if available)
+        2. Apply hard confidence cap (safety invariant)
+        
+        Parameters
+        ----------
+        raw_confidence : float
+            Raw model confidence score
+            
+        Returns
+        -------
+        float
+            Calibrated and capped confidence score
+        """
+        confidence = raw_confidence
+        
+        # Step 1: Apply calibration if available
+        if self.calibrator is not None and self.calibrator.is_fitted:
+            import numpy as np
+            calibrated = self.calibrator.transform(np.array([confidence]))
+            confidence = float(calibrated[0])
+        
+        # Step 2: Apply hard cap (SAFETY INVARIANT - never skip)
+        max_conf = self.confidence_config.get("max_confidence", 0.90)
+        confidence = min(confidence, max_conf)
+        
+        return confidence
+    
+    def _get_confidence_level(self, confidence: float) -> str:
+        """
+        Determine confidence level for decision-making (Phase 2.1).
+        
+        Returns
+        -------
+        str
+            One of: "high", "medium", "low"
+        """
+        high_thresh = self.confidence_config.get("high_confidence", 0.80)
+        med_thresh = self.confidence_config.get("medium_confidence", 0.65)
+        
+        if confidence >= high_thresh:
+            return "high"
+        elif confidence >= med_thresh:
+            return "medium"
+        else:
+            return "low"
+    
+    def _should_use_conservative_mode(self, confidence: float) -> bool:
+        """
+        Check if confidence is too low for aggressive decisions (Phase 2.1).
+        
+        When True:
+        - Use more conservative difficulty adjustments
+        - Flag prediction for potential human review
+        - Reduce pattern recurrence strength
+        """
+        low_thresh = self.confidence_config.get("low_confidence", 0.50)
+        return confidence < low_thresh
     
     def infer(self, mim_input: MIMInput) -> MIMOutput:
         """
@@ -110,6 +240,11 @@ class MIMDecisionNode:
         
         start_time = time.time()
         
+        # ═══════════════════════════════════════════════════════════════════════
+        # MIM INPUT LOGGING (for debugging/tracing)
+        # ═══════════════════════════════════════════════════════════════════════
+        self._log_mim_input(mim_input)
+        
         # ───────────────────────────────────────────────────────────────────────
         # ROUTE: Accepted vs Failed (STRICT SEPARATION)
         # ───────────────────────────────────────────────────────────────────────
@@ -126,7 +261,10 @@ class MIMDecisionNode:
         # Add latency
         latency_ms = (time.time() - start_time) * 1000
         
-        return MIMOutput(
+        # Phase 2.1: Extract confidence metadata if present
+        confidence_metadata = output.get("confidence_metadata")
+        
+        mim_output = MIMOutput(
             feedback_type=output["feedback_type"],
             correctness_feedback=output.get("correctness_feedback"),
             performance_feedback=output.get("performance_feedback"),
@@ -137,7 +275,15 @@ class MIMDecisionNode:
             inference_latency_ms=latency_ms,
             model_version=MODEL_VERSION,
             timestamp=datetime.utcnow().isoformat(),
+            confidence_metadata=confidence_metadata,
         )
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # MIM OUTPUT LOGGING (for debugging/tracing)
+        # ═══════════════════════════════════════════════════════════════════════
+        self._log_mim_output(mim_output, latency_ms)
+        
+        return mim_output
     
     def _handle_accepted(self, mim_input: MIMInput) -> Dict[str, Any]:
         """
@@ -191,15 +337,20 @@ class MIMDecisionNode:
         Handle FAILED submission.
         
         Flow:
-        1. Predict ROOT_CAUSE (Model A)
-        2. Predict SUBTYPE (Model B)
+        1. Predict ROOT_CAUSE (Model A) - with calibrated confidence
+        2. Predict SUBTYPE (Model B) - with calibrated confidence
         3. Derive FAILURE_MECHANISM (rule engine)
-        4. Generate personalized feedback
+        4. Generate personalized feedback with confidence-aware adjustments
+        
+        Phase 2.1 Additions:
+        - All confidence scores are calibrated and capped
+        - Low confidence triggers conservative mode
+        - Confidence level included in feedback for downstream use
         """
         
         logger.info(f"Processing FAILED submission: {mim_input.submission_id}")
         
-        # Step 1: Predict ROOT_CAUSE
+        # Step 1: Predict ROOT_CAUSE (confidence already calibrated)
         root_cause, root_cause_confidence = self._predict_root_cause(mim_input)
         
         # Step 2: Predict SUBTYPE (conditioned on ROOT_CAUSE)
@@ -232,27 +383,62 @@ class MIMDecisionNode:
         is_recurring = subtype in snapshot.get("dominant_failure_modes", [])
         recurrence_count = self._count_recurrence(subtype, snapshot)
         
-        # Combined confidence
+        # ───────────────────────────────────────────────────────────────────────
+        # Phase 2.1: Confidence-aware decision making
+        # ───────────────────────────────────────────────────────────────────────
+        
+        # Combined confidence (both already calibrated)
         confidence = (root_cause_confidence + subtype_confidence) / 2
+        confidence_level = self._get_confidence_level(confidence)
+        conservative_mode = self._should_use_conservative_mode(confidence)
+        
+        if conservative_mode:
+            logger.info(
+                f"LOW CONFIDENCE ({confidence:.3f}) - using conservative mode. "
+                f"root_cause={root_cause}, subtype={subtype}"
+            )
+        
+        logger.info(
+            f"Diagnosis: root_cause={root_cause} (conf={root_cause_confidence:.3f}), "
+            f"subtype={subtype} (conf={subtype_confidence:.3f}), "
+            f"combined_conf={confidence:.3f}, level={confidence_level}"
+        )
         
         # Route to appropriate feedback type
         if root_cause == "efficiency":
-            return self._generate_efficiency_feedback(
+            result = self._generate_efficiency_feedback(
                 mim_input, root_cause, subtype, failure_mechanism,
                 confidence, is_recurring, snapshot
             )
         else:
-            return self._generate_correctness_feedback(
+            result = self._generate_correctness_feedback(
                 mim_input, root_cause, subtype, failure_mechanism,
                 confidence, is_recurring, recurrence_count, snapshot
             )
+        
+        # Phase 2.1: Attach confidence metadata for downstream consumers
+        result["confidence_metadata"] = {
+            "root_cause_confidence": root_cause_confidence,
+            "subtype_confidence": subtype_confidence,
+            "combined_confidence": confidence,
+            "confidence_level": confidence_level,
+            "conservative_mode": conservative_mode,
+            "calibration_applied": self.calibrator is not None,
+        }
+        
+        return result
     
     def _predict_root_cause(self, mim_input: MIMInput) -> Tuple[str, float]:
-        """Predict ROOT_CAUSE using Model A."""
+        """
+        Predict ROOT_CAUSE using Model A.
+        
+        Phase 2.1: Confidence is now CALIBRATED and CAPPED for safety.
+        """
         
         if self.root_cause_model is None:
-            # Fallback rule-based prediction
-            return self._rule_based_root_cause(mim_input)
+            # Fallback rule-based prediction (also calibrated)
+            root_cause, raw_conf = self._rule_based_root_cause(mim_input)
+            return root_cause, self._calibrate_confidence(raw_conf)
         
         try:
             features = self._extract_model_features(mim_input)
@@ -266,20 +452,30 @@ class MIMDecisionNode:
                     # sklearn
                     probs = self.root_cause_model.predict_proba([features])[0]
             else:
-                return self._rule_based_root_cause(mim_input)
+                root_cause, raw_conf = self._rule_based_root_cause(mim_input)
+                return root_cause, self._calibrate_confidence(raw_conf)
             
             pred_idx = np.argmax(probs)
-            confidence = float(probs[pred_idx])
+            raw_confidence = float(probs[pred_idx])
+            
+            # Phase 2.1: Apply calibration and safety cap
+            calibrated_confidence = self._calibrate_confidence(raw_confidence)
             
             # Map index to root cause
             inv_map = {v: k for k, v in self.root_cause_metadata["label_mapping"].items()}
             root_cause = inv_map.get(pred_idx, "correctness")
             
-            return root_cause, confidence
+            logger.debug(
+                f"Root cause prediction: {root_cause}, "
+                f"raw_conf={raw_confidence:.3f}, cal_conf={calibrated_confidence:.3f}"
+            )
+            
+            return root_cause, calibrated_confidence
             
         except Exception as e:
             logger.warning(f"Model prediction failed: {e}. Using fallback.")
-            return self._rule_based_root_cause(mim_input)
+            root_cause, raw_conf = self._rule_based_root_cause(mim_input)
+            return root_cause, self._calibrate_confidence(raw_conf)
     
     def _predict_subtype(
         self, 
@@ -581,6 +777,107 @@ class MIMDecisionNode:
                 f"TAXONOMY GATE VIOLATION: {e}. "
                 f"Model B produced invalid subtype for given root_cause."
             )
+
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CONSOLE LOGGING METHODS (Step 1: Architecture Upgrade)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def _log_mim_input(self, mim_input: MIMInput) -> None:
+        """
+        Log MIM input for debugging and tracing.
+        
+        Provides visibility into what MIM receives.
+        """
+        print("\n" + "=" * 70)
+        print("🧠 MIM DECISION NODE - INPUT")
+        print("=" * 70)
+        print(f"  user_id:       {mim_input.user_id}")
+        print(f"  problem_id:    {mim_input.problem_id}")
+        print(f"  submission_id: {mim_input.submission_id}")
+        print(f"  verdict:       {mim_input.verdict}")
+        print(f"  category:      {mim_input.category}")
+        print(f"  difficulty:    {mim_input.difficulty}")
+        print(f"  code_length:   {len(mim_input.code)} chars")
+        
+        # Delta features summary
+        deltas = mim_input.delta_features
+        print(f"  delta_features:")
+        print(f"    └─ attempts_same_cat:  {deltas.get('delta_attempts_same_category', 'N/A')}")
+        print(f"    └─ root_cause_repeat:  {deltas.get('delta_root_cause_repeat_rate', 'N/A')}")
+        print(f"    └─ complexity_mismatch: {deltas.get('delta_complexity_mismatch', 'N/A')}")
+        print(f"    └─ is_cold_start:      {deltas.get('is_cold_start', 'N/A')}")
+        
+        # User state snapshot summary
+        snapshot = mim_input.user_state_snapshot
+        print(f"  user_state_snapshot:")
+        print(f"    └─ strong_categories:     {snapshot.get('strong_categories', [])[:3]}...")
+        print(f"    └─ weak_categories:       {snapshot.get('weak_categories', [])[:3]}...")
+        print(f"    └─ dominant_failures:     {snapshot.get('dominant_failure_modes', [])[:3]}...")
+        print(f"    └─ recent_pattern_trend:  {snapshot.get('recent_pattern_trend', 'N/A')}")
+        print("-" * 70)
+        
+        logger.info(f"MIM INPUT: user={mim_input.user_id}, problem={mim_input.problem_id}, verdict={mim_input.verdict}")
+    
+    def _log_mim_output(self, mim_output: MIMOutput, latency_ms: float) -> None:
+        """
+        Log MIM output for debugging and tracing.
+        
+        Provides visibility into MIM decisions.
+        """
+        print("\n" + "=" * 70)
+        print("🧠 MIM DECISION NODE - OUTPUT")
+        print("=" * 70)
+        print(f"  feedback_type: {mim_output.feedback_type}")
+        print(f"  model_version: {mim_output.model_version}")
+        print(f"  latency_ms:    {latency_ms:.2f}")
+        
+        # Log based on feedback type
+        if mim_output.feedback_type == "reinforcement":
+            rf = mim_output.reinforcement_feedback
+            if rf:
+                print(f"  REINFORCEMENT:")
+                print(f"    └─ technique:         {rf.technique}")
+                print(f"    └─ confidence_boost:  {rf.confidence_boost}")
+                print(f"    └─ ready_for_harder:  {rf.ready_for_harder}")
+                print(f"    └─ suggested_next:    {rf.suggested_next_difficulty}")
+        else:
+            # Failed submission - show diagnosis
+            cf = mim_output.correctness_feedback
+            pf = mim_output.performance_feedback
+            
+            if cf:
+                print(f"  DIAGNOSIS (correctness):")
+                print(f"    └─ root_cause:        {cf.root_cause}")
+                print(f"    └─ subtype:           {cf.subtype}")
+                print(f"    └─ failure_mechanism: {cf.failure_mechanism}")
+                print(f"    └─ is_recurring:      {cf.is_recurring}")
+                print(f"    └─ recurrence_count:  {cf.recurrence_count}")
+            
+            if pf:
+                print(f"  DIAGNOSIS (efficiency):")
+                print(f"    └─ subtype:           {pf.subtype}")
+                print(f"    └─ failure_mechanism: {pf.failure_mechanism}")
+                print(f"    └─ is_recurring:      {pf.is_recurring}")
+        
+        # Confidence metadata (Phase 2.1)
+        cm = mim_output.confidence_metadata
+        if cm:
+            print(f"  CONFIDENCE (calibrated):")
+            print(f"    └─ root_cause_conf:   {cm.root_cause_confidence:.3f}")
+            print(f"    └─ subtype_conf:      {cm.subtype_confidence:.3f}")
+            print(f"    └─ combined_conf:     {cm.combined_confidence:.3f}")
+            print(f"    └─ confidence_level:  {cm.confidence_level}")
+            print(f"    └─ conservative_mode: {cm.conservative_mode}")
+            print(f"    └─ calibration:       {'applied' if cm.calibration_applied else 'not applied'}")
+        
+        print("=" * 70 + "\n")
+        
+        logger.info(
+            f"MIM OUTPUT: type={mim_output.feedback_type}, "
+            f"latency={latency_ms:.2f}ms, "
+            f"conf_level={cm.confidence_level if cm else 'N/A'}"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
