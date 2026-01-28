@@ -27,6 +27,12 @@ const questionSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
+    // URL-friendly slug for problem identification (e.g., "two-sum", "valid-palindrome")
+    slug: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
     title: {
       type: String,
       required: [true, "Title is required"],
@@ -136,6 +142,54 @@ const questionSchema = new mongoose.Schema(
 questionSchema.index({ title: "text", description: "text" });
 questionSchema.index({ difficulty: 1, isActive: 1 });
 questionSchema.index({ tags: 1 });
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * SLUG GENERATION - Critical for Hidden Test Case Generation
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * WHY THIS MATTERS:
+ * The hidden test case generator (problemConfigRegistry.js) looks up problem
+ * configurations by slug. If the slug doesn't match a registered problem,
+ * NO hidden test cases will be generated - only DB test cases will run.
+ * 
+ * SLUG FORMAT: lowercase, alphanumeric + hyphens only
+ * Example: "Repeated Substring Check" → "repeated-substring-check"
+ */
+
+/**
+ * Generate a URL-friendly slug from any string
+ * @param {string} str - Input string (e.g., problem title)
+ * @returns {string} Normalized slug
+ */
+function generateSlug(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")  // Remove special chars (keep letters, numbers, spaces, hyphens)
+    .replace(/\s+/g, "-")          // Replace spaces with hyphens
+    .replace(/-+/g, "-")           // Collapse multiple hyphens
+    .replace(/^-|-$/g, "");        // Trim leading/trailing hyphens
+}
+
+// Auto-generate slug from title before saving (for new documents)
+questionSchema.pre("save", function (next) {
+  if (!this.slug && this.title) {
+    this.slug = generateSlug(this.title);
+    console.log(`[Question] Auto-generated slug: "${this.slug}" from title: "${this.title}"`);
+  }
+  next();
+});
+
+/**
+ * Virtual getter: Always returns a usable slug, even if not stored in DB
+ * This ensures hidden test generation works for existing questions without slug field
+ */
+questionSchema.virtual("effectiveSlug").get(function () {
+  // Use stored slug if available, otherwise generate from title
+  return this.slug || generateSlug(this.title);
+});
 
 questionSchema.virtual("acceptanceRate").get(function () {
   if (this.totalSubmissions === 0) return 0;
