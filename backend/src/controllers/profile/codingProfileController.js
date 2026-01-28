@@ -128,7 +128,7 @@ export async function getCodingProfileSummary(req, res) {
 
       const error = statsErrorCode({ profile: p, stats: s });
 
-      const shouldProvidePlaceholderStats = p.platform === "codechef";
+      const shouldProvidePlaceholderStats = ["codechef", "atcoder", "hackerrank"].includes(p.platform);
 
       const normalizedStats = s
         ? {
