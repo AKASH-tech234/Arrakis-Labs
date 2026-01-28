@@ -14,7 +14,7 @@ Signals include:
 """
 
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
 
 
@@ -26,8 +26,16 @@ import re
 class CodeSignals:
     """
     Signals extracted from code + execution for failure mechanism derivation.
-    
-    All fields are booleans or simple values. No complex types.
+
+    Guarantees:
+    - Deterministic
+    - Auditable (all signals trace back to code or execution context)
+    - Backward compatible: existing keys remain stable
+
+    Note:
+    - `extras` is an additive channel for richer structural signals
+      (e.g., AST-derived loop depth) and is safe for downstream code
+      that ignores unknown keys.
     """
     # Code pattern signals
     loop_bounds: bool = False
@@ -52,10 +60,16 @@ class CodeSignals:
     multiplication: bool = False
     linear_search: bool = False
     fence_post: bool = False
+
+    # Additive signals (Phase 1.1 code-signal bridge)
+    extras: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for rule engine."""
-        return {
+        """Convert to dictionary for rule engine.
+
+        Backward compatible: retains original keys and merges `extras`.
+        """
+        base = {
             "loop_bounds": self.loop_bounds,
             "prefix_sum": self.prefix_sum,
             "two_pointers": self.two_pointers,
@@ -75,6 +89,11 @@ class CodeSignals:
             "linear_search": self.linear_search,
             "fence_post": self.fence_post,
         }
+        # Merge additive signals (no overrides of base keys)
+        for k, v in (self.extras or {}).items():
+            if k not in base:
+                base[k] = v
+        return base
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -88,6 +107,7 @@ def extract_code_signals(
     failed_test_position: Optional[int] = None,
     constraints: Optional[Dict[str, Any]] = None,
     problem_tags: Optional[List[str]] = None,
+    enable_code_bridge: bool = True,
 ) -> CodeSignals:
     """
     Extract signals from code and execution context.
@@ -113,11 +133,75 @@ def extract_code_signals(
     
     constraints = constraints or {}
     problem_tags = problem_tags or []
-    
+
     signals = CodeSignals(
         verdict=verdict.lower() if verdict else "",
         failed_test_position=failed_test_position,
     )
+
+    # Phase 1.1: Code–Signal Bridge (deterministic, no-LLM)
+    # We compute richer structural signals and map them into:
+    #  1) existing boolean flags (for backward-compatible rule engine)
+    #  2) additive `extras` fields for observability / later feature expansion
+    if enable_code_bridge:
+        try:
+            from app.mim.code_signals import extract_code_signals as _extract_struct
+
+            struct = _extract_struct(
+                code=code,
+                verdict=signals.verdict,
+                problem_tags=problem_tags,
+                constraints=constraints,
+            )
+
+            # Add structured signals (extras)
+            signals.extras.update({
+                # AST
+                "ast_max_loop_depth": struct.ast_features.max_loop_depth,
+                "ast_max_condition_depth": struct.ast_features.max_condition_depth,
+                "ast_total_loops": struct.ast_features.total_loops,
+                "ast_total_conditions": struct.ast_features.total_conditions,
+                "ast_has_recursion": struct.ast_features.has_recursion,
+                "ast_off_by_one_risk": struct.ast_features.off_by_one_risk_score,
+                # Pattern summary
+                "pattern_off_by_one_count": len(struct.detected_patterns.off_by_one_indicators),
+                "pattern_boundary_risk_count": len(struct.detected_patterns.boundary_risks),
+                "pattern_inefficiency_count": len(struct.detected_patterns.inefficiency_patterns),
+                "pattern_correctness_risk": struct.detected_patterns.correctness_risk,
+                "pattern_efficiency_risk": struct.detected_patterns.efficiency_risk,
+                "pattern_implementation_risk": struct.detected_patterns.implementation_risk,
+                # Combined risks
+                "code_boundary_risk": struct.boundary_risk,
+                "code_efficiency_risk": struct.efficiency_risk,
+                "code_implementation_risk": struct.implementation_risk,
+                "code_understanding_risk": struct.understanding_risk,
+                "code_likely_root_cause": struct.likely_root_cause,
+                "code_likely_root_confidence": struct.confidence,
+            })
+
+            # Backward-compatible mapping into existing boolean flags
+            if struct.ast_features.has_recursion:
+                signals.recursion_depth = True
+
+            # Fence post/off-by-one
+            if struct.ast_features.off_by_one_risk_score >= 0.35 or len(struct.detected_patterns.off_by_one_indicators) > 0:
+                signals.fence_post = True
+                signals.loop_bounds = True
+
+            # Two pointers / binary search / sliding window heuristic hints
+            # (We keep these primarily regex/tag-driven elsewhere, but can reinforce)
+            if struct.ast_features.has_while_loop and struct.ast_features.max_loop_depth >= 1:
+                # Often correlates with binary search patterns
+                if any(t in ("binary_search", "binary search") for t in problem_tags):
+                    signals.binary_search = True
+
+            # No-memo hint: recursion present + high efficiency risk
+            if struct.ast_features.has_recursion and struct.efficiency_risk >= 0.6:
+                signals.no_memo = True
+
+        except Exception:
+            # Conservative degradation: ignore bridge failure
+            pass
     
     code_lower = code.lower()
     

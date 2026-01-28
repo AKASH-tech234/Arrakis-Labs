@@ -20,7 +20,7 @@ The snapshot answers:
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass, field
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -143,7 +143,8 @@ def build_user_state_snapshot(
     if not failed_submissions and not accepted_submissions:
         return UserStateSnapshot.empty(user_id)
     
-    now = datetime.utcnow()
+    # Use timezone-aware UTC timestamps to avoid naive/aware arithmetic bugs.
+    now = datetime.now(tz=timezone.utc)
     
     # ───────────────────────────────────────────────────────────────────────────
     # DOMINANT FAILURE MODES (from failed submissions)
