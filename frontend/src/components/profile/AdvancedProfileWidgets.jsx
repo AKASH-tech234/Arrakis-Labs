@@ -46,11 +46,31 @@ function useAdvancedWidgetsRefresh(onRefresh) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 1. TOPIC MASTERY GRID
-// Grid showing mastery percentage per topic with visual indicators
-// Uses REAL data from AI profile - readiness_scores and learning_trajectory
+// MASTERY LEVEL HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
-export function TopicMasteryGrid({ userId }) {
+const MASTERY_LEVELS = [
+  { name: "Novice", min: 0, max: 0.2, color: "#78716C" },
+  { name: "Beginner", min: 0.2, max: 0.4, color: "#EF4444" },
+  { name: "Intermediate", min: 0.4, max: 0.6, color: "#F59E0B" },
+  { name: "Advanced", min: 0.6, max: 0.8, color: "#22C55E" },
+  { name: "Expert", min: 0.8, max: 1.0, color: "#3B82F6" },
+];
+
+function getMasteryLevel(score) {
+  for (const level of MASTERY_LEVELS) {
+    if (score >= level.min && score < level.max) {
+      return level;
+    }
+  }
+  return MASTERY_LEVELS[MASTERY_LEVELS.length - 1]; // Expert for 1.0
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. TOPIC MASTERY GRID (UPGRADED)
+// Shows actual topic-level mastery with skill levels (Novice → Expert)
+// Now uses topic_success_rates and category_performance from MIM profile
+// ═══════════════════════════════════════════════════════════════════════════════
+export function TopicMasteryGrid({ userId, showLevels = true }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,55 +92,76 @@ export function TopicMasteryGrid({ userId }) {
   useEffect(() => { fetchData(); }, [fetchData]);
   useAdvancedWidgetsRefresh(fetchData);
 
-  // Build topic mastery from REAL profile data
+  // Build topic mastery from REAL profile data - prioritize actual topics over difficulties
   const buildTopicMastery = () => {
     if (!data) return [];
     
     const topics = [];
-    const readiness = data.readiness_scores || {};
-    const trajectory = data.learning_trajectory || {};
-    const successRate = (trajectory.success_rate || 0) / 100; // Convert percentage to 0-1
     
-    // Add difficulty readiness as primary mastery indicators (REAL data)
-    Object.entries(readiness).forEach(([diff, score]) => {
-      const numericScore = typeof score === 'number' ? score : parseFloat(score) || 0;
+    // Priority 1: Topic success rates (actual topic mastery)
+    const topicSuccessRates = data.topic_success_rates || {};
+    Object.entries(topicSuccessRates).forEach(([topic, rate]) => {
+      const numericRate = typeof rate === 'number' ? rate : parseFloat(rate) || 0;
+      const level = getMasteryLevel(numericRate);
       topics.push({ 
-        name: `${diff}`, 
-        mastery: numericScore, 
-        status: numericScore >= 0.6 ? "strong" : numericScore >= 0.4 ? "medium" : "weak" 
+        name: topic,
+        mastery: numericRate, 
+        level: level.name,
+        levelColor: level.color,
+        problemsSolved: null, // Will be populated if available
+        isTopicBased: true
       });
     });
     
-    // Add overall success rate if available
-    if (trajectory.total_submissions > 0) {
-      topics.push({
-        name: "Overall",
-        mastery: successRate,
-        status: successRate >= 0.6 ? "strong" : successRate >= 0.4 ? "medium" : "weak"
-      });
-    }
-    
-    // Add category performance if available in learning_trajectory
-    const categoryPerf = data.category_performance || trajectory.category_performance || {};
+    // Priority 2: Category performance (from submissions)
+    const categoryPerf = data.category_performance || data.learning_trajectory?.category_performance || {};
     Object.entries(categoryPerf).forEach(([cat, perf]) => {
-      if (topics.length >= 9) return; // Max 9 for grid
-      const rate = typeof perf === 'object' 
-        ? (perf.passed / perf.total) || 0 
-        : perf;
+      // Skip if we already have this topic
+      if (topics.some(t => t.name.toLowerCase() === cat.toLowerCase())) return;
+      
+      let rate, total, passed;
+      if (typeof perf === 'object') {
+        total = perf.total || 0;
+        passed = perf.passed || 0;
+        rate = total > 0 ? passed / total : 0;
+      } else {
+        rate = perf;
+        total = null;
+        passed = null;
+      }
+      
+      const level = getMasteryLevel(rate);
       topics.push({
         name: cat,
         mastery: rate,
-        status: rate >= 0.6 ? "strong" : rate >= 0.4 ? "medium" : "weak"
+        level: level.name,
+        levelColor: level.color,
+        problemsSolved: passed,
+        totalProblems: total,
+        isTopicBased: true
       });
     });
     
-    return topics.slice(0, 9); // Max 9 for 3x3 grid
-  };
-
-  const getMasteryColor = (mastery) => {
-    if (mastery >= 0.6) return COLORS.success;
-    if (mastery >= 0.4) return COLORS.warning;
-    return COLORS.error;
+    // Priority 3: Difficulty readiness (if no topic data available)
+    if (topics.length === 0) {
+      const readiness = data.readiness_scores || {};
+      Object.entries(readiness).forEach(([diff, score]) => {
+        const numericScore = typeof score === 'number' ? score : parseFloat(score) || 0;
+        const level = getMasteryLevel(numericScore);
+        topics.push({ 
+          name: `${diff} Problems`, 
+          mastery: numericScore, 
+          level: level.name,
+          levelColor: level.color,
+          isTopicBased: false
+        });
+      });
+    }
+    
+    // Sort by mastery descending (show strengths first)
+    topics.sort((a, b) => b.mastery - a.mastery);
+    
+    return topics.slice(0, 12); // Max 12 for display
   };
 
   if (loading) {
@@ -157,67 +198,115 @@ export function TopicMasteryGrid({ userId }) {
       className="rounded-xl border p-5"
       style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
     >
-      <h3
-        className="text-xs font-medium uppercase tracking-widest mb-4"
-        style={{ color: COLORS.textSecondary, fontFamily }}
-      >
-        Topic Mastery
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3
+          className="text-xs font-medium uppercase tracking-widest"
+          style={{ color: COLORS.textSecondary, fontFamily }}
+        >
+          Topic Mastery
+        </h3>
+        {showLevels && (
+          <div className="flex items-center gap-1">
+            {MASTERY_LEVELS.map((level) => (
+              <div
+                key={level.name}
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: level.color }}
+                title={level.name}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {topics.length === 0 ? (
-        <div className="text-center py-4">
+        <div className="text-center py-6">
+          <div className="text-3xl mb-2">📊</div>
           <p className="text-sm" style={{ color: COLORS.textMuted }}>
             Solve more problems to see your topic mastery.
           </p>
+          <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>
+            Your skills will be tracked across different topics.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-3">
           {topics.map((topic, index) => (
-            <motion.div
-              key={topic.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              className="relative p-3 rounded-lg border text-center"
-              style={{
-                backgroundColor: `${getMasteryColor(topic.mastery)}10`,
-                borderColor: `${getMasteryColor(topic.mastery)}30`,
-              }}
-            >
-              {/* Circular progress indicator */}
-              <div className="relative w-12 h-12 mx-auto mb-2">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="24" cy="24" r="20"
-                    fill="none"
-                    stroke={COLORS.border}
-                    strokeWidth="4"
-                  />
-                  <motion.circle
-                    cx="24" cy="24" r="20"
-                    fill="none"
-                    stroke={getMasteryColor(topic.mastery)}
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    initial={{ strokeDashoffset: 126 }}
-                    animate={{ strokeDashoffset: 126 - (126 * topic.mastery) }}
-                    transition={{ duration: 0.8, delay: index * 0.05 }}
-                    style={{ strokeDasharray: 126 }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-bold" style={{ color: getMasteryColor(topic.mastery) }}>
-                    {Math.round(topic.mastery * 100)}%
-                  </span>
-                </div>
-              </div>
-              <span className="text-xs" style={{ color: COLORS.textPrimary, fontFamily }}>
-                {topic.name}
-              </span>
-            </motion.div>
+            <TopicMasteryRow key={topic.name} topic={topic} index={index} showLevel={showLevels} />
           ))}
         </div>
       )}
+      
+      {/* Legend */}
+      {topics.length > 0 && showLevels && (
+        <div className="mt-4 pt-3 border-t flex flex-wrap gap-3" style={{ borderColor: COLORS.border }}>
+          {MASTERY_LEVELS.map((level) => (
+            <div key={level.name} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: level.color }} />
+              <span className="text-[10px]" style={{ color: COLORS.textMuted }}>{level.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// Individual topic row component
+function TopicMasteryRow({ topic, index, showLevel }) {
+  const percentage = Math.round(topic.mastery * 100);
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="group"
+    >
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-sm font-medium"
+            style={{ color: COLORS.textPrimary, fontFamily }}
+          >
+            {topic.name}
+          </span>
+          {showLevel && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider"
+              style={{ 
+                backgroundColor: `${topic.levelColor}20`,
+                color: topic.levelColor,
+                fontFamily 
+              }}
+            >
+              {topic.level}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {topic.problemsSolved !== null && topic.totalProblems !== null && (
+            <span className="text-[10px]" style={{ color: COLORS.textMuted }}>
+              {topic.problemsSolved}/{topic.totalProblems}
+            </span>
+          )}
+          <span className="text-xs font-bold" style={{ color: topic.levelColor }}>
+            {percentage}%
+          </span>
+        </div>
+      </div>
+      <div 
+        className="h-2 rounded-full overflow-hidden"
+        style={{ backgroundColor: COLORS.border }}
+      >
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${percentage}%` }}
+          transition={{ duration: 0.6, delay: index * 0.05, ease: "easeOut" }}
+          className="h-full rounded-full"
+          style={{ backgroundColor: topic.levelColor }}
+        />
+      </div>
     </motion.div>
   );
 }

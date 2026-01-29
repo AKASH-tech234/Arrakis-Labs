@@ -172,6 +172,11 @@ export default function ProblemRecommendations({
       console.log("[ProblemRecommendations] Fetching for user:", userId);
       const data = await getMIMRecommendations({ userId, limit });
       
+      // v3.3: Store metadata about static recommendations
+      if (data?.is_static) {
+        console.log("[ProblemRecommendations] Received static recommendations");
+      }
+      
       // Filter duplicates by problem_id AND title in frontend as safety net
       const rawRecommendations = data?.recommendations || [];
       const seenIds = new Set();

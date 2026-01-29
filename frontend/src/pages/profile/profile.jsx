@@ -25,6 +25,10 @@ import {
   NextProblemCard,
   WeakAreaFocus,
 } from "../../components/profile/AdvancedProfileWidgets";
+import MistakeAnalysisCard from "../../components/profile/MistakeAnalysisCard";
+import LearningVelocityIndicator from "../../components/profile/LearningVelocityIndicator";
+import FocusAreasWidget from "../../components/profile/FocusAreasWidget";
+import AIInsightsSummary from "../../components/profile/AIInsightsSummary";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -637,6 +641,86 @@ export default function Profile({ username, readOnly = false } = {}) {
                 </h2>
               </div>
               <TopicMasteryGrid userId={analytics.user._id} />
+            </motion.section>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+          {/* AI INSIGHTS SUMMARY - Comprehensive MIM Dashboard */}
+          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.65, type: "spring", stiffness: 100 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <motion.div 
+                  className="w-1 h-5 bg-gradient-to-b from-[#8B5CF6] to-transparent rounded-full"
+                  animate={{ scaleY: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <h2
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  AI Insights Dashboard
+                </h2>
+              </div>
+              
+              <AIInsightsSummary userId={analytics.user._id} />
+            </motion.section>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+          {/* AI LEARNING CARDS - Focus Areas + Mistake Analysis */}
+          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+          {analytics?.user?._id && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.75, type: "spring", stiffness: 100 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <motion.div 
+                  className="w-1 h-5 bg-gradient-to-b from-[#3B82F6] to-transparent rounded-full"
+                  animate={{ scaleY: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                />
+                <h2
+                  className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Learning Focus
+                </h2>
+              </div>
+              
+              {/* Learning Velocity - Full Width */}
+              <motion.div 
+                className="mb-4"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                <LearningVelocityIndicator userId={analytics.user._id} />
+              </motion.div>
+              
+              {/* Focus Areas + Mistake Analysis - Side by Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.85, type: "spring" }}
+                >
+                  <FocusAreasWidget userId={analytics.user._id} />
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.9, type: "spring" }}
+                >
+                  <MistakeAnalysisCard userId={analytics.user._id} />
+                </motion.div>
+              </div>
             </motion.section>
           )}
         </div>

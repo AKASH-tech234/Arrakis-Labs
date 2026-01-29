@@ -992,8 +992,11 @@ def get_mim_profile(
                 if diff in difficulty_performance:
                     difficulty_performance[diff]["passed"] += 1
         
+        # Calculate topic success rates (for TopicMasteryGrid)
+        topic_success_rates = {}
         for cat, stats in category_performance.items():
             rate = (stats["passed"] / stats["total"]) if stats["total"] > 0 else 0
+            topic_success_rates[cat] = round(rate, 2)
             if rate < 0.4 and stats["total"] >= 2:
                 weak_topics.append(cat)
             elif rate > 0.7 and stats["total"] >= 2:
@@ -1077,6 +1080,7 @@ def get_mim_recommendations(
     """
     Get personalized problem recommendations for a user.
     
+    v3.3: FIX - Use correct collection name 'questions' (not 'problems')
     v3.2: NOW USES PERSISTED COGNITIVE PROFILE
     - Previously: Recomputed weak areas from raw submissions
     - Now: Uses accumulated weak_topics and mistake_counts from profile
@@ -1086,6 +1090,8 @@ def get_mim_recommendations(
     try:
         from app.db.mongodb import mongo_client
         from app.db.cognitive_profile_store import load_cognitive_profile
+        
+        logger.info(f"🎯 [RECOMMEND] Starting recommendations for user={user_id}")
         
         # v3.2: Load persisted cognitive profile
         profile = load_cognitive_profile(user_id)
@@ -1134,6 +1140,8 @@ def get_mim_recommendations(
             weak_topics = sorted(category_failures.keys(), key=lambda x: category_failures[x], reverse=True)[:5]
             skill_level = "Beginner"
             readiness = {"Easy": 0.5, "Medium": 0.3, "Hard": 0.1}
+            
+            logger.info(f"📊 [RECOMMEND] Computed from submissions | weak_topics={weak_topics}")
         
         # Determine recommended difficulty from profile or success rate
         if difficulty_filter:
@@ -1155,20 +1163,38 @@ def get_mim_recommendations(
             else:
                 recommended_difficulty = "Easy"
         
+        logger.info(f"📊 [RECOMMEND] Recommended difficulty: {recommended_difficulty}")
+        
         # Get solved problem IDs
         solved_problem_ids = set()
         for sub in submissions:
             if sub.get("status") == "accepted":
                 solved_problem_ids.add(sub.get("questionId"))
         
+        logger.info(f"📊 [RECOMMEND] User has solved {len(solved_problem_ids)} problems")
+        
         # Query actual problems from database
         recommendations = []
+        problems = []
         
         if mongo_client.db is not None:
+            # v3.3 FIX: Use 'questions' collection (matches backend model)
+            questions_collection = mongo_client.db.questions
+            
             # Build query for unsolved problems
-            query = {
-                "_id": {"$nin": list(solved_problem_ids)},  # Exclude already solved
-            }
+            query = {}
+            
+            # Exclude already solved (need to convert string IDs)
+            if solved_problem_ids:
+                from bson import ObjectId
+                solved_oids = []
+                for pid in solved_problem_ids:
+                    try:
+                        solved_oids.append(ObjectId(pid))
+                    except:
+                        pass  # Skip invalid IDs
+                if solved_oids:
+                    query["_id"] = {"$nin": solved_oids}
             
             # Add difficulty filter
             if recommended_difficulty:
@@ -1181,47 +1207,71 @@ def get_mim_recommendations(
                     {"category": {"$in": weak_topics}}
                 ]
             
+            logger.info(f"📊 [RECOMMEND] Query: {query}")
+            
             try:
                 # Fetch problems from database
                 problems = list(
-                    mongo_client.db.problems
+                    questions_collection
                     .find(query)
                     .limit(num_recommendations * 2)  # Fetch extra to filter
                 )
                 
+                logger.info(f"📊 [RECOMMEND] Found {len(problems)} problems with weak topic filter")
+                
                 # If not enough problems with weak topics, get any unsolved problems
                 if len(problems) < num_recommendations:
-                    fallback_query = {
-                        "_id": {"$nin": list(solved_problem_ids)},
-                    }
+                    fallback_query = {}
+                    if solved_problem_ids:
+                        from bson import ObjectId
+                        solved_oids = []
+                        for pid in solved_problem_ids:
+                            try:
+                                solved_oids.append(ObjectId(pid))
+                            except:
+                                pass
+                        if solved_oids:
+                            fallback_query["_id"] = {"$nin": solved_oids}
+                    
                     if recommended_difficulty:
                         fallback_query["difficulty"] = recommended_difficulty
                     
                     more_problems = list(
-                        mongo_client.db.problems
+                        questions_collection
                         .find(fallback_query)
                         .limit(num_recommendations - len(problems))
                     )
                     problems.extend(more_problems)
+                    logger.info(f"📊 [RECOMMEND] After fallback query: {len(problems)} problems")
                 
                 # v3.2: FALLBACK - If still not enough, try other difficulties
                 if len(problems) < num_recommendations:
-                    difficulty_fallbacks = ["Medium", "Hard", "Easy"]
+                    difficulty_fallbacks = ["Medium", "Easy", "Hard"]
                     difficulty_fallbacks = [d for d in difficulty_fallbacks if d != recommended_difficulty]
                     
                     for fallback_diff in difficulty_fallbacks:
                         if len(problems) >= num_recommendations:
                             break
-                        alt_query = {
-                            "_id": {"$nin": list(solved_problem_ids)},
-                            "difficulty": fallback_diff
-                        }
+                        alt_query = {"difficulty": fallback_diff}
+                        if solved_problem_ids:
+                            from bson import ObjectId
+                            solved_oids = []
+                            for pid in solved_problem_ids:
+                                try:
+                                    solved_oids.append(ObjectId(pid))
+                                except:
+                                    pass
+                            if solved_oids:
+                                alt_query["_id"] = {"$nin": solved_oids}
+                        
                         alt_problems = list(
-                            mongo_client.db.problems
+                            questions_collection
                             .find(alt_query)
                             .limit(num_recommendations - len(problems))
                         )
                         problems.extend(alt_problems)
+                    
+                    logger.info(f"📊 [RECOMMEND] After difficulty fallback: {len(problems)} problems")
                 
                 # v3.2: FALLBACK - If user has solved most problems, suggest review
                 if len(problems) < num_recommendations and len(solved_problem_ids) > 10:
@@ -1235,16 +1285,25 @@ def get_mim_recommendations(
                     review_ids = failed_problem_ids - solved_problem_ids
                     
                     if review_ids:
-                        review_query = {"_id": {"$in": list(review_ids)}}
-                        review_problems = list(
-                            mongo_client.db.problems
-                            .find(review_query)
-                            .limit(num_recommendations - len(problems))
-                        )
-                        # Mark these as review problems
-                        for p in review_problems:
-                            p["_is_review"] = True
-                        problems.extend(review_problems)
+                        from bson import ObjectId
+                        review_oids = []
+                        for pid in review_ids:
+                            try:
+                                review_oids.append(ObjectId(pid))
+                            except:
+                                pass
+                        if review_oids:
+                            review_query = {"_id": {"$in": review_oids}}
+                            review_problems = list(
+                                questions_collection
+                                .find(review_query)
+                                .limit(num_recommendations - len(problems))
+                            )
+                            # Mark these as review problems
+                            for p in review_problems:
+                                p["_is_review"] = True
+                            problems.extend(review_problems)
+                            logger.info(f"📊 [RECOMMEND] Added {len(review_problems)} review problems")
                 
                 # Build recommendations from actual problems
                 for i, prob in enumerate(problems[:num_recommendations]):
@@ -1279,17 +1338,43 @@ def get_mim_recommendations(
             except Exception as db_err:
                 logger.warning(f"Database query failed: {db_err}")
         
-        # If no problems found in DB, return message
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # v3.3: STATIC FALLBACK RECOMMENDATIONS when DB returns nothing
+        # ═══════════════════════════════════════════════════════════════════════════════
         if not recommendations:
+            logger.info("📊 [RECOMMEND] No DB results, generating static fallback recommendations")
+            
+            # Generate meaningful static recommendations based on profile
+            static_recommendations = _generate_static_recommendations(
+                skill_level=skill_level,
+                weak_topics=weak_topics,
+                recommended_difficulty=recommended_difficulty,
+                num_recommendations=num_recommendations
+            )
+            
+            if static_recommendations:
+                return {
+                    "recommendations": static_recommendations,
+                    "focus_topics": weak_topics[:3] if weak_topics else ["Arrays", "Strings"],
+                    "current_level": skill_level,
+                    "is_static": True,
+                    "message": "Personalized recommendations based on your profile. Solve more problems to unlock specific problem suggestions."
+                }
+            
+            # Ultimate fallback - no data at all
             return {
                 "recommendations": [],
+                "focus_topics": [],
+                "current_level": skill_level,
                 "message": "Complete more problems to get personalized recommendations."
             }
         
+        logger.info(f"✅ [RECOMMEND] Returning {len(recommendations)} recommendations")
+        
         return {
             "recommendations": recommendations,
-            "focus_topics": weak_topics[:3],
-            "current_level": level
+            "focus_topics": weak_topics[:3] if weak_topics else [],
+            "current_level": skill_level
         }
         
     except Exception as e:
@@ -1299,6 +1384,116 @@ def get_mim_recommendations(
             status_code=500,
             detail=f"Failed to get recommendations: {str(e)}"
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STATIC FALLBACK RECOMMENDATIONS GENERATOR
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _generate_static_recommendations(
+    skill_level: str,
+    weak_topics: List[str],
+    recommended_difficulty: str,
+    num_recommendations: int = 5
+) -> List[Dict[str, Any]]:
+    """
+    Generate static problem recommendations when DB has no suitable problems.
+    
+    These are generic recommendations based on the user's profile that guide
+    them toward appropriate problem types without specific problem IDs.
+    """
+    # Topic-based problem suggestions
+    topic_suggestions = {
+        "Arrays": {
+            "Easy": "Practice array traversal and basic manipulation",
+            "Medium": "Work on two-pointer and sliding window techniques",
+            "Hard": "Master advanced array algorithms like Kadane's algorithm"
+        },
+        "Strings": {
+            "Easy": "Focus on string manipulation and character counting",
+            "Medium": "Practice substring problems and pattern matching",
+            "Hard": "Master string DP and advanced parsing problems"
+        },
+        "Dynamic Programming": {
+            "Easy": "Start with simple 1D DP problems like fibonacci variants",
+            "Medium": "Practice 2D DP and state transition problems",
+            "Hard": "Master optimization DP and bitmask DP"
+        },
+        "Trees": {
+            "Easy": "Practice basic tree traversals (BFS/DFS)",
+            "Medium": "Work on binary search tree operations",
+            "Hard": "Master tree DP and advanced tree algorithms"
+        },
+        "Graphs": {
+            "Easy": "Start with graph representation and basic traversals",
+            "Medium": "Practice shortest path algorithms",
+            "Hard": "Master advanced graph algorithms like network flow"
+        },
+        "Hash Tables": {
+            "Easy": "Practice frequency counting and lookups",
+            "Medium": "Work on two-sum variants and collision handling",
+            "Hard": "Master complex hashing problems"
+        },
+        "Binary Search": {
+            "Easy": "Practice basic binary search on sorted arrays",
+            "Medium": "Work on binary search on answer problems",
+            "Hard": "Master advanced binary search applications"
+        },
+        "Sorting": {
+            "Easy": "Understand basic sorting algorithms",
+            "Medium": "Practice custom comparator sorting",
+            "Hard": "Master advanced sorting optimizations"
+        }
+    }
+    
+    recommendations = []
+    
+    # First, add recommendations for weak topics
+    for i, topic in enumerate(weak_topics[:3]):
+        if len(recommendations) >= num_recommendations:
+            break
+            
+        suggestion = topic_suggestions.get(topic, {}).get(
+            recommended_difficulty, 
+            f"Practice {topic} problems at {recommended_difficulty} level"
+        )
+        
+        recommendations.append({
+            "problem_id": f"practice_{topic.lower().replace(' ', '_')}_{i}",
+            "title": f"{topic} Practice ({recommended_difficulty})",
+            "difficulty": recommended_difficulty,
+            "category": topic,
+            "confidence": 0.7,
+            "reason": suggestion,
+            "is_static": True,
+            "action": f"Search for {recommended_difficulty} {topic} problems"
+        })
+    
+    # Fill remaining slots with general recommendations
+    general_topics = ["Arrays", "Strings", "Hash Tables", "Binary Search", "Dynamic Programming"]
+    for topic in general_topics:
+        if len(recommendations) >= num_recommendations:
+            break
+        if topic in weak_topics:
+            continue  # Already added
+            
+        suggestion = topic_suggestions.get(topic, {}).get(
+            recommended_difficulty,
+            f"Practice {topic} problems"
+        )
+        
+        recommendations.append({
+            "problem_id": f"explore_{topic.lower().replace(' ', '_')}",
+            "title": f"Explore {topic}",
+            "difficulty": recommended_difficulty,
+            "category": topic,
+            "confidence": 0.5,
+            "reason": suggestion,
+            "is_static": True,
+            "action": f"Browse {topic} problems to expand your skills"
+        })
+    
+    return recommendations[:num_recommendations]
 
 
 @router.post("/ai/mim/train")
@@ -1412,7 +1607,7 @@ def get_mim_prediction(
         ))
         
         # Get problem
-        problem = db.problems.find_one({"problem_id": problem_id})
+        problem = db.questions.find_one({"_id": problem_id})
         
         if not problem:
             return {

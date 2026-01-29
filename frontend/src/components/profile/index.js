@@ -15,3 +15,9 @@ export {
   WeakAreaFocus,
   emitAdvancedWidgetsRefresh,
 } from "./AdvancedProfileWidgets";
+
+// New AI Insight Components (Phase 2.x)
+export { default as MistakeAnalysisCard } from "./MistakeAnalysisCard";
+export { default as LearningVelocityIndicator, LearningVelocityBadge } from "./LearningVelocityIndicator";
+export { default as FocusAreasWidget } from "./FocusAreasWidget";
+export { default as AIInsightsSummary } from "./AIInsightsSummary";
