@@ -1,47 +1,160 @@
 /**
  * Standard Input/Output Converter Utilities
- * Handles conversion between JSON test cases and stdin/stdout formats
+ * 
+ * 🚨 CRITICAL: STRICT CP-STYLE INPUT FORMAT ONLY
+ * 
+ * This module handles conversion between data structures and stdin/stdout formats.
+ * ALL inputs MUST be in Competitive Programming (CP) style format.
+ * 
+ * MANDATORY RULES:
+ * - NO JSON brackets [ ], { } in stdin
+ * - NO commas or quoted strings
+ * - Only numeric, space-separated input
+ * - Arrays: n on first line, space-separated elements on second
+ * - 2D Arrays: k arrays format with length before each row
+ * 
  * Enhanced with robust output comparison for LeetCode-style judging
  */
 
+import {
+  arrayToCPFormat,
+  kArraysToCPFormat,
+  validateCPFormat,
+} from "./cpInputFormat.js";
+
 /**
- * Convert JSON test case input to stdin format
+ * Convert a single value to stdin-friendly format (CP-STYLE ONLY)
+ * @param {any} val - Value to convert
+ * @returns {string} - Stdin formatted string in CP format
+ */
+function valueToStdin(val) {
+  if (val === null || val === undefined) {
+    return "";
+  }
+  
+  if (Array.isArray(val)) {
+    // Convert array to CP format: length on first line, space-separated elements on second line
+    // For 2D arrays: k-arrays format
+    if (val.length > 0 && Array.isArray(val[0])) {
+      // 2D array: k-arrays CP format
+      // k
+      // len1
+      // arr1 elements
+      // len2
+      // arr2 elements
+      const lines = [String(val.length)];
+      for (const row of val) {
+        lines.push(String(row.length));
+        lines.push(row.join(" "));
+      }
+      return lines.join("\n");
+    }
+    // 1D array: length then space-separated elements
+    return `${val.length}\n${val.join(" ")}`;
+  }
+  
+  if (typeof val === "object") {
+    // For objects like trees/graphs, convert to CP edge list format
+    // This is a fallback - specific structures should use dedicated converters
+    console.warn("[stdinConverter] ⚠️ Object type detected - converting to CP format");
+    
+    // Try to extract arrays from common object patterns
+    const keys = Object.keys(val);
+    const lines = [];
+    
+    for (const key of keys) {
+      const v = val[key];
+      if (Array.isArray(v)) {
+        lines.push(String(v.length));
+        lines.push(v.join(" "));
+      } else {
+        lines.push(String(v));
+      }
+    }
+    
+    return lines.join("\n");
+  }
+  
+  return String(val);
+}
+
+/**
+ * Convert JSON test case input to stdin format (CP-STYLE ONLY)
+ * 
+ * CRITICAL: This function MUST output CP format, NEVER JSON
+ * 
+ * Input patterns converted to CP format:
+ * - { nums: [1,2,3], target: 5 } -> "3\n1 2 3\n5"
+ * - { arr: [1,2,3], k: 2 } -> "3\n1 2 3\n2"
+ * - [1,2,3] -> "3\n1 2 3"
+ * - [[1,2],[3,4]] -> "2\n2\n1 2\n2\n3 4"
+ * - { n: 5 } -> "5"
+ * 
  * @param {Object} input - JSON input object
- * @param {string} [inputFormat] - Expected format (json, array, etc.)
- * @returns {string} - Stdin formatted string
+ * @param {string} [inputFormat] - Expected format (IGNORED - always outputs CP)
+ * @returns {string} - Stdin formatted string in CP format
  */
 export function jsonToStdin(input, inputFormat = null) {
   if (typeof input === "string") {
+    // If already a string, validate it's in CP format
+    const validation = validateCPFormat(input);
+    if (!validation.valid) {
+      console.warn(`[stdinConverter] ⚠️ Input string contains non-CP format: ${validation.error}`);
+      // Attempt to convert if it looks like JSON
+      if (input.trim().startsWith("[") || input.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(input.trim());
+          return jsonToStdin(parsed); // Recursive call to convert
+        } catch (e) {
+          // Not valid JSON, return as-is
+        }
+      }
+    }
     return input;
   }
 
+  // DEPRECATED: Never output JSON format anymore
+  // if (inputFormat === "json") { ... }
+
   if (Array.isArray(input)) {
-    // For arrays, join elements with newlines
-    return input
-      .map((item) => {
-        if (typeof item === "object") {
-          return JSON.stringify(item);
-        }
-        return String(item);
-      })
-      .join("\n");
+    // Top-level array - convert to CP format
+    return valueToStdin(input);
   }
 
   if (typeof input === "object" && input !== null) {
-    // For objects, either use JSON or specific format
-    if (inputFormat === "json") {
-      return JSON.stringify(input);
-    }
-
-    // Default: join values with newlines
-    return Object.values(input)
-      .map((val) => {
-        if (typeof val === "object") {
-          return JSON.stringify(val);
+    const keys = Object.keys(input);
+    const lines = [];
+    
+    // Check for common patterns and convert appropriately to CP format
+    for (const key of keys) {
+      const val = input[key];
+      
+      if (Array.isArray(val)) {
+        // For arrays: add length, then space-separated elements
+        if (val.length > 0 && Array.isArray(val[0])) {
+          // 2D array -> k-arrays CP format
+          lines.push(String(val.length));
+          for (const row of val) {
+            lines.push(String(row.length));
+            lines.push(row.join(" "));
+          }
+        } else {
+          // 1D array -> length + elements
+          lines.push(String(val.length));
+          lines.push(val.join(" "));
         }
-        return String(val);
-      })
-      .join("\n");
+      } else if (typeof val === "object" && val !== null) {
+        // Nested objects: convert recursively
+        console.warn(`[stdinConverter] ⚠️ Nested object in input - converting to CP format`);
+        const nestedCP = jsonToStdin(val);
+        lines.push(nestedCP);
+      } else {
+        // Primitive value (number, string, boolean)
+        lines.push(String(val));
+      }
+    }
+    
+    return lines.join("\n");
   }
 
   return String(input || "");
@@ -336,9 +449,9 @@ export function compareOutputs(actual, expected, options = {}) {
 }
 
 /**
- * Format test case input for display
- * Converts stdin format to readable format
- * @param {string} stdin - Raw stdin string
+ * Format test case input for display (CP FORMAT)
+ * Displays stdin in a clean, readable CP format
+ * @param {string} stdin - Raw stdin string in CP format
  * @returns {string} - Formatted input for display
  */
 export function formatInputForDisplay(stdin) {
@@ -349,17 +462,15 @@ export function formatInputForDisplay(stdin) {
   
   for (const line of lines) {
     const trimmed = line.trim();
-    try {
-      // Try to parse as JSON for nicer formatting
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        formatted.push(`[${parsed.join(", ")}]`);
-      } else if (typeof parsed === "object" && parsed !== null) {
-        formatted.push(JSON.stringify(parsed));
-      } else {
-        formatted.push(String(parsed));
-      }
-    } catch {
+    
+    // CP format is already human-readable - just clean up whitespace
+    // Check if it's a space-separated array line
+    if (trimmed.includes(" ") && /^-?\d+(\s+-?\d+)+$/.test(trimmed)) {
+      // It's an array line - display with clean spacing
+      const nums = trimmed.split(/\s+/);
+      formatted.push(`[${nums.join(", ")}]`); // Display as array for readability
+    } else {
+      // Single value or other format - keep as-is
       formatted.push(trimmed);
     }
   }

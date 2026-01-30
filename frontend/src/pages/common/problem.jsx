@@ -50,6 +50,8 @@ export default function ProblemLibrary() {
             difficulty: q.difficulty,
             category,
             solved: false,
+            primaryCompany: q.primaryCompany || null,
+            companies: q.companies || [],
           };
         });
 

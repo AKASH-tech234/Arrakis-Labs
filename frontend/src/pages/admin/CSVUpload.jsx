@@ -85,9 +85,9 @@ const CSVUpload = () => {
   };
 
   const downloadTemplate = () => {
-    const template = `title,description,difficulty,constraints,examples,test_cases,tags
-Two Sum,"Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",Easy,"2 <= nums.length <= 10^4
--10^9 <= nums[i] <= 10^9","[{""input"": ""[2,7,11,15], target=9"", ""output"": ""[0,1]"", ""explanation"": ""Because nums[0] + nums[1] == 9""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1], ""is_hidden"": false}, {""input"": {""nums"": [3,2,4], ""target"": 6}, ""expected_output"": [1,2], ""is_hidden"": false}, {""input"": {""nums"": [3,3], ""target"": 6}, ""expected_output"": [0,1], ""is_hidden"": true}]","[""Array"", ""Hash Table""]"`;
+    const template = `title,description,difficulty,category,constraints,examples,test_cases,tags,primary_company,companies
+Two Sum,"Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",Easy,Arrays,"2 <= nums.length <= 10^4
+-10^9 <= nums[i] <= 10^9","[{""input"": ""[2,7,11,15], target=9"", ""output"": ""[0,1]"", ""explanation"": ""Because nums[0] + nums[1] == 9""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1], ""is_hidden"": false}, {""input"": {""nums"": [3,2,4], ""target"": 6}, ""expected_output"": [1,2], ""is_hidden"": false}, {""input"": {""nums"": [3,3], ""target"": 6}, ""expected_output"": [0,1], ""is_hidden"": true}]","[""Array"", ""Hash Table""]",Amazon,"Amazon, Google, Microsoft"`;
     
     const blob = new Blob([template], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -329,6 +329,10 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
             <span className="text-[#78716C]">Easy, Medium, or Hard (required)</span>
           </div>
           <div className="flex items-start gap-3">
+            <span className="font-mono text-[#78716C] w-32 flex-shrink-0">category</span>
+            <span className="text-[#78716C]">Problem category (e.g., Arrays, Strings, Dynamic Programming)</span>
+          </div>
+          <div className="flex items-start gap-3">
             <span className="font-mono text-[#78716C] w-32 flex-shrink-0">constraints</span>
             <span className="text-[#78716C]">Problem constraints</span>
           </div>
@@ -343,6 +347,14 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
           <div className="flex items-start gap-3">
             <span className="font-mono text-[#78716C] w-32 flex-shrink-0">tags</span>
             <span className="text-[#78716C]">JSON array or comma-separated tags</span>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="font-mono text-[#78716C] w-32 flex-shrink-0">primary_company</span>
+            <span className="text-[#78716C]">Primary company that asks this problem (optional)</span>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="font-mono text-[#78716C] w-32 flex-shrink-0">companies</span>
+            <span className="text-[#78716C]">Comma-separated list of companies (optional). If primary_company is missing, first company becomes primary.</span>
           </div>
         </div>
       </motion.div>

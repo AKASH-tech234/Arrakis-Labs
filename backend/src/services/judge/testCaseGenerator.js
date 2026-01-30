@@ -201,6 +201,11 @@ class TestCaseGenerator {
       }
     }
 
+    // Skip auto-generation if customGenerator is defined (custom input format incompatible with auto-edges)
+    if (typeof this.config.customGenerator === "function") {
+      return;
+    }
+
     // Auto-generate common edge cases based on input type
     const remaining = count - this.testCases.length;
     if (remaining > 0) {
@@ -327,6 +332,11 @@ class TestCaseGenerator {
       }
     }
 
+    // Skip auto-generation if customGenerator is defined (custom input format incompatible)
+    if (typeof this.config.customGenerator === "function") {
+      return;
+    }
+
     // Auto-generate adversarial cases based on common anti-patterns
     const remaining = count - this.testCases.filter(tc => tc.category === TestCategory.ADVERSARIAL).length;
     if (remaining > 0) {
@@ -395,6 +405,11 @@ class TestCaseGenerator {
   _generateRandomInput(sizeCategory = "medium") {
     const { inputType, constraints } = this.config;
 
+    // PRIORITY: Use custom generator if provided (handles custom field names like nums, target, k, etc.)
+    if (typeof this.config.customGenerator === "function") {
+      return this.config.customGenerator(this.rng, sizeCategory);
+    }
+
     // Determine size multiplier based on category
     const sizeMultiplier = {
       small: 0.1,
@@ -420,11 +435,8 @@ class TestCaseGenerator {
       case InputType.MATRIX:
         return this._generateMatrix(constraints, sizeMultiplier);
       case InputType.CUSTOM:
-        // For custom types, use the provided generator function
-        if (typeof this.config.customGenerator === "function") {
-          return this.config.customGenerator(this.rng, sizeCategory);
-        }
-        throw new Error("Custom input type requires customGenerator function");
+        // Custom generator should be handled at the top, but just in case
+        throw new Error("Custom input type requires customGenerator function (not found)");
       default:
         throw new Error(`Unknown input type: ${inputType}`);
     }

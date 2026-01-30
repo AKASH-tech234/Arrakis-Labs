@@ -35,6 +35,12 @@ export default function ProblemList({ problems }) {
         </div>
         <div className="flex items-center gap-6">
           <span
+            className="text-[#A29A8C] text-xs uppercase tracking-wider hidden md:block font-semibold"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Company
+          </span>
+          <span
             className="text-[#A29A8C] text-xs uppercase tracking-wider hidden sm:block font-semibold"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
