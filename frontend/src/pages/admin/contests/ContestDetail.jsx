@@ -94,8 +94,8 @@ export default function ContestDetail() {
     const colors = {
       draft: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20',
       scheduled: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20',
-      live: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-      ended: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      live: 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20',
+      ended: 'bg-[#1A1814] text-[#78716C] border border-[#1A1814]/60',
       cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
     };
     return colors[status] || 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20';
@@ -156,7 +156,7 @@ export default function ContestDetail() {
               <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
               <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">{contest.name}</h1>
               <span className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${getStatusColor(contest.status)}`}>
-                {contest.status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
+                {contest.status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F59E0B] mr-1.5 animate-pulse" />}
                 {contest.status}
               </span>
             </div>
@@ -372,7 +372,7 @@ export default function ContestDetail() {
                       {idx === 2 && <span className="ml-1">🥉</span>}
                     </td>
                     <td className="px-4 py-3 text-[#E8E4D9]">{p.user?.username || 'Unknown'}</td>
-                    <td className="px-4 py-3 text-emerald-400 font-semibold">{p.totalScore}</td>
+                    <td className="px-4 py-3 text-[#F59E0B] font-semibold">{p.totalScore}</td>
                     <td className="px-4 py-3 text-[#92400E]">{p.totalPenalty} min</td>
                     <td className="px-4 py-3 text-[#78716C]">
                       {p.problemsAttempted?.size || 0} solved
