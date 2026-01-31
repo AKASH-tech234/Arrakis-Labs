@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
+import { ARRAKIS_MONACO_THEME, defineArrakisMonacoTheme } from "../../components/editor/arrakisMonacoTheme";
+import { Badge, Button } from "../../components/ui/ds";
 import contestApi from '../../services/contest/contestApi';
 import { useAuth } from '../../context/AuthContext';
 import { useContestTimer } from '../../hooks/contest/useContestTimer';
@@ -379,22 +381,32 @@ export default function ContestProblem() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
       </div>
     );
   }
 
   if (error && !problem) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
         <div className="text-center">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-medium text-white mb-2">Error</h2>
-          <p className="text-gray-400">{error}</p>
-          <Link to={`/contests/${contestId}`} className="mt-4 inline-block text-blue-400 hover:underline">
+          <div className="text-[#FCA5A5] text-6xl mb-4">⚠️</div>
+          <h2
+            className="text-xl font-semibold text-[#E8E4D9] mb-2 tracking-wider uppercase"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Error
+          </h2>
+          <p
+            className="text-[#A29A8C]"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            {error}
+          </p>
+          <Button as={Link} to={`/contests/${contestId}`} variant="secondary" size="md" className="mt-6">
             ← Back to contest
-          </Link>
+          </Button>
         </div>
       </div>
     );
@@ -407,26 +419,41 @@ export default function ContestProblem() {
   };
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col">
+    <div className="h-screen flex flex-col" style={{ backgroundColor: "#0A0A08" }}>
       {}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+      <header className="bg-[#121210] border-b border-[#1A1814] px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
             to={`/contests/${contestId}`}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-[#A29A8C] hover:text-[#E8E4D9] transition-colors"
           >
             ← Back
           </Link>
           <div>
-            <span className="text-gray-500 text-sm">Problem {problem?.label}</span>
-            <h1 className="text-white font-medium">{problem?.title}</h1>
+            <span
+              className="text-[#78716C] text-xs uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Problem {problem?.label}
+            </span>
+            <h1
+              className="text-[#E8E4D9] font-semibold tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              {problem?.title}
+            </h1>
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           {}
           <div className="text-center">
-            <span className="text-gray-500 text-xs">Time Left</span>
+            <span
+              className="text-[#78716C] text-[10px] uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              Time Left
+            </span>
             <p className={`font-mono font-bold ${getTimerColor()}`}>
               {formattedTime}
             </p>
@@ -444,10 +471,10 @@ export default function ContestProblem() {
                     to={`/contests/${contestId}/problems/${p.id}`}
                     className={`w-8 h-8 flex items-center justify-center rounded text-sm font-mono ${
                       isCurrent
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-[#92400E] text-[#E8E4D9]'
                         : isSolved
-                        ? 'bg-green-600/20 text-green-400'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-[#1A2A16] text-[#86EFAC]'
+                        : 'bg-[#1A1814] text-[#E8E4D9] hover:bg-[#3D3D3D]'
                     }`}
                   >
                     {p.label}
@@ -462,44 +489,71 @@ export default function ContestProblem() {
       {}
       <div className="flex-1 flex overflow-hidden">
         {}
-        <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
+        <div className="w-1/2 border-r border-[#1A1814] overflow-y-auto">
           <div className="p-6">
             {}
             <div className="flex items-center gap-3 mb-4">
-              <span className={`px-2 py-1 rounded text-sm ${
-                problem?.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-                problem?.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                'bg-red-500/20 text-red-400'
-              }`}>
+              <Badge
+                variant={
+                  problem?.difficulty === "Easy"
+                    ? "success"
+                    : problem?.difficulty === "Medium"
+                      ? "warning"
+                      : "danger"
+                }
+              >
                 {problem?.difficulty}
+              </Badge>
+              <span
+                className="text-[#A29A8C]"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {problem?.points} points
               </span>
-              <span className="text-gray-400">{problem?.points} points</span>
             </div>
 
             {}
             <div className="prose prose-invert max-w-none">
-              <div className="text-gray-300 whitespace-pre-wrap">
+              <div className="text-[#E8E4D9] whitespace-pre-wrap">
                 {problem?.description}
               </div>
 
               <div className="mt-6">
-                <h3 className="text-white font-medium mb-2">Input Format</h3>
-                <pre className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap">
+                <h3
+                  className="text-[#E8E4D9] font-semibold mb-2 tracking-wider uppercase"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Input Format
+                </h3>
+                <pre className="bg-[#121210] border border-[#1A1814] rounded-none p-3 text-sm text-[#E8E4D9] whitespace-pre-wrap">
                 {problem?.inputFormat || "The input consists of one or more lines. Each line represents one input parameter."}
                 </pre>
+                <div className="mt-2 text-xs text-[#78716C]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                  CP format required (Codeforces-style): whitespace-separated values via stdin. No JSON, no brackets, no commas.
+                </div>
               </div>
 
               <div className="mt-6">
-                <h3 className="text-white font-medium mb-2">Output Format</h3>
-                <pre className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap">
+                <h3
+                  className="text-[#E8E4D9] font-semibold mb-2 tracking-wider uppercase"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Output Format
+                </h3>
+                <pre className="bg-[#121210] border border-[#1A1814] rounded-none p-3 text-sm text-[#E8E4D9] whitespace-pre-wrap">
                 {problem?.outputFormat || "Print the required result to standard output."}
                 </pre>
               </div>
 
               {problem?.constraints && (
                 <div className="mt-6">
-                  <h3 className="text-white font-medium mb-2">Constraints</h3>
-                  <pre className="bg-gray-800 rounded p-3 text-sm text-gray-300">
+                  <h3
+                    className="text-[#E8E4D9] font-semibold mb-2 tracking-wider uppercase"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    Constraints
+                  </h3>
+                  <pre className="bg-[#121210] border border-[#1A1814] rounded-none p-3 text-sm text-[#E8E4D9]">
                     {problem.constraints}
                   </pre>
                 </div>
@@ -507,21 +561,26 @@ export default function ContestProblem() {
 
               {problem?.examples?.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-white font-medium mb-2">Examples</h3>
+                  <h3
+                    className="text-[#E8E4D9] font-semibold mb-2 tracking-wider uppercase"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    Examples
+                  </h3>
                   {problem.examples.map((ex, idx) => (
-                    <div key={idx} className="mb-4 bg-gray-800 rounded p-4">
+                    <div key={idx} className="mb-4 bg-[#121210] border border-[#1A1814] rounded-none p-4">
                       <div className="mb-2">
-                        <span className="text-gray-500 text-sm">Input:</span>
-                        <pre className="text-gray-300 mt-1">{ex.input}</pre>
+                        <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Input:</span>
+                        <pre className="text-[#E8E4D9] mt-1">{ex.input}</pre>
                       </div>
                       <div className="mb-2">
-                        <span className="text-gray-500 text-sm">Output:</span>
-                        <pre className="text-gray-300 mt-1">{ex.output}</pre>
+                        <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Output:</span>
+                        <pre className="text-[#E8E4D9] mt-1">{ex.output}</pre>
                       </div>
                       {ex.explanation && (
                         <div>
-                          <span className="text-gray-500 text-sm">Explanation:</span>
-                          <p className="text-gray-400 mt-1">{ex.explanation}</p>
+                          <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Explanation:</span>
+                          <p className="text-[#A29A8C] mt-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{ex.explanation}</p>
                         </div>
                       )}
                     </div>
@@ -535,11 +594,11 @@ export default function ContestProblem() {
         {}
         <div className="w-1/2 flex flex-col">
           {}
-          <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+          <div className="bg-[#121210] border-b border-[#1A1814] px-4 py-2 flex items-center justify-between">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="bg-gray-700 text-white px-3 py-1 rounded text-sm"
+              className="bg-[#0A0A08] text-[#E8E4D9] px-3 py-2 border border-[#1A1814] rounded-none text-sm"
             >
               {LANGUAGES.map((lang) => (
                 <option key={lang.id} value={lang.id}>
@@ -549,20 +608,12 @@ export default function ContestProblem() {
             </select>
 
             <div className="flex gap-2">
-              <button
-                onClick={handleRun}
-                disabled={isRunning || isSubmitting}
-                className="px-4 py-1.5 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white text-sm rounded transition-colors"
-              >
-                {isRunning ? 'Running...' : 'Run'}
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isRunning || isSubmitting || isEnded}
-                className="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 text-white text-sm rounded transition-colors"
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </button>
+              <Button onClick={handleRun} disabled={isRunning || isSubmitting} variant="secondary" size="sm">
+                {isRunning ? "Running..." : "Run"}
+              </Button>
+              <Button onClick={handleSubmit} disabled={isRunning || isSubmitting || isEnded} variant="primary" size="sm">
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </Button>
             </div>
           </div>
 
@@ -574,14 +625,17 @@ export default function ContestProblem() {
               value={code}
               onChange={(value) => setCode(value || '')}
               onMount={handleEditorMount}
-              theme="vs-dark"
+              beforeMount={defineArrakisMonacoTheme}
+              theme={ARRAKIS_MONACO_THEME}
               options={{
                 minimap: { enabled: false },
+                fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
                 fontSize: 14,
                 lineNumbers: 'on',
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
-                tabSize: 2,
+                tabSize: 4,
+                insertSpaces: true,
                 wordWrap: 'on',
                 readOnly: isEnded,
               }}
@@ -589,17 +643,17 @@ export default function ContestProblem() {
           </div>
 
           {}
-          <div className="h-64 border-t border-gray-700 bg-gray-800 flex flex-col">
+          <div className="h-64 border-t border-[#1A1814] bg-[#121210] flex flex-col">
             {}
-            <div className="flex border-b border-gray-700">
+            <div className="flex border-b border-[#1A1814]">
               {['testcases', 'result', 'submissions'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActivePanel(tab)}
                   className={`px-4 py-2 text-sm capitalize ${
                     activePanel === tab
-                      ? 'text-blue-400 border-b-2 border-blue-400'
-                      : 'text-gray-400 hover:text-gray-300'
+                      ? 'text-[#F59E0B] border-b-2 border-[#D97706]'
+                      : 'text-[#A29A8C] hover:text-[#E8E4D9]'
                   }`}
                 >
                   {tab === 'testcases' ? 'Test Cases' : tab}
@@ -645,7 +699,7 @@ export default function ContestProblem() {
 
       {}
       {error && (
-        <div className="fixed bottom-4 right-4 bg-red-500/90 text-white px-4 py-3 rounded-lg shadow-lg max-w-md">
+        <div className="fixed bottom-4 right-4 bg-[#2A0F0F] text-[#FCA5A5] px-4 py-3 border border-[#7F1D1D] rounded-none shadow-lg max-w-md">
           <div className="flex items-center justify-between">
             <p>{error}</p>
             <button onClick={() => setError(null)} className="ml-4 text-white/80 hover:text-white">
