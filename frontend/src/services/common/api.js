@@ -13,7 +13,17 @@ const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-apiClient.interceptors.request.use((config) => config);
+apiClient.interceptors.request.use((config) => {
+  const baseUrl = String(config.baseURL || "");
+  const url = String(config.url || "");
+
+  // If baseURL already ends with '/api', avoid requests like '/api/api/...'
+  if (baseUrl.endsWith("/api") && url.startsWith("/api/")) {
+    config.url = url.slice(4); // remove leading '/api'
+  }
+
+  return config;
+});
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -28,7 +38,12 @@ apiClient.interceptors.response.use(
 async function request(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  let normalizedPath = path;
+  if (API_BASE.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    normalizedPath = normalizedPath.slice(4); // remove leading '/api'
+  }
+
+  const response = await fetch(`${API_BASE}${normalizedPath}`, {
     method,
     headers,
     credentials: "include",
