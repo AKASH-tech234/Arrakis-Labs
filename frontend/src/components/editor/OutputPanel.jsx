@@ -79,7 +79,8 @@ function parseTestResults(output) {
         results: data.results,
         passedCount: data.passedCount || 0,
         totalCount: data.totalCount || data.results.length,
-        allPassed: data.allPassed || false,
+        // Derive allPassed from status OR explicit flag OR count check
+        allPassed: data.allPassed ?? (status === "accepted") ?? (data.passedCount === data.results.length),
         firstFailingIndex: data.firstFailingIndex ?? -1,
         submissionId: data.submissionId || null,
         aiFeedback: data.aiFeedback || null,

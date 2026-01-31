@@ -105,6 +105,18 @@ const questionSchema = new mongoose.Schema(
       type: [String],
       default: [], // Preferred algorithms for this problem
     },
+    // Company information - which companies ask this problem
+    // primary_company: The main company shown in problem lists (optional)
+    primaryCompany: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    // companies: All companies that ask this problem (can include primary)
+    companies: {
+      type: [String],
+      default: [],
+    },
     // For optimistic concurrency control
     version: {
       type: Number,

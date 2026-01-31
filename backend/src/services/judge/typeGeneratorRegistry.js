@@ -1257,9 +1257,11 @@ const typeGeneratorRegistry = {
   "SEARCH": generateSearchingTests,
   "HASH": generateHashingTests,
   "HASH TABLE": generateHashingTests,
+  "HASH TABLES": generateHashingTests,
   "HASH MAP": generateHashingTests,
   "LINKEDLIST": generateLinkedListTests,
   "LINKED-LIST": generateLinkedListTests,
+  "LINKED LISTS": generateLinkedListTests,
   "MATHEMATICS": generateMathTests,
   "STRINGS": generateStringTests,
   "TREES": generateTreeTests,
@@ -1273,9 +1275,18 @@ const typeGeneratorRegistry = {
   "TWO POINTERS": generateArrayTests,
   "SLIDING WINDOW": generateArrayTests,
   "STACK": generateArrayTests,
+  "STACKS": generateArrayTests,
   "QUEUE": generateArrayTests,
+  "QUEUES": generateArrayTests,
+  "STACKS & QUEUES": generateArrayTests,
   "HEAP": generateArrayTests,
+  "HEAPS": generateArrayTests,
   "PRIORITY QUEUE": generateArrayTests,
+  "BINARY SEARCH": generateSearchingTests,
+  "DIVIDE & CONQUER": generateDivideAndConquerTests,
+  
+  // Fallback for unregistered types - use array tests as general purpose
+  "GENERAL": generateArrayTests,
 };
 
 /**

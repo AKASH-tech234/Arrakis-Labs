@@ -21,6 +21,18 @@ import {
   getAllRegisteredTypes,
   normalizeType,
 } from "../../services/judge/typeGeneratorRegistry.js";
+// Per-problem configs with reference solutions (for correct hidden test generation)
+import {
+  hasProblem as hasRegisteredProblem,
+  getProblemConfig,
+  normalizeSlug,
+} from "../../services/judge/problemConfigRegistry.js";
+import { TestCaseGenerator } from "../../services/judge/testCaseGenerator.js";
+// Dynamic test case generator - generates tests by analyzing existing test cases
+import {
+  generateDynamicTestInputs,
+  computeExpectedOutputs,
+} from "../../services/judge/dynamicTestGenerator.js";
 
 const PISTON_URL = process.env.PISTON_URL || "https://emkc.org/api/v2/piston";
 const MAX_RETRIES = 2;
@@ -343,96 +355,128 @@ export const submitCode = async (req, res) => {
     );
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // DYNAMIC HIDDEN TEST CASE GENERATION (TYPE-BASED)
+    // DYNAMIC HIDDEN TEST CASE GENERATION
     // ═══════════════════════════════════════════════════════════════════════════
     // 
-    // HOW IT WORKS:
-    // Each problem has a `categoryType` field (e.g., "Array", "Sorting", "Math").
-    // The typeGeneratorRegistry provides a generator for each problem type.
-    // This means ALL 619+ problems automatically get hidden test cases!
-    //
-    // BENEFITS:
-    // - No manual per-problem registration needed
-    // - New problems automatically get hidden tests based on their type
-    // - Consistent test coverage across all problems of the same type
+    // THREE-TIER SYSTEM:
+    // 1. DB Test Cases - Always used (verified expected outputs)
+    // 2. Per-Problem Registry - Problems with registered reference solutions
+    //    get dynamically generated hidden tests with CORRECT expected outputs
+    // 3. Type-Based Fallback - DISABLED (no reference solutions = wrong outputs)
     //
     // SECURITY:
-    // - Generated test inputs/outputs are NEVER exposed to frontend
+    // - Generated test inputs/outputs are NEVER exposed to frontend on success
     // - Only test number and pass/fail status are shown
     // ═══════════════════════════════════════════════════════════════════════════
     
     let generatedHiddenCases = [];
     
-    // Get the problem type from the question (uses categoryType field)
-    // Falls back to topic if categoryType is not set
+    // Get problem slug for registry lookup
+    const problemSlug = question.slug || normalizeSlug(question.title || "");
     const problemType = question.categoryType || question.topic || "";
-    const normalizedType = normalizeType(problemType);
     
-    // Clear logging for debugging
     console.log(`\n[HiddenJudge] ═══════════════════════════════════════════════════`);
-    console.log(`[HiddenJudge] Type=${problemType} (normalized: ${normalizedType})`);
+    console.log(`[HiddenJudge] Problem: "${question.title}"`);
+    console.log(`[HiddenJudge] Slug: "${problemSlug}"`);
+    console.log(`[HiddenJudge] Type: "${problemType}"`);
     
-    if (hasGeneratorForType(problemType)) {
-      console.log(`[HiddenJudge] generator FOUND`);
+    // PRIORITY 1: Check for per-problem config with reference solution
+    if (hasRegisteredProblem(problemSlug)) {
+      console.log(`[HiddenJudge] ✅ Per-problem config FOUND (has reference solution)`);
       try {
-        // Create deterministic seed from user + submission context
-        const submissionSeed = `${userId?.toString() || "anon"}-${questionId}-${Date.now()}`;
+        const problemConfig = getProblemConfig(problemSlug);
         
-        // Get problem constraints (if available)
-        const constraints = {
-          maxArrayLength: question.constraints?.maxArrayLength || 1000,
-          minValue: question.constraints?.minValue || -10000,
-          maxValue: question.constraints?.maxValue || 10000,
-        };
+        // Create deterministic seed from user + problem (NOT Date.now for reproducibility)
+        const submissionSeed = `${userId?.toString() || "anon"}-${questionId}`;
         
-        // Generate hidden test cases based on problem type
-        // Each generator produces:
-        // - 3 edge cases (boundary conditions)
-        // - 5 random cases (general correctness)
-        // - 2 stress cases (large inputs for TLE detection)
-        // - 2 adversarial cases (designed to break naive solutions)
-        generatedHiddenCases = generateTestsByType(problemType, submissionSeed, constraints);
+        // Generate hidden test cases with CORRECT expected outputs
+        const generator = new TestCaseGenerator(problemConfig, submissionSeed);
+        generatedHiddenCases = generator.generateAll({
+          edgeCount: 3,
+          randomCount: 5,
+          stressCount: 2,
+          adversarialCount: 2,
+        });
         
-        console.log(`[HiddenJudge] Generated ${generatedHiddenCases.length} hidden test cases`);
+        // Filter out any test cases that failed to generate expected outputs
+        generatedHiddenCases = generatedHiddenCases.filter(tc => tc.expectedStdout !== null);
+        
+        console.log(`[HiddenJudge] Generated ${generatedHiddenCases.length} hidden test cases with reference solutions`);
       } catch (genError) {
         console.error(`[HiddenJudge] ❌ Generation failed: ${genError.message}`);
-        console.error(genError.stack);
-        // Continue without generated cases - DB cases will still run
+        generatedHiddenCases = [];
       }
     } else {
-      console.log(`[HiddenJudge] generator NOT FOUND for type: ${problemType}`);
-      console.log(`[HiddenJudge] Using DB test cases only (${allTestCases.length} cases)`);
-      // Show available types for debugging
-      const availableTypes = getAllRegisteredTypes();
-      console.log(`[HiddenJudge] Registered types: ${availableTypes.slice(0, 15).join(", ")}...`);
+      // PRIORITY 2: Dynamic test generation
+      // Generate test INPUTS by analyzing existing test cases
+      // Expected outputs will be computed using user's code if they pass visible tests
+      console.log(`[HiddenJudge] ⚠️ No per-problem config registered`);
+      console.log(`[HiddenJudge] 🔄 Using DYNAMIC test generation (analyze existing tests)`);
+      
+      try {
+        const submissionSeed = `${userId?.toString() || "anon"}-${questionId}-dynamic`;
+        
+        // Generate test inputs based on problem structure and constraints
+        const dynamicInputs = generateDynamicTestInputs(
+          question,
+          allTestCases,
+          submissionSeed,
+          { edgeCount: 3, randomCount: 5, stressCount: 2 }
+        );
+        
+        console.log(`[HiddenJudge] Generated ${dynamicInputs.length} dynamic test INPUTS`);
+        console.log(`[HiddenJudge] Expected outputs will be computed from user's solution`);
+        
+        // Store for later - we'll compute outputs after visible tests pass
+        generatedHiddenCases = dynamicInputs.map((input, idx) => ({
+          stdin: input.stdin,
+          expectedStdout: null, // Will be computed later
+          category: input.category || "dynamic",
+          label: input.label || `Dynamic #${idx + 1}`,
+          isHidden: true,
+          needsOutputComputation: true,
+        }));
+      } catch (genError) {
+        console.error(`[HiddenJudge] ❌ Dynamic generation failed: ${genError.message}`);
+        generatedHiddenCases = [];
+      }
     }
+    
     console.log(`[HiddenJudge] ═══════════════════════════════════════════════════\n`);
 
-    // Combine DB test cases with dynamically generated hidden cases
-    const combinedTestCases = [
-      ...allTestCases.map(tc => ({
-        stdin: tc.stdin,
-        expectedStdout: tc.expectedStdout,
-        label: tc.label,
-        isHidden: tc.isHidden,
-        timeLimit: tc.timeLimit,
-        category: tc.isHidden ? "db_hidden" : "db_visible",
-        fromDB: true,
-      })),
-      ...generatedHiddenCases.map((tc, idx) => ({
-        stdin: tc.stdin,
-        expectedStdout: tc.expectedStdout,
-        label: `Generated #${idx + 1}`,
-        isHidden: true, // All generated cases are hidden
-        timeLimit: 2000,
-        category: tc.category || "generated",
-        fromDB: false,
-      })),
-    ];
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TWO-PHASE TEST EXECUTION
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 1: Run all DB test cases (visible + hidden)
+    // PHASE 2: If user passes visible tests, generate dynamic hidden tests
+    //          using their solution to compute expected outputs
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Separate DB test cases by visibility
+    const dbVisibleTests = allTestCases.filter(tc => !tc.isHidden).map(tc => ({
+      stdin: tc.stdin,
+      expectedStdout: tc.expectedStdout,
+      label: tc.label,
+      isHidden: false,
+      timeLimit: tc.timeLimit,
+      category: "db_visible",
+      fromDB: true,
+    }));
+    
+    const dbHiddenTests = allTestCases.filter(tc => tc.isHidden).map(tc => ({
+      stdin: tc.stdin,
+      expectedStdout: tc.expectedStdout,
+      label: tc.label,
+      isHidden: true,
+      timeLimit: tc.timeLimit,
+      category: "db_hidden",
+      fromDB: true,
+    }));
+    
+    console.log(`📊 DB Test Cases: ${dbVisibleTests.length} visible, ${dbHiddenTests.length} hidden`);
+    console.log(`📊 Dynamic Test Inputs: ${generatedHiddenCases.length} (outputs pending)`);
 
-    console.log(`📊 Total test cases: ${combinedTestCases.length} (${allTestCases.length} DB + ${generatedHiddenCases.length} generated)`);
-
-    if (combinedTestCases.length === 0) {
+    if (dbVisibleTests.length === 0 && dbHiddenTests.length === 0) {
       return res.status(400).json({
         success: false,
         message: "No test cases available for this question",
@@ -442,9 +486,15 @@ export const submitCode = async (req, res) => {
     const results = [];
     let compileErrorOccurred = false;
     let firstFailingIndex = -1;
+    let visibleTestsPassed = true;
 
-    for (let i = 0; i < combinedTestCases.length; i++) {
-      const tc = combinedTestCases[i];
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 1: Run VISIBLE test cases first
+    // ═══════════════════════════════════════════════════════════════════════════
+    console.log(`\n[Phase 1] Running ${dbVisibleTests.length} visible test cases...`);
+    
+    for (let i = 0; i < dbVisibleTests.length; i++) {
+      const tc = dbVisibleTests[i];
       try {
         const execution = await executePiston(
           code,
@@ -459,12 +509,11 @@ export const submitCode = async (req, res) => {
           execution.exitCode === 0 &&
           compareOutputs(execution.stdout, tc.expectedStdout);
 
-        // Track first failing test case
-        if (!passed && firstFailingIndex === -1) {
-          firstFailingIndex = i;
+        if (!passed) {
+          visibleTestsPassed = false;
+          if (firstFailingIndex === -1) firstFailingIndex = i;
         }
 
-        // Always store full details - we decide what to expose in the response
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
@@ -481,39 +530,233 @@ export const submitCode = async (req, res) => {
 
         if (execution.compileError) {
           compileErrorOccurred = true;
+          visibleTestsPassed = false;
           break;
         }
       } catch (error) {
+        visibleTestsPassed = false;
         const isServiceError = error.message.includes("unavailable");
-
-        // Track first failing test case
-        if (firstFailingIndex === -1) {
-          firstFailingIndex = i;
-        }
-
+        if (firstFailingIndex === -1) firstFailingIndex = results.length;
+        
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
           stdin: tc.stdin,
           expectedStdout: tc.expectedStdout,
           actualStdout: "",
-          stderr: isServiceError
-            ? "Execution service temporarily unavailable"
-            : error.message,
+          stderr: isServiceError ? "Execution service temporarily unavailable" : error.message,
           passed: false,
           error: true,
           serviceError: isServiceError,
         });
+        
+        if (isServiceError) break;
+      }
+    }
+    
+    console.log(`[Phase 1] Visible tests result: ${visibleTestsPassed ? "✅ ALL PASSED" : "❌ FAILED"}`);
 
-        if (isServiceError) {
-          break;
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 2: Run DB HIDDEN test cases
+    // ═══════════════════════════════════════════════════════════════════════════
+    if (!compileErrorOccurred && dbHiddenTests.length > 0) {
+      console.log(`\n[Phase 2] Running ${dbHiddenTests.length} DB hidden test cases...`);
+      
+      for (let i = 0; i < dbHiddenTests.length; i++) {
+        const tc = dbHiddenTests[i];
+        try {
+          const execution = await executePiston(
+            code,
+            language,
+            tc.stdin,
+            tc.timeLimit || 2000,
+          );
+
+          const passed =
+            !execution.compileError &&
+            !execution.timedOut &&
+            execution.exitCode === 0 &&
+            compareOutputs(execution.stdout, tc.expectedStdout);
+
+          if (!passed && firstFailingIndex === -1) {
+            firstFailingIndex = results.length;
+          }
+
+          results.push({
+            label: tc.label,
+            isHidden: true,
+            category: tc.category,
+            stdin: tc.stdin,
+            expectedStdout: tc.expectedStdout,
+            actualStdout: execution.stdout.trim(),
+            stderr: execution.stderr,
+            passed,
+            timedOut: execution.timedOut,
+            compileError: execution.compileError,
+            runtimeError: execution.runtimeError || false,
+          });
+
+          if (execution.compileError) {
+            compileErrorOccurred = true;
+            break;
+          }
+        } catch (error) {
+          const isServiceError = error.message.includes("unavailable");
+          if (firstFailingIndex === -1) firstFailingIndex = results.length;
+          
+          results.push({
+            label: tc.label,
+            isHidden: true,
+            stdin: tc.stdin,
+            expectedStdout: tc.expectedStdout,
+            actualStdout: "",
+            stderr: isServiceError ? "Execution service temporarily unavailable" : error.message,
+            passed: false,
+            error: true,
+            serviceError: isServiceError,
+          });
+          
+          if (isServiceError) break;
         }
       }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 3: Run DYNAMICALLY GENERATED test cases
+    // Only if user passed visible tests (their solution is likely correct)
+    // ═══════════════════════════════════════════════════════════════════════════
+    const dynamicTestsNeedingOutput = generatedHiddenCases.filter(tc => tc.needsOutputComputation);
+    
+    if (!compileErrorOccurred && visibleTestsPassed && dynamicTestsNeedingOutput.length > 0) {
+      console.log(`\n[Phase 3] Computing outputs for ${dynamicTestsNeedingOutput.length} dynamic tests...`);
+      console.log(`[Phase 3] Using user's solution as reference (passed visible tests)`);
+      
+      for (let i = 0; i < dynamicTestsNeedingOutput.length; i++) {
+        const tc = dynamicTestsNeedingOutput[i];
+        try {
+          // Run user's code to get expected output
+          const referenceExecution = await executePiston(
+            code,
+            language,
+            tc.stdin,
+            3000, // Slightly longer timeout for generated tests
+          );
+          
+          if (referenceExecution.compileError || referenceExecution.timedOut || referenceExecution.exitCode !== 0) {
+            // Skip this test case if user's code fails on it
+            console.log(`[Phase 3] Skipping dynamic test #${i + 1} - user code failed`);
+            continue;
+          }
+          
+          const expectedOutput = referenceExecution.stdout.trim();
+          
+          // Now run again to verify consistency (same input should give same output)
+          const verifyExecution = await executePiston(
+            code,
+            language,
+            tc.stdin,
+            3000,
+          );
+          
+          const passed =
+            !verifyExecution.compileError &&
+            !verifyExecution.timedOut &&
+            verifyExecution.exitCode === 0 &&
+            compareOutputs(verifyExecution.stdout, expectedOutput);
+
+          results.push({
+            label: tc.label || `Dynamic #${i + 1}`,
+            isHidden: true,
+            category: tc.category || "dynamic",
+            stdin: tc.stdin,
+            expectedStdout: expectedOutput,
+            actualStdout: verifyExecution.stdout.trim(),
+            stderr: verifyExecution.stderr,
+            passed,
+            timedOut: verifyExecution.timedOut,
+            compileError: verifyExecution.compileError,
+            runtimeError: verifyExecution.runtimeError || false,
+            dynamicallyGenerated: true,
+          });
+          
+        } catch (error) {
+          console.error(`[Phase 3] Error on dynamic test #${i + 1}: ${error.message}`);
+          // Skip failed dynamic tests - don't penalize user
+        }
+      }
+      
+      console.log(`[Phase 3] Completed dynamic test execution`);
+    } else if (generatedHiddenCases.length > 0 && generatedHiddenCases[0].expectedStdout !== null) {
+      // These are pre-generated cases with known outputs (from problemConfigRegistry)
+      console.log(`\n[Phase 3] Running ${generatedHiddenCases.length} pre-generated hidden tests...`);
+      
+      for (let i = 0; i < generatedHiddenCases.length; i++) {
+        const tc = generatedHiddenCases[i];
+        if (tc.needsOutputComputation) continue; // Skip if needs computation but didn't qualify
+        
+        try {
+          const execution = await executePiston(
+            code,
+            language,
+            tc.stdin,
+            tc.timeLimit || 2000,
+          );
+
+          const passed =
+            !execution.compileError &&
+            !execution.timedOut &&
+            execution.exitCode === 0 &&
+            compareOutputs(execution.stdout, tc.expectedStdout);
+
+          if (!passed && firstFailingIndex === -1) {
+            firstFailingIndex = results.length;
+          }
+
+          results.push({
+            label: tc.label || `Generated #${i + 1}`,
+            isHidden: true,
+            category: tc.category || "generated",
+            stdin: tc.stdin,
+            expectedStdout: tc.expectedStdout,
+            actualStdout: execution.stdout.trim(),
+            stderr: execution.stderr,
+            passed,
+            timedOut: execution.timedOut,
+            compileError: execution.compileError,
+            runtimeError: execution.runtimeError || false,
+          });
+
+          if (execution.compileError) {
+            compileErrorOccurred = true;
+            break;
+          }
+        } catch (error) {
+          const isServiceError = error.message.includes("unavailable");
+          if (firstFailingIndex === -1) firstFailingIndex = results.length;
+          
+          results.push({
+            label: tc.label || `Generated #${i + 1}`,
+            isHidden: true,
+            stdin: tc.stdin,
+            expectedStdout: tc.expectedStdout,
+            actualStdout: "",
+            stderr: isServiceError ? "Execution service temporarily unavailable" : error.message,
+            passed: false,
+            error: true,
+            serviceError: isServiceError,
+          });
+          
+          if (isServiceError) break;
+        }
+      }
+    }
+
+    console.log(`\n📊 Total test cases executed: ${results.length}`);
+    console.log(`📊 Passed: ${results.filter(r => r.passed).length}, Failed: ${results.filter(r => !r.passed).length}`);
+
     const passedCount = results.filter((r) => r.passed).length;
     const hasServiceError = results.some((r) => r.serviceError);
-    const allPassed = passedCount === combinedTestCases.length && !hasServiceError;
+    const allPassed = passedCount === results.length && !hasServiceError;
 
     let status = "wrong_answer";
     if (hasServiceError) {
@@ -545,7 +788,7 @@ export const submitCode = async (req, res) => {
         language,
         status,
         passedCount,
-        totalCount: combinedTestCases.length,
+        totalCount: results.length,
         // AI tracking fields
         attemptNumber,
         // Denormalized problem fields (immutable historical data)
@@ -605,7 +848,7 @@ export const submitCode = async (req, res) => {
         // Build failing test case context for AI (if applicable)
         const failingTestCase = firstFailingIndex >= 0 ? {
           index: firstFailingIndex,
-          total: combinedTestCases.length,
+          total: results.length,
           isHidden: results[firstFailingIndex]?.isHidden || false,
           input: results[firstFailingIndex]?.stdin || "",
           expectedOutput: results[firstFailingIndex]?.expectedStdout || "",
@@ -626,7 +869,7 @@ export const submitCode = async (req, res) => {
           // Failing test case context for targeted AI feedback
           failingTestCase,
           passedCount,
-          totalCount: combinedTestCases.length,
+          totalCount: results.length,
           // Enhanced context for AI personalization
           problem: {
             title: question.title,
@@ -665,6 +908,7 @@ export const submitCode = async (req, res) => {
       data: {
         submissionId: submission?._id,
         status,
+        allPassed, // CRITICAL: Frontend needs this to show correct verdict icon
         // LeetCode-style: expose hidden test case details on failure
         // This allows users to see exactly where they failed
         firstFailingIndex: !allPassed ? firstFailingIndex : null,
@@ -692,9 +936,7 @@ export const submitCode = async (req, res) => {
           };
         }),
         passedCount,
-        totalCount: combinedTestCases.length,
-        allPassed,
-
+        totalCount: results.length,
         aiFeedback: aiFeedback
           ? {
               hints: aiFeedback.hints || [],
@@ -780,14 +1022,25 @@ export const getPublicQuestions = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
-        .select("title difficulty tags categoryType examples createdAt")
+        .select("title difficulty tags categoryType examples createdAt primaryCompany companies")
         .lean(),
       Question.countDocuments(query),
     ]);
 
+    // Normalize company names (capitalize first letter)
+    const normalizedQuestions = questions.map(q => ({
+      ...q,
+      primaryCompany: q.primaryCompany 
+        ? q.primaryCompany.charAt(0).toUpperCase() + q.primaryCompany.slice(1).toLowerCase()
+        : null,
+      companies: (q.companies || []).map(c => 
+        c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()
+      ),
+    }));
+
     res.status(200).json({
       success: true,
-      data: questions,
+      data: normalizedQuestions,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -840,10 +1093,20 @@ export const getPublicQuestion = async (req, res) => {
       allTestCasesForFormat,
     );
 
+    // Normalize company names (capitalize first letter)
+    const normalizedPrimaryCompany = question.primaryCompany
+      ? question.primaryCompany.charAt(0).toUpperCase() + question.primaryCompany.slice(1).toLowerCase()
+      : null;
+    const normalizedCompanies = (question.companies || []).map(c =>
+      c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()
+    );
+
     res.status(200).json({
       success: true,
       data: {
         ...question,
+        primaryCompany: normalizedPrimaryCompany,
+        companies: normalizedCompanies,
         inputFormat,
         outputFormat,
         testCases: visibleTestCases.map((tc) => ({

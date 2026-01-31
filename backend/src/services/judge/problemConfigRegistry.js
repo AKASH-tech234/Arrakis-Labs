@@ -819,6 +819,199 @@ registerProblem(
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ADDITIONAL PROBLEMS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * CEILING OF A NUMBER
+ * Given a sorted array and target, return 1 if ceiling exists (element >= target), else 0.
+ * 
+ * Slug: "ceiling-of-a-number"
+ */
+registerProblem(
+  "ceiling-of-a-number",
+  new ProblemConfigBuilder(InputType.ARRAY_INT)
+    .setConstraints({
+      arrayLength: { min: 1, max: 10000 },
+      elementValue: { min: -1000000000, max: 1000000000 },
+    })
+    .addEdgeCase("Target equals element", { nums: [2, 3, 6, 8, 9], target: 6 })
+    .addEdgeCase("Target smaller than min", { nums: [2, 3, 6, 8, 9], target: 1 })
+    .addEdgeCase("Target larger than max", { nums: [2, 3, 6, 8, 9], target: 10 })
+    .addEdgeCase("Single element - found", { nums: [5], target: 3 })
+    .addEdgeCase("Single element - not found", { nums: [5], target: 10 })
+    .addEdgeCase("All same elements", { nums: [5, 5, 5, 5], target: 5 })
+    .addEdgeCase("Negative numbers", { nums: [-10, -5, 0, 5, 10], target: -7 })
+    .setReferenceSolution((input) => {
+      const { nums, target } = input;
+      // Binary search for ceiling
+      let left = 0, right = nums.length;
+      while (left < right) {
+        const mid = Math.floor((left + right) / 2);
+        if (nums[mid] < target) left = mid + 1;
+        else right = mid;
+      }
+      // If left == nums.length, no ceiling exists
+      return left < nums.length ? 1 : 0;
+    })
+    .setInputToStdin((input) => {
+      return `${input.nums.length}\n${input.nums.join(" ")}\n${input.target}`;
+    })
+    .setOutputFromStdout((result) => String(result))
+    .setCustomGenerator((rng, sizeCategory) => {
+      const sizes = { small: 10, medium: 100, large: 1000 };
+      const n = sizes[sizeCategory] || 100;
+      // Generate sorted array
+      let nums = rng.randIntArray(n, -10000, 10000);
+      nums.sort((a, b) => a - b);
+      // Target: sometimes in range, sometimes out of range
+      const choice = rng.randInt(0, 2);
+      let target;
+      if (choice === 0) {
+        // Target exists in array
+        target = nums[rng.randInt(0, nums.length - 1)];
+      } else if (choice === 1) {
+        // Target in range but not in array
+        target = rng.randInt(nums[0], nums[nums.length - 1]);
+      } else {
+        // Target possibly out of range
+        target = rng.randInt(-15000, 15000);
+      }
+      return { nums, target };
+    })
+    .build()
+);
+
+/**
+ * CHECK IF ARRAY IS SORTED (DIVIDE AND CONQUER)
+ * Given an array, return 1 if sorted in ascending order, else 0.
+ * 
+ * Slug: "check-if-array-is-sorted-divide-and-conquer"
+ */
+registerProblem(
+  "check-if-array-is-sorted-divide-and-conquer",
+  new ProblemConfigBuilder(InputType.ARRAY_INT)
+    .setConstraints({
+      arrayLength: { min: 1, max: 100 },
+      elementValue: { min: -100, max: 100 },
+    })
+    .addEdgeCase("Sorted ascending", { nums: [1, 2, 3, 4, 5] })
+    .addEdgeCase("Sorted descending", { nums: [5, 4, 3, 2, 1] })
+    .addEdgeCase("Single element", { nums: [1] })
+    .addEdgeCase("Two elements sorted", { nums: [1, 2] })
+    .addEdgeCase("Two elements unsorted", { nums: [2, 1] })
+    .addEdgeCase("All same elements", { nums: [3, 3, 3, 3] })
+    .addEdgeCase("Unsorted in middle", { nums: [1, 3, 2, 4, 5] })
+    .addEdgeCase("With duplicates sorted", { nums: [1, 1, 2, 2, 3] })
+    .setReferenceSolution((input) => {
+      const { nums } = input;
+      for (let i = 1; i < nums.length; i++) {
+        if (nums[i] < nums[i - 1]) return 0;
+      }
+      return 1;
+    })
+    .setInputToStdin((input) => {
+      return `${input.nums.length}\n${input.nums.join(" ")}`;
+    })
+    .setOutputFromStdout((result) => String(result))
+    .setCustomGenerator((rng, sizeCategory) => {
+      const sizes = { small: 10, medium: 50, large: 100 };
+      const n = sizes[sizeCategory] || 50;
+      let nums;
+      // 50% chance sorted, 50% chance unsorted
+      if (rng.randBool(0.5)) {
+        nums = rng.randIntArray(n, -100, 100).sort((a, b) => a - b);
+      } else {
+        nums = rng.randIntArray(n, -100, 100);
+      }
+      return { nums };
+    })
+    .build()
+);
+
+/**
+ * UNIQUE NUMBERS
+ * Given an array, return 1 if all numbers are unique, otherwise return 0.
+ * 
+ * Slug: "unique-numbers"
+ */
+registerProblem(
+  "unique-numbers",
+  new ProblemConfigBuilder(InputType.ARRAY_INT)
+    .setConstraints({
+      arrayLength: { min: 1, max: 1000 },
+      elementValue: { min: -1000, max: 1000 },
+    })
+    .addEdgeCase("All unique", { nums: [1, 2, 3, 4, 5] })
+    .addEdgeCase("All same", { nums: [5, 5, 5, 5, 5] })
+    .addEdgeCase("Single element", { nums: [42] })
+    .addEdgeCase("With negatives", { nums: [-1, 0, 1, -1, 0] })
+    .addEdgeCase("Two elements same", { nums: [7, 7] })
+    .addEdgeCase("Two elements different", { nums: [3, 8] })
+    .setReferenceSolution((input) => {
+      const { nums } = input;
+      // Return 1 if all unique (set size equals array length), else 0
+      return new Set(nums).size === nums.length ? 1 : 0;
+    })
+    .setInputToStdin((input) => {
+      return `${input.nums.length}\n${input.nums.join(" ")}`;
+    })
+    .setOutputFromStdout((result) => String(result))
+    .setCustomGenerator((rng, sizeCategory) => {
+      const sizes = { small: 20, medium: 100, large: 500 };
+      const n = sizes[sizeCategory] || 100;
+      const nums = rng.randIntArray(n, -1000, 1000);
+      return { nums };
+    })
+    .build()
+);
+
+/**
+ * KTH LARGEST ELEMENT CHECK
+ * Given an array, k, and target: find the k largest elements.
+ * Return 1 if the smallest among those k elements is strictly greater than target, else 0.
+ * 
+ * Slug: "kth-largest-element-check"
+ */
+registerProblem(
+  "kth-largest-element-check",
+  new ProblemConfigBuilder(InputType.ARRAY_INT)
+    .setConstraints({
+      arrayLength: { min: 1, max: 1000 },
+      elementValue: { min: -10000, max: 10000 },
+    })
+    .addEdgeCase("k=2, target=3, should be 1", { nums: [3, 2, 1, 5, 6, 4], k: 2, target: 3 })
+    .addEdgeCase("k=3, target=4, should be 0", { nums: [3, 2, 1, 5, 6, 4], k: 3, target: 4 })
+    .addEdgeCase("k=1 (max element)", { nums: [3, 2, 1, 5, 4], k: 1, target: 4 })
+    .addEdgeCase("Single element", { nums: [42], k: 1, target: 40 })
+    .addEdgeCase("All same elements", { nums: [5, 5, 5, 5], k: 2, target: 4 })
+    .addEdgeCase("With negatives", { nums: [-5, -2, -10, 0, 3], k: 2, target: -1 })
+    .setReferenceSolution((input) => {
+      const { nums, k, target } = input;
+      if (k < 1 || k > nums.length) return 0;
+      // Sort descending, get k largest
+      const sorted = [...nums].sort((a, b) => b - a);
+      // The smallest among k largest is at index k-1
+      const kthLargest = sorted[k - 1];
+      // Return 1 if strictly greater than target, else 0
+      return kthLargest > target ? 1 : 0;
+    })
+    .setInputToStdin((input) => {
+      return `${input.k}\n${input.nums.length}\n${input.nums.join(" ")}\n${input.target}`;
+    })
+    .setOutputFromStdout((result) => String(result))
+    .setCustomGenerator((rng, sizeCategory) => {
+      const sizes = { small: 20, medium: 100, large: 500 };
+      const n = sizes[sizeCategory] || 100;
+      const nums = rng.randIntArray(n, -10000, 10000);
+      const k = rng.randInt(1, n);
+      const target = rng.randInt(-10000, 10000);
+      return { nums, k, target };
+    })
+    .build()
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════════
 

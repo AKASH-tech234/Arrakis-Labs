@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import Question from "../../models/question/Question.js";
 import TestCase from "../../models/question/TestCase.js";
 import AuditLog from "../../models/admin/AuditLog.js";
-import { jsonToStdin, outputToStdout } from "../../utils/stdinConverter.js";
+import { jsonToStdin } from "../../utils/stdinConverter.js";
 
 const storage = multer.memoryStorage();
 
@@ -79,6 +79,10 @@ const OPTIONAL_COLUMNS = [
   "examples",
   "test_cases",
   "tags",
+  "category",
+  "category_type",
+  "primary_company",
+  "companies",
 ];
 
 const TRANSACTION_ROW_LIMIT = 50;
@@ -219,6 +223,33 @@ async function processRow(row, adminId, session) {
     }
   }
 
+  // Parse company fields
+  let companies = [];
+  if (row.companies) {
+    // Companies can be comma-separated or JSON array
+    try {
+      companies = JSON.parse(row.companies);
+      if (!Array.isArray(companies)) companies = [row.companies];
+    } catch {
+      companies = row.companies.split(",").map(c => c.trim()).filter(Boolean);
+    }
+  }
+
+  let primaryCompany = row.primary_company?.trim() || null;
+
+  // If primary_company is missing but companies exist, use first company
+  if (!primaryCompany && companies.length > 0) {
+    primaryCompany = companies[0];
+  }
+
+  // Ensure primary_company is in companies array if it exists
+  if (primaryCompany && !companies.includes(primaryCompany)) {
+    companies = [primaryCompany, ...companies];
+  }
+
+  // Parse category - accept category or category_type column
+  const categoryType = row.category?.trim() || row.category_type?.trim() || null;
+
   const createdAt = row.created_at ? new Date(row.created_at) : undefined;
   const updatedAt = row.updated_at ? new Date(row.updated_at) : undefined;
 
@@ -232,6 +263,9 @@ async function processRow(row, adminId, session) {
         constraints: row.constraints?.trim() || "",
         examples,
         tags,
+        categoryType,
+        primaryCompany,
+        companies,
         createdBy: adminId,
         updatedBy: adminId,
         ...(createdAt ? { createdAt } : {}),
@@ -246,17 +280,26 @@ async function processRow(row, adminId, session) {
 
   if (row.test_cases) {
     const testCases = JSON.parse(row.test_cases);
-    const testCaseDocs = testCases.map((tc, index) => ({
-      questionId: questionDoc._id,
-      stdin: jsonToStdin(tc.input),
-      expectedStdout: outputToStdout(tc.expected_output),
+    const testCaseDocs = testCases.map((tc, index) => {
+      // Convert expected_output to string format for storage
+      let expectedOutput = tc.expected_output;
+      if (typeof expectedOutput === 'object') {
+        expectedOutput = JSON.stringify(expectedOutput);
+      } else {
+        expectedOutput = String(expectedOutput ?? '');
+      }
       
-      isHidden: tc.is_hidden !== undefined ? tc.is_hidden : index >= 2,
-      label: tc.label || `Test Case ${index + 1}`,
-      timeLimit: tc.time_limit || 2000,
-      memoryLimit: tc.memory_limit || 256,
-      order: index,
-    }));
+      return {
+        questionId: questionDoc._id,
+        stdin: jsonToStdin(tc.input),
+        expectedStdout: expectedOutput.trim(),
+        isHidden: tc.is_hidden !== undefined ? tc.is_hidden : index >= 2,
+        label: tc.label || `Test Case ${index + 1}`,
+        timeLimit: tc.time_limit || 2000,
+        memoryLimit: tc.memory_limit || 256,
+        order: index,
+      };
+    });
 
     await TestCase.insertMany(testCaseDocs, { session });
     testCaseCount = testCaseDocs.length;

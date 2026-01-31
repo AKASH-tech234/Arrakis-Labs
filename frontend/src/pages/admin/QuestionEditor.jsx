@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Bot,
   FileText,
+  Building2,
 } from "lucide-react";
 
 const QuestionEditor = () => {
@@ -40,10 +41,14 @@ const QuestionEditor = () => {
     timeComplexityHint: "",
     spaceComplexityHint: "",
     commonMistakes: [],
+    // Company fields
+    primaryCompany: "",
+    companies: [],
   });
 
   const [algorithmInput, setAlgorithmInput] = useState("");
   const [mistakeInput, setMistakeInput] = useState("");
+  const [companyInput, setCompanyInput] = useState("");
 
   const [tagInput, setTagInput] = useState("");
 
@@ -71,6 +76,9 @@ const QuestionEditor = () => {
               timeComplexityHint: q.timeComplexityHint || "",
               spaceComplexityHint: q.spaceComplexityHint || "",
               commonMistakes: q.commonMistakes || [],
+              // Company fields
+              primaryCompany: q.primaryCompany || "",
+              companies: q.companies || [],
             });
           }
         } catch (err) {
@@ -209,6 +217,28 @@ const QuestionEditor = () => {
     setFormData((prev) => ({
       ...prev,
       commonMistakes: prev.commonMistakes.filter((m) => m !== mistake),
+    }));
+  };
+
+  const handleAddCompany = (e) => {
+    if (e.key === "Enter" && companyInput.trim()) {
+      e.preventDefault();
+      if (!formData.companies.includes(companyInput.trim())) {
+        setFormData((prev) => ({
+          ...prev,
+          companies: [...prev.companies, companyInput.trim()],
+        }));
+      }
+      setCompanyInput("");
+    }
+  };
+
+  const removeCompany = (company) => {
+    setFormData((prev) => ({
+      ...prev,
+      companies: prev.companies.filter((c) => c !== company),
+      // If removing primary company, clear it
+      primaryCompany: prev.primaryCompany === company ? "" : prev.primaryCompany,
     }));
   };
 
@@ -388,6 +418,87 @@ const QuestionEditor = () => {
             className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
             placeholder="Press Enter to add tags..."
           />
+        </motion.div>
+
+        {/* Company Information Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.32 }}
+          className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
+        >
+          <div className="p-4 border-b border-[#1A1814] bg-[#0F0F0D]/50 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Building2 className="h-5 w-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-wider">
+                Company Information
+              </h3>
+              <p className="text-xs text-[#78716C]">Which companies ask this problem (optional)</p>
+            </div>
+          </div>
+          
+          <div className="p-5 space-y-5">
+            {/* Primary Company */}
+            <div>
+              <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                Primary Company
+              </label>
+              <select
+                value={formData.primaryCompany}
+                onChange={(e) => handleChange("primaryCompany", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+              >
+                <option value="">No primary company</option>
+                {formData.companies.map((company, i) => (
+                  <option key={i} value={company}>{company}</option>
+                ))}
+              </select>
+              <p className="text-xs text-[#78716C] mt-1">
+                This company will be shown on problem cards. Add companies below first.
+              </p>
+            </div>
+
+            {/* Companies */}
+            <div>
+              <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
+                Companies
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.companies.map((company, index) => (
+                  <span
+                    key={index}
+                    className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 border ${
+                      company === formData.primaryCompany
+                        ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                        : "bg-[#0F0F0D] text-[#E8E4D9] border-[#1A1814]"
+                    }`}
+                  >
+                    {company}
+                    {company === formData.primaryCompany && (
+                      <span className="text-[10px] uppercase tracking-wider opacity-70">Primary</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeCompany(company)}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={companyInput}
+                onChange={(e) => setCompanyInput(e.target.value)}
+                onKeyDown={handleAddCompany}
+                className="w-full px-4 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
+                placeholder="e.g., Amazon, Google, Microsoft (Press Enter to add)"
+              />
+            </div>
+          </div>
         </motion.div>
 
         {/* AI Metadata Section */}
