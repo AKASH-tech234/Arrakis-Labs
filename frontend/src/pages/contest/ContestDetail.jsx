@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import contestApi from '../../services/contest/contestApi';
-import { useAuth } from '../../context/AuthContext';
-import { useContestTimer, useCountdownTimer } from '../../hooks/contest/useContestTimer';
-import useContestWebSocket from '../../hooks/contest/useContestWebSocket';
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import AppHeader from "../../components/layout/AppHeader";
+import contestApi from "../../services/contest/contestApi";
+import { useAuth } from "../../context/AuthContext";
+import { useContestTimer, useCountdownTimer } from "../../hooks/contest/useContestTimer";
+import useContestWebSocket from "../../hooks/contest/useContestWebSocket";
+import { Badge, Button, Card, SectionTitle } from "../../components/ui/ds";
 
 function Timer({ timeLeft, label, variant = 'default' }) {
   const formatTime = (seconds) => {
@@ -14,14 +16,19 @@ function Timer({ timeLeft, label, variant = 'default' }) {
   };
 
   const colors = {
-    default: 'text-white',
-    warning: 'text-yellow-400',
-    danger: 'text-red-400 animate-pulse',
+    default: "text-[#E8E4D9]",
+    warning: "text-[#FDE68A]",
+    danger: "text-[#FCA5A5] animate-pulse",
   };
 
   return (
     <div className="text-center">
-      <p className="text-gray-500 text-sm mb-1">{label}</p>
+      <p
+        className="text-[#78716C] text-xs uppercase tracking-wider mb-1"
+        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+      >
+        {label}
+      </p>
       <p className={`text-3xl font-mono font-bold ${colors[variant]}`}>
         {formatTime(timeLeft)}
       </p>
@@ -40,11 +47,16 @@ function ProblemList({ problems, contestId, problemStats, userAttempts }) {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-      <div className="p-4 border-b border-gray-700">
-        <h3 className="text-lg font-semibold text-white">Problems</h3>
+    <Card className="overflow-hidden">
+      <div className="p-4 border-b border-[#1A1814]">
+        <h3
+          className="text-lg font-semibold text-[#E8E4D9] tracking-wider uppercase"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          Problems
+        </h3>
       </div>
-      <div className="divide-y divide-gray-700">
+      <div className="divide-y divide-[#1A1814]">
         {problems.map((problem, index) => {
           const attempt = userAttempts?.[problem.id];
           const solveCount = problemStats?.[problem.id] || 0;
@@ -53,24 +65,29 @@ function ProblemList({ problems, contestId, problemStats, userAttempts }) {
             <Link
               key={problem.id}
               to={`/contests/${contestId}/problems/${problem.id}`}
-              className="flex items-center justify-between p-4 hover:bg-gray-700/50 transition-colors"
+              className="flex items-center justify-between p-4 hover:bg-[#1A1814]/40 transition-colors"
             >
               <div className="flex items-center gap-4">
-                <span className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded text-gray-300 font-mono font-bold">
+                <span className="w-8 h-8 flex items-center justify-center bg-[#1A1814] border border-[#1A1814] text-[#E8E4D9] font-mono font-bold">
                   {problem.label}
                 </span>
                 <div>
-                  <h4 className="text-white font-medium">{problem.title}</h4>
+                  <h4
+                    className="text-[#E8E4D9] font-semibold tracking-wider"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    {problem.title}
+                  </h4>
                   <div className="flex items-center gap-3 text-sm mt-1">
                     <span className={getDifficultyColor(problem.difficulty)}>
                       {problem.difficulty}
                     </span>
-                    <span className="text-gray-500">•</span>
-                    <span className="text-gray-400">{problem.points} pts</span>
+                    <span className="text-[#3D3D3D]">•</span>
+                    <span className="text-[#A29A8C]">{problem.points} pts</span>
                     {solveCount > 0 && (
                       <>
-                        <span className="text-gray-500">•</span>
-                        <span className="text-gray-400">{solveCount} solves</span>
+                        <span className="text-[#3D3D3D]">•</span>
+                        <span className="text-[#A29A8C]">{solveCount} solves</span>
                       </>
                     )}
                   </div>
@@ -78,15 +95,11 @@ function ProblemList({ problems, contestId, problemStats, userAttempts }) {
               </div>
               <div className="flex items-center gap-3">
                 {attempt?.solved ? (
-                  <span className="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">
-                    ✓ Solved
-                  </span>
+                  <Badge variant="success">Solved</Badge>
                 ) : attempt?.attempts > 0 ? (
-                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm rounded-full">
-                    {attempt.attempts} attempts
-                  </span>
+                  <Badge variant="warning">{attempt.attempts} attempts</Badge>
                 ) : null}
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#78716C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -94,16 +107,21 @@ function ProblemList({ problems, contestId, problemStats, userAttempts }) {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
 function Leaderboard({ entries, userRank, currentUserId }) {
   if (!entries || entries.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 text-center">
-        <p className="text-gray-400">No participants yet</p>
-      </div>
+      <Card className="p-6 text-center">
+        <p
+          className="text-[#A29A8C]"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          No participants yet
+        </p>
+      </Card>
     );
   }
 
@@ -115,28 +133,38 @@ function Leaderboard({ entries, userRank, currentUserId }) {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Leaderboard</h3>
+    <Card className="overflow-hidden">
+      <div className="p-4 border-b border-[#1A1814] flex items-center justify-between">
+        <h3
+          className="text-lg font-semibold text-[#E8E4D9] tracking-wider uppercase"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
+          Leaderboard
+        </h3>
         {userRank && (
-          <span className="text-sm text-gray-400">Your rank: #{userRank}</span>
+          <span
+            className="text-sm text-[#A29A8C]"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Your rank: #{userRank}
+          </span>
         )}
       </div>
       <div className="max-h-96 overflow-y-auto">
         <table className="w-full">
-          <thead className="bg-gray-700/50 sticky top-0">
+          <thead className="bg-[#1A1814] sticky top-0">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Rank</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">User</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase">Solved</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Time</th>
+              <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#A29A8C] uppercase tracking-wider">Rank</th>
+              <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#A29A8C] uppercase tracking-wider">User</th>
+              <th className="px-4 py-3 text-center text-[10px] font-semibold text-[#A29A8C] uppercase tracking-wider">Solved</th>
+              <th className="px-4 py-3 text-right text-[10px] font-semibold text-[#A29A8C] uppercase tracking-wider">Time</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-700">
+          <tbody className="divide-y divide-[#1A1814]">
             {entries.map((entry) => (
               <tr 
                 key={entry.userId}
-                className={entry.userId === currentUserId ? 'bg-blue-500/10' : 'hover:bg-gray-700/50'}
+                className={entry.userId === currentUserId ? "bg-[#2A1F0F]" : "hover:bg-[#1A1814]/40"}
               >
                 <td className="px-4 py-3 text-sm">
                   {entry.rank <= 3 ? (
@@ -148,7 +176,7 @@ function Leaderboard({ entries, userRank, currentUserId }) {
                       {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'}
                     </span>
                   ) : (
-                    <span className="text-gray-400">{entry.rank}</span>
+                    <span className="text-[#A29A8C]">{entry.rank}</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -160,19 +188,19 @@ function Leaderboard({ entries, userRank, currentUserId }) {
                         className="w-6 h-6 rounded-full"
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs text-gray-300">
+                      <div className="w-6 h-6 rounded-full bg-[#1A1814] border border-[#1A1814] flex items-center justify-center text-xs text-[#A29A8C]">
                         {entry.username?.[0]?.toUpperCase()}
                       </div>
                     )}
-                    <span className={entry.userId === currentUserId ? 'text-blue-400 font-medium' : 'text-white'}>
+                    <span className={entry.userId === currentUserId ? "text-[#F59E0B] font-semibold" : "text-[#E8E4D9]"}>
                       {entry.username}
                     </span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <span className="text-green-400 font-medium">{entry.problemsSolved}</span>
+                  <span className="text-[#86EFAC] font-semibold">{entry.problemsSolved}</span>
                 </td>
-                <td className="px-4 py-3 text-right text-sm text-gray-400">
+                <td className="px-4 py-3 text-right text-sm text-[#A29A8C]">
                   {formatTime(entry.totalTime)}
                 </td>
               </tr>
@@ -180,7 +208,7 @@ function Leaderboard({ entries, userRank, currentUserId }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -194,11 +222,14 @@ function Announcements({ announcements }) {
           key={announcement.id}
           className={`p-4 rounded-lg ${
             announcement.priority === 'high'
-              ? 'bg-red-500/20 border border-red-500/30'
-              : 'bg-blue-500/20 border border-blue-500/30'
+              ? 'bg-[#2A0F0F] border border-[#7F1D1D]'
+              : 'bg-[#2A1F0F] border border-[#92400E]'
           }`}
         >
-          <p className={announcement.priority === 'high' ? 'text-red-300' : 'text-blue-300'}>
+          <p
+            className={announcement.priority === "high" ? "text-[#FCA5A5]" : "text-[#FDE68A]"}
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
             📢 {announcement.message}
           </p>
         </div>
@@ -299,10 +330,15 @@ export default function ContestDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-400 mt-4">Loading contest...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto"></div>
+          <p
+            className="text-[#A29A8C] mt-4 uppercase tracking-wider"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Loading contest...
+          </p>
         </div>
       </div>
     );
@@ -310,14 +346,24 @@ export default function ContestDetail() {
 
   if (error && !contest) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
         <div className="text-center">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-medium text-white mb-2">Error</h2>
-          <p className="text-gray-400">{error}</p>
-          <Link to="/contests" className="mt-4 inline-block text-blue-400 hover:underline">
+          <div className="text-[#FCA5A5] text-6xl mb-4">⚠️</div>
+          <h2
+            className="text-xl font-semibold text-[#E8E4D9] mb-2 tracking-wider uppercase"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Error
+          </h2>
+          <p
+            className="text-[#A29A8C]"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            {error}
+          </p>
+          <Button as={Link} to="/contests" variant="secondary" size="md" className="mt-6">
             ← Back to contests
-          </Link>
+          </Button>
         </div>
       </div>
     );
@@ -336,112 +382,106 @@ export default function ContestDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {}
-        <div className="mb-8">
-          <Link to="/contests" className="text-blue-400 hover:underline text-sm mb-2 inline-block">
-            ← Back to contests
-          </Link>
-          
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{contest?.name}</h1>
-              {contest?.description && (
-                <p className="text-gray-400">{contest.description}</p>
-              )}
-            </div>
-            
-            <div className="text-right">
-              {isLive && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                  <span className="text-green-400 font-semibold">LIVE</span>
-                  {isConnected && (
-                    <span className="text-gray-500 text-sm">• {participantCount} online</span>
-                  )}
-                </div>
-              )}
-              {isUpcoming && (
-                <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
-                  Upcoming
-                </span>
-              )}
-              {hasEnded && (
-                <span className="px-3 py-1 bg-gray-500/20 text-gray-400 rounded-full text-sm">
-                  Ended
-                </span>
-              )}
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
+      <AppHeader />
+      <main className="pt-14">
+        <div className="max-w-6xl mx-auto px-6 lg:px-12 py-12">
+          <div className="mb-8">
+            <Button as={Link} to="/contests" variant="ghost" size="sm" className="mb-6">
+              ← Back to contests
+            </Button>
+
+            <div className="flex items-start justify-between gap-6">
+              <SectionTitle
+                title={contest?.name}
+                subtitle={contest?.description || ""}
+              />
+
+              <div className="text-right">
+                {isLive && (
+                  <div className="flex items-center justify-end gap-3 mb-2">
+                    <span className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse" />
+                    <Badge variant="live" className="animate-pulse">LIVE</Badge>
+                    {isConnected && (
+                      <span
+                        className="text-[#A29A8C] text-xs uppercase tracking-wider"
+                        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                      >
+                        • {participantCount} online
+                      </span>
+                    )}
+                  </div>
+                )}
+                {isUpcoming && <Badge variant="upcoming">Upcoming</Badge>}
+                {hasEnded && <Badge variant="ended">Ended</Badge>}
+              </div>
             </div>
           </div>
-        </div>
 
         {}
         <Announcements announcements={announcements} />
 
         {}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
-            {error}
-          </div>
-        )}
+          {error && (
+            <Card className="mb-8 p-4 border-[#7F1D1D] bg-[#2A0F0F] text-[#FCA5A5]">
+              <div style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{error}</div>
+            </Card>
+          )}
 
         {}
-        {isUpcoming && (
-          <div className="mb-8">
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
-              <h2 className="text-xl font-medium text-white mb-6">Contest starts in</h2>
-              <div className="text-5xl font-mono font-bold text-blue-400 mb-8">
-                {formattedCountdown}
-              </div>
-              
-              {!isRegistered ? (
-                <button
-                  onClick={handleRegister}
-                  disabled={registering}
-                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+          {isUpcoming && (
+            <div className="mb-10">
+              <Card className="p-10 text-center">
+                <h2
+                  className="text-lg font-semibold text-[#E8E4D9] mb-4 tracking-wider uppercase"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
-                  {registering ? 'Registering...' : 'Register for Contest'}
-                </button>
-              ) : (
-                <div className="text-green-400">
-                  ✓ You are registered
-                  <p className="text-gray-500 text-sm mt-2">
-                    Come back when the contest starts
-                  </p>
-                </div>
-              )}
+                  Contest starts in
+                </h2>
+                <div className="text-5xl font-mono font-bold text-[#F59E0B] mb-8">{formattedCountdown}</div>
+
+                {!isRegistered ? (
+                  <Button
+                    onClick={handleRegister}
+                    disabled={registering}
+                    variant="primary"
+                    size="lg"
+                  >
+                    {registering ? "Registering..." : "Register for Contest"}
+                  </Button>
+                ) : (
+                  <div className="text-[#86EFAC]">
+                    ✓ You are registered
+                    <p
+                      className="text-[#A29A8C] text-sm mt-2"
+                      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                    >
+                      Come back when the contest starts
+                    </p>
+                  </div>
+                )}
+              </Card>
             </div>
-          </div>
-        )}
+          )}
 
         {}
-        {isLive && (
-          <>
-            {}
-            <div className="mb-6 bg-gray-800 rounded-lg border border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Timer 
-                    timeLeft={timeLeft} 
-                    label="Time Remaining" 
-                    variant={getTimerVariant()}
-                  />
+          {isLive && (
+            <>
+              <Card className="mb-8 p-4">
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-6">
+                    <Timer timeLeft={timeLeft} label="Time Remaining" variant={getTimerVariant()} />
+                  </div>
+
+                  {!isParticipating ? (
+                    <Button onClick={handleJoin} disabled={joining} variant="primary" size="md">
+                      {joining ? "Joining..." : "Join Contest"}
+                    </Button>
+                  ) : (
+                    <Badge variant="success">Participating</Badge>
+                  )}
                 </div>
-                
-                {!isParticipating ? (
-                  <button
-                    onClick={handleJoin}
-                    disabled={joining}
-                    className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    {joining ? 'Joining...' : 'Join Contest'}
-                  </button>
-                ) : (
-                  <span className="text-green-400 text-sm">✓ Participating</span>
-                )}
-              </div>
-            </div>
+              </Card>
 
             {}
             <div className="grid lg:grid-cols-3 gap-6">
@@ -457,9 +497,14 @@ export default function ContestDetail() {
                     )}
                   />
                 ) : (
-                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
-                    <p className="text-gray-400">Problems will appear when you join</p>
-                  </div>
+                  <Card className="p-8 text-center">
+                    <p
+                      className="text-[#A29A8C]"
+                      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                    >
+                      Problems will appear when you join
+                    </p>
+                  </Card>
                 )}
               </div>
 
@@ -478,48 +523,50 @@ export default function ContestDetail() {
         )}
 
         {}
-        {hasEnded && (
-          <div className="space-y-6">
+          {hasEnded && (
+            <div className="space-y-6">
             {}
             {contest.registration && (
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Your Result</h2>
+              <Card className="p-6">
+                <h2
+                  className="text-xl font-semibold text-[#E8E4D9] mb-4 tracking-wider uppercase"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Your Result
+                </h2>
                 <div className="grid grid-cols-4 gap-6 text-center">
                   <div>
-                    <p className="text-3xl font-bold text-blue-400">
+                    <p className="text-3xl font-bold text-[#F59E0B]">
                       #{contest.registration.finalRank || '-'}
                     </p>
-                    <p className="text-gray-500 text-sm">Final Rank</p>
+                    <p className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Final Rank</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold text-green-400">
+                    <p className="text-3xl font-bold text-[#86EFAC]">
                       {contest.registration.problemsSolved || 0}
                     </p>
-                    <p className="text-gray-500 text-sm">Problems Solved</p>
+                    <p className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Problems Solved</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-3xl font-bold text-[#E8E4D9]">
                       {contest.registration.finalScore || 0}
                     </p>
-                    <p className="text-gray-500 text-sm">Total Score</p>
+                    <p className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Total Score</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold text-gray-400">
+                    <p className="text-3xl font-bold text-[#A29A8C]">
                       {Math.floor(contest.registration.totalTime / 60)}m
                     </p>
-                    <p className="text-gray-500 text-sm">Total Time</p>
+                    <p className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Total Time</p>
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <Link
-                    to={`/contests/${contestId}/analytics`}
-                    className="text-blue-400 hover:underline"
-                  >
+                <div className="mt-4 pt-4 border-t border-[#1A1814]">
+                  <Button as={Link} to={`/contests/${contestId}/analytics`} variant="ghost" size="sm">
                     View detailed analytics →
-                  </Link>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             )}
 
             {}
@@ -532,17 +579,21 @@ export default function ContestDetail() {
             )}
 
             {}
-            {contest.editorial && (
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Editorial</h2>
-                <div className="prose prose-invert max-w-none">
-                  {contest.editorial}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              {contest.editorial && (
+                <Card className="p-6">
+                  <h2
+                    className="text-xl font-semibold text-[#E8E4D9] mb-4 tracking-wider uppercase"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    Editorial
+                  </h2>
+                  <div className="prose prose-invert max-w-none">{contest.editorial}</div>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
