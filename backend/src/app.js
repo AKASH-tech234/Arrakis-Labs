@@ -22,6 +22,7 @@ import adminPOTDRoutes from "./routes/admin/adminPOTDRoutes.js";
 import mimRoutes from "./routes/mimRoutes.js";
 import aiProfileRoutes from "./routes/aiProfileRoutes.js";
 import discussionRoutes from "./routes/discussion/discussionRoutes.js";
+import oaRoutes from "./routes/oaRoutes.js";
 
 import {
   runCode,
@@ -44,6 +45,7 @@ import leaderboardService from "./services/contest/leaderboardService.js";
 import wsServer from "./services/contest/websocketServer.js";
 import contestScheduler from "./services/contest/contestScheduler.js";
 import potdScheduler from "./services/potd/potdScheduler.js";
+import oaScheduler from "./services/oa/oaScheduler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -114,6 +116,18 @@ const codeLimiter = rateLimit({
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
 
+// OA-specific rate limiter for code execution endpoints
+const oaCodeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30, // 30 executions per minute per user during OA
+  skip: () => process.env.NODE_ENV !== "production",
+  keyGenerator: (req) => req.user?._id?.toString() || req.ip,
+  message: {
+    success: false,
+    error: "Too many code execution requests. Please slow down.",
+  },
+});
+
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI missing");
@@ -167,6 +181,9 @@ app.post("/api/ai/summary", protect, getAILearningSummary);
 // MIM (Misconception Identification Model) routes
 app.use("/api/mim", mimRoutes);
 
+// OA Practice routes
+app.use("/api/oa", oaRoutes);
+
 /* ======================================================
    ERRORS
 ====================================================== */
@@ -195,10 +212,12 @@ const startServer = async () => {
   wsServer.initialize(server);
   await contestScheduler.initialize();
   await potdScheduler.initialize();
+  await oaScheduler.initialize();
 
   const shutdown = async () => {
     contestScheduler.shutdown();
     potdScheduler.shutdown();
+    oaScheduler.shutdown();
     wsServer.close();
     await leaderboardService.disconnect();
     server.close(() => mongoose.connection.close());
