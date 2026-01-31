@@ -273,7 +273,7 @@ const TestCaseManager = () => {
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-medium ${
                 newForm.isHidden
                   ? "bg-red-500/10 text-red-400 border border-red-500/30"
-                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                  : "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/30"
               }`}
             >
               {newForm.isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -364,7 +364,7 @@ const TestCaseManager = () => {
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-medium ${
                         editForm.isHidden
                           ? "bg-red-500/10 text-red-400 border border-red-500/30"
-                          : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                          : "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/30"
                       }`}
                     >
                       {editForm.isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -399,7 +399,7 @@ const TestCaseManager = () => {
                         className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors font-medium ${
                           tc.isHidden
                             ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30"
-                            : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30"
+                            : "bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30"
                         }`}
                       >
                         {tc.isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
