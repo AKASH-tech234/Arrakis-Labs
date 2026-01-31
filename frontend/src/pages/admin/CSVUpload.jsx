@@ -132,7 +132,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
           isDragActive
             ? "border-[#D97706] bg-[#D97706]/10"
             : file
-            ? "border-emerald-500/50 bg-emerald-500/5"
+            ? "border-[#F59E0B]/40 bg-[#F59E0B]/5"
             : "border-[#1A1814] hover:border-[#D97706]/40 bg-[#0F0F0D]"
         }`}
       >
@@ -140,7 +140,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         <div className="flex flex-col items-center text-center">
           {file ? (
             <>
-              <FileSpreadsheet className="h-12 w-12 text-emerald-400 mb-3" />
+              <FileSpreadsheet className="h-12 w-12 text-[#F59E0B] mb-3" />
               <p className="text-lg font-semibold text-[#E8E4D9]">{file.name}</p>
               <p className="text-sm text-[#78716C] mt-1">
                 {(file.size / 1024).toFixed(1)} KB
@@ -222,9 +222,9 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
               <p className="text-sm text-[#78716C] uppercase tracking-wide">Total Rows</p>
               <p className="text-2xl font-bold text-[#E8E4D9]">{preview.totalRows}</p>
             </div>
-            <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/30">
+            <div className="p-4 rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/30">
               <p className="text-sm text-[#78716C] uppercase tracking-wide">Valid</p>
-              <p className="text-2xl font-bold text-emerald-400">{preview.validRows}</p>
+              <p className="text-2xl font-bold text-[#F59E0B]">{preview.validRows}</p>
             </div>
             <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/30">
               <p className="text-sm text-[#78716C] uppercase tracking-wide">Invalid</p>
@@ -238,12 +238,12 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
               <div
                 key={index}
                 className={`p-3 rounded-xl flex items-center justify-between ${
-                  row.valid ? "bg-emerald-500/5 border border-emerald-500/20" : "bg-red-500/5 border border-red-500/20"
+                  row.valid ? "bg-[#F59E0B]/5 border border-[#F59E0B]/20" : "bg-red-500/5 border border-red-500/20"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   {row.valid ? (
-                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                    <CheckCircle className="h-4 w-4 text-[#F59E0B]" />
                   ) : (
                     <XCircle className="h-4 w-4 text-red-400" />
                   )}
@@ -270,10 +270,10 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="p-6 rounded-xl bg-emerald-500/5 border border-emerald-500/30"
+          className="p-6 rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/30"
         >
           <div className="flex items-center gap-3 mb-4">
-            <CheckCircle className="h-8 w-8 text-emerald-400" />
+            <CheckCircle className="h-8 w-8 text-[#F59E0B]" />
             <div>
               <h3 className="text-lg font-semibold text-[#E8E4D9]">Upload Successful!</h3>
               <p className="text-sm text-[#78716C]">
@@ -296,7 +296,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
 
           <button
             onClick={() => navigate("/admin/questions")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-medium transition-colors border border-emerald-500/30"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 text-[#F59E0B] font-medium transition-colors border border-[#F59E0B]/30"
           >
             View Questions
             <ArrowRight className="h-4 w-4" />
