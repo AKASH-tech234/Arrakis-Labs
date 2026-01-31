@@ -46,7 +46,7 @@ export default function ConfirmModal({
     },
     info: {
       icon: "ⓘ",
-      iconColor: "text-blue-400",
+      iconColor: "text-[#D97706]",
       buttonBg: "bg-gradient-to-r from-[#92400E] to-[#D97706]",
       buttonHover: "hover:from-[#D97706] hover:to-[#F59E0B]",
     },
