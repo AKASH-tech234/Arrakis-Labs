@@ -159,6 +159,10 @@ export default function ProblemDetail() {
         ? problemRaw.testCases
         : [],
 
+      // Company fields
+      primaryCompany: problemRaw.primaryCompany || null,
+      companies: problemRaw.companies || [],
+
       // AI Metadata fields
       topic: problemRaw.topic || null,
       expectedApproach: problemRaw.expectedApproach || null,

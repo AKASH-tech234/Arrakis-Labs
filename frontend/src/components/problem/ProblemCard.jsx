@@ -1,6 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Building2 } from "lucide-react";
 
 const difficultyStyles = {
   Easy: "text-[#78716C] group-hover:text-[#F59E0B]",
@@ -15,7 +16,10 @@ const difficultyBgStyles = {
 };
 
 export default function ProblemCard({ problem }) {
-  const { id, title, difficulty, category, solved } = problem;
+  const { id, title, difficulty, category, solved, primaryCompany } = problem;
+  
+  // Display primary company or "General" if none
+  const displayCompany = primaryCompany || "General";
 
   return (
     <motion.div
@@ -60,6 +64,14 @@ export default function ProblemCard({ problem }) {
 
           {}
           <div className="flex items-center gap-6">
+            {/* Company Badge */}
+            <span
+              className="text-[#78716C] text-xs uppercase tracking-wider hidden md:flex items-center gap-1 group-hover:text-[#A29A8C] transition-colors duration-300"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
+              <Building2 className="w-3 h-3" />
+              {displayCompany}
+            </span>
             <span
               className="text-[#A29A8C] text-sm uppercase tracking-wider hidden sm:block group-hover:text-[#D97706] transition-colors duration-300"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}

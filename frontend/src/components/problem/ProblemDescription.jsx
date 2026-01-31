@@ -6,6 +6,7 @@ import {
   Clock,
   Database,
   AlertTriangle,
+  Building2,
 } from "lucide-react";
 import { formatExampleInput } from "../../utils/formatExampleInput";
 
@@ -71,6 +72,40 @@ export default function ProblemDescription({ problem }) {
           <span className="text-xs uppercase text-[#78716C]">
             {problem.category}
           </span>
+        </div>
+
+        {/* Company Information */}
+        <div className="mt-4 pt-4 border-t border-[#3D3D3D]">
+          <div className="flex items-center gap-2 text-[#78716C]">
+            <Building2 className="w-4 h-4" />
+            <span className="text-[10px] uppercase tracking-wider">
+              {problem.primaryCompany ? "Primary Company" : "Company"}
+            </span>
+          </div>
+          <p className="text-[#E8E4D9] text-sm mt-1">
+            {problem.primaryCompany || "General Interview Problem"}
+          </p>
+          
+          {/* Additional companies */}
+          {problem.companies?.length > 1 && (
+            <div className="mt-3">
+              <span className="text-[10px] uppercase text-[#78716C] tracking-wider">
+                Also Asked By
+              </span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {problem.companies
+                  .filter(c => c !== problem.primaryCompany)
+                  .map((company, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-1 rounded bg-[#1A1814] text-[#A29A8C] text-xs border border-[#3D3D3D]"
+                    >
+                      {company}
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
