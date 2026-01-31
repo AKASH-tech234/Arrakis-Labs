@@ -6,8 +6,8 @@ import adminContestApi from '../../services/admin/adminContestApi';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20', label: 'Draft', dot: 'bg-[#78716C]' },
-  scheduled: { color: 'bg-blue-500/10 text-blue-400 border border-blue-500/20', label: 'Scheduled', dot: 'bg-blue-400' },
-  live: { color: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', label: 'Live', dot: 'bg-emerald-400 animate-pulse' },
+  scheduled: { color: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20', label: 'Scheduled', dot: 'bg-[#D97706]' },
+  live: { color: 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20', label: 'Live', dot: 'bg-[#F59E0B] animate-pulse' },
   ended: { color: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20', label: 'Ended', dot: 'bg-[#D97706]' },
   cancelled: { color: 'bg-red-500/10 text-red-400 border border-red-500/20', label: 'Cancelled', dot: 'bg-red-400' },
 };
@@ -349,7 +349,7 @@ export default function AdminContestList() {
                   {contest.status === 'draft' && (
                     <button
                       onClick={() => openModal('publish', contest)}
-                      className="p-2.5 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all border border-transparent hover:border-emerald-500/20"
+                      className="p-2.5 text-[#78716C] hover:text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded-lg transition-all border border-transparent hover:border-[#F59E0B]/20"
                       title="Publish"
                     >
                       <Rocket className="h-4 w-4" />
@@ -360,7 +360,7 @@ export default function AdminContestList() {
                     <>
                       <button
                         onClick={() => openModal('start', contest)}
-                        className="p-2.5 text-[#78716C] hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all border border-transparent hover:border-emerald-500/20"
+                        className="p-2.5 text-[#78716C] hover:text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded-lg transition-all border border-transparent hover:border-[#F59E0B]/20"
                         title="Start Now"
                       >
                         <Play className="h-4 w-4" />
