@@ -1,7 +1,18 @@
-
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Editor from "@monaco-editor/react";
+import {
+  ARRAKIS_MONACO_THEME,
+  defineArrakisMonacoTheme,
+} from "./arrakisMonacoTheme";
 
 const languageOptions = ["Python", "JavaScript", "Java", "C++"];
+
+const monacoLanguageByUiLanguage = {
+  Python: "python",
+  JavaScript: "javascript",
+  Java: "java",
+  "C++": "cpp",
+};
 
 const defaultCode = {
   Python: `# cook your dish here`,
@@ -107,8 +118,8 @@ export default function CodeEditor({
   const [language, setLanguage] = useState("Python");
   const [code, setCode] = useState(defaultCode[language]);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
+  const editorRef = useRef(null);
 
   const [codeByLang, setCodeByLang] = useState(() => ({ ...defaultCode }));
 
@@ -120,11 +131,14 @@ export default function CodeEditor({
     setShowLangDropdown(false);
   };
 
-  const handleCodeChange = useCallback((e) => {
-    const newCode = e.target.value;
-    setCode(newCode);
-    setCodeByLang(prev => ({ ...prev, [language]: newCode }));
-  }, [language]);
+  const handleCodeChange = useCallback(
+    (newCode) => {
+      const next = newCode ?? "";
+      setCode(next);
+      setCodeByLang((prev) => ({ ...prev, [language]: next }));
+    },
+    [language]
+  );
 
   const handleFormat = useCallback(() => {
     const formatted = formatCode(code, language);
@@ -142,28 +156,22 @@ export default function CodeEditor({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleKeyDown = useCallback((e) => {
-    
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      onSubmit?.(code, language);
-      return;
-    }
+  const monacoLanguage = useMemo(
+    () => monacoLanguageByUiLanguage[language] || "plaintext",
+    [language]
+  );
 
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const textarea = textareaRef.current;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newCode = code.substring(0, start) + "    " + code.substring(end);
-      setCode(newCode);
-      setCodeByLang(prev => ({ ...prev, [language]: newCode }));
-      
-      requestAnimationFrame(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 4;
+  const handleEditorMount = useCallback(
+    (editor, monaco) => {
+      editorRef.current = editor;
+
+      // Ctrl/Cmd + Enter => Submit (keeps old behavior)
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+        onSubmit?.(editor.getValue(), language);
       });
-    }
-  }, [code, language, onSubmit]);
+    },
+    [language, onSubmit]
+  );
 
   return (
     <div className="arrakis-editor flex flex-col h-full bg-[#0A0A08] overflow-hidden">
@@ -258,39 +266,34 @@ export default function CodeEditor({
 
       {}
       <div className="flex-1 relative overflow-hidden">
-        <div className="absolute inset-0 flex">
-          {}
-          <div 
-            className="line-numbers flex-shrink-0 bg-[#0A0A08] text-[#3D3D3D] text-right pr-3 pl-3 pt-4 select-none overflow-hidden border-r border-[#1A1814]"
-            style={{ 
-              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontSize: "13px",
-              lineHeight: "1.6",
-              minWidth: "50px"
-            }}
-          >
-            {code.split("\n").map((_, i) => (
-              <div key={i} className="leading-relaxed">{i + 1}</div>
-            ))}
-          </div>
-
-          {}
-          <textarea
-            ref={textareaRef}
-            value={code}
-            onChange={handleCodeChange}
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-            className="flex-1 bg-[#0A0A08] text-[#E8E4D9] p-4 pl-3 resize-none focus:outline-none overflow-auto"
-            style={{
-              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontSize: "13px",
-              lineHeight: "1.6",
-              tabSize: 4,
-              caretColor: "#F59E0B",
-            }}
-          />
-        </div>
+        <Editor
+          height="100%"
+          language={monacoLanguage}
+          value={code}
+          onChange={(value) => handleCodeChange(value)}
+          beforeMount={defineArrakisMonacoTheme}
+          onMount={handleEditorMount}
+          theme={ARRAKIS_MONACO_THEME}
+          options={{
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+            fontSize: 13,
+            lineHeight: 21,
+            tabSize: 4,
+            insertSpaces: true,
+            scrollBeyondLastLine: false,
+            smoothScrolling: true,
+            wordWrap: "off",
+            renderWhitespace: "selection",
+            padding: { top: 12, bottom: 12 },
+            cursorBlinking: "blink",
+            scrollbar: {
+              verticalScrollbarSize: 10,
+              horizontalScrollbarSize: 10,
+            },
+          }}
+        />
       </div>
     </div>
   );
