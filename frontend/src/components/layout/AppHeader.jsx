@@ -49,6 +49,17 @@ export default function AppHeader() {
             Problems
           </Link>
           <Link
+            to="/oa"
+            className={`text-xs tracking-[0.1em] uppercase transition-colors duration-200 ${
+              isActive("/oa")
+                ? "text-[#E8E4D9]"
+                : "text-[#78716C] hover:text-[#E8E4D9]"
+            }`}
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            🧪 OA
+          </Link>
+          <Link
             to="/potd"
             className={`text-xs tracking-[0.1em] uppercase transition-colors duration-200 ${
               isActive("/potd")
