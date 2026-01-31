@@ -22,6 +22,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import GuestRoute from "./components/auth/GuestRoute";
 
 import { ContestList, ContestDetail, ContestProblem } from "./pages/contest";
+import { OADashboard, OASessionPage, OAReport, OAHistory } from "./pages/oa";
 
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./components/admin/AdminLayout";
@@ -151,6 +152,40 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ContestProblem />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* OA Practice Routes */}
+              <Route
+                path="/oa"
+                element={
+                  <ProtectedRoute>
+                    <OADashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/oa/session/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <OASessionPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/oa/report/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <OAReport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/oa/history"
+                element={
+                  <ProtectedRoute>
+                    <OAHistory />
                   </ProtectedRoute>
                 }
               />
