@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import contestApi from '../../services/contest/contestApi';
-import { useAuth } from '../../context/AuthContext';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import AppHeader from "../../components/layout/AppHeader";
+import contestApi from "../../services/contest/contestApi";
+import { useAuth } from "../../context/AuthContext";
+import { Badge, Button, Card, SectionTitle } from "../../components/ui/ds";
 
 function ContestCard({ contest }) {
   const now = new Date();
@@ -15,22 +17,16 @@ function ContestCard({ contest }) {
   const getStatusBadge = () => {
     if (isLive) {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400 animate-pulse">
-          🔴 LIVE
-        </span>
+        <Badge variant="live" className="animate-pulse">LIVE</Badge>
       );
     }
     if (isUpcoming) {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400">
-          Upcoming
-        </span>
+        <Badge variant="upcoming">Upcoming</Badge>
       );
     }
     return (
-      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-500/20 text-gray-400">
-        Ended
-      </span>
+      <Badge variant="ended">Ended</Badge>
     );
   };
 
@@ -55,42 +51,58 @@ function ContestCard({ contest }) {
   };
 
   return (
-    <Link
+    <Card
+      as={Link}
       to={`/contests/${contest.slug || contest._id}`}
-      className="block bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200 overflow-hidden group"
+      className="block overflow-hidden group hover:border-[#92400E]/60 transition-colors"
     >
       <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <h3
+            className="text-xl font-bold tracking-wider text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
             {contest.name}
           </h3>
           {getStatusBadge()}
         </div>
 
         {contest.description && (
-          <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+          <p
+            className="text-[#A29A8C] text-sm mb-4 line-clamp-2"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
             {contest.description}
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div
+          className="grid grid-cols-2 gap-4 text-sm"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
           <div>
-            <p className="text-gray-500">Start Time</p>
-            <p className="text-gray-300">{formatDate(contest.startTime)}</p>
+            <p className="text-[#78716C] uppercase tracking-wider text-xs">Start Time</p>
+            <p className="text-[#E8E4D9]">{formatDate(contest.startTime)}</p>
           </div>
           <div>
-            <p className="text-gray-500">Duration</p>
-            <p className="text-gray-300">{formatDuration(contest.duration)}</p>
+            <p className="text-[#78716C] uppercase tracking-wider text-xs">Duration</p>
+            <p className="text-[#E8E4D9]">{formatDuration(contest.duration)}</p>
           </div>
         </div>
 
         {isLive && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
+          <div className="mt-4 pt-4 border-t border-[#1A1814]">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">
+              <span
+                className="text-[#A29A8C] text-sm"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
                 {contest.stats?.participatedCount || 0} participants
               </span>
-              <span className="text-green-400 text-sm font-medium">
+              <span
+                className="text-[#86EFAC] text-sm font-semibold uppercase tracking-wider"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
                 Join Now →
               </span>
             </div>
@@ -98,14 +110,17 @@ function ContestCard({ contest }) {
         )}
 
         {isUpcoming && contest.registration && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <span className="text-blue-400 text-sm">
+          <div className="mt-4 pt-4 border-t border-[#1A1814]">
+            <span
+              className="text-[#93C5FD] text-sm font-semibold uppercase tracking-wider"
+              style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+            >
               ✓ Registered
             </span>
           </div>
         )}
       </div>
-    </Link>
+    </Card>
   );
 }
 
@@ -144,8 +159,13 @@ function ContestCountdown({ contest }) {
 
   return (
     <div className="text-center">
-      <p className="text-gray-500 text-sm mb-1">Starts in</p>
-      <p className="text-2xl font-mono font-bold text-blue-400">{timeLeft}</p>
+      <p
+        className="text-[#78716C] text-xs uppercase tracking-wider mb-1"
+        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+      >
+        Starts in
+      </p>
+      <p className="text-2xl font-mono font-bold text-[#F59E0B]">{timeLeft}</p>
     </div>
   );
 }
@@ -203,115 +223,154 @@ export default function ContestList() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-400 mt-4">Loading contests...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto"></div>
+          <p
+            className="text-[#A29A8C] mt-4 uppercase tracking-wider"
+            style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+          >
+            Loading contests...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Coding Contests</h1>
-          <p className="text-gray-400">
-            Compete with others and improve your coding skills
-          </p>
-        </div>
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
+      <AppHeader />
+      <main className="pt-14">
+        <div className="max-w-6xl mx-auto px-6 lg:px-12 py-12">
+          <SectionTitle
+            title="Coding Contests"
+            subtitle="Compete with others and improve your skills"
+            className="mb-10"
+          />
 
         {}
-        {contests.live.length > 0 && (
-          <div className="mb-8 p-6 bg-gradient-to-r from-green-900/50 to-blue-900/50 rounded-lg border border-green-500/30">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-              <span className="text-green-400 font-semibold">Live Now</span>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">
-              {contests.live[0].name}
-            </h2>
-            <p className="text-gray-300 mb-4">{contests.live[0].description}</p>
-            <Link
-              to={`/contests/${contests.live[0].slug || contests.live[0]._id}`}
-              className="inline-block px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              Enter Contest →
-            </Link>
-          </div>
-        )}
+          {contests.live.length > 0 && (
+            <Card className="mb-10 bg-gradient-to-r from-[#1A2A16] to-[#121210]">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse" />
+                  <span
+                    className="text-[#86EFAC] uppercase tracking-[0.15em] text-xs font-semibold"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
+                    Live Now
+                  </span>
+                </div>
+                <h2
+                  className="text-2xl font-bold text-[#E8E4D9] mb-2 tracking-wider"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {contests.live[0].name}
+                </h2>
+                <p
+                  className="text-[#A29A8C] mb-5"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  {contests.live[0].description}
+                </p>
+                <Button
+                  as={Link}
+                  to={`/contests/${contests.live[0].slug || contests.live[0]._id}`}
+                  variant="primary"
+                  size="lg"
+                >
+                  Enter Contest →
+                </Button>
+              </div>
+            </Card>
+          )}
 
         {}
-        <div className="flex gap-2 mb-6 border-b border-gray-700">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 font-medium text-sm transition-colors relative ${
-                activeTab === tab.id
-                  ? 'text-blue-400'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              {tab.label}
-              {tab.count > 0 && (
-                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+          <div className="flex gap-2 mb-8 border-b border-[#1A1814]">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-3 text-xs uppercase tracking-[0.15em] transition-colors relative ${
                   activeTab === tab.id
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {}
-        {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 mb-6">
-            {error}
-          </div>
-        )}
-
-        {}
-        {currentContests.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentContests.map((contest) => (
-              <ContestCard key={contest._id} contest={contest} />
+                    ? "text-[#F59E0B]"
+                    : "text-[#78716C] hover:text-[#E8E4D9]"
+                }`}
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span
+                    className={`ml-2 px-2 py-0.5 text-[10px] border rounded-none ${
+                      activeTab === tab.id
+                        ? "bg-[#2A1F0F] text-[#FDE68A] border-[#92400E]"
+                        : "bg-[#121210] text-[#A29A8C] border-[#1A1814]"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D97706]"></div>
+                )}
+              </button>
             ))}
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-6xl mb-4">🏆</div>
-            <h3 className="text-xl font-medium text-gray-300 mb-2">
-              No {activeTab} contests
-            </h3>
-            <p className="text-gray-500">
-              {activeTab === 'upcoming'
-                ? 'Check back later for new contests!'
-                : activeTab === 'live'
-                ? 'No contests are running right now.'
-                : 'Past contests will appear here.'}
-            </p>
-          </div>
-        )}
 
         {}
-        {activeTab === 'upcoming' && contests.upcoming.length > 0 && (
-          <div className="mt-8 p-6 bg-gray-800 rounded-lg border border-gray-700">
-            <h3 className="text-lg font-medium text-white mb-4">
-              Next Contest: {contests.upcoming[0].name}
-            </h3>
-            <ContestCountdown contest={contests.upcoming[0]} />
-          </div>
-        )}
-      </div>
+          {error && (
+            <Card className="p-4 border-[#7F1D1D] bg-[#2A0F0F] text-[#FCA5A5] mb-8">
+              <div style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                {error}
+              </div>
+            </Card>
+          )}
+
+        {}
+          {currentContests.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentContests.map((contest) => (
+                <ContestCard key={contest._id} contest={contest} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="text-[#3D3D3D] text-6xl mb-4">🏆</div>
+              <h3
+                className="text-xl font-semibold text-[#E8E4D9] mb-2 tracking-wider uppercase"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                No {activeTab} contests
+              </h3>
+              <p
+                className="text-[#A29A8C]"
+                style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+              >
+                {activeTab === "upcoming"
+                  ? "Check back later for new contests!"
+                  : activeTab === "live"
+                    ? "No contests are running right now."
+                    : "Past contests will appear here."}
+              </p>
+            </div>
+          )}
+
+        {}
+          {activeTab === "upcoming" && contests.upcoming.length > 0 && (
+            <Card className="mt-10">
+              <div className="p-6">
+                <h3
+                  className="text-lg font-semibold text-[#E8E4D9] mb-4 tracking-wider uppercase"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  Next Contest: {contests.upcoming[0].name}
+                </h3>
+                <ContestCountdown contest={contests.upcoming[0]} />
+              </div>
+            </Card>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
