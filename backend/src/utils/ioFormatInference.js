@@ -71,9 +71,9 @@ function inferLineType(line) {
 function typeToPhrase(type) {
   switch (type) {
     case "json_array":
-      return "a JSON array (single line)";
+      return "an invalid JSON array (CP format required; no brackets/commas)";
     case "json_object":
-      return "a JSON object (single line)";
+      return "an invalid JSON object (CP format required; no brackets/commas)";
     case "integer":
       return "an integer";
     case "number":
@@ -87,6 +87,188 @@ function typeToPhrase(type) {
     default:
       return "a value";
   }
+}
+
+function splitTokens(line) {
+  const trimmed = String(line ?? "").trim();
+  if (!trimmed) return [];
+  return trimmed.split(/\s+/g);
+}
+
+function isIntegerToken(token) {
+  return typeof token === "string" && /^[+-]?\d+$/.test(token);
+}
+
+function isAllIntegerTokens(tokens) {
+  return Array.isArray(tokens) && tokens.length > 0 && tokens.every(isIntegerToken);
+}
+
+function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
+  // Goal: generate a Codeforces-like template with variable names.
+  // Must not reveal actual values.
+  const cases = Array.isArray(linesPerCase) ? linesPerCase : [];
+  if (cases.length === 0) return null;
+
+  const lineCounts = cases.map((lines) => lines.length);
+  const minLines = Math.min(...lineCounts);
+  const maxLines = Math.max(...lineCounts);
+
+  // We only attempt structured inference when line counts are consistent.
+  if (!isFinite(minLines) || !isFinite(maxLines) || minLines !== maxLines || minLines === 0) {
+    return null;
+  }
+
+  const lineCount = minLines;
+  const tokensPerCase = cases.map((lines) => lines.map(splitTokens));
+
+  // 1) Single integer
+  if (lineCount === 1) {
+    const allOneInt = tokensPerCase.every((toks) => toks[0]?.length === 1 && isIntegerToken(toks[0][0]));
+    if (allOneInt) {
+      return "The first line contains an integer `n`.";
+    }
+  }
+
+  // 2) n then array of n integers
+  if (lineCount === 2) {
+    const allFirstLineOneInt = tokensPerCase.every((toks) => toks[0]?.length === 1 && isIntegerToken(toks[0][0]));
+    const allSecondLineInts = tokensPerCase.every((toks) => isAllIntegerTokens(toks[1]));
+
+    if (allFirstLineOneInt && allSecondLineInts) {
+      // Check whether the first integer equals the count of integers on line 2 for most cases.
+      let matches = 0;
+      for (let i = 0; i < tokensPerCase.length; i++) {
+        const n = Number(tokensPerCase[i][0][0]);
+        const k = tokensPerCase[i][1].length;
+        if (Number.isFinite(n) && n === k) matches++;
+      }
+      const ratio = matches / tokensPerCase.length;
+
+      if (ratio >= 0.8) {
+        return [
+          "The first line contains an integer `n` — the number of elements in the array.",
+          "The second line contains `n` integers `a1, a2, ..., an`.",
+        ].join("\n");
+      }
+
+      return [
+        "The first line contains an integer `n`.",
+        "The second line contains a sequence of integers (space-separated).",
+      ].join("\n");
+    }
+  }
+
+  // 3) r c then r rows of c integers (matrix)
+  if (lineCount >= 2) {
+    const firstLineAllTwoInts = tokensPerCase.every(
+      (toks) => toks[0]?.length === 2 && toks[0].every(isIntegerToken),
+    );
+
+    if (firstLineAllTwoInts) {
+      // Try matrix: lineCount should be r + 1 and each of the next r lines has c integers.
+      let matrixMatches = 0;
+      for (let i = 0; i < tokensPerCase.length; i++) {
+        const r = Number(tokensPerCase[i][0][0]);
+        const c = Number(tokensPerCase[i][0][1]);
+        if (!Number.isFinite(r) || !Number.isFinite(c)) continue;
+        if (r + 1 !== lineCount) continue;
+
+        let ok = true;
+        for (let row = 1; row <= r; row++) {
+          const rowTokens = tokensPerCase[i][row];
+          if (!isAllIntegerTokens(rowTokens) || rowTokens.length !== c) {
+            ok = false;
+            break;
+          }
+        }
+
+        if (ok) matrixMatches++;
+      }
+
+      if (matrixMatches / tokensPerCase.length >= 0.8) {
+        return [
+          "The first line contains two integers `r` and `c` — the number of rows and columns.",
+          "The next `r` lines each contain `c` integers — the matrix elements.",
+        ].join("\n");
+      }
+
+      // Try graph: lineCount should be m + 1 and each of the next m lines has 2 or 3 integers.
+      let graphMatches = 0;
+      let weightedMatches = 0;
+      for (let i = 0; i < tokensPerCase.length; i++) {
+        const n = Number(tokensPerCase[i][0][0]);
+        const m = Number(tokensPerCase[i][0][1]);
+        if (!Number.isFinite(n) || !Number.isFinite(m)) continue;
+        if (m + 1 !== lineCount) continue;
+
+        let ok = true;
+        let weighted = true;
+        for (let e = 1; e <= m; e++) {
+          const edgeTokens = tokensPerCase[i][e];
+          if (!isAllIntegerTokens(edgeTokens) || (edgeTokens.length !== 2 && edgeTokens.length !== 3)) {
+            ok = false;
+            break;
+          }
+          if (edgeTokens.length !== 3) weighted = false;
+        }
+
+        if (ok) {
+          graphMatches++;
+          if (weighted) weightedMatches++;
+        }
+      }
+
+      if (graphMatches / tokensPerCase.length >= 0.8) {
+        const isWeighted = weightedMatches / tokensPerCase.length >= 0.8;
+        return isWeighted
+          ? [
+              "The first line contains two integers `n` and `m` — the number of nodes and edges.",
+              "The next `m` lines each contain three integers `u`, `v`, and `w` — an edge between `u` and `v` with weight `w`.",
+            ].join("\n")
+          : [
+              "The first line contains two integers `n` and `m` — the number of nodes and edges.",
+              "The next `m` lines each contain two integers `u` and `v` — an edge between `u` and `v`.",
+            ].join("\n");
+      }
+    }
+  }
+
+  return null;
+}
+
+function tryBuildCodeforcesLikeOutputFormat(expectedPerCase) {
+  const outs = Array.isArray(expectedPerCase) ? expectedPerCase : [];
+  if (outs.length === 0) return null;
+
+  const linesPerCase = outs.map((out) => splitNonTrailingEmptyLines(out));
+  const counts = linesPerCase.map((lines) => lines.length);
+  const min = Math.min(...counts);
+  const max = Math.max(...counts);
+
+  if (!isFinite(min) || !isFinite(max) || max === 0) {
+    return "Print nothing.";
+  }
+
+  // Only apply the variable naming when it is exactly one output line.
+  if (min === 1 && max === 1) {
+    const types = outs.map((out) => inferLineType(splitNonTrailingEmptyLines(out)[0] ?? ""));
+    const merged = mergeTypes(types);
+
+    if (merged === "integer") {
+      return "Print one integer `ans` — the answer.";
+    }
+    if (merged === "number") {
+      return "Print one number `ans` — the answer.";
+    }
+    if (merged === "string") {
+      return "Print one string `ans` — the answer.";
+    }
+    if (merged === "boolean") {
+      return "Print `YES`/`NO` (or `true`/`false`) as required by the problem.";
+    }
+  }
+
+  return null;
 }
 
 function mergeTypes(types) {
@@ -130,13 +312,18 @@ function buildInputFormatFromLinesPerCase(linesPerCase) {
   for (let i = 0; i < describeUpTo; i++) {
     const typesAtI = linesPerCase.map((lines) => (lines[i] !== undefined ? inferLineType(lines[i]) : null));
     const merged = mergeTypes(typesAtI);
+    const varName = `x${i + 1}`;
 
     if (merged === "mixed") {
-      lineDescriptors.push(`Line ${i + 1}: a value (type may vary by test case).`);
+      lineDescriptors.push(
+        `Line ${i + 1}: a value \`${varName}\` (type may vary by test case).`,
+      );
     } else if (merged === "json") {
-      lineDescriptors.push(`Line ${i + 1}: a JSON value (single line).`);
+      lineDescriptors.push(
+        `Line ${i + 1}: an invalid JSON value (CP format required; no brackets/commas) \`${varName}\`.`,
+      );
     } else {
-      lineDescriptors.push(`Line ${i + 1}: ${typeToPhrase(merged)}.`);
+      lineDescriptors.push(`Line ${i + 1}: ${typeToPhrase(merged)} \`${varName}\`.`);
     }
   }
 
@@ -171,14 +358,14 @@ function buildOutputFormatFromExpected(expectedPerCase) {
     const merged = mergeTypes(types);
 
     if (merged === "mixed") {
-      return "Print one line containing the required output.";
+      return "Print one line containing the required output `ans`.";
     }
 
     if (merged === "json") {
-      return "Print one line containing a JSON value.";
+      return "Print one line containing the required output `ans` in CP format (no JSON/brackets).";
     }
 
-    return `Print one line containing ${typeToPhrase(merged)}.`;
+    return `Print one line containing ${typeToPhrase(merged)} \`ans\`.`;
   }
 
   const intro =
@@ -195,13 +382,18 @@ function buildOutputFormatFromExpected(expectedPerCase) {
       return lines[i] !== undefined ? inferLineType(lines[i]) : null;
     });
     const merged = mergeTypes(typesAtI);
+    const varName = `y${i + 1}`;
 
     if (merged === "mixed") {
-      lineDescriptors.push(`Line ${i + 1}: the required output (type may vary by test case).`);
+      lineDescriptors.push(
+        `Line ${i + 1}: the required output \`${varName}\` (type may vary by test case).`,
+      );
     } else if (merged === "json") {
-      lineDescriptors.push(`Line ${i + 1}: a JSON value.`);
+      lineDescriptors.push(
+        `Line ${i + 1}: the required output \`${varName}\` in CP format (no JSON/brackets).`,
+      );
     } else {
-      lineDescriptors.push(`Line ${i + 1}: ${typeToPhrase(merged)}.`);
+      lineDescriptors.push(`Line ${i + 1}: ${typeToPhrase(merged)} \`${varName}\`.`);
     }
   }
 
@@ -228,8 +420,11 @@ export function inferIOFormatsFromTestCases(testCases) {
     };
   }
 
+  const codeforcesInput = tryBuildCodeforcesLikeInputFormat(linesPerCase);
+  const codeforcesOutput = tryBuildCodeforcesLikeOutputFormat(expectedPerCase);
+
   return {
-    inputFormat: buildInputFormatFromLinesPerCase(linesPerCase),
-    outputFormat: buildOutputFormatFromExpected(expectedPerCase),
+    inputFormat: codeforcesInput || buildInputFormatFromLinesPerCase(linesPerCase),
+    outputFormat: codeforcesOutput || buildOutputFormatFromExpected(expectedPerCase),
   };
 }
