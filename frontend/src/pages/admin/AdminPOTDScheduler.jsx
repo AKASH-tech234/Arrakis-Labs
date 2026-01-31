@@ -239,14 +239,14 @@ export default function AdminPOTDScheduler() {
 
     if (schedule) {
       if (schedule.status === "published") {
-        bgColor = "bg-emerald-500/10 border-emerald-500/40";
-        statusIcon = <CheckCircle className="w-4 h-4 text-emerald-400" />;
+        bgColor = "bg-[#F59E0B]/10 border-[#F59E0B]/40";
+        statusIcon = <CheckCircle className="w-4 h-4 text-[#F59E0B]" />;
       } else if (schedule.status === "today") {
         bgColor = "bg-[#D97706]/10 border-[#D97706]/40";
         statusIcon = <Clock className="w-4 h-4 text-[#D97706]" />;
       } else if (schedule.status === "scheduled") {
-        bgColor = "bg-blue-500/10 border-blue-500/40";
-        statusIcon = <Calendar className="w-4 h-4 text-blue-400" />;
+        bgColor = "bg-[#D97706]/10 border-[#D97706]/40";
+        statusIcon = <Calendar className="w-4 h-4 text-[#D97706]" />;
       } else if (schedule.status === "missed") {
         bgColor = "bg-red-500/10 border-red-500/40";
         statusIcon = <AlertCircle className="w-4 h-4 text-red-400" />;
@@ -346,13 +346,13 @@ export default function AdminPOTDScheduler() {
               <span
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium ${
                   schedulerStatus.cronJobActive
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    ? "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/30"
                     : "bg-red-500/10 text-red-400 border border-red-500/30"
                 }`}
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    schedulerStatus.cronJobActive ? "bg-emerald-400 animate-pulse" : "bg-red-400"
+                    schedulerStatus.cronJobActive ? "bg-[#F59E0B] animate-pulse" : "bg-red-400"
                   }`}
                 ></span>
                 Cron {schedulerStatus.cronJobActive ? "Active" : "Inactive"}
@@ -372,7 +372,7 @@ export default function AdminPOTDScheduler() {
       {}
       <div className="flex items-center gap-6 mb-6 text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-emerald-500/20 border border-emerald-500/40"></div>
+          <div className="w-4 h-4 rounded bg-[#F59E0B]/20 border border-[#F59E0B]/40"></div>
           <span className="text-[#78716C]">Published</span>
         </div>
         <div className="flex items-center gap-2">
@@ -380,7 +380,7 @@ export default function AdminPOTDScheduler() {
           <span className="text-[#78716C]">Today</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-blue-500/20 border border-blue-500/40"></div>
+          <div className="w-4 h-4 rounded bg-[#D97706]/20 border border-[#D97706]/40"></div>
           <span className="text-[#78716C]">Scheduled</span>
         </div>
         <div className="flex items-center gap-2">
