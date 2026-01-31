@@ -166,6 +166,9 @@ export default function ProblemDescription({ problem }) {
         >
           {inputFormatText}
         </div>
+        <div className="mt-3 text-xs text-[#78716C]">
+          CP format required (Codeforces-style): provide whitespace-separated values via stdin. No JSON, no brackets, no commas.
+        </div>
 
         <h3 className="text-[#78716C] text-[10px] uppercase mt-6 mb-3">
           Output Format
