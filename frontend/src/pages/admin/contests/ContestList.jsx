@@ -54,13 +54,13 @@ export default function AdminContestList() {
     const styles = {
       draft: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20',
       scheduled: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20',
-      live: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-      ended: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      live: 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20',
+      ended: 'bg-[#1A1814] text-[#78716C] border border-[#1A1814]/60',
       cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
     };
     return (
       <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg uppercase tracking-wider ${styles[status] || styles.draft}`}>
-        {status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
+        {status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F59E0B] mr-1.5 animate-pulse" />}
         {status}
       </span>
     );
@@ -253,7 +253,7 @@ export default function AdminContestList() {
                         <>
                           <button
                             onClick={() => handlePublish(contest._id)}
-                            className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            className="p-2 text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded-lg transition-colors"
                             title="Publish"
                           >
                             <CheckCircle className="w-5 h-5" />
