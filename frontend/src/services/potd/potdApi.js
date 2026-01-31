@@ -16,6 +16,14 @@ export const getTodaysPOTD = async () => {
       data: response.data.data,
     };
   } catch (error) {
+    if (error?.response?.status === 404) {
+      return {
+        success: true,
+        data: null,
+        message: "No POTD scheduled for today",
+      };
+    }
+
     console.error("Error fetching today's POTD:", error);
     return {
       success: false,
