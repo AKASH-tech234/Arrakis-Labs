@@ -5,15 +5,15 @@ const statusStyles = {
   draft: { bg: "bg-[#1A1814]", text: "text-[#78716C]", label: "Draft" },
   review: { bg: "bg-[#92400E]/20", text: "text-[#D97706]", label: "Review" },
   published: {
-    bg: "bg-green-900/20",
-    text: "text-green-500",
+    bg: "bg-[#F59E0B]/15",
+    text: "text-[#F59E0B]",
     label: "Published",
   },
   hidden: { bg: "bg-[#1A1814]", text: "text-[#3D3D3D]", label: "Hidden" },
 
   scheduled: {
-    bg: "bg-blue-900/20",
-    text: "text-blue-400",
+    bg: "bg-[#D97706]/15",
+    text: "text-[#D97706]",
     label: "Scheduled",
   },
   live: { bg: "bg-[#F59E0B]/20", text: "text-[#F59E0B]", label: "Live" },
@@ -22,8 +22,8 @@ const statusStyles = {
   cancelled: { bg: "bg-red-900/20", text: "text-red-400", label: "Cancelled" },
 
   accepted: {
-    bg: "bg-green-900/20",
-    text: "text-green-500",
+    bg: "bg-[#F59E0B]/15",
+    text: "text-[#F59E0B]",
     label: "Accepted",
   },
   wrong_answer: {
@@ -33,8 +33,8 @@ const statusStyles = {
   },
   time_limit: { bg: "bg-[#D97706]/20", text: "text-[#D97706]", label: "TLE" },
   memory_limit: {
-    bg: "bg-purple-900/20",
-    text: "text-purple-400",
+    bg: "bg-[#92400E]/20",
+    text: "text-[#D97706]",
     label: "MLE",
   },
   runtime_error: {
@@ -48,9 +48,9 @@ const statusStyles = {
     label: "CE",
   },
   pending: { bg: "bg-[#1A1814]", text: "text-[#78716C]", label: "Pending" },
-  running: { bg: "bg-blue-900/20", text: "text-blue-400", label: "Running" },
+  running: { bg: "bg-[#D97706]/15", text: "text-[#D97706]", label: "Running" },
 
-  active: { bg: "bg-green-900/20", text: "text-green-500", label: "Active" },
+  active: { bg: "bg-[#F59E0B]/15", text: "text-[#F59E0B]", label: "Active" },
   warned: { bg: "bg-[#D97706]/20", text: "text-[#D97706]", label: "Warned" },
   suspended: {
     bg: "bg-[#92400E]/20",
@@ -59,7 +59,7 @@ const statusStyles = {
   },
   banned: { bg: "bg-red-900/20", text: "text-red-400", label: "Banned" },
 
-  cleared: { bg: "bg-green-900/20", text: "text-green-500", label: "Cleared" },
+  cleared: { bg: "bg-[#F59E0B]/15", text: "text-[#F59E0B]", label: "Cleared" },
   flagged: { bg: "bg-red-900/20", text: "text-red-400", label: "Flagged" },
   reviewing: {
     bg: "bg-[#D97706]/20",
@@ -67,16 +67,16 @@ const statusStyles = {
     label: "Reviewing",
   },
   escalated: {
-    bg: "bg-purple-900/20",
-    text: "text-purple-400",
+    bg: "bg-[#92400E]/20",
+    text: "text-[#D97706]",
     label: "Escalated",
   },
 
-  easy: { bg: "bg-green-900/20", text: "text-green-500", label: "Easy" },
+  easy: { bg: "bg-[#78716C]/10", text: "text-[#78716C]", label: "Easy" },
   medium: { bg: "bg-[#D97706]/20", text: "text-[#D97706]", label: "Medium" },
   hard: { bg: "bg-red-900/20", text: "text-red-400", label: "Hard" },
 
-  healthy: { bg: "bg-green-900/20", text: "text-green-500", label: "Healthy" },
+  healthy: { bg: "bg-[#F59E0B]/15", text: "text-[#F59E0B]", label: "Healthy" },
   degraded: {
     bg: "bg-[#D97706]/20",
     text: "text-[#D97706]",
