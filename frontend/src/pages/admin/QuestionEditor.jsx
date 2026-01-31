@@ -428,8 +428,8 @@ const QuestionEditor = () => {
           className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
         >
           <div className="p-4 border-b border-[#1A1814] bg-[#0F0F0D]/50 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <Building2 className="h-5 w-5 text-blue-400" />
+            <div className="p-2 rounded-lg bg-[#D97706]/10">
+              <Building2 className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-wider">
@@ -471,7 +471,7 @@ const QuestionEditor = () => {
                     key={index}
                     className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 border ${
                       company === formData.primaryCompany
-                        ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                        ? "bg-[#D97706]/10 text-[#D97706] border-[#D97706]/30"
                         : "bg-[#0F0F0D] text-[#E8E4D9] border-[#1A1814]"
                     }`}
                   >
