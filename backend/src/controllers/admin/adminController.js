@@ -48,11 +48,12 @@ export const adminLogin = async (req, res) => {
 
     const token = generateAdminToken(admin);
 
+    const isProduction = process.env.NODE_ENV === "production";
     const cookieOptions = {
       expires: new Date(Date.now() + 8 * 60 * 60 * 1000),
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       path: "/",
     };
 
@@ -89,10 +90,11 @@ export const adminLogin = async (req, res) => {
 
 export const adminLogout = async (req, res) => {
   try {
+    const isProduction = process.env.NODE_ENV === "production";
     res.clearCookie("adminToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       path: "/",
     });
 
