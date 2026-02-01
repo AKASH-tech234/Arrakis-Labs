@@ -1,5 +1,3 @@
-
-
 import { lazy, Suspense } from "react";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminRoute from "../components/auth/AdminRoute";
@@ -55,7 +53,7 @@ export const adminRoutes = [
       </AdminRoute>
     ),
     children: [
-      
+
       { index: true, element: withSuspense(AdminDashboard) },
 
       { path: "problems", element: withSuspense(ProblemList) },

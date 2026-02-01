@@ -1,5 +1,3 @@
-
-
 import { useState, useCallback, useRef } from "react";
 import { getWeeklyReport } from "../../services/ai/aiApi";
 
@@ -64,7 +62,7 @@ export function useWeeklyReport() {
   }, []);
 
   return {
-    
+
     report,
     loading,
     error,

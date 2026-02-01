@@ -50,11 +50,11 @@ const contestRegistrationSchema = new mongoose.Schema(
     },
     totalPenalty: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
     totalTime: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
 
     problemAttempts: {
@@ -64,8 +64,8 @@ const contestRegistrationSchema = new mongoose.Schema(
           attempts: { type: Number, default: 0 },
           solved: { type: Boolean, default: false },
           solvedAt: { type: Date, default: null },
-          solveTime: { type: Number, default: 0 }, 
-          penalty: { type: Number, default: 0 }, 
+          solveTime: { type: Number, default: 0 },
+          penalty: { type: Number, default: 0 },
           score: { type: Number, default: 0 },
           bestSubmission: { type: mongoose.Schema.Types.ObjectId, ref: "ContestSubmission" },
         },
@@ -171,17 +171,17 @@ contestRegistrationSchema.statics.getLeaderboard = async function (
 
   const query = {
     contest: contestId,
-    status: includeDisqualified 
+    status: includeDisqualified
       ? { $in: ["participating", "completed", "disqualified"] }
       : { $in: ["participating", "completed"] },
   };
 
   const registrations = await this.find(query)
-    .sort({ 
-      finalScore: -1,      
-      problemsSolved: -1,  
-      totalTime: 1,        
-      totalPenalty: 1,     
+    .sort({
+      finalScore: -1,
+      problemsSolved: -1,
+      totalTime: 1,
+      totalPenalty: 1,
     })
     .skip(skip)
     .limit(limit)

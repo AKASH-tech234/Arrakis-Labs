@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * OA Violation Schema
- * Logs proctoring violations (tab switches, etc.)
- */
 const oaViolationSchema = new mongoose.Schema(
   {
     sessionId: {
@@ -18,20 +14,18 @@ const oaViolationSchema = new mongoose.Schema(
       required: true,
     },
 
-    // === VIOLATION TYPE ===
     type: {
       type: String,
       enum: [
-        "tab_hidden", // document.visibilityState = 'hidden'
-        "tab_blur", // window.blur
-        "fullscreen_exit", // Exited fullscreen (if enabled)
-        "window_resize", // Suspicious resize
-        "devtools_open", // DevTools detected (optional)
+        "tab_hidden",
+        "tab_blur",
+        "fullscreen_exit",
+        "window_resize",
+        "devtools_open",
       ],
       required: true,
     },
 
-    // === TIMESTAMPS ===
     occurredAt: {
       type: Date,
       default: Date.now,
@@ -42,7 +36,6 @@ const oaViolationSchema = new mongoose.Schema(
       default: null,
     },
 
-    // === CONTEXT ===
     meta: {
       visibilityState: String,
       focusedElement: String,
@@ -51,7 +44,6 @@ const oaViolationSchema = new mongoose.Schema(
       userAgent: String,
     },
 
-    // === OUTCOME ===
     wasWarning: {
       type: Boolean,
       default: true,
@@ -69,16 +61,13 @@ const oaViolationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes
 oaViolationSchema.index({ sessionId: 1, occurredAt: -1 });
 oaViolationSchema.index({ userId: 1, createdAt: -1 });
 
-// Get violations count for session
 oaViolationSchema.statics.getCountForSession = async function (sessionId) {
   return this.countDocuments({ sessionId });
 };
 
-// Get recent violations
 oaViolationSchema.statics.getRecentForSession = async function (
   sessionId,
   limit = 10

@@ -49,37 +49,14 @@ const log = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MIM V3.0 - Transform AI Response for Frontend
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Transform MIM V3.0 insights for frontend consumption
- * Handles polymorphic feedback structure (correctness, performance, reinforcement)
- * 
- * PHASE 2.x UPGRADE: Now extracts and includes:
- * - diagnosis: Root cause classification (FACT from MIM)
- * - confidence: Calibrated confidence metadata (Phase 2.1)
- * - pattern: Pattern state machine output (Phase 2.2)
- * - difficulty: Difficulty policy decision (Phase 2.3)
- * 
- * @param {Object} mimInsights - Raw mim_insights from AI service
- * @returns {Object} Transformed MIM insights
- */
 export function transformMIMInsights(mimInsights) {
   if (!mimInsights) return null;
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PHASE 2.x: Extract canonical fields using helper functions
-  // ═══════════════════════════════════════════════════════════════════════════
   const diagnosis = extractDiagnosis(mimInsights);
   const confidence = extractConfidence(mimInsights);
   const pattern = extractPattern(mimInsights);
   const difficulty = extractDifficulty(mimInsights);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // OBSERVABILITY: Log confidence and pattern state for monitoring
-  // ═══════════════════════════════════════════════════════════════════════════
   if (confidence) {
     log.info("MIM confidence extracted", {
       level: confidence.confidence_level,
@@ -106,13 +83,9 @@ export function transformMIMInsights(mimInsights) {
   }
 
   const transformed = {
-    // V3.0 type discriminator
+
     feedbackType: mimInsights.feedback_type || null,
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // NEW: Phase 2.x canonical fields (camelCase for frontend)
-    // These are FACTS from MIM - frontend should treat them as authoritative
-    // ═══════════════════════════════════════════════════════════════════════════
     diagnosis: diagnosis
       ? {
           rootCause: diagnosis.root_cause,
@@ -146,9 +119,6 @@ export function transformMIMInsights(mimInsights) {
         }
       : null,
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // V3.0 polymorphic payloads (camelCase for frontend) - PRESERVED
-    // ═══════════════════════════════════════════════════════════════════════════
     correctnessFeedback: mimInsights.correctness_feedback
       ? {
           rootCause: mimInsights.correctness_feedback.root_cause,
@@ -190,12 +160,10 @@ export function transformMIMInsights(mimInsights) {
         }
       : null,
 
-    // Legacy fields (backward compatibility)
     rootCause: mimInsights.root_cause,
     readiness: mimInsights.readiness,
     performanceForecast: mimInsights.performance_forecast,
 
-    // Metadata
     isColdStart: mimInsights.is_cold_start || false,
     modelVersion: mimInsights.model_version || "unknown",
   };
@@ -255,21 +223,6 @@ export function buildUserHistorySummary(submissions) {
   return summary;
 }
 
-/**
- * Request AI feedback for a submission
- * @param {Object} params - Submission context
- * @param {string} params.userId - User ID
- * @param {string} params.problemId - Question/Problem ID
- * @param {string} params.problemCategory - Category/tags of the problem
- * @param {string} params.constraints - Problem constraints
- * @param {string} params.code - Submitted code
- * @param {string} params.language - Programming language
- * @param {string} params.verdict - Submission verdict (backend format)
- * @param {string|null} params.userHistorySummary - User's submission history summary
- * @param {Object|null} params.problem - Full problem object for AI context
- * @param {Object|null} params.userProfile - User's AI profile for personalization
- * @returns {Promise<Object|null>} - AI feedback response or null on failure
- */
 export async function getAIFeedback({
   userId,
   problemId,
@@ -306,7 +259,7 @@ export async function getAIFeedback({
       verdict: VERDICT_MAP[verdict] || verdict,
       error_type: ERROR_TYPE_MAP[verdict] || null,
       user_history_summary: userHistorySummary,
-      // Enhanced context for AI personalization
+
       problem: problem
         ? {
             title: problem.title,
@@ -424,11 +377,6 @@ export async function checkAIServiceHealth() {
   }
 }
 
-/**
- * Extract RAG metadata from AI response
- * @param {Object} aiResponse - Full AI service response
- * @returns {Object} RAG metadata for frontend
- */
 export function extractRAGMetadataFromResponse(aiResponse) {
   const ragMeta = extractRAGMetadata(aiResponse);
   return {
@@ -445,14 +393,6 @@ export default {
   extractRAGMetadataFromResponse,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MIM (Misconception Identification Model) API
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Get MIM model status
- * @returns {Promise<Object|null>}
- */
 export async function getMIMStatus() {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/ai/mim/status`;
@@ -475,11 +415,6 @@ export async function getMIMStatus() {
   }
 }
 
-/**
- * Get user's cognitive profile from MIM
- * @param {string} userId - User ID
- * @returns {Promise<Object|null>}
- */
 export async function getMIMProfile(userId) {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/ai/mim/profile/${encodeURIComponent(userId)}`;
@@ -507,12 +442,6 @@ export async function getMIMProfile(userId) {
   }
 }
 
-/**
- * Get personalized problem recommendations from MIM
- * @param {string} userId - User ID
- * @param {number} [limit=5] - Number of recommendations
- * @returns {Promise<Object|null>}
- */
 export async function getMIMRecommendations(userId, limit = 5) {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/ai/mim/recommend/${encodeURIComponent(userId)}?limit=${limit}`;
@@ -539,12 +468,6 @@ export async function getMIMRecommendations(userId, limit = 5) {
   }
 }
 
-/**
- * Get pre-submission prediction from MIM
- * @param {string} userId - User ID
- * @param {string} problemId - Problem ID
- * @returns {Promise<Object|null>}
- */
 export async function getMIMPrediction(userId, problemId) {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/ai/mim/predict/${encodeURIComponent(userId)}/${encodeURIComponent(problemId)}`;
@@ -578,10 +501,6 @@ export async function getMIMPrediction(userId, problemId) {
   }
 }
 
-/**
- * Trigger MIM model training (admin only)
- * @returns {Promise<Object|null>}
- */
 export async function triggerMIMTraining() {
   const startTime = Date.now();
   const url = `${AI_SERVICE_URL}/ai/mim/train`;

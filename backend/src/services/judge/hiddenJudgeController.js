@@ -1,25 +1,3 @@
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * HIDDEN JUDGE CONTROLLER - Secure Hidden Test Case Evaluation
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * This controller handles secure evaluation of submissions against dynamically
- * generated hidden test cases. Key security features:
- * 
- * 1. Test cases are NEVER stored in DB - generated at submission time
- * 2. Hidden inputs are NEVER exposed to frontend
- * 3. Uses trusted reference solutions executed in isolated environment
- * 4. Deterministic generation ensures reproducibility for debugging
- * 
- * Flow:
- *   1. User submits code
- *   2. Generate deterministic seed from userId + submissionId
- *   3. Generate hidden test cases using seed + problem constraints
- *   4. Execute reference solution to get expected outputs
- *   5. Execute user code via Piston API (sandboxed)
- *   6. Compare outputs, return verdict without exposing inputs
- */
-
 import axios from "axios";
 import mongoose from "mongoose";
 import Question from "../../models/question/Question.js";
@@ -53,11 +31,6 @@ const LANGUAGE_MAP = {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * PISTON EXECUTION - Sandboxed Code Execution
- * ═══════════════════════════════════════════════════════════════════════════════
- */
 async function executePiston(code, language, stdin, timeLimit = 2000) {
   const langConfig = LANGUAGE_MAP[language.toLowerCase()];
   if (!langConfig) {
@@ -137,25 +110,8 @@ async function executePiston(code, language, stdin, timeLimit = 2000) {
   throw new Error("Code execution service temporarily unavailable");
 }
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * PROBLEM CONFIG REGISTRY
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * Maps problem types to their test case generation configurations.
- * Each problem type defines:
- *   - Input type and constraints
- *   - Edge cases to test
- *   - Reference solution for computing expected output
- *   - Input/output format converters
- * 
- * IMPORTANT: Reference solutions run server-side and are NEVER exposed.
- */
-
 const PROBLEM_CONFIGS = {
-  // ─────────────────────────────────────────────────────────────────────────
-  // TWO SUM (Array + Hash Map)
-  // ─────────────────────────────────────────────────────────────────────────
+
   "two-sum": new ProblemConfigBuilder(InputType.ARRAY_INT)
     .setConstraints({
       arrayLength: { min: 2, max: 10000 },
@@ -188,7 +144,7 @@ const PROBLEM_CONFIGS = {
       const sizes = { small: 10, medium: 100, large: 1000 };
       const n = sizes[sizeCategory] || 100;
       const arr = rng.randIntArray(n, -100, 100);
-      // Ensure a valid solution exists
+
       const i = rng.randInt(0, n - 2);
       const j = rng.randInt(i + 1, n - 1);
       const target = arr[i] + arr[j];
@@ -196,9 +152,6 @@ const PROBLEM_CONFIGS = {
     })
     .build(),
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // MAXIMUM SUBARRAY (Kadane's Algorithm)
-  // ─────────────────────────────────────────────────────────────────────────
   "maximum-subarray": new ProblemConfigBuilder(InputType.ARRAY_INT)
     .setConstraints({
       arrayLength: { min: 1, max: 100000 },
@@ -229,9 +182,6 @@ const PROBLEM_CONFIGS = {
     .setOutputFromStdout((result) => String(result))
     .build(),
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // BINARY SEARCH
-  // ─────────────────────────────────────────────────────────────────────────
   "binary-search": new ProblemConfigBuilder(InputType.ARRAY_INT)
     .setConstraints({
       arrayLength: { min: 1, max: 100000 },
@@ -260,10 +210,10 @@ const PROBLEM_CONFIGS = {
     .setCustomGenerator((rng, sizeCategory) => {
       const sizes = { small: 10, medium: 1000, large: 10000 };
       const n = sizes[sizeCategory] || 1000;
-      // Generate sorted array
+
       let arr = rng.randIntArray(n, -100000, 100000);
       arr = [...new Set(arr)].sort((a, b) => a - b);
-      // 50% chance target exists
+
       const target = rng.randBool(0.5)
         ? arr[rng.randInt(0, arr.length - 1)]
         : rng.randInt(-100001, 100001);
@@ -271,9 +221,6 @@ const PROBLEM_CONFIGS = {
     })
     .build(),
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // REVERSE STRING
-  // ─────────────────────────────────────────────────────────────────────────
   "reverse-string": new ProblemConfigBuilder(InputType.STRING)
     .setConstraints({
       stringLength: { min: 1, max: 100000 },
@@ -289,9 +236,6 @@ const PROBLEM_CONFIGS = {
     .setOutputFromStdout((result) => result)
     .build(),
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // VALID PALINDROME
-  // ─────────────────────────────────────────────────────────────────────────
   "valid-palindrome": new ProblemConfigBuilder(InputType.STRING)
     .setConstraints({
       stringLength: { min: 1, max: 200000 },
@@ -316,12 +260,9 @@ const PROBLEM_CONFIGS = {
     .setOutputFromStdout((result) => result ? "true" : "false")
     .build(),
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIBONACCI NUMBER
-  // ─────────────────────────────────────────────────────────────────────────
   "fibonacci-number": new ProblemConfigBuilder(InputType.SINGLE_INT)
     .setConstraints({
-      value: { min: 0, max: 45 }, // Prevent integer overflow
+      value: { min: 0, max: 45 },
     })
     .addEdgeCase("Zero", { n: 0 })
     .addEdgeCase("One", { n: 1 })
@@ -340,9 +281,6 @@ const PROBLEM_CONFIGS = {
     .setOutputFromStdout((result) => String(result))
     .build(),
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DEFAULT CONFIG (Fallback for unmapped problems)
-  // ─────────────────────────────────────────────────────────────────────────
   default: new ProblemConfigBuilder(InputType.ARRAY_INT)
     .setConstraints({
       arrayLength: { min: 1, max: 1000 },
@@ -351,51 +289,22 @@ const PROBLEM_CONFIGS = {
     .build(),
 };
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * GET PROBLEM CONFIG
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * Retrieves the test generation config for a problem.
- * Priority: 1. Registry, 2. Inline PROBLEM_CONFIGS, 3. Default
- */
 function getProblemConfig(problemSlug) {
   const slug = String(problemSlug).toLowerCase().replace(/\s+/g, "-");
-  
-  // First check the centralized registry
+
   const registryConfig = getRegistryProblemConfig(slug);
   if (registryConfig) {
     return registryConfig;
   }
-  
-  // Fallback to inline configs (for backward compatibility)
+
   return PROBLEM_CONFIGS[slug] || PROBLEM_CONFIGS.default;
 }
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * GENERATE SUBMISSION SEED
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * Creates a deterministic seed from user + submission IDs.
- * Same inputs always produce same test cases for debugging.
- */
 function generateSeed(userId, submissionId) {
-  // Combine IDs for unique but reproducible seed
+
   return `${userId}-${submissionId}`;
 }
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * EXECUTE WITH HIDDEN TEST CASES
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * Main evaluation function:
- * 1. Generate hidden test cases deterministically
- * 2. Execute user code against each test case
- * 3. Compare outputs with reference solution
- * 4. Return verdict without exposing inputs
- */
 async function executeWithHiddenTestCases(options) {
   const {
     code,
@@ -408,13 +317,10 @@ async function executeWithHiddenTestCases(options) {
     presetTestCases = [],
   } = options;
 
-  // Generate deterministic seed
   const seed = generateSeed(userId, submissionId);
 
-  // Get problem configuration
   const config = getProblemConfig(problemSlug);
 
-  // Generate hidden test cases
   const generator = new TestCaseGenerator(config, seed);
   const generatedCases = generator.generateAll({
     edgeCount: 5,
@@ -423,7 +329,6 @@ async function executeWithHiddenTestCases(options) {
     adversarialCount: 4,
   });
 
-  // Combine preset (DB) cases with generated cases
   const allTestCases = [
     ...(includePresetCases ? presetTestCases : []),
     ...generatedCases,
@@ -439,7 +344,6 @@ async function executeWithHiddenTestCases(options) {
     try {
       const execution = await executePiston(code, language, tc.stdin, timeLimit);
 
-      // Check for compile error (stop immediately)
       if (execution.compileError) {
         compileErrorOccurred = true;
         results.push({
@@ -454,7 +358,6 @@ async function executeWithHiddenTestCases(options) {
         break;
       }
 
-      // Determine verdict
       let passed = false;
       let verdict = "wrong_answer";
 
@@ -465,13 +368,12 @@ async function executeWithHiddenTestCases(options) {
       } else if (execution.runtimeError) {
         verdict = "runtime_error";
       } else if (execution.exitCode === 0) {
-        // Compare outputs
+
         const expected = tc.expectedStdout || tc.expectedOutput || "";
         passed = compareOutputs(execution.stdout, expected);
         verdict = passed ? "accepted" : "wrong_answer";
       }
 
-      // Track first failure
       if (!passed && firstFailingIndex === -1) {
         firstFailingIndex = i;
       }
@@ -485,7 +387,7 @@ async function executeWithHiddenTestCases(options) {
         timedOut: execution.timedOut,
         runtimeError: execution.runtimeError,
         memoryExceeded: execution.memoryExceeded,
-        // SECURITY: Never include stdin or expected output for hidden tests
+
         ...(tc.isHidden === false
           ? {
               stdin: tc.stdin,
@@ -495,10 +397,6 @@ async function executeWithHiddenTestCases(options) {
             }
           : {}),
       });
-
-      // Stop on first failure for efficiency (like LeetCode)
-      // Comment out this break if you want to run all tests
-      // if (!passed) break;
 
     } catch (error) {
       results.push({
@@ -516,14 +414,12 @@ async function executeWithHiddenTestCases(options) {
         firstFailingIndex = i;
       }
 
-      // Stop on service error
       if (error.message.includes("unavailable")) {
         break;
       }
     }
   }
 
-  // Compute final verdict
   const passedCount = results.filter((r) => r.passed).length;
   const allPassed = passedCount === allTestCases.length;
 
@@ -548,14 +444,14 @@ async function executeWithHiddenTestCases(options) {
     totalCount: allTestCases.length,
     allPassed,
     firstFailingIndex: allPassed ? null : firstFailingIndex,
-    // Safe results (hidden inputs never exposed)
+
     results: results.map((r) => ({
       testNumber: r.testNumber,
       category: r.category,
       passed: r.passed,
       verdict: r.verdict,
       isHidden: r.isHidden,
-      // Only include details for visible tests
+
       ...(r.isHidden
         ? {}
         : {
@@ -565,7 +461,7 @@ async function executeWithHiddenTestCases(options) {
             stderr: r.stderr,
           }),
     })),
-    // Metadata about the failure (without exposing hidden data)
+
     failureInfo: allPassed
       ? null
       : {
@@ -577,22 +473,11 @@ async function executeWithHiddenTestCases(options) {
   };
 }
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * SUBMIT CODE WITH HIDDEN TESTS
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * Express handler for code submission with hidden test evaluation.
- * Combines preset test cases from DB with dynamically generated hidden tests.
- */
 export async function submitWithHiddenTests(req, res) {
   try {
     const { questionId, code, language } = req.body;
     const userId = req.user?._id;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Validation
-    // ─────────────────────────────────────────────────────────────────────────
     if (!questionId || !code || !language) {
       return res.status(400).json({
         success: false,
@@ -621,9 +506,6 @@ export async function submitWithHiddenTests(req, res) {
       });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Fetch Question
-    // ─────────────────────────────────────────────────────────────────────────
     const question = await Question.findOne({
       _id: questionId,
       isActive: true,
@@ -636,9 +518,6 @@ export async function submitWithHiddenTests(req, res) {
       });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Create Submission Record (status: judging)
-    // ─────────────────────────────────────────────────────────────────────────
     const submission = await Submission.create({
       userId,
       questionId,
@@ -650,9 +529,6 @@ export async function submitWithHiddenTests(req, res) {
       problemTags: question.tags || [],
     });
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Fetch Preset Test Cases (from DB)
-    // ─────────────────────────────────────────────────────────────────────────
     const presetTestCases = await TestCase.find({
       questionId,
       isActive: true,
@@ -660,7 +536,6 @@ export async function submitWithHiddenTests(req, res) {
       .sort({ order: 1 })
       .lean();
 
-    // Convert preset cases to standard format
     const formattedPresetCases = presetTestCases.map((tc) => ({
       stdin: tc.stdin,
       expectedStdout: tc.expectedStdout,
@@ -670,9 +545,6 @@ export async function submitWithHiddenTests(req, res) {
       timeLimit: tc.timeLimit,
     }));
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Execute with Hidden Test Cases
-    // ─────────────────────────────────────────────────────────────────────────
     const problemSlug = question.title?.toLowerCase().replace(/\s+/g, "-") || "default";
 
     const evaluationResult = await executeWithHiddenTestCases({
@@ -686,17 +558,11 @@ export async function submitWithHiddenTests(req, res) {
       presetTestCases: formattedPresetCases,
     });
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Update Submission Record
-    // ─────────────────────────────────────────────────────────────────────────
     submission.status = evaluationResult.verdict;
     submission.passedCount = evaluationResult.passedCount;
     submission.totalCount = evaluationResult.totalCount;
     await submission.save();
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Update Question Stats
-    // ─────────────────────────────────────────────────────────────────────────
     await Question.findByIdAndUpdate(questionId, {
       $inc: {
         totalSubmissions: 1,
@@ -704,9 +570,6 @@ export async function submitWithHiddenTests(req, res) {
       },
     });
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Build Response (NEVER expose hidden inputs)
-    // ─────────────────────────────────────────────────────────────────────────
     const response = {
       success: true,
       data: {
@@ -716,14 +579,13 @@ export async function submitWithHiddenTests(req, res) {
         totalCount: evaluationResult.totalCount,
         allPassed: evaluationResult.allPassed,
 
-        // Results with hidden inputs redacted
         results: evaluationResult.results.map((r) => ({
           testNumber: r.testNumber,
           category: r.category,
           passed: r.passed,
           verdict: r.verdict,
           isHidden: r.isHidden,
-          // Visible tests can show details
+
           ...(r.isHidden
             ? {}
             : {
@@ -733,7 +595,6 @@ export async function submitWithHiddenTests(req, res) {
               }),
         })),
 
-        // Failure summary (without exposing hidden data)
         failureInfo: evaluationResult.failureInfo
           ? {
               message: evaluationResult.allPassed
@@ -767,11 +628,6 @@ export async function submitWithHiddenTests(req, res) {
   }
 }
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * EXPORTS
- * ═══════════════════════════════════════════════════════════════════════════════
- */
 export {
   executeWithHiddenTestCases,
   generateSeed,

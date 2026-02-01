@@ -1,4 +1,3 @@
-
 import ProblemCard from "./ProblemCard";
 
 export default function ProblemList({ problems }) {

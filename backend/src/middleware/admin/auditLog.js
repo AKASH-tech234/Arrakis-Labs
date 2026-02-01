@@ -1,5 +1,3 @@
-
-
 import mongoose from "mongoose";
 
 const auditLogSchema = new mongoose.Schema(
@@ -63,13 +61,13 @@ export const createAuditEntry = async ({
     });
   } catch (error) {
     console.error("Failed to create audit log:", error);
-    
+
   }
 };
 
 export const auditLog = (action, getBeforeState = null) => {
   return async (req, res, next) => {
-    
+
     const originalSend = res.send;
     const originalJson = res.json;
 
@@ -90,13 +88,13 @@ export const auditLog = (action, getBeforeState = null) => {
 
     const captureResponse = (method) =>
       function (body) {
-        
+
         if (res.statusCode >= 200 && res.statusCode < 300) {
           let afterState = null;
           try {
             afterState = typeof body === "string" ? JSON.parse(body) : body;
           } catch {
-            
+
           }
 
           createAuditEntry({

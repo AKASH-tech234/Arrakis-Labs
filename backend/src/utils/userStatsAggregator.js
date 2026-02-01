@@ -1,39 +1,22 @@
-/**
- * User Stats Aggregator
- * Manages user AI profile aggregation and caching
- */
-
 import User from "../models/auth/User.js";
 import Submission from "../models/profile/Submission.js";
 
-// Cache for recent profile updates to avoid excessive writes
 const profileUpdateCache = new Map();
-const CACHE_TTL_MS = 60000; // 1 minute
+const CACHE_TTL_MS = 60000;
 
-/**
- * Get the attempt number for a user on a specific problem
- * @param {string} userId - User ID
- * @param {string} questionId - Question ID
- * @returns {Promise<number>} - Attempt number (1-indexed)
- */
 export async function getAttemptNumber(userId, questionId) {
   try {
     const count = await Submission.countDocuments({
       userId,
       questionId,
     });
-    return count + 1; // Next attempt number
+    return count + 1;
   } catch (error) {
     console.error("[Stats] Error getting attempt number:", error.message);
-    return 1; // Default to 1 if error
+    return 1;
   }
 }
 
-/**
- * Get user's AI profile
- * @param {string} userId - User ID
- * @returns {Promise<Object>} - User AI profile
- */
 export async function getUserAIProfile(userId) {
   try {
     const user = await User.findById(userId)
@@ -45,20 +28,16 @@ export async function getUserAIProfile(userId) {
       return getDefaultProfile();
     }
 
-    // Build profile from stored data
     const profile = {
-      // Basic stats
+
       totalSubmissions: user.aiProfile?.totalSubmissions || 0,
       successRate: user.aiProfile?.successRate || 0,
 
-      // Cognitive profile
       weakTopics: user.aiProfile?.weakTopics || [],
       strongTopics: user.aiProfile?.strongTopics || [],
       commonMistakes: user.aiProfile?.commonMistakes || [],
       recurringPatterns: user.aiProfile?.recurringPatterns || [],
 
-      // Skill levels per topic
-      // Note: After .lean(), Mongoose Map becomes a plain object, not an iterable
       skillLevels: user.aiProfile?.skillLevels
         ? (user.aiProfile.skillLevels instanceof Map
             ? Object.fromEntries(user.aiProfile.skillLevels)
@@ -67,21 +46,17 @@ export async function getUserAIProfile(userId) {
               : {})
         : {},
 
-      // Learning preferences
       learningStyle: user.aiProfile?.learningStyle || null,
       recentCategories: user.aiProfile?.recentCategories || [],
 
-      // Difficulty readiness
       difficultyReadiness: user.aiProfile?.difficultyReadiness || {
         easy: 1.0,
         medium: 0.5,
         hard: 0.2,
       },
 
-      // Learning roadmap
       learningRoadmap: user.learningRoadmap || null,
 
-      // Timestamps
       lastUpdated: user.aiProfile?.lastUpdated || null,
     };
 
@@ -92,9 +67,6 @@ export async function getUserAIProfile(userId) {
   }
 }
 
-/**
- * Get default profile for new users
- */
 function getDefaultProfile() {
   return {
     totalSubmissions: 0,
@@ -116,16 +88,9 @@ function getDefaultProfile() {
   };
 }
 
-/**
- * Update user's AI profile based on recent submissions
- * This is called asynchronously after each submission
- * @param {string} userId - User ID
- * @param {boolean} force - Force update even if recently updated
- * @returns {Promise<Object>} - Updated AI profile
- */
 export async function updateUserAIProfile(userId, force = false) {
   try {
-    // Check cache to avoid excessive updates
+
     const cacheKey = `profile:${userId}`;
     const lastUpdate = profileUpdateCache.get(cacheKey);
 
@@ -136,7 +101,6 @@ export async function updateUserAIProfile(userId, force = false) {
 
     console.log("[STATS-AGG] Aggregating user stats for:", userId);
 
-    // Get user's recent submissions for analysis
     const submissions = await Submission.find({ userId })
       .sort({ createdAt: -1 })
       .limit(100)
@@ -150,20 +114,17 @@ export async function updateUserAIProfile(userId, force = false) {
       return getDefaultProfile();
     }
 
-    // Calculate success rate
     const acceptedCount = submissions.filter(
       (s) => s.status === "accepted",
     ).length;
     const successRate =
       submissions.length > 0 ? acceptedCount / submissions.length : 0;
 
-    // Track topic performance
     const topicStats = {};
     submissions.forEach((sub) => {
       const topics = sub.problemTags || [];
       const category = sub.problemCategory || "General";
 
-      // Add category as a topic
       if (category && !topics.includes(category)) {
         topics.push(category);
       }
@@ -179,7 +140,6 @@ export async function updateUserAIProfile(userId, force = false) {
       });
     });
 
-    // Identify strong and weak topics
     const strongTopics = [];
     const weakTopics = [];
     const skillLevels = new Map();
@@ -197,7 +157,6 @@ export async function updateUserAIProfile(userId, force = false) {
       }
     });
 
-    // Identify common mistake patterns from failed submissions
     const failedSubmissions = submissions.filter(
       (s) =>
         s.status !== "accepted" &&
@@ -207,7 +166,7 @@ export async function updateUserAIProfile(userId, force = false) {
 
     const mistakePatterns = {};
     failedSubmissions.forEach((sub) => {
-      // Track error types
+
       if (sub.status === "time_limit_exceeded") {
         mistakePatterns["Efficiency Issues"] =
           (mistakePatterns["Efficiency Issues"] || 0) + 1;
@@ -223,20 +182,17 @@ export async function updateUserAIProfile(userId, force = false) {
       }
     });
 
-    // Sort and get top mistakes
     const commonMistakes = Object.entries(mistakePatterns)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([pattern]) => pattern);
 
-    // Get recent categories (last 10 unique)
     const recentCategories = [
       ...new Set(
         submissions.slice(0, 20).map((s) => s.problemCategory || "General"),
       ),
     ].slice(0, 10);
 
-    // Calculate difficulty readiness
     const difficultyStats = {
       Easy: { total: 0, accepted: 0 },
       Medium: { total: 0, accepted: 0 },
@@ -268,7 +224,6 @@ export async function updateUserAIProfile(userId, force = false) {
           : 0.2,
     };
 
-    // Build the update object
     const aiProfileUpdate = {
       "aiProfile.totalSubmissions": submissions.length,
       "aiProfile.successRate": successRate,
@@ -281,10 +236,8 @@ export async function updateUserAIProfile(userId, force = false) {
       "aiProfile.lastUpdated": new Date(),
     };
 
-    // Update user's AI profile in database
     await User.findByIdAndUpdate(userId, { $set: aiProfileUpdate });
 
-    // Update cache
     profileUpdateCache.set(cacheKey, Date.now());
 
     console.log("[STATS-AGG] Profile updated successfully for:", userId);
@@ -296,10 +249,6 @@ export async function updateUserAIProfile(userId, force = false) {
   }
 }
 
-/**
- * Invalidate profile cache for a user
- * @param {string} userId - User ID
- */
 export function invalidateProfileCache(userId) {
   const cacheKey = `profile:${userId}`;
   profileUpdateCache.delete(cacheKey);

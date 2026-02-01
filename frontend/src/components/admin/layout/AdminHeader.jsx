@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,7 +61,7 @@ export default function AdminHeader() {
         <div className="flex items-center gap-4">
           <Link
             to="/admin/problems/new"
-            className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9] 
+            className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9]
                        hover:border-[#78716C] transition-colors duration-200 text-xs uppercase tracking-wider"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -71,7 +69,7 @@ export default function AdminHeader() {
           </Link>
           <Link
             to="/admin/contests/new"
-            className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9] 
+            className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9]
                        hover:border-[#78716C] transition-colors duration-200 text-xs uppercase tracking-wider"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -132,7 +130,7 @@ export default function AdminHeader() {
                     {notifications.map((notif) => (
                       <div
                         key={notif.id}
-                        className="px-4 py-3 border-b border-[#1A1814]/50 hover:bg-[#1A1814]/30 
+                        className="px-4 py-3 border-b border-[#1A1814]/50 hover:bg-[#1A1814]/30
                                    transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-2">
@@ -176,7 +174,7 @@ export default function AdminHeader() {
                   <Link
                     to="/admin/system/audit"
                     onClick={() => setNotificationsOpen(false)}
-                    className="block px-4 py-2 text-center text-[#D97706] hover:text-[#F59E0B] 
+                    className="block px-4 py-2 text-center text-[#D97706] hover:text-[#F59E0B]
                                text-xs uppercase tracking-wider transition-colors"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
@@ -243,7 +241,7 @@ export default function AdminHeader() {
                   <Link
                     to="/admin/users/me"
                     onClick={() => setProfileOpen(false)}
-                    className="block px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30 
+                    className="block px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30
                                transition-colors text-xs uppercase tracking-wider"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
@@ -252,7 +250,7 @@ export default function AdminHeader() {
                   <Link
                     to="/problems"
                     onClick={() => setProfileOpen(false)}
-                    className="block px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30 
+                    className="block px-4 py-2 text-[#78716C] hover:text-[#E8E4D9] hover:bg-[#1A1814]/30
                                transition-colors text-xs uppercase tracking-wider"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
@@ -268,7 +266,7 @@ export default function AdminHeader() {
                         navigate("/", { replace: true });
                       }
                     }}
-                    className="block w-full text-left px-4 py-2 text-[#78716C] hover:text-[#92400E] 
+                    className="block w-full text-left px-4 py-2 text-[#78716C] hover:text-[#92400E]
                                hover:bg-[#92400E]/10 transition-colors text-xs uppercase tracking-wider"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >

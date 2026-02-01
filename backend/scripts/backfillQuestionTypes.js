@@ -1,14 +1,3 @@
-/**
- * Backfill Question.categoryType
- * =============================
- *
- * Populates categoryType for existing questions using:
- * 1) Explicit title mappings (highest priority)
- * 2) Heuristics based on existing tags
- *
- * Usage: node scripts/backfillQuestionTypes.js
- */
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
@@ -143,7 +132,6 @@ function scoreCategory(text, tags) {
     scores.set(cat, 0);
   }
 
-  // Tags get higher weight
   const normalizedTags = Array.isArray(tags)
     ? tags.map((t) => normalizeText(t)).filter(Boolean)
     : [];
@@ -155,7 +143,6 @@ function scoreCategory(text, tags) {
       }
     }
 
-    // Soft tag keyword matches
     for (const [cat, kws] of Object.entries(CATEGORY_KEYWORDS)) {
       for (const kw of kws) {
         if (tag.includes(normalizeText(kw))) {
@@ -165,7 +152,6 @@ function scoreCategory(text, tags) {
     }
   }
 
-  // Title/description keyword matches
   const t = normalizeText(text);
   for (const [cat, kws] of Object.entries(CATEGORY_KEYWORDS)) {
     for (const kw of kws) {
@@ -177,7 +163,6 @@ function scoreCategory(text, tags) {
     }
   }
 
-  // Pick best by score, then priority order
   const bestScore = Math.max(...Array.from(scores.values()));
   const bestCats = Array.from(scores.entries())
     .filter(([, s]) => s === bestScore)

@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * OA Report Schema
- * Immutable final report generated after OA submission
- */
 const oaReportSchema = new mongoose.Schema(
   {
     sessionId: {
@@ -19,19 +15,16 @@ const oaReportSchema = new mongoose.Schema(
       index: true,
     },
 
-    // === TIMING ===
     startedAt: Date,
     submittedAt: Date,
     totalTimeSeconds: Number,
 
-    // === OVERALL SCORE ===
     score: {
       earned: { type: Number, default: 0 },
       total: { type: Number, default: 0 },
       percentage: { type: Number, default: 0 },
     },
 
-    // === CODING PERFORMANCE ===
     codingPerformance: {
       attempted: { type: Number, default: 0 },
       fullySolved: { type: Number, default: 0 },
@@ -43,7 +36,6 @@ const oaReportSchema = new mongoose.Schema(
       avgTestCasePass: { type: Number, default: 0 },
     },
 
-    // === COMPANY-WISE BREAKDOWN ===
     companyWise: [
       {
         company: String,
@@ -55,7 +47,6 @@ const oaReportSchema = new mongoose.Schema(
       },
     ],
 
-    // === TOPIC-WISE BREAKDOWN ===
     topicWise: [
       {
         topic: String,
@@ -72,7 +63,6 @@ const oaReportSchema = new mongoose.Schema(
       },
     ],
 
-    // === DIFFICULTY-WISE BREAKDOWN ===
     difficultyWise: {
       easy: {
         attempted: { type: Number, default: 0 },
@@ -97,7 +87,6 @@ const oaReportSchema = new mongoose.Schema(
       },
     },
 
-    // === TIME ANALYSIS ===
     timeAnalysis: {
       avgTimePerQuestion: Number,
       fastestQuestion: {
@@ -123,7 +112,6 @@ const oaReportSchema = new mongoose.Schema(
       ],
     },
 
-    // === INTEGRITY ===
     integrity: {
       tabSwitches: { type: Number, default: 0 },
       warningsUsed: { type: Number, default: 0 },
@@ -137,7 +125,6 @@ const oaReportSchema = new mongoose.Schema(
       },
     },
 
-    // === AI INSIGHTS ===
     insights: {
       practiceLevel: {
         type: String,
@@ -166,12 +153,11 @@ const oaReportSchema = new mongoose.Schema(
         },
       ],
       comparisonToAvg: {
-        score: String, // 'above', 'below', 'average'
+        score: String,
         percentile: Number,
       },
     },
 
-    // === RAW DATA (for debugging/audit) ===
     rawAnswers: [
       {
         refId: mongoose.Schema.Types.ObjectId,
@@ -192,12 +178,10 @@ const oaReportSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes
 oaReportSchema.index({ userId: 1, createdAt: -1 });
 oaReportSchema.index({ userId: 1, "score.percentage": -1 });
 oaReportSchema.index({ "insights.practiceLevel": 1 });
 
-// Get practice level based on performance
 oaReportSchema.statics.calculatePracticeLevel = function (scorePercentage, difficultyPerf) {
   const hardAccuracy = difficultyPerf?.hard?.accuracy || 0;
   const mediumAccuracy = difficultyPerf?.medium?.accuracy || 0;

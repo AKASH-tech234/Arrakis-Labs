@@ -377,7 +377,7 @@ const AnimatedShaderHero = ({
             transform: translateY(0);
           }
         }
-        
+
         @keyframes fade-in-up {
           from {
             opacity: 0;
@@ -388,28 +388,28 @@ const AnimatedShaderHero = ({
             transform: translateY(0);
           }
         }
-        
+
         .animate-fade-in-down {
           animation: fade-in-down 0.8s ease-out forwards;
         }
-        
+
         .animate-fade-in-up {
           animation: fade-in-up 0.8s ease-out forwards;
           opacity: 0;
         }
-        
+
         .animation-delay-200 {
           animation-delay: 0.2s;
         }
-        
+
         .animation-delay-400 {
           animation-delay: 0.4s;
         }
-        
+
         .animation-delay-600 {
           animation-delay: 0.6s;
         }
-        
+
         .animation-delay-800 {
           animation-delay: 0.8s;
         }

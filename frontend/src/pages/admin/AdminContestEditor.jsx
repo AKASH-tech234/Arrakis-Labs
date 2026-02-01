@@ -47,10 +47,10 @@ function ProblemSelector({ selected, onChange }) {
 
   const searchProblems = async (query) => {
     if (!query || query.length < 2) return;
-    
+
     try {
       setLoading(true);
-      
+
       const response = await fetch(`/api/questions?search=${query}&limit=20`);
       const data = await response.json();
       setProblems(data.questions || []);
@@ -68,8 +68,8 @@ function ProblemSelector({ selected, onChange }) {
 
   const addProblem = (problem) => {
     if (selected.find((p) => p.questionId === problem._id)) return;
-    
-    const label = String.fromCharCode(65 + selected.length); 
+
+    const label = String.fromCharCode(65 + selected.length);
     onChange([
       ...selected,
       {
@@ -86,7 +86,7 @@ function ProblemSelector({ selected, onChange }) {
 
   const removeProblem = (index) => {
     const updated = selected.filter((_, i) => i !== index);
-    
+
     onChange(updated.map((p, i) => ({ ...p, label: String.fromCharCode(65 + i) })));
   };
 
@@ -118,7 +118,7 @@ function ProblemSelector({ selected, onChange }) {
         </label>
       </div>
 
-      {/* Search Input */}
+      {}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#78716C]" />
         <input
@@ -128,8 +128,8 @@ function ProblemSelector({ selected, onChange }) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-xl border border-[#1A1814] bg-[#0A0A08] text-[#E8E4D9] placeholder-[#78716C] focus:outline-none focus:border-[#D97706]/50 focus:ring-2 focus:ring-[#D97706]/20 transition-all"
         />
-        
-        {/* Search Results */}
+
+        {}
         {problems.length > 0 && (
           <div className="absolute z-10 w-full mt-2 bg-[#0F0F0D] border border-[#1A1814] rounded-xl shadow-2xl max-h-60 overflow-y-auto">
             {problems.map((problem) => (
@@ -219,12 +219,12 @@ export default function AdminContestEditor() {
 
   const fetchContest = useCallback(async () => {
     if (!id) return;
-    
+
     try {
       setLoading(true);
       const response = await adminContestApi.getContest(id);
       const data = response.data;
-      
+
       setContest({
         ...data,
         startTime: formatDateTimeLocal(data.startTime),
@@ -244,7 +244,7 @@ export default function AdminContestEditor() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setContest((prev) => ({
@@ -280,7 +280,7 @@ export default function AdminContestEditor() {
 
     try {
       setSaving(true);
-      
+
       const payload = {
         ...contest,
         duration: parseInt(contest.duration),
@@ -323,7 +323,7 @@ export default function AdminContestEditor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -349,7 +349,7 @@ export default function AdminContestEditor() {
         </div>
       </motion.div>
 
-      {/* Error Alert */}
+      {}
       {error && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -367,7 +367,7 @@ export default function AdminContestEditor() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -380,7 +380,7 @@ export default function AdminContestEditor() {
             </div>
             <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">Basic Information</h2>
           </div>
-          
+
           <div>
             <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
               Title *
@@ -494,7 +494,7 @@ export default function AdminContestEditor() {
           </div>
         </motion.div>
 
-        {/* Scoring Rules */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -551,7 +551,7 @@ export default function AdminContestEditor() {
           </label>
         </motion.div>
 
-        {/* Penalty Rules */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -607,7 +607,7 @@ export default function AdminContestEditor() {
           </label>
         </motion.div>
 
-        {/* Problems */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -620,7 +620,7 @@ export default function AdminContestEditor() {
           />
         </motion.div>
 
-        {/* Actions */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

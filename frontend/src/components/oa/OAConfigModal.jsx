@@ -2,20 +2,16 @@ import { useState, useEffect } from "react";
 import { X, Building2, Gauge, Clock, Shield, Play } from "lucide-react";
 import oaService from "../../services/oaService";
 
-/**
- * OA Configuration Modal - Configure OA settings before starting
- */
 export default function OAConfigModal({ onClose, onStart }) {
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Config state
   const [config, setConfig] = useState({
-    companyMode: "all", // "all" or "selected"
+    companyMode: "all",
     selectedCompanies: [],
-    selectedTopics: [], // Keep for API compatibility but not used in UI
+    selectedTopics: [],
     difficulty: "mixed",
     durationMinutes: 60,
     questionCounts: { coding: 2 },
@@ -25,14 +21,13 @@ export default function OAConfigModal({ onClose, onStart }) {
     },
   });
 
-  // Load metadata
   useEffect(() => {
     const loadMetadata = async () => {
       try {
         const response = await oaService.getMetadata();
         if (response.success) {
           setMetadata(response.data);
-          // Set defaults from metadata
+
           setConfig((prev) => ({
             ...prev,
             durationMinutes: response.data.defaults?.duration || 60,
@@ -51,21 +46,20 @@ export default function OAConfigModal({ onClose, onStart }) {
     loadMetadata();
   }, []);
 
-  // Handle company selection - includes all case variations for accurate matching
   const toggleCompany = (companyName) => {
-    // Find the company object to get variations
+
     const companyObj = metadata?.companies?.find(c => c.name === companyName);
     const variations = companyObj?.variations || [companyName];
 
     setConfig((prev) => {
       const isCurrentlySelected = prev.selectedCompanies.includes(companyName);
-      
+
       let newSelected;
       if (isCurrentlySelected) {
-        // Remove all variations of this company
+
         newSelected = prev.selectedCompanies.filter(c => !variations.includes(c));
       } else {
-        // Add all variations of this company
+
         newSelected = [...new Set([...prev.selectedCompanies, ...variations])];
       }
 
@@ -77,7 +71,6 @@ export default function OAConfigModal({ onClose, onStart }) {
     });
   };
 
-  // Handle start
   const handleStart = async () => {
     try {
       setStarting(true);
@@ -105,7 +98,7 @@ export default function OAConfigModal({ onClose, onStart }) {
         className="bg-[#0F0F0D] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-[#1A1814]"
         style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
       >
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between p-4 border-b border-[#1A1814]">
           <div>
             <h2 className="text-xl font-semibold text-[#E8E4D9] uppercase tracking-wider">Configure Your OA</h2>
@@ -119,16 +112,16 @@ export default function OAConfigModal({ onClose, onStart }) {
           </button>
         </div>
 
-        {/* Content */}
+        {}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Error */}
+          {}
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
-          {/* Companies */}
+          {}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Building2 className="w-5 h-5 text-[#D97706]" />
@@ -140,8 +133,8 @@ export default function OAConfigModal({ onClose, onStart }) {
             </p>
             <div className="flex flex-wrap gap-2">
               {metadata?.companies?.map((company) => {
-                // Check if any variation of this company is selected
-                const isSelected = company.variations?.some(v => config.selectedCompanies.includes(v)) 
+
+                const isSelected = company.variations?.some(v => config.selectedCompanies.includes(v))
                   || config.selectedCompanies.includes(company.name);
                 return (
                   <button
@@ -163,7 +156,7 @@ export default function OAConfigModal({ onClose, onStart }) {
             </div>
           </div>
 
-          {/* Difficulty */}
+          {}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Gauge className="w-5 h-5 text-[#F59E0B]" />
@@ -197,7 +190,7 @@ export default function OAConfigModal({ onClose, onStart }) {
             )}
           </div>
 
-          {/* Duration */}
+          {}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-5 h-5 text-[#D97706]" />
@@ -222,7 +215,7 @@ export default function OAConfigModal({ onClose, onStart }) {
             </div>
           </div>
 
-          {/* Question Count */}
+          {}
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-[#E8E4D9] uppercase tracking-wider">Number of Questions</h3>
@@ -265,7 +258,7 @@ export default function OAConfigModal({ onClose, onStart }) {
             </p>
           </div>
 
-          {/* Proctoring */}
+          {}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Shield className="w-5 h-5 text-[#92400E]" />
@@ -320,7 +313,7 @@ export default function OAConfigModal({ onClose, onStart }) {
           </div>
         </div>
 
-        {/* Footer */}
+        {}
         <div className="p-4 border-t border-[#1A1814] flex items-center justify-between bg-[#0A0A08]">
           <div className="text-sm text-[#78716C]">
             {config.questionCounts.coding} question{config.questionCounts.coding > 1 ? "s" : ""} •{" "}

@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ArrakisLogo from "../ui/ArrakisLogo";
@@ -79,7 +78,7 @@ export default function Footer() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="w-32 h-px bg-gradient-to-r from-transparent via-[#D97706] to-transparent"
           />
- 
+
           {}
           <motion.p
             initial={{ opacity: 0 }}

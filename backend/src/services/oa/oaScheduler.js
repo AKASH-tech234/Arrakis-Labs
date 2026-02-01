@@ -1,19 +1,12 @@
 import { OASession } from "../../models/oa/index.js";
 import reportGenerator from "./reportGenerator.js";
 
-/**
- * OA Scheduler Service
- * Handles automatic session state transitions
- */
 class OAScheduler {
   constructor() {
     this.checkInterval = null;
     this.isRunning = false;
   }
 
-  /**
-   * Initialize the scheduler
-   */
   async initialize() {
     if (this.isRunning) {
       console.log("[OA Scheduler] Already running");
@@ -23,10 +16,8 @@ class OAScheduler {
     console.log("✓ OA Scheduler initialized");
     this.isRunning = true;
 
-    // Initial check
     await this.checkAndUpdateSessions();
 
-    // Periodic check every 10 seconds
     this.checkInterval = setInterval(() => {
       this.checkAndUpdateSessions().catch((err) => {
         console.error("[OA Scheduler] Periodic check error:", err.message);
@@ -34,14 +25,11 @@ class OAScheduler {
     }, 10000);
   }
 
-  /**
-   * Check and update session statuses
-   */
   async checkAndUpdateSessions() {
     const now = new Date();
 
     try {
-      // 1. Start scheduled sessions that should be live
+
       const shouldBeLive = await OASession.find({
         status: "scheduled",
         startAt: { $lte: now },
@@ -64,7 +52,6 @@ class OAScheduler {
         }
       }
 
-      // 2. Expire sessions past their end time
       const shouldBeExpired = await OASession.find({
         status: "live",
         endAt: { $lte: now },
@@ -81,7 +68,6 @@ class OAScheduler {
         }
       }
 
-      // 3. Auto-expire very old scheduled sessions (> 24 hours past start time)
       const staleScheduled = await OASession.find({
         status: "scheduled",
         startAt: { $lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
@@ -107,9 +93,6 @@ class OAScheduler {
     }
   }
 
-  /**
-   * Expire a session and generate report
-   */
   async expireSession(session) {
     session.status = "expired";
     session.terminatedReason = "time_expired";
@@ -118,7 +101,6 @@ class OAScheduler {
 
     console.log(`[OA Scheduler] Session ${session.sessionCode} EXPIRED`);
 
-    // Generate report asynchronously
     try {
       await reportGenerator.generateReport(session._id);
       console.log(
@@ -132,16 +114,12 @@ class OAScheduler {
     }
   }
 
-  /**
-   * Force check a specific session
-   */
   async checkSession(sessionId) {
     const session = await OASession.findById(sessionId);
     if (!session) return null;
 
     const now = new Date();
 
-    // Check if should transition to live
     if (
       session.status === "scheduled" &&
       now >= session.startAt &&
@@ -153,7 +131,6 @@ class OAScheduler {
       return session;
     }
 
-    // Check if should expire
     if (session.status === "live" && now >= session.endAt) {
       await this.expireSession(session);
       return session;
@@ -162,9 +139,6 @@ class OAScheduler {
     return session;
   }
 
-  /**
-   * Shutdown the scheduler
-   */
   shutdown() {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);

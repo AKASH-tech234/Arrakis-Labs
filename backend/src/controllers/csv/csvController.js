@@ -23,7 +23,7 @@ const csvUploader = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, 
+    fileSize: 5 * 1024 * 1024,
   },
 }).single("file");
 
@@ -55,12 +55,12 @@ function sanitizeCSVValue(value) {
 
   const dangerousChars = ["=", "+", "-", "@", "|", "\t", "\r"];
   const trimmedValue = value.trim();
-  
+
   if (dangerousChars.some(char => trimmedValue.startsWith(char))) {
-    
+
     return "'" + trimmedValue;
   }
-  
+
   return value;
 }
 
@@ -114,7 +114,7 @@ function normalizeDifficulty(value) {
 
 function validateRow(row, index) {
   const errors = [];
-  const rowNum = index + 2; 
+  const rowNum = index + 2;
 
   if (!row.title?.trim()) {
     errors.push(`Row ${rowNum}: Missing title`);
@@ -188,7 +188,7 @@ function parseCSVBuffer(buffer) {
       .pipe(csv({
         mapHeaders: ({ header }) => normalizeHeader(header),
         mapValues: ({ value }) => {
-          
+
           const trimmed = value?.trim() || "";
           return sanitizeCSVValue(trimmed);
         },
@@ -200,7 +200,7 @@ function parseCSVBuffer(buffer) {
 }
 
 async function processRow(row, adminId, session) {
-  
+
   let examples = [];
   const examplesValue = row.examples || row.example;
   if (examplesValue) {
@@ -223,10 +223,9 @@ async function processRow(row, adminId, session) {
     }
   }
 
-  // Parse company fields
   let companies = [];
   if (row.companies) {
-    // Companies can be comma-separated or JSON array
+
     try {
       companies = JSON.parse(row.companies);
       if (!Array.isArray(companies)) companies = [row.companies];
@@ -237,17 +236,14 @@ async function processRow(row, adminId, session) {
 
   let primaryCompany = row.primary_company?.trim() || null;
 
-  // If primary_company is missing but companies exist, use first company
   if (!primaryCompany && companies.length > 0) {
     primaryCompany = companies[0];
   }
 
-  // Ensure primary_company is in companies array if it exists
   if (primaryCompany && !companies.includes(primaryCompany)) {
     companies = [primaryCompany, ...companies];
   }
 
-  // Parse category - accept category or category_type column
   const categoryType = row.category?.trim() || row.category_type?.trim() || null;
 
   const createdAt = row.created_at ? new Date(row.created_at) : undefined;
@@ -281,14 +277,14 @@ async function processRow(row, adminId, session) {
   if (row.test_cases) {
     const testCases = JSON.parse(row.test_cases);
     const testCaseDocs = testCases.map((tc, index) => {
-      // Convert expected_output to string format for storage
+
       let expectedOutput = tc.expected_output;
       if (typeof expectedOutput === 'object') {
         expectedOutput = JSON.stringify(expectedOutput);
       } else {
         expectedOutput = String(expectedOutput ?? '');
       }
-      
+
       return {
         questionId: questionDoc._id,
         stdin: jsonToStdin(tc.input),
@@ -310,7 +306,7 @@ async function processRow(row, adminId, session) {
 
 export const processCSVUpload = async (req, res) => {
   const session = await mongoose.startSession();
-  
+
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -330,7 +326,7 @@ export const processCSVUpload = async (req, res) => {
 
     const columns = Object.keys(rows[0]);
     const missingColumns = REQUIRED_COLUMNS.filter(col => !columns.includes(col));
-    
+
     if (missingColumns.length > 0) {
       return res.status(400).json({
         success: false,
@@ -345,7 +341,7 @@ export const processCSVUpload = async (req, res) => {
     }));
 
     const invalidRows = validationResults.filter(r => !r.valid);
-    
+
     if (invalidRows.length > 0) {
       return res.status(400).json({
         success: false,
@@ -404,7 +400,7 @@ export const processCSVUpload = async (req, res) => {
             try {
               await session.abortTransaction();
             } catch {
-              
+
             }
             throw chunkError;
           }
@@ -415,11 +411,11 @@ export const processCSVUpload = async (req, res) => {
         await session.commitTransaction();
       }
     } catch (txError) {
-      
+
       try {
         await session.abortTransaction();
       } catch {
-        
+
       }
 
       const msg = String(txError?.message || "");
@@ -436,7 +432,7 @@ export const processCSVUpload = async (req, res) => {
       results.warnings.push(
         "MongoDB transactions are not supported by the current server; import ran without a transaction"
       );
-      
+
       results.questionsCreated = 0;
       results.testCasesCreated = 0;
       results.questions = [];
@@ -466,16 +462,16 @@ export const processCSVUpload = async (req, res) => {
     });
 
   } catch (error) {
-    
+
     try {
       if (session?.inTransaction?.()) {
         await session.abortTransaction();
       }
     } catch (abortErr) {
-      
+
       console.error("[CSV Upload Abort Error]:", abortErr?.message || abortErr);
     }
-    
+
     console.error("[CSV Upload Error]:", error.message);
     res.status(500).json({
       success: false,
@@ -534,7 +530,7 @@ export const previewCSV = async (req, res) => {
         totalRows: rows.length,
         validRows: validCount,
         invalidRows: invalidCount,
-        rows: validationResults.slice(0, 50), 
+        rows: validationResults.slice(0, 50),
       },
     });
 

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 
 export function useResizable({
@@ -11,7 +10,7 @@ export function useResizable({
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previousSize, setPreviousSize] = useState(initialSize);
-  
+
   const containerRef = useRef(null);
   const startPosRef = useRef(0);
   const startSizeRef = useRef(0);
@@ -30,19 +29,19 @@ export function useResizable({
 
     const container = containerRef.current;
     const containerRect = container.getBoundingClientRect();
-    const containerSize = direction === "horizontal" 
-      ? containerRect.width 
+    const containerSize = direction === "horizontal"
+      ? containerRect.width
       : containerRect.height;
 
     const currentPos = direction === "horizontal" ? e.clientX : e.clientY;
-    const startPos = direction === "horizontal" 
-      ? containerRect.left 
+    const startPos = direction === "horizontal"
+      ? containerRect.left
       : containerRect.top;
 
     const newSizePercent = ((currentPos - startPos) / containerSize) * 100;
 
-    const maxSizePercent = typeof maxSize === "number" && maxSize > 100 
-      ? (maxSize / containerSize) * 100 
+    const maxSizePercent = typeof maxSize === "number" && maxSize > 100
+      ? (maxSize / containerSize) * 100
       : maxSize;
 
     const minSizePercent = (minSize / containerSize) * 100;
@@ -66,7 +65,7 @@ export function useResizable({
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setPreviousSize(size);
-      setSize(0); 
+      setSize(0);
     } else {
       setSize(previousSize);
     }
@@ -77,7 +76,7 @@ export function useResizable({
     if (!isFullscreen) {
       setPreviousSize(size);
     }
-    setSize(100); 
+    setSize(100);
   }, [isFullscreen, size]);
 
   const restoreSize = useCallback(() => {

@@ -17,9 +17,8 @@ apiClient.interceptors.request.use((config) => {
   const baseUrl = String(config.baseURL || "");
   const url = String(config.url || "");
 
-  // If baseURL already ends with '/api', avoid requests like '/api/api/...'
   if (baseUrl.endsWith("/api") && url.startsWith("/api/")) {
-    config.url = url.slice(4); // remove leading '/api'
+    config.url = url.slice(4);
   }
 
   return config;
@@ -40,7 +39,7 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
   let normalizedPath = path;
   if (API_BASE.endsWith("/api") && normalizedPath.startsWith("/api/")) {
-    normalizedPath = normalizedPath.slice(4); // remove leading '/api'
+    normalizedPath = normalizedPath.slice(4);
   }
 
   const response = await fetch(`${API_BASE}${normalizedPath}`, {
@@ -78,7 +77,6 @@ export async function getPublicQuestions({
   const qs = params.toString();
   const data = await request(`/questions${qs ? `?${qs}` : ""}`);
 
-  // Safely parse constraints using leetCodeConstraints (keeps original on error)
   const questions = (data.data || []).map((q) => {
     let constraintsOut = q.constraints || [];
     try {
@@ -154,10 +152,6 @@ export async function getMySubmissions({ questionId } = {}) {
   return data.data || [];
 }
 
-/* ======================================================
-   CODE EXECUTION
-====================================================== */
-
 export async function executeCode({ code, language, stdin = "", signal }) {
   const data = await request("/execute", {
     method: "POST",
@@ -172,10 +166,6 @@ export async function executeCode({ code, language, stdin = "", signal }) {
     exitCode: data.exitCode ?? -1,
   };
 }
-
-/* ======================================================
-   AUTH
-====================================================== */
 
 export async function signup({ name, email, password, passwordConfirm }) {
   return request("/auth/signup", {
@@ -213,10 +203,6 @@ export async function googleAuth(token) {
   return data;
 }
 
-/* ======================================================
-   AI FEEDBACK
-====================================================== */
-
 export async function getAIFeedback({
   questionId,
   code,
@@ -246,10 +232,6 @@ export async function getAILearningSummary({
   });
   return data.data;
 }
-
-/* ======================================================
-   SUBMISSIONS
-====================================================== */
 
 export async function getSubmissionHistory({
   userId,

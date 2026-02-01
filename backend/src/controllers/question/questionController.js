@@ -134,20 +134,17 @@ export const updateQuestion = async (req, res) => {
     if (constraints !== undefined) question.constraints = constraints;
     if (examples) question.examples = examples;
     if (tags) question.tags = tags;
-    
-    // Handle categoryType - use topic as fallback if categoryType not provided
+
     if (categoryType !== undefined) {
       question.categoryType = categoryType;
     } else if (topic !== undefined) {
       question.categoryType = topic;
     }
-    
-    // Also update topic field for AI metadata
+
     if (topic !== undefined) {
       question.topic = topic;
     }
 
-    // Handle company fields
     if (primaryCompany !== undefined) {
       question.primaryCompany = primaryCompany?.trim() || null;
     }
@@ -155,7 +152,7 @@ export const updateQuestion = async (req, res) => {
       let finalCompanies = Array.isArray(companies)
         ? companies.map(c => c.trim()).filter(Boolean)
         : [];
-      // Ensure primary_company is in companies array if it exists
+
       if (question.primaryCompany && !finalCompanies.includes(question.primaryCompany)) {
         finalCompanies = [question.primaryCompany, ...finalCompanies];
       }
@@ -247,19 +244,15 @@ export const createQuestion = async (req, res) => {
       });
     }
 
-    // Validate company fields
     let finalPrimaryCompany = primaryCompany?.trim() || null;
-    let finalCompanies = Array.isArray(companies) 
+    let finalCompanies = Array.isArray(companies)
       ? companies.map(c => c.trim()).filter(Boolean)
       : [];
 
-    // If primary_company exists, ensure it's in the companies array
     if (finalPrimaryCompany && !finalCompanies.includes(finalPrimaryCompany)) {
       finalCompanies = [finalPrimaryCompany, ...finalCompanies];
     }
 
-    // Map topic to categoryType if categoryType not explicitly provided
-    // This ensures manual form (which sends topic) works correctly
     const finalCategoryType = categoryType ?? topic ?? null;
 
     const question = await Question.create({
@@ -270,7 +263,7 @@ export const createQuestion = async (req, res) => {
       examples: examples || [],
       tags: tags || [],
       categoryType: finalCategoryType,
-      topic: topic || null, // Also save to topic for AI metadata
+      topic: topic || null,
       primaryCompany: finalPrimaryCompany,
       companies: finalCompanies,
       createdBy: req.admin._id,

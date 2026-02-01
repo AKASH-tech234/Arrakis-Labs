@@ -65,7 +65,7 @@ function statsErrorCode({ profile, stats }) {
 
 function toDailyCountSeries(stats) {
   const daily = Array.isArray(stats?.daily) ? stats.daily : [];
-  
+
   return daily
     .filter((d) => d?.date)
     .map((d) => ({ date: d.date, count: d.solved || 0 }));

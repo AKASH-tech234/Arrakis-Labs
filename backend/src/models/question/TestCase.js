@@ -8,50 +8,50 @@ const testCaseSchema = new mongoose.Schema(
       required: [true, "Question ID is required"],
       index: true,
     },
-    
+
     stdin: {
       type: String,
       default: "",
-      
+
       trim: false,
     },
-    
+
     expectedStdout: {
       type: String,
       default: "",
-      
+
       trim: false,
     },
-    
+
     isHidden: {
       type: Boolean,
-      default: true, 
+      default: true,
     },
-    
+
     label: {
       type: String,
       default: "",
       maxlength: [100, "Label cannot exceed 100 characters"],
     },
-    
+
     timeLimit: {
       type: Number,
-      default: 2000, 
+      default: 2000,
       min: [100, "Time limit must be at least 100ms"],
       max: [30000, "Time limit cannot exceed 30 seconds"],
     },
     memoryLimit: {
       type: Number,
-      default: 256, 
+      default: 256,
       min: [16, "Memory limit must be at least 16MB"],
       max: [512, "Memory limit cannot exceed 512MB"],
     },
-    
+
     order: {
       type: Number,
       default: 0,
     },
-    
+
     isActive: {
       type: Boolean,
       default: true,
@@ -88,7 +88,7 @@ testCaseSchema.methods.toSafeJSON = function () {
       label: this.label || "Hidden Test Case",
       timeLimit: this.timeLimit,
       memoryLimit: this.memoryLimit,
-      
+
     };
   }
 

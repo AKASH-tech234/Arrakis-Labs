@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * User OA History Schema
- * Tracks user's OA history for analytics and adaptive question selection
- */
 const userOAHistorySchema = new mongoose.Schema(
   {
     userId: {
@@ -13,18 +9,16 @@ const userOAHistorySchema = new mongoose.Schema(
       unique: true,
     },
 
-    // === ATTEMPTED QUESTIONS (to avoid repeats) ===
     attemptedCoding: [
       {
         questionId: mongoose.Schema.Types.ObjectId,
         lastAttemptedAt: Date,
-        bestPassRate: { type: Number, default: 0 }, // 0-1
+        bestPassRate: { type: Number, default: 0 },
         attemptCount: { type: Number, default: 1 },
         bestVerdict: String,
       },
     ],
 
-    // === TOPIC PROFICIENCY (for adaptive difficulty) ===
     topicProficiency: {
       type: Map,
       of: {
@@ -38,7 +32,6 @@ const userOAHistorySchema = new mongoose.Schema(
       default: () => new Map(),
     },
 
-    // === DIFFICULTY PROFICIENCY ===
     difficultyProficiency: {
       type: {
         easy: {
@@ -64,16 +57,14 @@ const userOAHistorySchema = new mongoose.Schema(
       }),
     },
 
-    // === OVERALL STATS ===
     totalOAs: { type: Number, default: 0 },
     completedOAs: { type: Number, default: 0 },
     avgScore: { type: Number, default: 0 },
     bestScore: { type: Number, default: 0 },
-    totalTimeSpent: { type: Number, default: 0 }, // seconds
+    totalTimeSpent: { type: Number, default: 0 },
     totalQuestionsAttempted: { type: Number, default: 0 },
     totalQuestionsSolved: { type: Number, default: 0 },
 
-    // === RECENT OA SESSIONS ===
     recentSessions: [
       {
         sessionId: mongoose.Schema.Types.ObjectId,
@@ -84,7 +75,6 @@ const userOAHistorySchema = new mongoose.Schema(
       },
     ],
 
-    // === STREAK TRACKING ===
     streak: {
       current: { type: Number, default: 0 },
       longest: { type: Number, default: 0 },
@@ -94,10 +84,8 @@ const userOAHistorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index
 userOAHistorySchema.index({ userId: 1 });
 
-// Get or create history for user
 userOAHistorySchema.statics.getOrCreate = async function (userId) {
   let history = await this.findOne({ userId });
   if (!history) {
@@ -111,7 +99,7 @@ userOAHistorySchema.statics.getOrCreate = async function (userId) {
       },
     });
   }
-  // Ensure maps and objects exist for existing records
+
   if (!history.topicProficiency) {
     history.topicProficiency = new Map();
   }
@@ -125,14 +113,12 @@ userOAHistorySchema.statics.getOrCreate = async function (userId) {
   return history;
 };
 
-// Check if question was previously attempted
 userOAHistorySchema.methods.wasQuestionAttempted = function (questionId) {
   return this.attemptedCoding.some(
     (q) => q.questionId.toString() === questionId.toString()
   );
 };
 
-// Get weak topics (for recommendations)
 userOAHistorySchema.methods.getWeakTopics = function (threshold = 0.5) {
   const weak = [];
   if (this.topicProficiency) {
@@ -149,7 +135,6 @@ userOAHistorySchema.methods.getWeakTopics = function (threshold = 0.5) {
   return weak.sort((a, b) => a.avgPassRate - b.avgPassRate);
 };
 
-// Get strong topics
 userOAHistorySchema.methods.getStrongTopics = function (threshold = 0.7) {
   const strong = [];
   if (this.topicProficiency) {
@@ -166,27 +151,22 @@ userOAHistorySchema.methods.getStrongTopics = function (threshold = 0.7) {
   return strong.sort((a, b) => b.avgPassRate - a.avgPassRate);
 };
 
-// Update stats after OA completion
 userOAHistorySchema.methods.updateAfterOA = async function (report) {
-  // Update totals
+
   this.totalOAs += 1;
   if (report.score.percentage > 0) {
     this.completedOAs += 1;
   }
 
-  // Update average score
   const totalScore = this.avgScore * (this.totalOAs - 1) + report.score.percentage;
   this.avgScore = totalScore / this.totalOAs;
 
-  // Update best score
   if (report.score.percentage > this.bestScore) {
     this.bestScore = report.score.percentage;
   }
 
-  // Update time spent
   this.totalTimeSpent += report.totalTimeSeconds || 0;
 
-  // Add to recent sessions (keep last 20)
   this.recentSessions.unshift({
     sessionId: report.sessionId,
     score: report.score.earned,
@@ -198,7 +178,6 @@ userOAHistorySchema.methods.updateAfterOA = async function (report) {
     this.recentSessions = this.recentSessions.slice(0, 20);
   }
 
-  // Update streak
   const today = new Date().toDateString();
   const lastOADate = this.streak.lastOADate
     ? this.streak.lastOADate.toDateString()

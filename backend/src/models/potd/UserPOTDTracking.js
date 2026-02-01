@@ -2,68 +2,68 @@ import mongoose from "mongoose";
 
 const userPOTDTrackingSchema = new mongoose.Schema(
   {
-    
+
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User ID is required"],
       index: true,
     },
-    
+
     potdId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PublishedPOTD",
       required: [true, "POTD ID is required"],
     },
-    
+
     problemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Question",
       required: [true, "Problem ID is required"],
     },
-    
+
     potdDate: {
       type: Date,
       required: true,
       index: true,
     },
-    
+
     solved: {
       type: Boolean,
       default: false,
     },
-    
+
     solvedAt: {
       type: Date,
       default: null,
     },
-    
+
     attempts: {
       type: Number,
       default: 0,
     },
-    
+
     timeSpent: {
       type: Number,
       default: 0,
     },
-    
+
     firstAttemptAt: {
       type: Date,
       default: null,
     },
-    
+
     lastAttemptAt: {
       type: Date,
       default: null,
     },
-    
+
     bestSubmissionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Submission",
       default: null,
     },
-    
+
     language: {
       type: String,
       default: null,

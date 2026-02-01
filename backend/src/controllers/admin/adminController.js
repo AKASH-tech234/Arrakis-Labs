@@ -140,7 +140,7 @@ export const getAdminProfile = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    // Import all required models
+
     const Question = (await import("../../models/question/Question.js"))
       .default;
     const TestCase = (await import("../../models/question/TestCase.js"))
@@ -149,7 +149,6 @@ export const getDashboardStats = async (req, res) => {
       .default;
     const User = (await import("../../models/auth/User.js")).default;
 
-    // Fetch all stats in parallel for performance
     const [
       totalQuestions,
       totalTestCases,
@@ -173,7 +172,6 @@ export const getDashboardStats = async (req, res) => {
       ]),
     ]);
 
-    // Transform difficulty stats to object
     const byDifficulty = difficultyStats.reduce((acc, curr) => {
       if (curr._id) {
         acc[curr._id] = curr.count;
@@ -181,15 +179,14 @@ export const getDashboardStats = async (req, res) => {
       return acc;
     }, { Easy: 0, Medium: 0, Hard: 0 });
 
-    // Transform submission status stats to object
     const byStatus = submissionStatusStats.reduce((acc, curr) => {
       if (curr._id) {
         acc[curr._id] = curr.count;
       }
       return acc;
-    }, { 
-      accepted: 0, 
-      wrong_answer: 0, 
+    }, {
+      accepted: 0,
+      wrong_answer: 0,
       time_limit_exceeded: 0,
       memory_limit_exceeded: 0,
       runtime_error: 0,
@@ -199,7 +196,6 @@ export const getDashboardStats = async (req, res) => {
       internal_error: 0
     });
 
-    // Return data in the format frontend expects
     res.status(200).json({
       success: true,
       data: {

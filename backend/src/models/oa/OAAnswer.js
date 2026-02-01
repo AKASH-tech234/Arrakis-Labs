@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * OA Answer Schema
- * Stores user's answers with autosave support and time tracking
- */
 const oaAnswerSchema = new mongoose.Schema(
   {
     sessionId: {
@@ -18,7 +14,6 @@ const oaAnswerSchema = new mongoose.Schema(
       required: true,
     },
 
-    // === QUESTION REFERENCE ===
     refId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Question",
@@ -29,7 +24,6 @@ const oaAnswerSchema = new mongoose.Schema(
       required: true,
     },
 
-    // === ANSWER DATA (Coding) ===
     answer: {
       code: { type: String, default: "" },
       language: {
@@ -39,7 +33,6 @@ const oaAnswerSchema = new mongoose.Schema(
       },
     },
 
-    // === SUBMISSION STATE ===
     submission: {
       isSubmitted: { type: Boolean, default: false },
       submittedAt: { type: Date, default: null },
@@ -71,7 +64,6 @@ const oaAnswerSchema = new mongoose.Schema(
       ],
     },
 
-    // === TIME TRACKING ===
     firstSeenAt: {
       type: Date,
       default: null,
@@ -85,7 +77,6 @@ const oaAnswerSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // === AUTOSAVE META ===
     clientUpdatedAt: {
       type: Date,
       default: null,
@@ -99,7 +90,6 @@ const oaAnswerSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // === SCORING ===
     pointsEarned: {
       type: Number,
       default: 0,
@@ -112,12 +102,10 @@ const oaAnswerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Unique constraint: one answer per question per session
 oaAnswerSchema.index({ sessionId: 1, refId: 1 }, { unique: true });
 oaAnswerSchema.index({ sessionId: 1, serverUpdatedAt: -1 });
 oaAnswerSchema.index({ sessionId: 1, questionIndex: 1 });
 
-// Calculate score based on test case results
 oaAnswerSchema.methods.calculateScore = function () {
   if (!this.submission.isSubmitted || this.submission.totalCount === 0) {
     return 0;
@@ -126,14 +114,12 @@ oaAnswerSchema.methods.calculateScore = function () {
   return Math.round(this.maxPoints * percentage);
 };
 
-// Update time tracking
 oaAnswerSchema.methods.updateTimeSpent = function (additionalSeconds) {
   this.timeSpentSeconds += additionalSeconds;
   this.lastFocusedAt = new Date();
   return this;
 };
 
-// Mark as first seen
 oaAnswerSchema.methods.markFirstSeen = function () {
   if (!this.firstSeenAt) {
     this.firstSeenAt = new Date();

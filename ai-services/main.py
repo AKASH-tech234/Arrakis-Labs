@@ -126,18 +126,45 @@ app = FastAPI(
 )
 
 # -------------------------
-# CORS MIDDLEWARE - CRITICAL FIX
+# CORS MIDDLEWARE - PRODUCTION READY
 # -------------------------
-# Allow all origins in development, restrict in production
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    # Add production domains here
-]
+# Build allowed origins from environment + local dev defaults
+def get_allowed_origins():
+    """Build CORS origins list from environment variables"""
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+    ]
+    
+    # Add production URLs from environment
+    frontend_url = os.getenv("FRONTEND_URL")
+    backend_url = os.getenv("BACKEND_URL")
+    
+    if frontend_url:
+        # Handle both with and without protocol
+        if not frontend_url.startswith("http"):
+            origins.append(f"https://{frontend_url}")
+        else:
+            origins.append(frontend_url)
+    
+    if backend_url:
+        if not backend_url.startswith("http"):
+            origins.append(f"https://{backend_url}")
+        else:
+            origins.append(backend_url)
+    
+    # Add any additional origins from ALLOWED_ORIGINS env var (comma-separated)
+    extra_origins = os.getenv("ALLOWED_ORIGINS", "")
+    if extra_origins:
+        origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+    
+    return list(set(origins))  # Remove duplicates
+
+ALLOWED_ORIGINS = get_allowed_origins()
 
 app.add_middleware(
     CORSMiddleware,
@@ -204,14 +231,26 @@ async def tracing_middleware(request: Request, call_next):
 # -------------------------
 app.include_router(router)
 
+# Get port from environment (Render uses PORT=10000)
+PORT = int(os.getenv("PORT", 8000))
+
 print("✅ Routes registered: /health, /ai/feedback, /ai/weekly-report")
 print("\n" + "="*80)
 print("✨ AI SERVICE READY")
 print("="*80)
-print(f"🌐 Listening on: http://localhost:8000")
-print(f"📝 API Docs: http://localhost:8000/docs")
-print(f"📋 Health: http://localhost:8000/health")
+print(f"🌐 Listening on: http://0.0.0.0:{PORT}")
+print(f"📝 API Docs: http://localhost:{PORT}/docs")
+print(f"📋 Health: http://localhost:{PORT}/health")
+print(f"🔒 CORS Origins: {len(ALLOWED_ORIGINS)} configured")
 print("="*80 + "\n")
 
 logger.info("router_registered", routes=["/health", "/ai/feedback", ])
-logger.info("service_ready", message="AI Service ready to accept requests")
+logger.info("service_ready", message="AI Service ready to accept requests", port=PORT)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Run with: uvicorn main:app --host 0.0.0.0 --port $PORT
+# For Render: startCommand = uvicorn main:app --host 0.0.0.0 --port 10000
+# ─────────────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=os.getenv("ENVIRONMENT") != "production")

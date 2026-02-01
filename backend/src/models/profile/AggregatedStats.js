@@ -26,7 +26,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
     weightedAvgRating: { type: Number, default: null },
     bestPlatform: { type: String, default: null },
 
-    consistencyScore: { type: Number, default: 0 }, 
+    consistencyScore: { type: Number, default: 0 },
 
     difficulty: {
       easy: { type: difficultySchema, default: () => ({}) },
@@ -56,7 +56,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            weekStart: { type: String, required: true }, 
+            weekStart: { type: String, required: true },
             solved: { type: Number, default: 0 },
           },
           { _id: false }
@@ -69,7 +69,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            month: { type: String, required: true }, 
+            month: { type: String, required: true },
             solved: { type: Number, default: 0 },
           },
           { _id: false }
@@ -82,7 +82,7 @@ const aggregatedStatsSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            date: { type: String, required: true }, 
+            date: { type: String, required: true },
             count: { type: Number, default: 0 },
           },
           { _id: false }

@@ -1,16 +1,3 @@
-/**
- * Fix test cases for K-th Smallest in Merged Arrays
- * 
- * CORRECT CP FORMAT:
- * k              <- k-th smallest to find
- * n              <- number of arrays
- * len1           <- length of array 1
- * arr1_elements  <- space-separated elements
- * len2           <- length of array 2
- * arr2_elements  <- space-separated elements
- * ...
- */
-
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import TestCase from '../src/models/question/TestCase.js';
@@ -30,13 +17,11 @@ async function fixKthSmallestTestCases() {
   console.log('Question:', question.title);
   console.log('Slug:', question.slug);
 
-  // Delete old test cases
   await TestCase.deleteMany({ questionId: question._id });
   console.log('Deleted old test cases\n');
 
-  // Create new test cases in correct CP format
   const testCases = [
-    // Visible test cases
+
     {
       questionId: question._id,
       stdin: `4\n2\n3\n1 3 5\n3\n2 4 6`,
@@ -53,7 +38,7 @@ async function fixKthSmallestTestCases() {
       label: 'Example 2: k=5, three arrays',
       order: 2
     },
-    // Hidden test cases
+
     {
       questionId: question._id,
       stdin: `3\n3\n2\n10 20\n2\n1 5\n2\n15 25`,
@@ -120,11 +105,9 @@ async function fixKthSmallestTestCases() {
     }
   ];
 
-  // Insert new test cases
   await TestCase.insertMany(testCases);
   console.log(`Created ${testCases.length} test cases in correct CP format\n`);
 
-  // Verify
   const newTestCases = await TestCase.find({ questionId: question._id });
   console.log('New test cases:');
   for (const tc of newTestCases) {

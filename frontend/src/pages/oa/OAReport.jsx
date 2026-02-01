@@ -17,9 +17,6 @@ import oaService from "../../services/oaService";
 import AppHeader from "../../components/layout/AppHeader";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui/ds";
 
-/**
- * OA Report Page - Detailed post-OA report
- */
 export default function OAReport() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -29,7 +26,6 @@ export default function OAReport() {
   const [error, setError] = useState(null);
   const [expandedAnswers, setExpandedAnswers] = useState({});
 
-  // Load report data
   useEffect(() => {
     const loadReport = async () => {
       try {
@@ -57,7 +53,6 @@ export default function OAReport() {
     loadReport();
   }, [sessionId]);
 
-  // Toggle answer expansion
   const toggleAnswer = (refId) => {
     setExpandedAnswers((prev) => ({
       ...prev,
@@ -113,7 +108,7 @@ export default function OAReport() {
             />
           </div>
 
-        {/* Score Overview */}
+        {}
         <Card className="p-6 mb-10 bg-gradient-to-r from-[#2A1F0F] to-[#121210]">
           <div className="flex items-center justify-between">
             <div>
@@ -148,7 +143,7 @@ export default function OAReport() {
             </div>
           </div>
 
-          {/* Quick Stats */}
+          {}
           <div className="grid grid-cols-4 gap-4 mt-6">
             <Card className="p-4 bg-[#121210]">
               <div className="text-2xl font-bold text-[#86EFAC]">
@@ -178,7 +173,7 @@ export default function OAReport() {
         </Card>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-10">
-          {/* Topic Performance */}
+          {}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Target className="w-5 h-5" />
@@ -227,7 +222,7 @@ export default function OAReport() {
             )}
           </Card>
 
-          {/* Difficulty Performance */}
+          {}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -275,7 +270,7 @@ export default function OAReport() {
           </Card>
         </div>
 
-        {/* Time Analysis */}
+        {}
         <Card className="p-6 mb-10">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Clock className="w-5 h-5" />
@@ -314,7 +309,7 @@ export default function OAReport() {
           </div>
         </Card>
 
-        {/* Integrity */}
+        {}
         {integrity && (
           <Card
             className={`p-6 mb-10 ${
@@ -348,7 +343,7 @@ export default function OAReport() {
           </Card>
         )}
 
-        {/* Insights & Recommendations */}
+        {}
         {insights?.recommendations?.length > 0 && (
           <Card className="p-6 mb-10">
             <h3 className="text-lg font-semibold mb-4">Recommendations</h3>
@@ -366,7 +361,7 @@ export default function OAReport() {
           </Card>
         )}
 
-        {/* Answers Review */}
+        {}
         <Card>
           <h3 className="text-lg font-semibold p-6 border-b border-[#1A1814] flex items-center gap-2">
             <Code className="w-5 h-5" />
@@ -444,7 +439,7 @@ export default function OAReport() {
           </div>
         </Card>
 
-        {/* Actions */}
+        {}
         <div className="mt-10 flex justify-center gap-4">
           <Button onClick={() => navigate("/oa")} variant="primary" size="lg">
             Start Another OA

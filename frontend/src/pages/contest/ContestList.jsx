@@ -9,7 +9,7 @@ function ContestCard({ contest }) {
   const now = new Date();
   const startTime = new Date(contest.startTime);
   const endTime = new Date(contest.endTime);
-  
+
   const isUpcoming = now < startTime;
   const isLive = now >= startTime && now < endTime;
   const isPast = now >= endTime;
@@ -185,7 +185,7 @@ export default function ContestList() {
     const fetchContests = async () => {
       try {
         setLoading(true);
-        
+
         const [liveRes, upcomingRes, pastRes] = await Promise.all([
           contestApi.getContests({ status: 'live', limit: 10 }),
           contestApi.getContests({ status: 'upcoming', limit: 20 }),

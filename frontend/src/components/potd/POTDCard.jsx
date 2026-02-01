@@ -29,7 +29,7 @@ export default function POTDCard() {
 
       if (remaining === 0) {
         clearInterval(timer);
-        fetchTodaysPOTD(); 
+        fetchTodaysPOTD();
       }
     }, 1000);
 
@@ -99,7 +99,7 @@ export default function POTDCard() {
 
   return (
     <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] hover:border-[#D97706]/40 transition-all duration-200">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between p-4 border-b border-[#1A1814]">
         <div className="flex items-center gap-2">
           <Flame className="w-5 h-5 text-[#D97706]" />
@@ -124,7 +124,7 @@ export default function POTDCard() {
         >
           {problem.title}
         </h4>
-        
+
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span
             className={`px-2 py-0.5 rounded text-xs font-medium ${getDifficultyColor(problem.difficulty)}`}

@@ -1,5 +1,3 @@
-
-
 import { motion } from "framer-motion";
 
 const StatCard = ({ label, value, unit, accent, delay }) => (

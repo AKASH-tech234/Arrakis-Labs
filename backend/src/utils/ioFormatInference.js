@@ -1,12 +1,3 @@
-/**
- * Infer user-facing Input/Output format text from stored stdin/expectedStdout.
- *
- * IMPORTANT:
- * - Must not reveal actual test values.
- * - Can reveal structure (line counts, JSON vs primitive, etc.).
- * - Works with this codebase's convention: each test case stores raw stdin as text.
- */
-
 function normalizeNewlines(text) {
   return String(text ?? "")
     .replace(/\r\n/g, "\n")
@@ -17,12 +8,10 @@ function splitNonTrailingEmptyLines(text) {
   const normalized = normalizeNewlines(text);
   const lines = normalized.split("\n");
 
-  // Remove trailing empty/whitespace-only lines (common when users print extra newlines)
   while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
     lines.pop();
   }
 
-  // Remove leading empty/whitespace-only lines as well
   while (lines.length > 0 && lines[0].trim() === "") {
     lines.shift();
   }
@@ -57,10 +46,8 @@ function inferLineType(line) {
   const lower = trimmed.toLowerCase();
   if (lower === "true" || lower === "false") return "boolean";
 
-  // Integer (no decimals)
   if (/^[+-]?\d+$/.test(trimmed)) return "integer";
 
-  // Float / scientific
   if (/^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(trimmed)) {
     return "number";
   }
@@ -104,8 +91,7 @@ function isAllIntegerTokens(tokens) {
 }
 
 function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
-  // Goal: generate a Codeforces-like template with variable names.
-  // Must not reveal actual values.
+
   const cases = Array.isArray(linesPerCase) ? linesPerCase : [];
   if (cases.length === 0) return null;
 
@@ -113,7 +99,6 @@ function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
   const minLines = Math.min(...lineCounts);
   const maxLines = Math.max(...lineCounts);
 
-  // We only attempt structured inference when line counts are consistent.
   if (!isFinite(minLines) || !isFinite(maxLines) || minLines !== maxLines || minLines === 0) {
     return null;
   }
@@ -121,7 +106,6 @@ function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
   const lineCount = minLines;
   const tokensPerCase = cases.map((lines) => lines.map(splitTokens));
 
-  // 1) Single integer
   if (lineCount === 1) {
     const allOneInt = tokensPerCase.every((toks) => toks[0]?.length === 1 && isIntegerToken(toks[0][0]));
     if (allOneInt) {
@@ -129,13 +113,12 @@ function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
     }
   }
 
-  // 2) n then array of n integers
   if (lineCount === 2) {
     const allFirstLineOneInt = tokensPerCase.every((toks) => toks[0]?.length === 1 && isIntegerToken(toks[0][0]));
     const allSecondLineInts = tokensPerCase.every((toks) => isAllIntegerTokens(toks[1]));
 
     if (allFirstLineOneInt && allSecondLineInts) {
-      // Check whether the first integer equals the count of integers on line 2 for most cases.
+
       let matches = 0;
       for (let i = 0; i < tokensPerCase.length; i++) {
         const n = Number(tokensPerCase[i][0][0]);
@@ -158,14 +141,13 @@ function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
     }
   }
 
-  // 3) r c then r rows of c integers (matrix)
   if (lineCount >= 2) {
     const firstLineAllTwoInts = tokensPerCase.every(
       (toks) => toks[0]?.length === 2 && toks[0].every(isIntegerToken),
     );
 
     if (firstLineAllTwoInts) {
-      // Try matrix: lineCount should be r + 1 and each of the next r lines has c integers.
+
       let matrixMatches = 0;
       for (let i = 0; i < tokensPerCase.length; i++) {
         const r = Number(tokensPerCase[i][0][0]);
@@ -192,7 +174,6 @@ function tryBuildCodeforcesLikeInputFormat(linesPerCase) {
         ].join("\n");
       }
 
-      // Try graph: lineCount should be m + 1 and each of the next m lines has 2 or 3 integers.
       let graphMatches = 0;
       let weightedMatches = 0;
       for (let i = 0; i < tokensPerCase.length; i++) {
@@ -249,7 +230,6 @@ function tryBuildCodeforcesLikeOutputFormat(expectedPerCase) {
     return "Print nothing.";
   }
 
-  // Only apply the variable naming when it is exactly one output line.
   if (min === 1 && max === 1) {
     const types = outs.map((out) => inferLineType(splitNonTrailingEmptyLines(out)[0] ?? ""));
     const merged = mergeTypes(types);
@@ -276,19 +256,16 @@ function mergeTypes(types) {
   if (filtered.length === 0) return "value";
   if (filtered.length === 1) return filtered[0];
 
-  // Prefer more specific JSON types if present
   if (filtered.includes("json_object") || filtered.includes("json_array")) {
     const jsonTypes = filtered.filter((t) => t.startsWith("json"));
     if (jsonTypes.length === 1) return jsonTypes[0];
     if (jsonTypes.length > 1) return "json";
   }
 
-  // Integer is a subset of number; if both exist, treat as number
   if (filtered.includes("integer") && filtered.includes("number")) {
     return "number";
   }
 
-  // Otherwise mixed
   return "mixed";
 }
 
@@ -306,7 +283,7 @@ function buildInputFormatFromLinesPerCase(linesPerCase) {
       ? `The input consists of ${min} line${min === 1 ? "" : "s"}.`
       : `The input consists of between ${min} and ${max} non-empty lines.`;
 
-  const describeUpTo = min; // only lines guaranteed to exist
+  const describeUpTo = min;
   const lineDescriptors = [];
 
   for (let i = 0; i < describeUpTo; i++) {
@@ -327,7 +304,6 @@ function buildInputFormatFromLinesPerCase(linesPerCase) {
     }
   }
 
-  // If line count varies, indicate remaining lines are additional parameters.
   const tail =
     min !== max
       ? "Additional lines (if present) are additional input parameters, each provided on its own line."
@@ -373,7 +349,6 @@ function buildOutputFormatFromExpected(expectedPerCase) {
       ? `Print ${min} line${min === 1 ? "" : "s"}.`
       : `Print between ${min} and ${max} non-empty lines.`;
 
-  // Describe guaranteed lines based on min
   const describeUpTo = min;
   const lineDescriptors = [];
   for (let i = 0; i < describeUpTo; i++) {
@@ -399,7 +374,7 @@ function buildOutputFormatFromExpected(expectedPerCase) {
 
   const tail =
     min !== max
-      ? "Additional lines (if present) are part of the required output." 
+      ? "Additional lines (if present) are part of the required output."
       : null;
 
   return [intro, ...lineDescriptors, tail].filter(Boolean).join("\n");
@@ -411,7 +386,6 @@ export function inferIOFormatsFromTestCases(testCases) {
   const linesPerCase = safeCases.map((tc) => splitNonTrailingEmptyLines(tc?.stdin));
   const expectedPerCase = safeCases.map((tc) => normalizeNewlines(tc?.expectedStdout).trimEnd());
 
-  // If no test cases, fall back to generic format.
   if (safeCases.length === 0) {
     return {
       inputFormat:

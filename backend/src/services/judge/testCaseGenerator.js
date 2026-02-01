@@ -1,39 +1,13 @@
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * TEST CASE GENERATOR - Dynamic Hidden Test Case Generation
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * Generates deterministic hidden test cases at submission time using seeded
- * randomization. Test cases are NOT stored in DB - they're generated on-demand.
- * 
- * Key Principles:
- * 1. DETERMINISTIC: Same seed always produces same test cases
- * 2. SECURE: Hidden inputs never exposed to frontend
- * 3. FAIR: Uses reference solution to compute expected outputs
- * 4. COMPREHENSIVE: Edge, random, stress, and adversarial test categories
- * 
- * Usage:
- *   const generator = new TestCaseGenerator(problemConfig, seed);
- *   const testCases = generator.generateAll();
- */
-
-/**
- * Seeded Pseudo-Random Number Generator (Mulberry32)
- * Deterministic - same seed always produces same sequence
- */
 class SeededRandom {
   constructor(seed) {
-    // Convert string seeds to numeric (e.g., submission IDs)
+
     if (typeof seed === "string") {
       seed = this._hashString(seed);
     }
-    this.seed = seed >>> 0; // Ensure unsigned 32-bit integer
+    this.seed = seed >>> 0;
     this.state = this.seed;
   }
 
-  /**
-   * Hash a string to a 32-bit integer (FNV-1a variant)
-   */
   _hashString(str) {
     let hash = 2166136261;
     for (let i = 0; i < str.length; i++) {
@@ -43,10 +17,6 @@ class SeededRandom {
     return hash;
   }
 
-  /**
-   * Get next random number in [0, 1)
-   * Uses Mulberry32 algorithm for speed and quality
-   */
   next() {
     let t = (this.state += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -54,37 +24,22 @@ class SeededRandom {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
-  /**
-   * Random integer in [min, max] inclusive
-   */
   randInt(min, max) {
     return Math.floor(this.next() * (max - min + 1)) + min;
   }
 
-  /**
-   * Random float in [min, max)
-   */
   randFloat(min, max) {
     return this.next() * (max - min) + min;
   }
 
-  /**
-   * Random boolean with given probability of true
-   */
   randBool(probability = 0.5) {
     return this.next() < probability;
   }
 
-  /**
-   * Random element from array
-   */
   choice(arr) {
     return arr[Math.floor(this.next() * arr.length)];
   }
 
-  /**
-   * Shuffle array in-place (Fisher-Yates)
-   */
   shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(this.next() * (i + 1));
@@ -93,34 +48,22 @@ class SeededRandom {
     return arr;
   }
 
-  /**
-   * Generate random array of integers
-   */
   randIntArray(length, min, max) {
     return Array.from({ length }, () => this.randInt(min, max));
   }
 
-  /**
-   * Generate random string of given length
-   */
   randString(length, charset = "abcdefghijklmnopqrstuvwxyz") {
     return Array.from({ length }, () => this.choice(charset)).join("");
   }
 }
 
-/**
- * Test Case Categories
- */
 const TestCategory = {
-  EDGE: "edge",           // Boundary conditions (empty, single element, max size)
-  RANDOM: "random",       // General random cases
-  STRESS: "stress",       // Large inputs testing performance
-  ADVERSARIAL: "adversarial", // Cases designed to break naive solutions
+  EDGE: "edge",
+  RANDOM: "random",
+  STRESS: "stress",
+  ADVERSARIAL: "adversarial",
 };
 
-/**
- * Problem Input Types
- */
 const InputType = {
   SINGLE_INT: "single_int",
   ARRAY_INT: "array_int",
@@ -133,26 +76,6 @@ const InputType = {
   CUSTOM: "custom",
 };
 
-/**
- * Main Test Case Generator Class
- * 
- * @example
- * const config = {
- *   inputType: InputType.ARRAY_INT,
- *   constraints: {
- *     arrayLength: { min: 1, max: 10000 },
- *     elementValue: { min: -1000000, max: 1000000 },
- *   },
- *   edgeCases: [
- *     { label: "Empty array", input: [] },
- *     { label: "Single element", generate: (rng) => [rng.randInt(-1000, 1000)] },
- *   ],
- *   referenceSolution: (input) => { ... return expectedOutput },
- * };
- * 
- * const generator = new TestCaseGenerator(config, submissionId);
- * const testCases = generator.generateAll();
- */
 class TestCaseGenerator {
   constructor(problemConfig, seed) {
     this.config = problemConfig;
@@ -160,10 +83,6 @@ class TestCaseGenerator {
     this.testCases = [];
   }
 
-  /**
-   * Generate all test case categories
-   * Returns array of { input, expectedOutput, category, label, isHidden }
-   */
   generateAll(options = {}) {
     const {
       edgeCount = 5,
@@ -174,7 +93,6 @@ class TestCaseGenerator {
 
     this.testCases = [];
 
-    // Generate each category
     this._generateEdgeCases(edgeCount);
     this._generateRandomCases(randomCount);
     this._generateStressCases(stressCount);
@@ -183,13 +101,9 @@ class TestCaseGenerator {
     return this.testCases;
   }
 
-  /**
-   * Generate edge cases (boundary conditions)
-   */
   _generateEdgeCases(count) {
     const { constraints, edgeCases, inputType } = this.config;
 
-    // Use predefined edge cases if available
     if (Array.isArray(edgeCases)) {
       for (let i = 0; i < Math.min(edgeCases.length, count); i++) {
         const edge = edgeCases[i];
@@ -201,12 +115,10 @@ class TestCaseGenerator {
       }
     }
 
-    // Skip auto-generation if customGenerator is defined (custom input format incompatible with auto-edges)
     if (typeof this.config.customGenerator === "function") {
       return;
     }
 
-    // Auto-generate common edge cases based on input type
     const remaining = count - this.testCases.length;
     if (remaining > 0) {
       const autoEdges = this._autoGenerateEdgeCases(inputType, constraints);
@@ -216,9 +128,6 @@ class TestCaseGenerator {
     }
   }
 
-  /**
-   * Auto-generate edge cases based on input type
-   */
   _autoGenerateEdgeCases(inputType, constraints) {
     const edges = [];
 
@@ -230,7 +139,6 @@ class TestCaseGenerator {
         const minVal = elementValue.min ?? -1000;
         const maxVal = elementValue.max ?? 1000;
 
-        // Minimum length
         if (minLen === 0) {
           edges.push({ label: "Empty array", input: { arr: [] } });
         }
@@ -240,7 +148,6 @@ class TestCaseGenerator {
           edges.push({ label: "Single zero", input: { arr: [0] } });
         }
 
-        // All same values
         edges.push({
           label: "All same (min)",
           input: { arr: Array(Math.min(10, maxLen)).fill(minVal) },
@@ -250,7 +157,6 @@ class TestCaseGenerator {
           input: { arr: Array(Math.min(10, maxLen)).fill(maxVal) },
         });
 
-        // Sorted arrays
         edges.push({
           label: "Sorted ascending",
           input: { arr: Array.from({ length: Math.min(10, maxLen) }, (_, i) => minVal + i) },
@@ -287,16 +193,13 @@ class TestCaseGenerator {
         break;
 
       default:
-        // For other types, return empty - use predefined edge cases
+
         break;
     }
 
     return edges;
   }
 
-  /**
-   * Generate random test cases
-   */
   _generateRandomCases(count) {
     for (let i = 0; i < count; i++) {
       const input = this._generateRandomInput("medium");
@@ -304,9 +207,6 @@ class TestCaseGenerator {
     }
   }
 
-  /**
-   * Generate stress test cases (large inputs)
-   */
   _generateStressCases(count) {
     for (let i = 0; i < count; i++) {
       const input = this._generateRandomInput("large");
@@ -314,13 +214,9 @@ class TestCaseGenerator {
     }
   }
 
-  /**
-   * Generate adversarial test cases (designed to break naive solutions)
-   */
   _generateAdversarialCases(count) {
     const { adversarialCases, inputType, constraints } = this.config;
 
-    // Use predefined adversarial cases if available
     if (Array.isArray(adversarialCases)) {
       for (let i = 0; i < Math.min(adversarialCases.length, count); i++) {
         const adv = adversarialCases[i];
@@ -332,12 +228,10 @@ class TestCaseGenerator {
       }
     }
 
-    // Skip auto-generation if customGenerator is defined (custom input format incompatible)
     if (typeof this.config.customGenerator === "function") {
       return;
     }
 
-    // Auto-generate adversarial cases based on common anti-patterns
     const remaining = count - this.testCases.filter(tc => tc.category === TestCategory.ADVERSARIAL).length;
     if (remaining > 0) {
       const autoAdv = this._autoGenerateAdversarialCases(inputType, constraints);
@@ -347,9 +241,6 @@ class TestCaseGenerator {
     }
   }
 
-  /**
-   * Auto-generate adversarial cases
-   */
   _autoGenerateAdversarialCases(inputType, constraints) {
     const cases = [];
 
@@ -360,18 +251,15 @@ class TestCaseGenerator {
         const minVal = elementValue.min ?? -1000;
         const maxVal = elementValue.max ?? 1000;
 
-        // Alternating extremes (tests algorithms that struggle with oscillation)
         const alternating = Array.from({ length: maxLen }, (_, i) =>
           i % 2 === 0 ? minVal : maxVal
         );
         cases.push({ label: "Alternating extremes", input: { arr: alternating } });
 
-        // Mostly sorted with one outlier (tests sorting assumptions)
         const mostlySorted = Array.from({ length: maxLen }, (_, i) => i);
-        mostlySorted[Math.floor(maxLen / 2)] = maxVal; // Put max in middle
+        mostlySorted[Math.floor(maxLen / 2)] = maxVal;
         cases.push({ label: "Mostly sorted with outlier", input: { arr: mostlySorted } });
 
-        // All zeros except one (tests zero-handling)
         const allZerosButOne = Array(maxLen).fill(0);
         allZerosButOne[maxLen - 1] = maxVal;
         cases.push({ label: "All zeros except last", input: { arr: allZerosButOne } });
@@ -381,13 +269,11 @@ class TestCaseGenerator {
         const { stringLength = {} } = constraints;
         const maxStrLen = Math.min(stringLength.max ?? 1000, 1000);
 
-        // Alternating characters
         cases.push({
           label: "Alternating chars",
           input: { s: Array.from({ length: maxStrLen }, (_, i) => i % 2 === 0 ? "a" : "b").join("") },
         });
 
-        // Near-palindrome
         const nearPalin = "a".repeat(Math.floor(maxStrLen / 2)) + "b" + "a".repeat(Math.floor(maxStrLen / 2));
         cases.push({ label: "Near palindrome", input: { s: nearPalin } });
         break;
@@ -399,18 +285,13 @@ class TestCaseGenerator {
     return cases;
   }
 
-  /**
-   * Generate random input based on size category
-   */
   _generateRandomInput(sizeCategory = "medium") {
     const { inputType, constraints } = this.config;
 
-    // PRIORITY: Use custom generator if provided (handles custom field names like nums, target, k, etc.)
     if (typeof this.config.customGenerator === "function") {
       return this.config.customGenerator(this.rng, sizeCategory);
     }
 
-    // Determine size multiplier based on category
     const sizeMultiplier = {
       small: 0.1,
       medium: 0.5,
@@ -435,16 +316,13 @@ class TestCaseGenerator {
       case InputType.MATRIX:
         return this._generateMatrix(constraints, sizeMultiplier);
       case InputType.CUSTOM:
-        // Custom generator should be handled at the top, but just in case
+
         throw new Error("Custom input type requires customGenerator function (not found)");
       default:
         throw new Error(`Unknown input type: ${inputType}`);
     }
   }
 
-  /**
-   * Generate array of integers
-   */
   _generateArrayInt(constraints, sizeMultiplier) {
     const { arrayLength = {}, elementValue = {} } = constraints;
     const minLen = arrayLength.min ?? 1;
@@ -462,9 +340,6 @@ class TestCaseGenerator {
     };
   }
 
-  /**
-   * Generate 2D array of integers
-   */
   _generateArray2D(constraints, sizeMultiplier) {
     const { rows = {}, cols = {}, elementValue = {} } = constraints;
     const minRows = rows.min ?? 1;
@@ -485,9 +360,6 @@ class TestCaseGenerator {
     return { matrix: arr };
   }
 
-  /**
-   * Generate single string
-   */
   _generateString(constraints, sizeMultiplier) {
     const { stringLength = {}, charset = "abcdefghijklmnopqrstuvwxyz" } = constraints;
     const minLen = stringLength.min ?? 1;
@@ -497,9 +369,6 @@ class TestCaseGenerator {
     return { s: this.rng.randString(length, charset) };
   }
 
-  /**
-   * Generate array of strings
-   */
   _generateStringArray(constraints, sizeMultiplier) {
     const { arrayLength = {}, stringLength = {}, charset = "abcdefghijklmnopqrstuvwxyz" } = constraints;
     const minLen = arrayLength.min ?? 1;
@@ -517,9 +386,6 @@ class TestCaseGenerator {
     return { strs: strings };
   }
 
-  /**
-   * Generate single integer
-   */
   _generateSingleInt(constraints) {
     const { value = {} } = constraints;
     const min = value.min ?? 1;
@@ -527,9 +393,6 @@ class TestCaseGenerator {
     return { n: this.rng.randInt(min, max) };
   }
 
-  /**
-   * Generate graph (edge list representation)
-   */
   _generateGraph(constraints, sizeMultiplier) {
     const { nodes = {}, edges = {}, weighted = false } = constraints;
     const minNodes = nodes.min ?? 2;
@@ -542,7 +405,6 @@ class TestCaseGenerator {
     const edgeList = [];
     const seen = new Set();
 
-    // Ensure connected graph with spanning tree
     for (let i = 1; i < n; i++) {
       const parent = this.rng.randInt(0, i - 1);
       const weight = weighted ? this.rng.randInt(1, 100) : 1;
@@ -550,7 +412,6 @@ class TestCaseGenerator {
       seen.add(`${Math.min(parent, i)}-${Math.max(parent, i)}`);
     }
 
-    // Add random edges
     let attempts = 0;
     while (edgeList.length < numEdges && attempts < 1000) {
       const u = this.rng.randInt(0, n - 1);
@@ -569,16 +430,13 @@ class TestCaseGenerator {
     return { n, edges: edgeList };
   }
 
-  /**
-   * Generate tree (node count + parent array)
-   */
   _generateTree(constraints, sizeMultiplier) {
     const { nodes = {} } = constraints;
     const minNodes = nodes.min ?? 2;
     const maxNodes = Math.floor((nodes.max ?? 100) * sizeMultiplier);
 
     const n = this.rng.randInt(minNodes, Math.max(minNodes, maxNodes));
-    const parent = [-1]; // Root has no parent
+    const parent = [-1];
 
     for (let i = 1; i < n; i++) {
       parent.push(this.rng.randInt(0, i - 1));
@@ -587,25 +445,17 @@ class TestCaseGenerator {
     return { n, parent };
   }
 
-  /**
-   * Generate matrix (square or rectangular)
-   */
   _generateMatrix(constraints, sizeMultiplier) {
     return this._generateArray2D(constraints, sizeMultiplier);
   }
 
-  /**
-   * Add a test case with computed expected output
-   */
   _addTestCase(input, category, label) {
     const { referenceSolution, inputToStdin, outputFromStdout } = this.config;
 
-    // Convert input to stdin format
     const stdin = typeof inputToStdin === "function"
       ? inputToStdin(input)
       : this._defaultInputToStdin(input);
 
-    // Compute expected output using reference solution (if provided)
     let expectedOutput = null;
     if (typeof referenceSolution === "function") {
       try {
@@ -615,7 +465,7 @@ class TestCaseGenerator {
           : this._defaultOutputToStdout(result);
       } catch (err) {
         console.error(`[TestGen] Reference solution failed for ${label}:`, err.message);
-        // Skip this test case if reference solution fails
+
         return;
       }
     }
@@ -625,30 +475,26 @@ class TestCaseGenerator {
       expectedStdout: expectedOutput,
       category,
       label,
-      isHidden: true, // All generated test cases are hidden
-      input, // Keep structured input for debugging (NEVER exposed to frontend)
+      isHidden: true,
+      input,
     });
   }
 
-  /**
-   * Default input to stdin conversion
-   */
   _defaultInputToStdin(input) {
     if (typeof input === "string") return input;
     if (Array.isArray(input)) return input.map(String).join("\n");
 
-    // Handle object with named fields
     const lines = [];
     for (const [key, value] of Object.entries(input)) {
       if (Array.isArray(value)) {
         if (Array.isArray(value[0])) {
-          // 2D array: rows \n cols \n values
+
           lines.push(`${value.length} ${value[0]?.length ?? 0}`);
           for (const row of value) {
             lines.push(row.join(" "));
           }
         } else {
-          // 1D array: length \n values
+
           lines.push(String(value.length));
           lines.push(value.join(" "));
         }
@@ -659,15 +505,12 @@ class TestCaseGenerator {
     return lines.join("\n");
   }
 
-  /**
-   * Default output to stdout conversion
-   */
   _defaultOutputToStdout(result) {
     if (result === undefined || result === null) return "";
     if (typeof result === "string") return result;
     if (Array.isArray(result)) {
       if (Array.isArray(result[0])) {
-        // 2D array
+
         return result.map(row => row.join(" ")).join("\n");
       }
       return result.join(" ");
@@ -676,10 +519,6 @@ class TestCaseGenerator {
   }
 }
 
-/**
- * Problem Configuration Builder
- * Helper to build problem configs with type-safe constraints
- */
 class ProblemConfigBuilder {
   constructor(inputType) {
     this.config = {
@@ -741,9 +580,6 @@ class ProblemConfigBuilder {
   }
 }
 
-/**
- * Export all utilities
- */
 export {
   TestCaseGenerator,
   SeededRandom,

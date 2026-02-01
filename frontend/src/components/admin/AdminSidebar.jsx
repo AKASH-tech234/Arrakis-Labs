@@ -76,11 +76,11 @@ const AdminSidebar = () => {
     >
       {({ isActive }) => (
         <>
-          {/* Active indicator bar */}
+          {}
           {isActive && (
             <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-gradient-to-b from-[#F59E0B] via-[#D97706] to-[#92400E] rounded-full shadow-lg shadow-[#D97706]/30" />
           )}
-          
+
           <div
             className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${
               isActive
@@ -96,7 +96,7 @@ const AdminSidebar = () => {
               }`}
             />
           </div>
-          
+
           {!collapsed && (
             <span
               className="text-xs tracking-wider font-medium whitespace-nowrap"
@@ -105,8 +105,8 @@ const AdminSidebar = () => {
               {label}
             </span>
           )}
-          
-          {/* Pulsing dot for active state */}
+
+          {}
           {isActive && !collapsed && (
             <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-[#D97706] shadow-lg shadow-[#D97706]/50 animate-pulse" />
           )}
@@ -124,7 +124,7 @@ const AdminSidebar = () => {
         background: "linear-gradient(180deg, #0D0D0B 0%, #0A0A08 100%)",
       }}
     >
-      {/* Logo Header */}
+      {}
       <div className="h-16 flex items-center justify-between px-4 border-b border-[#1A1814]">
         {!collapsed && (
           <div className="flex items-center gap-3">
@@ -156,11 +156,11 @@ const AdminSidebar = () => {
         )}
       </div>
 
-      {/* Collapse Toggle - positioned on edge */}
+      {}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-[#1A1814] bg-[#0D0D0B] 
-                   flex items-center justify-center text-[#78716C] hover:text-[#D97706] 
+        className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-[#1A1814] bg-[#0D0D0B]
+                   flex items-center justify-center text-[#78716C] hover:text-[#D97706]
                    hover:border-[#D97706]/50 hover:bg-[#D97706]/10 transition-all duration-200 shadow-lg z-10"
       >
         {collapsed ? (
@@ -170,25 +170,25 @@ const AdminSidebar = () => {
         )}
       </button>
 
-      {/* Navigation */}
+      {}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#1A1814] scrollbar-track-transparent">
         {navItems.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
       </nav>
 
-      {/* User Section & Logout */}
+      {}
       <div className="p-3 border-t border-[#1A1814]">
-        {/* User info */}
+        {}
         {!collapsed && (
           <div className="px-3 py-2 mb-2 rounded-lg bg-[#0F0F0D]">
-            <p 
+            <p
               className="text-xs text-[#E8E4D9] font-medium truncate"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
               {admin?.email}
             </p>
-            <p 
+            <p
               className="text-[10px] text-[#78716C] uppercase tracking-wider"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
@@ -197,7 +197,7 @@ const AdminSidebar = () => {
           </div>
         )}
 
-        {/* Logout button */}
+        {}
         <button
           onClick={handleLogout}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#78716C] hover:text-[#92400E] hover:bg-[#92400E]/10 transition-all duration-200 group ${
@@ -208,7 +208,7 @@ const AdminSidebar = () => {
             <LogOut className="h-4 w-4 flex-shrink-0 group-hover:text-[#92400E]" />
           </div>
           {!collapsed && (
-            <span 
+            <span
               className="text-xs tracking-wider font-medium"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >

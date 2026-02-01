@@ -2,18 +2,18 @@ import mongoose from "mongoose";
 
 const scoringRuleSchema = new mongoose.Schema(
   {
-    
+
     problemPoints: {
       type: Map,
       of: Number,
-      default: new Map(), 
+      default: new Map(),
     },
-    
+
     defaultPoints: {
       type: Number,
       default: 100,
     },
-    
+
     partialScoring: {
       type: Boolean,
       default: false,
@@ -24,17 +24,17 @@ const scoringRuleSchema = new mongoose.Schema(
 
 const penaltyRuleSchema = new mongoose.Schema(
   {
-    
+
     wrongSubmissionPenalty: {
       type: Number,
-      default: 5, 
+      default: 5,
     },
-    
+
     penaltyOnlyAfterAC: {
       type: Boolean,
-      default: true, 
+      default: true,
     },
-    
+
     maxPenaltyPerProblem: {
       type: Number,
       default: 0,
@@ -50,17 +50,17 @@ const contestProblemSchema = new mongoose.Schema(
       ref: "Question",
       required: true,
     },
-    
+
     order: {
       type: Number,
       required: true,
     },
-    
+
     label: {
       type: String,
       required: true,
     },
-    
+
     points: {
       type: Number,
       default: 100,
@@ -71,7 +71,7 @@ const contestProblemSchema = new mongoose.Schema(
 
 const contestSchema = new mongoose.Schema(
   {
-    
+
     name: {
       type: String,
       required: [true, "Contest name is required"],
@@ -96,12 +96,12 @@ const contestSchema = new mongoose.Schema(
       index: true,
     },
     duration: {
-      type: Number, 
+      type: Number,
       required: [true, "Duration is required"],
       min: [5, "Duration must be at least 5 minutes"],
       max: [720, "Duration cannot exceed 12 hours"],
     },
-    
+
     endTime: {
       type: Date,
       index: true,
@@ -119,7 +119,7 @@ const contestSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator: function (v) {
-          return v.length <= 10; 
+          return v.length <= 10;
         },
         message: "Contest cannot have more than 10 problems",
       },
@@ -136,7 +136,7 @@ const contestSchema = new mongoose.Schema(
 
     rankingType: {
       type: String,
-      enum: ["lcb", "icpc", "ioi"], 
+      enum: ["lcb", "icpc", "ioi"],
       default: "lcb",
     },
 
@@ -150,25 +150,25 @@ const contestSchema = new mongoose.Schema(
     },
     maxParticipants: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
 
     registrationStart: {
       type: Date,
-      default: null, 
+      default: null,
     },
     registrationEnd: {
       type: Date,
-      default: null, 
+      default: null,
     },
 
     allowLateJoin: {
       type: Boolean,
-      default: true, 
+      default: true,
     },
     lateJoinDeadline: {
       type: Number,
-      default: 30, 
+      default: 30,
     },
 
     showLeaderboardDuringContest: {
@@ -177,15 +177,15 @@ const contestSchema = new mongoose.Schema(
     },
     freezeLeaderboardMinutes: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
     releaseEditorialsAfter: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
     allowDiscussionAfter: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
 
     editorial: {
@@ -225,7 +225,7 @@ const contestSchema = new mongoose.Schema(
 );
 
 contestSchema.pre("save", function (next) {
-  
+
   if (this.startTime && this.duration) {
     this.endTime = new Date(this.startTime.getTime() + this.duration * 60 * 1000);
   }
@@ -253,7 +253,7 @@ contestSchema.virtual("isUpcoming").get(function () {
 
 contestSchema.virtual("isLive").get(function () {
   const now = new Date();
-  return this.status === "live" || 
+  return this.status === "live" ||
     (this.status === "scheduled" && now >= this.startTime && now < this.endTime);
 });
 
@@ -281,7 +281,7 @@ contestSchema.methods.canUserJoin = function (currentTime = new Date()) {
   if (this.status === "ended") return false;
 
   if (currentTime < this.startTime) {
-    return this.requiresRegistration ? true : false; 
+    return this.requiresRegistration ? true : false;
   }
 
   if (currentTime < this.endTime) {
@@ -289,7 +289,7 @@ contestSchema.methods.canUserJoin = function (currentTime = new Date()) {
     const lateDeadline = new Date(this.startTime.getTime() + this.lateJoinDeadline * 60 * 1000);
     return currentTime <= lateDeadline;
   }
-  
+
   return false;
 };
 
@@ -298,7 +298,7 @@ contestSchema.methods.getUserRemainingTime = function (userJoinTime, currentTime
 
   const effectiveStart = new Date(Math.max(userJoinTime.getTime(), this.startTime.getTime()));
   const effectiveEnd = this.endTime;
-  
+
   return Math.max(0, Math.floor((effectiveEnd - currentTime) / 1000));
 };
 

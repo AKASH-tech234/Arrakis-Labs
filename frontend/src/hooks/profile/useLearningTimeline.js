@@ -1,5 +1,3 @@
-
-
 import { useMemo, useCallback } from "react";
 
 export const TIMELINE_EVENT_TYPES = {
@@ -59,14 +57,14 @@ function buildTimeline({
     const feedback =
       feedbackCache[submission.questionId] || submission.aiFeedback;
     if (feedback) {
-      
+
       events.push(
         createTimelineEvent({
           type: TIMELINE_EVENT_TYPES.FEEDBACK,
           title: "AI Feedback Received",
           description:
             feedback.explanation?.slice(0, 100) + "..." || "Feedback available",
-          timestamp: new Date(new Date(timestamp).getTime() + 1000), 
+          timestamp: new Date(new Date(timestamp).getTime() + 1000),
           metadata: {
             questionId: submission.questionId,
             hasHint: !!feedback.improvement_hint,
@@ -114,7 +112,7 @@ export function useLearningTimeline({
   feedbackCache = {},
   weeklyReport = null,
 }) {
-  
+
   const timeline = useMemo(
     () => buildTimeline({ submissions, feedbackCache, weeklyReport }),
     [submissions, feedbackCache, weeklyReport],
@@ -164,7 +162,7 @@ export function useLearningTimeline({
   }, [timeline]);
 
   return {
-    
+
     timeline,
     stats,
 

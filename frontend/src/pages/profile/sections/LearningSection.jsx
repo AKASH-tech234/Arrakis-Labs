@@ -1,12 +1,3 @@
-/**
- * Learning Section
- *
- * Learning roadmap, velocity, focus areas, and mistake analysis.
- * Components: LearningRoadmap, LearningVelocityIndicator, FocusAreasWidget, MistakeAnalysisCard
- *
- * This section contains learning-focused components and is lazy-loaded.
- */
-
 import { memo } from "react";
 import { motion } from "framer-motion";
 import { LearningRoadmap } from "../../../components/mim";
@@ -14,7 +5,6 @@ import MistakeAnalysisCard from "../../../components/profile/MistakeAnalysisCard
 import LearningVelocityIndicator from "../../../components/profile/LearningVelocityIndicator";
 import FocusAreasWidget from "../../../components/profile/FocusAreasWidget";
 
-// Animation variants
 const sectionVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: (delay = 0) => ({
@@ -24,9 +14,6 @@ const sectionVariants = {
   }),
 };
 
-/**
- * Section Header Component
- */
 const SectionHeader = memo(function SectionHeader({
   title,
   gradient = "from-[#D97706]",
@@ -55,9 +42,6 @@ const SectionHeader = memo(function SectionHeader({
   );
 });
 
-/**
- * Learning Roadmap Section
- */
 const RoadmapSection = memo(function RoadmapSection({ userId }) {
   if (!userId) return null;
 
@@ -74,9 +58,6 @@ const RoadmapSection = memo(function RoadmapSection({ userId }) {
   );
 });
 
-/**
- * Learning Velocity Section
- */
 const VelocitySection = memo(function VelocitySection({ userId }) {
   if (!userId) return null;
 
@@ -92,9 +73,6 @@ const VelocitySection = memo(function VelocitySection({ userId }) {
   );
 });
 
-/**
- * Focus & Mistakes Grid Section
- */
 const FocusMistakesGrid = memo(function FocusMistakesGrid({ userId }) {
   if (!userId) return null;
 
@@ -118,9 +96,6 @@ const FocusMistakesGrid = memo(function FocusMistakesGrid({ userId }) {
   );
 });
 
-/**
- * Learning Focus Section - Velocity, Focus Areas, Mistakes
- */
 const LearningFocusSection = memo(function LearningFocusSection({ userId }) {
   if (!userId) return null;
 
@@ -136,21 +111,15 @@ const LearningFocusSection = memo(function LearningFocusSection({ userId }) {
         animated
       />
 
-      {/* Learning Velocity - Full Width */}
+      {}
       <VelocitySection userId={userId} />
 
-      {/* Focus Areas + Mistake Analysis - Side by Side */}
+      {}
       <FocusMistakesGrid userId={userId} />
     </motion.section>
   );
 });
 
-/**
- * Learning Section - Main Export
- *
- * Props:
- * - userId: User ID for MIM components (required)
- */
 function LearningSection({ userId }) {
   if (!userId) {
     return (
@@ -162,10 +131,10 @@ function LearningSection({ userId }) {
 
   return (
     <div className="space-y-6">
-      {/* Learning Roadmap */}
+      {}
       <RoadmapSection userId={userId} />
 
-      {/* Learning Focus (Velocity + Focus Areas + Mistakes) */}
+      {}
       <LearningFocusSection userId={userId} />
     </div>
   );

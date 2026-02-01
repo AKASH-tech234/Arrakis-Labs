@@ -116,7 +116,7 @@ export const getUserPOTDCalendar = async (req, res) => {
         });
       }
     } else {
-      
+
       const now = new Date();
       start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
       end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
@@ -346,7 +346,7 @@ export const solvePOTD = async (req, res) => {
     );
 
     if (!updatedTracking) {
-      
+
       return res.json({
         success: true,
         data: {
@@ -490,7 +490,7 @@ export const getStreakLeaderboard = async (req, res) => {
 export const getSchedulerStatus = async (req, res) => {
   try {
     const status = potdScheduler.getStatus();
-    
+
     res.json({
       success: true,
       data: status,

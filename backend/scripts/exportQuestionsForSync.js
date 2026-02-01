@@ -1,13 +1,3 @@
-/**
- * Export Questions for Schema Sync
- * =================================
- *
- * Run this script to get a list of all questions with their current data.
- * Output will be in JSON format for easy editing.
- *
- * Usage: node scripts/exportQuestionsForSync.js
- */
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
@@ -17,10 +7,8 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
 dotenv.config({ path: join(__dirname, "../.env") });
 
-// Import Question model
 import Question from "../src/models/question/Question.js";
 
 const MONGODB_URI =
@@ -32,7 +20,6 @@ async function exportQuestions() {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
-    // Fetch all questions
     const questions = await Question.find({ isActive: true })
       .select({
         _id: 1,
@@ -53,7 +40,6 @@ async function exportQuestions() {
 
     console.log(`\n📊 Found ${questions.length} questions\n`);
 
-    // Create export format
     const exportData = questions.map((q, index) => ({
       index: index + 1,
       questionId: q._id.toString(),
@@ -61,7 +47,6 @@ async function exportQuestions() {
       difficulty: q.difficulty,
       constraints: q.constraints || "",
 
-      // Current values (may be empty)
       currentData: {
         tags: q.tags || [],
         categoryType: q.categoryType || null,
@@ -73,7 +58,6 @@ async function exportQuestions() {
         canonicalAlgorithms: q.canonicalAlgorithms || [],
       },
 
-      // Fields to fill (copy and edit these)
       toFill: {
         categoryType: q.categoryType || "FILL_ME",
         topic: q.topic || "FILL_ME",
@@ -89,7 +73,6 @@ async function exportQuestions() {
       },
     }));
 
-    // Calculate stats
     const stats = {
       totalQuestions: questions.length,
       withCategoryType: questions.filter((q) => q.categoryType).length,
@@ -126,7 +109,6 @@ async function exportQuestions() {
       `   - canonicalAlgorithms: ${stats.withCanonicalAlgorithms}/${stats.totalQuestions}`,
     );
 
-    // Write to file
     const outputPath = join(__dirname, "../docs/questions_to_fill.json");
     fs.writeFileSync(
       outputPath,
@@ -140,7 +122,6 @@ async function exportQuestions() {
     console.log("   3. Replace 'FILL_ME' with actual values");
     console.log("   4. Run the import script when done");
 
-    // Also print a quick summary to console
     console.log("\n" + "=".repeat(80));
     console.log("QUESTIONS NEEDING DATA:");
     console.log("=".repeat(80));

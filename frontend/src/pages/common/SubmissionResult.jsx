@@ -320,12 +320,12 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         <VerdictBadge verdict={submission?.verdict} size="large" />
       </div>
 
-      {/* MIM Insights Panel - NEW */}
+      {}
       {feedback?.mimInsights && (
         <MIMInsightsPanel mimInsights={feedback.mimInsights} />
       )}
 
-      {/* Detected Pattern */}
+      {}
       {feedback?.detectedPattern && (
         <CollapsibleSection
           title="Detected Pattern"
@@ -395,7 +395,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
           onToggle={() => toggleSection("complexity")}
           accentColor="#8B5CF6"
         >
-          {/* Handle both string and object format */}
+          {}
           {typeof feedback.complexityAnalysis === "string" ? (
             <p
               style={{ color: COLORS.textPrimary, fontFamily }}
@@ -444,7 +444,7 @@ function SummaryView({ feedback, submission, onBackToHints }) {
         </CollapsibleSection>
       )}
 
-      {/* Improvement Hint (if present) */}
+      {}
       {feedback?.improvementHint && (
         <CollapsibleSection
           title="Improvement Suggestion"
@@ -560,16 +560,9 @@ function CollapsibleSection({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MIM INSIGHTS PANEL - AI Intelligence Display
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function MIMInsightsPanel({ mimInsights }) {
   if (!mimInsights) return null;
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // V3.0 Detection: Check if we have polymorphic feedback data
-  // ═══════════════════════════════════════════════════════════════════════════════
   const hasV3Data =
     mimInsights.feedbackType ||
     mimInsights.feedback_type ||
@@ -580,9 +573,8 @@ function MIMInsightsPanel({ mimInsights }) {
     mimInsights.reinforcementFeedback ||
     mimInsights.reinforcement_feedback;
 
-  // If V3 data is present, use the dedicated V3 component
   if (hasV3Data) {
-    // Normalize camelCase/snake_case for V3 component
+
     const normalizedInsights = {
       feedbackType: mimInsights.feedbackType || mimInsights.feedback_type,
       correctnessFeedback:
@@ -599,11 +591,8 @@ function MIMInsightsPanel({ mimInsights }) {
     return <MIMInsightsV3 insights={normalizedInsights} expanded={true} />;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // Legacy V2 Display (fallback for older data)
-  // ═══════════════════════════════════════════════════════════════════════════════
   const rootCauseRaw = mimInsights.root_cause || mimInsights.rootCause;
-  // Handle both object format {failure_cause: "...", confidence: ...} and string format
+
   const rootCause = typeof rootCauseRaw === "object" && rootCauseRaw !== null
     ? (rootCauseRaw.failure_cause || rootCauseRaw.failureCause || JSON.stringify(rootCauseRaw))
     : rootCauseRaw;
@@ -620,14 +609,12 @@ function MIMInsightsPanel({ mimInsights }) {
   const recurrenceCount =
     pattern.recurrence_count || pattern.recurrenceCount || 0;
 
-  // Confidence color based on level
   const getConfidenceColor = (conf) => {
     if (conf >= 0.7) return COLORS.success;
     if (conf >= 0.4) return COLORS.warning;
     return COLORS.error;
   };
 
-  // Difficulty action badge colors
   const getDifficultyActionStyle = (action) => {
     const styles = {
       increase: { bg: "#22C55E20", color: "#22C55E", icon: "↑" },
@@ -650,7 +637,7 @@ function MIMInsightsPanel({ mimInsights }) {
         backgroundColor: `${COLORS.accent}05`,
       }}
     >
-      {/* Header */}
+      {}
       <div
         className="px-4 py-3 flex items-center justify-between"
         style={{
@@ -686,9 +673,9 @@ function MIMInsightsPanel({ mimInsights }) {
         </span>
       </div>
 
-      {/* Content Grid */}
+      {}
       <div className="p-4 space-y-4">
-        {/* Root Cause + Confidence */}
+        {}
         {rootCause && (
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -724,7 +711,7 @@ function MIMInsightsPanel({ mimInsights }) {
           </div>
         )}
 
-        {/* Pattern Detection */}
+        {}
         {pattern.pattern_name && (
           <div
             className="p-3 rounded-lg"
@@ -761,7 +748,7 @@ function MIMInsightsPanel({ mimInsights }) {
           </div>
         )}
 
-        {/* Difficulty Recommendation */}
+        {}
         {difficultyAction.action && (
           <div className="flex items-center gap-3">
             <div
@@ -789,7 +776,7 @@ function MIMInsightsPanel({ mimInsights }) {
           </div>
         )}
 
-        {/* Focus Areas */}
+        {}
         {focusAreas.length > 0 && (
           <div>
             <span
@@ -816,7 +803,7 @@ function MIMInsightsPanel({ mimInsights }) {
           </div>
         )}
 
-        {/* Rationale (if available) */}
+        {}
         {difficultyAction.rationale && (
           <p
             className="text-xs italic pt-2"
@@ -833,10 +820,6 @@ function MIMInsightsPanel({ mimInsights }) {
     </motion.div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function SubmissionResult() {
   const navigate = useNavigate();
@@ -862,9 +845,6 @@ export default function SubmissionResult() {
   const hasSubmission = !!submission;
   const isAccepted = submission?.verdict === "accepted";
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // 🔍 DEBUG LOGGING - FRONTEND DATA FLOW TRACE
-  // ═══════════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     console.log("═══════════════════════════════════════════════════════════");
     console.log("🎯 [SubmissionResult] STATE DEBUG");
@@ -903,11 +883,9 @@ export default function SubmissionResult() {
     isAccepted,
   ]);
 
-  // Auto-request AI feedback ONLY if not already present
-  // ✨ FIX: Skip if aiFeedback already came with submission (avoids duplicate calls)
   useEffect(() => {
     if (hasSubmission && aiStatus === "idle" && !hasAIFeedback) {
-      // Only request if we don't already have feedback
+
       console.log(
         "[SubmissionResult] No aiFeedback from backend, requesting...",
       );
@@ -924,7 +902,7 @@ export default function SubmissionResult() {
       `[SubmissionResult] View transition check: hasAIFeedback=${hasAIFeedback}, currentView=${currentView}, isAccepted=${isAccepted}`,
     );
     if (hasAIFeedback && currentView === "initial") {
-      // Accepted → Direct to summary | Wrong Answer → Show hints first
+
       const newView = isAccepted ? "summary" : "hints";
       console.log(
         `[SubmissionResult] 🔀 Transitioning view: ${currentView} → ${newView}`,

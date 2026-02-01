@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const contestSubmissionSchema = new mongoose.Schema(
   {
-    
+
     contest: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Contest",
@@ -48,7 +48,7 @@ const contestSubmissionSchema = new mongoose.Schema(
       default: Date.now,
       index: true,
     },
-    
+
     timeFromStart: {
       type: Number,
       required: true,
@@ -79,7 +79,7 @@ const contestSubmissionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    
+
     score: {
       type: Number,
       default: 0,
@@ -90,11 +90,11 @@ const contestSubmissionSchema = new mongoose.Schema(
     },
 
     executionTime: {
-      type: Number, 
+      type: Number,
       default: 0,
     },
     memoryUsed: {
-      type: Number, 
+      type: Number,
       default: 0,
     },
 
@@ -107,7 +107,7 @@ const contestSubmissionSchema = new mongoose.Schema(
       default: null,
       maxlength: 1000,
     },
-    
+
     firstFailedTest: {
       type: Number,
       default: null,
@@ -119,7 +119,7 @@ const contestSubmissionSchema = new mongoose.Schema(
         passed: Boolean,
         executionTime: Number,
         memoryUsed: Number,
-        
+
       },
     ],
 
@@ -171,7 +171,7 @@ contestSubmissionSchema.methods.toUserResponse = function (isContestActive = tru
       response.testsPassed = this.testsTotal;
       response.testsTotal = this.testsTotal;
     } else if (this.verdict !== "pending" && this.verdict !== "judging") {
-      
+
       response.firstFailedTest = this.firstFailedTest;
       response.testsPassed = this.testsPassed;
       response.testsTotal = this.testsTotal;
@@ -180,7 +180,7 @@ contestSubmissionSchema.methods.toUserResponse = function (isContestActive = tru
       response.errorMessage = this.errorMessage;
     }
   } else {
-    
+
     response.testsPassed = this.testsPassed;
     response.testsTotal = this.testsTotal;
     response.code = this.code;

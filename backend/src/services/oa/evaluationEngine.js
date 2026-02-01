@@ -19,14 +19,8 @@ const LANGUAGE_MAP = {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * OA Evaluation Engine
- * Handles code execution and scoring for OA sessions
- */
 class EvaluationEngine {
-  /**
-   * Execute code against test cases
-   */
+
   async executeCode(code, language, stdin, timeLimit = 2000) {
     const langConfig = LANGUAGE_MAP[language?.toLowerCase()];
     if (!langConfig) {
@@ -106,13 +100,9 @@ class EvaluationEngine {
     throw new Error("Code execution service temporarily unavailable");
   }
 
-  /**
-   * Evaluate a coding submission
-   */
   async evaluateCodingSubmission(sessionId, questionId, code, language, userId) {
     console.log("[Evaluation] Evaluating submission for question:", questionId);
 
-    // Get test cases for the question
     const testCases = await TestCase.find({
       questionId,
       isActive: true,
@@ -151,7 +141,7 @@ class EvaluationEngine {
             error: execution.stderr,
             isHidden: tc.isHidden,
           });
-          break; // Stop on compile error
+          break;
         }
 
         const passed =
@@ -181,7 +171,6 @@ class EvaluationEngine {
       }
     }
 
-    // Determine verdict
     let verdict = "wrong_answer";
     if (hasCompileError) {
       verdict = "compile_error";
@@ -195,7 +184,6 @@ class EvaluationEngine {
       verdict = "runtime_error";
     }
 
-    // Update OAAnswer
     const answer = await OAAnswer.findOneAndUpdate(
       { sessionId, refId: questionId },
       {
@@ -217,7 +205,6 @@ class EvaluationEngine {
       { new: true, upsert: false }
     );
 
-    // Calculate points
     if (answer) {
       answer.pointsEarned = Math.round(
         answer.maxPoints * (passedCount / testCases.length)
@@ -236,18 +223,15 @@ class EvaluationEngine {
       results: results.map((r) => ({
         passed: r.passed,
         executionTime: r.executionTime,
-        // Don't expose hidden test case details
+
         error: r.isHidden ? (r.passed ? null : "Test case failed") : r.error,
       })),
       executionTime: totalTime,
     };
   }
 
-  /**
-   * Run code without submitting (practice run)
-   */
   async runCode(questionId, code, language) {
-    // Get only visible test cases
+
     const testCases = await TestCase.find({
       questionId,
       isActive: true,

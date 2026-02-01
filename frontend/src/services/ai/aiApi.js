@@ -1,5 +1,3 @@
-
-
 const AI_SERVICE_URL =
   import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
 
@@ -54,7 +52,7 @@ export async function getAIFeedback({
   errorType = null,
   signal,
 }) {
-  
+
   if (!userId) throw new Error("userId is required");
   if (!problemId) throw new Error("problemId is required");
   if (!code) throw new Error("code is required");
@@ -70,7 +68,7 @@ export async function getAIFeedback({
     language,
     verdict,
     error_type: errorType,
-    user_history_summary: null, 
+    user_history_summary: null,
   };
 
   return aiRequest("/ai/feedback", { method: "POST", body: payload, signal });
@@ -102,27 +100,10 @@ export async function checkAIServiceHealth() {
   return aiRequest("/health", { method: "GET" });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MIM (Misconception Identification Model) API
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * GET /ai/mim/status
- * Get MIM model status and health
- * @returns {Promise<MIMStatusResponse>}
- */
 export async function getMIMStatus() {
   return aiRequest("/ai/mim/status", { method: "GET" });
 }
 
-/**
- * GET /ai/mim/profile/:userId
- * Get user's cognitive profile from MIM
- * @param {Object} params
- * @param {string} params.userId - User identifier
- * @param {AbortSignal} [params.signal] - Abort signal for cancellation
- * @returns {Promise<MIMProfileResponse>}
- */
 export async function getMIMProfile({ userId, signal }) {
   if (!userId) throw new Error("userId is required");
   return aiRequest(`/ai/mim/profile/${encodeURIComponent(userId)}`, {
@@ -131,30 +112,12 @@ export async function getMIMProfile({ userId, signal }) {
   });
 }
 
-/**
- * GET /ai/mim/recommend/:userId
- * Get personalized problem recommendations from MIM
- * @param {Object} params
- * @param {string} params.userId - User identifier
- * @param {number} [params.limit=5] - Number of recommendations
- * @param {AbortSignal} [params.signal] - Abort signal for cancellation
- * @returns {Promise<MIMRecommendationsResponse>}
- */
 export async function getMIMRecommendations({ userId, limit = 5, signal }) {
   if (!userId) throw new Error("userId is required");
   const url = `/ai/mim/recommend/${encodeURIComponent(userId)}?limit=${limit}`;
   return aiRequest(url, { method: "GET", signal });
 }
 
-/**
- * GET /ai/mim/predict/:userId/:problemId
- * Get pre-submission prediction for a user on a specific problem
- * @param {Object} params
- * @param {string} params.userId - User identifier
- * @param {string} params.problemId - Problem identifier
- * @param {AbortSignal} [params.signal] - Abort signal for cancellation
- * @returns {Promise<MIMPredictionResponse>}
- */
 export async function getMIMPrediction({ userId, problemId, signal }) {
   if (!userId) throw new Error("userId is required");
   if (!problemId) throw new Error("problemId is required");
@@ -162,29 +125,12 @@ export async function getMIMPrediction({ userId, problemId, signal }) {
   return aiRequest(url, { method: "GET", signal });
 }
 
-/**
- * GET /ai/mim/roadmap/:userId
- * Get personalized learning roadmap from MIM V2.1
- * @param {Object} params
- * @param {string} params.userId - User identifier
- * @param {boolean} [params.regenerate=false] - Force regeneration
- * @param {AbortSignal} [params.signal] - Abort signal for cancellation
- * @returns {Promise<MIMRoadmapResponse>}
- */
 export async function getMIMRoadmap({ userId, regenerate = false, signal }) {
   if (!userId) throw new Error("userId is required");
   const url = `/ai/mim/roadmap/${encodeURIComponent(userId)}?regenerate=${regenerate}`;
   return aiRequest(url, { method: "GET", signal });
 }
 
-/**
- * GET /ai/mim/difficulty/:userId
- * Get personalized difficulty adjustment recommendation from MIM V2.1
- * @param {Object} params
- * @param {string} params.userId - User identifier
- * @param {AbortSignal} [params.signal] - Abort signal for cancellation
- * @returns {Promise<MIMDifficultyResponse>}
- */
 export async function getMIMDifficulty({ userId, signal }) {
   if (!userId) throw new Error("userId is required");
   const url = `/ai/mim/difficulty/${encodeURIComponent(userId)}`;
@@ -195,7 +141,7 @@ export default {
   getAIFeedback,
   getWeeklyReport,
   checkAIServiceHealth,
-  // MIM APIs
+
   getMIMStatus,
   getMIMProfile,
   getMIMRecommendations,

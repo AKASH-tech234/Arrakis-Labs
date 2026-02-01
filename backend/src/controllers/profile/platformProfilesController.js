@@ -37,7 +37,7 @@ function inferHandleFromProfileUrl({ platform, profileUrl }) {
 
   if (platform === "leetcode") {
     if (!host.includes("leetcode.com")) return null;
-    
+
     const parts = pathname.split("/").filter(Boolean);
     if (parts[0] === "u" && parts[1]) return parts[1];
     if (parts[0]) return parts[0];

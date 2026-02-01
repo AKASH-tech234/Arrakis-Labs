@@ -168,6 +168,90 @@ def health_check():
     }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERIC PREDICT ENDPOINT - For simple ML inference
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class PredictRequest(BaseModel):
+    """Generic prediction request"""
+    code: Optional[str] = None
+    language: Optional[str] = "python"
+    problem_id: Optional[str] = None
+    user_id: Optional[str] = None
+    features: Optional[Dict[str, Any]] = None  # Raw features for direct inference
+
+class PredictResponse(BaseModel):
+    """Generic prediction response"""
+    success: bool
+    prediction: Optional[Dict[str, Any]] = None
+    confidence: Optional[float] = None
+    model_version: str = "v1.0"
+    inference_time_ms: float = 0.0
+    error: Optional[str] = None
+
+
+@router.post("/predict", response_model=PredictResponse)
+def predict(request: PredictRequest) -> PredictResponse:
+    """
+    Generic ML prediction endpoint.
+    
+    Accepts code analysis requests or raw feature vectors.
+    Model is loaded once at startup for optimal performance.
+    
+    Usage:
+    ```
+    POST /predict
+    {
+        "code": "def solution(nums): return sum(nums)",
+        "language": "python",
+        "problem_id": "two-sum"
+    }
+    ```
+    """
+    import time as t
+    start = t.time()
+    
+    try:
+        from app.mim.inference import get_mim_inference
+        
+        mim = get_mim_inference()
+        
+        # Build prediction context
+        context = {
+            "code": request.code or "",
+            "language": request.language or "python",
+            "problem_id": request.problem_id or "unknown",
+            "user_id": request.user_id or "anonymous",
+            "features": request.features or {}
+        }
+        
+        # Get MIM prediction
+        prediction = mim.predict(context)
+        
+        inference_time = (t.time() - start) * 1000
+        
+        return PredictResponse(
+            success=True,
+            prediction={
+                "root_cause": prediction.root_cause.model_dump() if prediction.root_cause else None,
+                "readiness": prediction.readiness.model_dump() if prediction.readiness else None,
+                "is_cold_start": prediction.is_cold_start,
+            },
+            confidence=prediction.root_cause.confidence if prediction.root_cause else 0.5,
+            model_version=prediction.model_version or "v1.0",
+            inference_time_ms=round(inference_time, 2)
+        )
+        
+    except Exception as e:
+        logger.error(f"Prediction failed: {e}")
+        inference_time = (t.time() - start) * 1000
+        return PredictResponse(
+            success=False,
+            error=str(e),
+            inference_time_ms=round(inference_time, 2)
+        )
+
+
 @router.get("/health/llm")
 def llm_health_check():
     """Check LLM provider rate limit status."""

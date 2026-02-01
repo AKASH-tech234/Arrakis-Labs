@@ -3,7 +3,7 @@ import api from '../common/api';
 const BASE_URL = '/admin/contests';
 
 const adminContestApi = {
-  
+
   getContests: (params = {}) => api.get(BASE_URL, { params }),
 
   getContest: (id) => api.get(`${BASE_URL}/${id}`),

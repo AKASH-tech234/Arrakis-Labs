@@ -1,13 +1,3 @@
-/**
- * Backfill Submissions with Denormalized Problem Data
- * ====================================================
- *
- * Updates existing submissions with problemCategory, problemDifficulty, problemTags
- * from the associated Question document.
- *
- * Usage: node scripts/backfillSubmissions.js
- */
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
@@ -30,7 +20,6 @@ async function backfillSubmissions() {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB\n");
 
-    // Find submissions without denormalized data
     const submissionsToFix = await Submission.find({
       $or: [
         { problemCategory: null },
@@ -53,8 +42,6 @@ async function backfillSubmissions() {
       return;
     }
 
-    // Build question ID -> data map for efficiency
-    // Handle both ObjectId and string references
     const questionIds = [
       ...new Set(
         submissionsToFix.map((s) => s.questionId?.toString()).filter(Boolean),
@@ -62,7 +49,6 @@ async function backfillSubmissions() {
     ];
     console.log(`📚 Fetching ${questionIds.length} unique questions...\n`);
 
-    // Try to find by both _id and externalId
     const questions = await Question.find({
       $or: [
         {
@@ -78,7 +64,6 @@ async function backfillSubmissions() {
       .select("_id externalId topic tags difficulty")
       .lean();
 
-    // Build map with both _id and externalId as keys
     const questionMap = new Map();
     questions.forEach((q) => {
       questionMap.set(q._id.toString(), q);
@@ -87,7 +72,6 @@ async function backfillSubmissions() {
       }
     });
 
-    // Update submissions in batches
     const BATCH_SIZE = 100;
     let updated = 0;
     let skipped = 0;
@@ -136,7 +120,6 @@ async function backfillSubmissions() {
     console.log(`   ⏭️  Skipped: ${skipped} (question not found)`);
     console.log("═".repeat(60));
 
-    // Verify
     const remaining = await Submission.countDocuments({
       $or: [{ problemCategory: null }, { problemDifficulty: null }],
     });

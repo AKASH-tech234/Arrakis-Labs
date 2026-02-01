@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import oaService from "../services/oaService";
 
-/**
- * Hook for managing OA session state
- */
 export function useOASession(sessionId) {
   const [session, setSession] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -12,7 +9,6 @@ export function useOASession(sessionId) {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch session data
   const fetchSession = useCallback(async () => {
     if (!sessionId) return;
 
@@ -35,19 +31,16 @@ export function useOASession(sessionId) {
     }
   }, [sessionId]);
 
-  // Initial fetch
   useEffect(() => {
     fetchSession();
   }, [fetchSession]);
 
-  // Navigate to question
   const goToQuestion = useCallback((index) => {
     if (index >= 0 && index < questions.length) {
       setCurrentQuestionIndex(index);
     }
   }, [questions.length]);
 
-  // Submit entire OA
   const submitOA = useCallback(async () => {
     if (!sessionId) return null;
 
@@ -72,7 +65,6 @@ export function useOASession(sessionId) {
     }
   }, [sessionId]);
 
-  // Terminate OA
   const terminateOA = useCallback(async (reason) => {
     if (!sessionId) return null;
 
@@ -109,9 +101,6 @@ export function useOASession(sessionId) {
   };
 }
 
-/**
- * Hook for backend-authoritative timer
- */
 export function useOATimer(sessionId, endAt, onTimeUp) {
   const [remainingMs, setRemainingMs] = useState(0);
   const [isExpired, setIsExpired] = useState(false);
@@ -119,19 +108,16 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
   const tickIntervalRef = useRef(null);
   const onTimeUpRef = useRef(onTimeUp);
 
-  // Keep callback ref updated
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
-  // Calculate remaining time from server endAt
   const calculateRemaining = useCallback(() => {
     if (!endAt) return 0;
     const remaining = new Date(endAt) - Date.now();
     return Math.max(0, remaining);
   }, [endAt]);
 
-  // Sync with server periodically
   const syncWithServer = useCallback(async () => {
     if (!sessionId) return;
 
@@ -147,16 +133,14 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
         }
       }
     } catch (err) {
-      // On sync failure, calculate locally
+
       setRemainingMs(calculateRemaining());
     }
   }, [sessionId, isExpired, calculateRemaining]);
 
-  // Initialize and start timer
   useEffect(() => {
     if (!sessionId || !endAt) return;
 
-    // Initial calculation
     const initial = calculateRemaining();
     setRemainingMs(initial);
 
@@ -166,7 +150,6 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
       return;
     }
 
-    // Tick every second
     tickIntervalRef.current = setInterval(() => {
       setRemainingMs((prev) => {
         const next = Math.max(0, prev - 1000);
@@ -178,10 +161,8 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
       });
     }, 1000);
 
-    // Sync with server every 30 seconds
     syncIntervalRef.current = setInterval(syncWithServer, 30000);
 
-    // Initial sync
     syncWithServer();
 
     return () => {
@@ -190,7 +171,6 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
     };
   }, [sessionId, endAt, calculateRemaining, syncWithServer, isExpired]);
 
-  // Format time for display
   const formatTime = useCallback((ms) => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -211,15 +191,12 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
     remainingMs,
     formattedTime: formatTime(remainingMs),
     isExpired,
-    isWarning: remainingMs > 0 && remainingMs <= 5 * 60 * 1000, // 5 minutes warning
-    isCritical: remainingMs > 0 && remainingMs <= 1 * 60 * 1000, // 1 minute critical
+    isWarning: remainingMs > 0 && remainingMs <= 5 * 60 * 1000,
+    isCritical: remainingMs > 0 && remainingMs <= 1 * 60 * 1000,
     syncNow: syncWithServer,
   };
 }
 
-/**
- * Hook for debounced autosave
- */
 export function useAutosave(sessionId, questionId, delay = 500) {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
@@ -231,15 +208,12 @@ export function useAutosave(sessionId, questionId, delay = 500) {
     async (code, language, timeSpent = 0) => {
       if (!sessionId || !questionId) return;
 
-      // Store pending data
       pendingRef.current = { code, language, timeSpent };
 
-      // Clear existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      // Debounce
       timeoutRef.current = setTimeout(async () => {
         if (!pendingRef.current) return;
 
@@ -271,12 +245,10 @@ export function useAutosave(sessionId, questionId, delay = 500) {
     [sessionId, questionId, delay]
   );
 
-  // Immediate save (for important moments)
   const saveNow = useCallback(
     async (code, language, timeSpent = 0) => {
       if (!sessionId || !questionId) return;
 
-      // Clear pending debounce
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -308,7 +280,6 @@ export function useAutosave(sessionId, questionId, delay = 500) {
     [sessionId, questionId]
   );
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -326,9 +297,6 @@ export function useAutosave(sessionId, questionId, delay = 500) {
   };
 }
 
-/**
- * Hook for preventing accidental navigation away from OA
- */
 export function useBeforeUnload(isActive = true) {
   useEffect(() => {
     if (!isActive) return;
@@ -347,9 +315,6 @@ export function useBeforeUnload(isActive = true) {
   }, [isActive]);
 }
 
-/**
- * Hook for tab visibility / proctoring
- */
 export function useTabVisibility(sessionId, enabled = true, onViolation) {
   const [violations, setViolations] = useState([]);
   const [warningsRemaining, setWarningsRemaining] = useState(3);

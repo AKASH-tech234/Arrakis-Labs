@@ -1,4 +1,3 @@
-// OA Controllers Index
 export * from "./metadataController.js";
 export * from "./sessionController.js";
 export * from "./answerController.js";

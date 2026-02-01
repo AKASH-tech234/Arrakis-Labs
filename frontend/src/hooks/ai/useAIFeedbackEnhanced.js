@@ -3,11 +3,6 @@ import { getAIFeedback, getWeeklyReport } from "../../services/ai/aiApi";
 import { useConfidenceBadge } from "../common/useConfidenceBadge";
 import { useLearningTimeline } from "../profile/useLearningTimeline";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// v3.1: REAL-TIME SUBMISSION EVENT SYSTEM
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Global event emitter for cross-component updates
 const submissionEventListeners = new Set();
 
 export function emitSubmissionUpdate(data) {
@@ -46,13 +41,11 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
 
   const [feedbackCache, setFeedbackCache] = useState({});
 
-  // v3.1: Track submission history for real-time updates
   const [submissionHistory, setSubmissionHistory] = useState([]);
 
   const feedbackAbortRef = useRef(null);
   const reportAbortRef = useRef(null);
 
-  // v3.2: Request deduplication - prevent duplicate API calls
   const lastRequestKeyRef = useRef(null);
   const pendingRequestRef = useRef(null);
 
@@ -64,15 +57,12 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
     weeklyReport,
   });
 
-  // v3.1: Listen for real-time submission updates
   const handleSubmissionUpdate = useCallback(
     (data) => {
       console.log("[AIFeedback] Real-time submission update:", data);
 
-      // Add to history
       setSubmissionHistory((prev) => [data, ...prev].slice(0, 20));
 
-      // Update feedback cache if we have new feedback
       if (data.feedback && data.questionId) {
         setFeedbackCache((prev) => ({
           ...prev,
@@ -80,7 +70,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
         }));
       }
 
-      // Auto-update current feedback if matching
       if (data.feedback && feedback?.submission_id === data.submissionId) {
         setFeedback(data.feedback);
       }
@@ -100,10 +89,9 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       verdict,
       errorType,
     }) => {
-      // v3.2: Generate unique request key for deduplication
+
       const requestKey = `${questionId}-${code?.substring(0, 50)}-${verdict}`;
 
-      // Skip if identical request is already pending
       if (
         lastRequestKeyRef.current === requestKey &&
         pendingRequestRef.current
@@ -112,7 +100,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
         return pendingRequestRef.current;
       }
 
-      // Check cache first - return cached feedback if available and recent
       const cachedFeedback = feedbackCache[questionId];
       if (
         cachedFeedback &&
@@ -136,7 +123,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       setError(null);
       setFeedback(null);
 
-      // v3.2: Store promise for deduplication
       pendingRequestRef.current = (async () => {
         try {
           const data = await getAIFeedback({
@@ -151,7 +137,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
             signal: feedbackAbortRef.current.signal,
           });
 
-          // Add code hash for cache validation
           data.code_hash = code?.substring(0, 50);
           setFeedback(data);
 
@@ -160,7 +145,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
             [questionId]: data,
           }));
 
-          // v3.1: Emit real-time update event for other components
           emitSubmissionUpdate({
             type: "feedback_received",
             questionId,
@@ -178,7 +162,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
           const message = err.message || "Failed to fetch AI feedback";
           setError(message);
 
-          // v3.1: Emit error event
           emitSubmissionUpdate({
             type: "feedback_error",
             questionId,
@@ -318,7 +301,6 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       timelineStats: stats,
       recentEvents: getRecentEvents(5),
 
-      // v3.1: Real-time submission history
       submissionHistory,
     }),
     [

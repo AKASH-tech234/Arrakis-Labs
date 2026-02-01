@@ -9,7 +9,7 @@ import { computeAggregatedStats } from "../../services/profile/profileAggregatio
 
 const CATEGORY_ORDER = [
   "Arrays",
-  "Strings", 
+  "Strings",
   "Math",
   "Linked List",
   "Binary Search",
@@ -37,23 +37,21 @@ function startOfUtcDay(d) {
 
 function pickCategoriesFromQuestion(question) {
   const matches = new Set();
-  
-  // Check categoryType field first (primary source)
+
   if (question.categoryType) {
     const catType = String(question.categoryType).trim();
-    // Try to match with CATEGORY_ORDER
+
     const matchedCat = CATEGORY_ORDER.find(
       c => c.toLowerCase() === catType.toLowerCase()
     );
     if (matchedCat) {
       matches.add(matchedCat);
     } else {
-      // Add as-is if it's a valid category name
+
       matches.add(catType);
     }
   }
-  
-  // Check topic field
+
   if (question.topic) {
     const topic = String(question.topic).trim();
     const matchedTopic = CATEGORY_ORDER.find(
@@ -63,8 +61,7 @@ function pickCategoriesFromQuestion(question) {
       matches.add(matchedTopic);
     }
   }
-  
-  // Also check tags for additional categories
+
   const tags = question.tags || [];
   const normalized = tags.map((t) => String(t).toLowerCase().trim());
 
@@ -285,7 +282,6 @@ export async function getProfileAnalytics(req, res) {
       }
     }
 
-    // Filter out categories with no activity and sort by total
     const categories = CATEGORY_ORDER
       .map((name) => ({
         name,
@@ -333,7 +329,6 @@ export async function getProfileAnalytics(req, res) {
       stats: statsMap.get(p.platform) || null,
     }));
 
-    // Calculate weekly submissions (last 7 days)
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weeklySubmissions = await Submission.countDocuments({
@@ -342,7 +337,6 @@ export async function getProfileAnalytics(req, res) {
       createdAt: { $gte: weekAgo },
     });
 
-    // Calculate difficulty totals for progress bars
     const [difficultyTotals] = await Question.aggregate([
       { $match: { isActive: true } },
       {
@@ -361,7 +355,6 @@ export async function getProfileAnalytics(req, res) {
       return [totals];
     });
 
-    // Calculate accuracy by time of day
     const timeAccuracyAgg = await Submission.aggregate([
       {
         $match: {
@@ -422,7 +415,7 @@ export async function getProfileAnalytics(req, res) {
       success: true,
       data: {
         user: {
-          _id: String(user._id), // Include user ID for MIM components
+          _id: String(user._id),
           name: user.name,
           username: usernameDerived,
           profileImage: user.profileImage,
@@ -443,7 +436,7 @@ export async function getProfileAnalytics(req, res) {
           easyCount,
           mediumCount,
           hardCount,
-          // New fields for widgets
+
           weeklySubmissions,
           easySolved: easyCount,
           easyTotal: difficultyTotals.Easy || 100,

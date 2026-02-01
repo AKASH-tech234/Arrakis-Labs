@@ -69,7 +69,7 @@ const platformStatsSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            date: { type: String, required: true }, 
+            date: { type: String, required: true },
             solved: { type: Number, default: 0 },
           },
           { _id: false }

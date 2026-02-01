@@ -1,23 +1,3 @@
-/**
- * Profile Page - Refactored
- *
- * This page has been refactored for better performance and maintainability:
- *
- * Architecture:
- * - Section-based rendering with lazy loading
- * - Error boundaries per section for graceful degradation
- * - Conditional mounting (sections only mount when active)
- * - Tab-based navigation with URL state
- *
- * Sections:
- * - Overview: Identity, quick stats (lightweight, default)
- * - Analytics: Charts, submissions, contests (data-heavy)
- * - Insights: AI analysis, recommendations (MIM-powered)
- * - Learning: Roadmap, velocity, focus areas (MIM-powered)
- *
- * The original profile.jsx is preserved as profile.legacy.jsx for reference.
- */
-
 import { useEffect, useMemo, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import AppHeader from "../../components/layout/AppHeader";
@@ -34,9 +14,6 @@ import {
   DEFAULT_SECTION,
 } from "./sections";
 
-/**
- * Section Navigation Tabs
- */
 function SectionNav({ activeSection, onSectionChange }) {
   const sections = Object.values(PROFILE_SECTIONS);
 
@@ -63,20 +40,17 @@ function SectionNav({ activeSection, onSectionChange }) {
   );
 }
 
-/**
- * Section Renderer - Conditionally mounts active section only
- */
 function SectionRenderer({
   activeSection,
   analytics,
   userId,
   readOnly,
-  // Overview props
+
   onCopyLink,
   onExportPdf,
   exportingPdf,
   actionMessage,
-  // Analytics props
+
   contests,
   contestsLoading,
   contestsError,
@@ -84,7 +58,7 @@ function SectionRenderer({
   onRegister,
   busy,
 }) {
-  // Only mount the active section (prevents hidden sections from running hooks)
+
   switch (activeSection) {
     case "overview":
       return (
@@ -143,29 +117,22 @@ function SectionRenderer({
   }
 }
 
-/**
- * Profile Page Component
- */
 export default function Profile({ username, readOnly = false } = {}) {
-  // URL-based section state
+
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get("section") || DEFAULT_SECTION;
 
-  // Contest state
   const [contests, setContests] = useState({ live: [], upcoming: [] });
   const [contestsLoading, setContestsLoading] = useState(true);
   const [contestsError, setContestsError] = useState(null);
   const [busy, setBusy] = useState({});
 
-  // Action state
   const [actionMessage, setActionMessage] = useState(null);
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  // Analytics data
   const { data: analytics } = useProfileAnalytics({ username });
   const userId = analytics?.user?._id;
 
-  // Section navigation handler
   const handleSectionChange = useCallback(
     (sectionId) => {
       setSearchParams({ section: sectionId });
@@ -173,12 +140,10 @@ export default function Profile({ username, readOnly = false } = {}) {
     [setSearchParams],
   );
 
-  // Action message cleanup
   const clearActionMessageSoon = useCallback(() => {
     window.setTimeout(() => setActionMessage(null), 2000);
   }, []);
 
-  // Copy profile link handler
   const handleCopyProfileLink = useCallback(async () => {
     const publicUsername =
       analytics?.publicSettings?.publicUsername || analytics?.user?.username;
@@ -200,7 +165,6 @@ export default function Profile({ username, readOnly = false } = {}) {
     }
   }, [analytics, readOnly, clearActionMessageSoon]);
 
-  // PDF export handler
   const handleExportPdf = useCallback(async () => {
     if (readOnly) return;
     try {
@@ -239,12 +203,10 @@ export default function Profile({ username, readOnly = false } = {}) {
     }
   }, [readOnly, analytics, clearActionMessageSoon]);
 
-  // Contest busy state handler
   const setContestBusy = useCallback((contestId, value) => {
     setBusy((prev) => ({ ...prev, [contestId]: value }));
   }, []);
 
-  // Contest registration handler
   const handleRegister = useCallback(
     async (contest) => {
       if (readOnly) return;
@@ -286,7 +248,6 @@ export default function Profile({ username, readOnly = false } = {}) {
     [readOnly, setContestBusy],
   );
 
-  // Fetch contests
   useEffect(() => {
     let cancelled = false;
 
@@ -319,7 +280,6 @@ export default function Profile({ username, readOnly = false } = {}) {
     };
   }, []);
 
-  // Date formatter (memoized)
   const formatDate = useMemo(
     () => (date) =>
       new Intl.DateTimeFormat("en-US", {
@@ -338,7 +298,7 @@ export default function Profile({ username, readOnly = false } = {}) {
 
       <main className="pt-16">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6">
-          {/* Section Navigation */}
+          {}
           <div className="mb-6 flex justify-center">
             <SectionNav
               activeSection={activeSection}
@@ -346,19 +306,19 @@ export default function Profile({ username, readOnly = false } = {}) {
             />
           </div>
 
-          {/* Active Section */}
+          {}
           <div className="space-y-6">
             <SectionRenderer
               activeSection={activeSection}
               analytics={analytics}
               userId={userId}
               readOnly={readOnly}
-              // Overview props
+
               onCopyLink={handleCopyProfileLink}
               onExportPdf={handleExportPdf}
               exportingPdf={exportingPdf}
               actionMessage={actionMessage}
-              // Analytics props
+
               contests={contests}
               contestsLoading={contestsLoading}
               contestsError={contestsError}

@@ -30,7 +30,7 @@ class POTDScheduler {
   }
 
   async runDailyJob() {
-    
+
     if (this.isRunning) {
       console.log("⚠️ POTD job already running, skipping...");
       return;
@@ -51,7 +51,7 @@ class POTDScheduler {
     console.log(`\n🔄 Running POTD daily job for ${today.toISOString()}`);
 
     try {
-      
+
       await this.completePreviousPOTD();
 
       await this.checkAndPublishTodaysPOTD();
@@ -99,7 +99,7 @@ class POTDScheduler {
 
     if (!scheduledPOTD) {
       console.log("⚠️ No POTD scheduled for today!");
-      
+
       return null;
     }
 
@@ -115,7 +115,7 @@ class POTDScheduler {
     endTime.setUTCHours(23, 59, 59, 999);
 
     try {
-      
+
       const publishedPOTD = await PublishedPOTD.create({
         activeDate: today,
         problemId: scheduledPOTD.problemId._id || scheduledPOTD.problemId,
@@ -148,7 +148,7 @@ class POTDScheduler {
               { $set: { publishedAt: new Date() } }
             );
           } catch {
-            
+
           }
           return existing;
         }

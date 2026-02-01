@@ -1,15 +1,3 @@
-/**
- * Fix test cases for Task Assignment Feasibility
- * 
- * CORRECT CP FORMAT:
- * T W                          <- number of tasks and workers
- * task1 task2 ... taskT        <- task names (space-separated)
- * worker1 worker2 ... workerW  <- worker names (space-separated)
- * <for each worker, in order>:
- *   num_tasks capacity         <- how many tasks worker can do, and capacity
- *   task1 task2 ...            <- tasks they can do (space-separated)
- */
-
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import TestCase from '../src/models/question/TestCase.js';
@@ -29,21 +17,11 @@ async function fixTaskAssignmentTestCases() {
   console.log('Question:', question.title);
   console.log('Slug:', question.slug);
 
-  // Delete old test cases
   await TestCase.deleteMany({ questionId: question._id });
   console.log('Deleted old test cases\n');
 
-  // Create new test cases in correct CP format
-  // Format:
-  // T W
-  // task1 task2 ... taskT
-  // worker1 worker2 ... workerW
-  // For each worker (W lines total):
-  //   num_tasks capacity
-  //   task1 task2 ... (tasks this worker can do)
-  
   const testCases = [
-    // Visible test case 1: All tasks can be assigned
+
     {
       questionId: question._id,
       stdin: `3 2
@@ -58,7 +36,7 @@ T2 T3`,
       label: 'Example 1: All tasks assignable',
       order: 1
     },
-    // Visible test case 2: W2 can only do 1 task but needs 2
+
     {
       questionId: question._id,
       stdin: `4 2
@@ -73,7 +51,7 @@ T3 T4`,
       label: 'Example 2: Capacity insufficient',
       order: 2
     },
-    // Hidden test case 3: More complex scenario
+
     {
       questionId: question._id,
       stdin: `5 3
@@ -90,7 +68,7 @@ D E`,
       label: 'Five tasks, three workers',
       order: 3
     },
-    // Hidden test case 4: Impossible due to capacity
+
     {
       questionId: question._id,
       stdin: `4 2
@@ -105,7 +83,7 @@ R S`,
       label: 'Capacity 1 each, need 2',
       order: 4
     },
-    // Hidden test case 5: Single worker handles all
+
     {
       questionId: question._id,
       stdin: `2 1
@@ -118,7 +96,7 @@ Task1 Task2`,
       label: 'Single worker handles all',
       order: 5
     },
-    // Hidden test case 6: No overlap in capabilities
+
     {
       questionId: question._id,
       stdin: `3 2
@@ -133,7 +111,7 @@ B`,
       label: 'Task C cannot be assigned',
       order: 6
     },
-    // Hidden test case 7: Exact capacity match
+
     {
       questionId: question._id,
       stdin: `4 2
@@ -148,7 +126,7 @@ T1 T2 T3 T4`,
       label: 'Exact capacity, all overlap',
       order: 7
     },
-    // Hidden test case 8: Large test
+
     {
       questionId: question._id,
       stdin: `6 3
@@ -167,11 +145,9 @@ T5 T6`,
     }
   ];
 
-  // Insert new test cases
   await TestCase.insertMany(testCases);
   console.log(`Created ${testCases.length} test cases in correct CP format\n`);
 
-  // Verify
   const newTestCases = await TestCase.find({ questionId: question._id });
   console.log('New test cases:');
   for (const tc of newTestCases) {

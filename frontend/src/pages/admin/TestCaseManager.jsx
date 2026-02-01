@@ -31,7 +31,7 @@ const TestCaseManager = () => {
   const [testCases, setTestCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [showNewForm, setShowNewForm] = useState(false);
@@ -71,7 +71,7 @@ const TestCaseManager = () => {
     try {
       const response = await toggleTestCaseHidden(testCaseId);
       if (response.success) {
-        setTestCases(testCases.map(tc => 
+        setTestCases(testCases.map(tc =>
           tc.id === testCaseId ? { ...tc, isHidden: response.data.isHidden } : tc
         ));
       }
@@ -82,7 +82,7 @@ const TestCaseManager = () => {
 
   const handleDelete = async (testCaseId) => {
     if (!confirm("Are you sure you want to delete this test case?")) return;
-    
+
     try {
       await deleteTestCase(testCaseId);
       setTestCases(testCases.filter(tc => tc.id !== testCaseId));
@@ -191,7 +191,7 @@ const TestCaseManager = () => {
 
       {}
       {error && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3"
@@ -218,7 +218,7 @@ const TestCaseManager = () => {
 
       {}
       {showNewForm && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-6 rounded-xl bg-[#0F0F0D] border border-[#1A1814] space-y-4"
@@ -327,7 +327,7 @@ const TestCaseManager = () => {
               className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814] hover:border-[#D97706]/30 transition-all"
             >
               {editingId === tc.id ? (
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-[#78716C] mb-1.5 uppercase tracking-wide">Label</label>
@@ -389,7 +389,7 @@ const TestCaseManager = () => {
                   </div>
                 </div>
               ) : (
-                
+
                 <>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">

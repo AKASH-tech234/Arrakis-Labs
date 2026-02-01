@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,8 +9,8 @@ export default function ConfirmModal({
   message,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "warning", 
-  requireTyping = false, 
+  variant = "warning",
+  requireTyping = false,
   typingPhrase = "",
   loading = false,
 }) {
@@ -136,7 +134,7 @@ export default function ConfirmModal({
                 <button
                   onClick={onClose}
                   disabled={loading}
-                  className="px-4 py-2 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9] 
+                  className="px-4 py-2 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9]
                              hover:border-[#78716C] transition-colors duration-200 text-xs uppercase tracking-wider
                              disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}

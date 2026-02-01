@@ -1,9 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import MIMInsights from "../mim/MIMInsights"; // Legacy MIM insights component
-import MIMInsightsV3 from "../mim/MIMInsightsV3"; // ✨ V3.0 MIM insights component
+import MIMInsights from "../mim/MIMInsights";
+import MIMInsightsV3 from "../mim/MIMInsightsV3";
 
-// Phase 2.x Components
 import { DiagnosisConfidenceBadge } from "./ConfidenceBadge";
 import PatternInsightPanel from "./PatternInsightPanel";
 import DifficultyStatusPanel from "./DifficultyStatusPanel";
@@ -18,7 +17,6 @@ const HINT_COLORS = {
   pattern: { bg: "#EC4899", text: "#FCE7F3", label: "Pattern" },
 };
 
-// v3.3: Code block component for displaying correct code
 function CodeBlock({ code, language, onCopy }) {
   const [copied, setCopied] = useState(false);
 
@@ -219,7 +217,7 @@ export default function AIFeedbackPanelV2({
   loading = false,
   error = null,
   feedback = null,
-  // ✨ FIX: Accept submission data to show results even without AI feedback
+
   submissionData = null,
 
   onRevealNextHint,
@@ -232,7 +230,6 @@ export default function AIFeedbackPanelV2({
 }) {
   const [showPattern, setShowPattern] = useState(false);
 
-  // Derive verdict from feedback or submissionData
   const verdict = feedback?.verdict || submissionData?.verdict;
   const isAccepted = verdict === "accepted";
 
@@ -254,10 +251,10 @@ export default function AIFeedbackPanelV2({
                 className="text-[#E8E4D9] text-xs uppercase tracking-wider"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
-                {/* ✨ FIX: Show "Submission Result" when we have submission data */}
+                {}
                 {submissionData ? "Submission Result" : "AI Analysis"}
               </span>
-              {/* Show verdict from feedback or submissionData */}
+              {}
               {verdict && <VerdictBadge verdict={verdict} />}
             </div>
             <button
@@ -346,13 +343,13 @@ export default function AIFeedbackPanelV2({
             )}
 
             {}
-            {/* ✨ FIX: Show submission results even without AI feedback */}
+            {}
             {!loading && !error && !feedback && submissionData && (
               <div className="space-y-4">
-                {/* Verdict Banner */}
+                {}
                 <div className={`p-4 rounded-lg border ${
-                  isAccepted 
-                    ? "border-[#22C55E]/30 bg-[#22C55E]/5" 
+                  isAccepted
+                    ? "border-[#22C55E]/30 bg-[#22C55E]/5"
                     : "border-[#EF4444]/30 bg-[#EF4444]/5"
                 }`}>
                   <div className="flex items-center gap-3">
@@ -364,7 +361,7 @@ export default function AIFeedbackPanelV2({
                       </span>
                     </div>
                     <div>
-                      <h3 
+                      <h3
                         className={`text-lg font-semibold uppercase tracking-wider ${
                           isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"
                         }`}
@@ -379,7 +376,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 </div>
 
-                {/* Stats Grid */}
+                {}
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: "Language", value: submissionData.language?.toUpperCase() || "N/A" },
@@ -397,7 +394,7 @@ export default function AIFeedbackPanelV2({
                   ))}
                 </div>
 
-                {/* Failed Test Case Details */}
+                {}
                 {!isAccepted && submissionData.results?.length > 0 && (
                   <div className="border border-[#EF4444]/20 rounded-lg overflow-hidden">
                     <div className="px-4 py-2 bg-[#EF4444]/10 border-b border-[#EF4444]/20">
@@ -443,7 +440,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* AI Suggestion Loading/Unavailable Message */}
+                {}
                 <div className="border border-[#3D3D3D]/30 rounded-lg p-4 bg-[#0D0D0B]">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[#D97706]">🤖</span>
@@ -452,8 +449,8 @@ export default function AIFeedbackPanelV2({
                     </span>
                   </div>
                   <p className="text-[#78716C] text-sm" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                    {!isAccepted 
-                      ? "AI suggestions are being prepared..." 
+                    {!isAccepted
+                      ? "AI suggestions are being prepared..."
                       : "Great job! Consider reviewing the solution for optimization opportunities."}
                   </p>
                   {onRetry && !isAccepted && (
@@ -469,7 +466,7 @@ export default function AIFeedbackPanelV2({
               </div>
             )}
 
-            {/* Fallback: No submission data and no feedback */}
+            {}
             {!loading && !error && !feedback && !submissionData && (
               <div className="flex flex-col items-center justify-center py-12">
                 <svg
@@ -497,11 +494,11 @@ export default function AIFeedbackPanelV2({
             {}
             {!loading && !error && feedback && (
               <div className="space-y-4">
-                {/* ✨ FIX: Show submission results summary at top when we have both feedback and submissionData */}
+                {}
                 {submissionData && (
                   <div className={`p-3 rounded-lg border ${
-                    isAccepted 
-                      ? "border-[#22C55E]/30 bg-[#22C55E]/5" 
+                    isAccepted
+                      ? "border-[#22C55E]/30 bg-[#22C55E]/5"
                       : "border-[#EF4444]/30 bg-[#EF4444]/5"
                   }`}>
                     <div className="flex items-center justify-between">
@@ -509,7 +506,7 @@ export default function AIFeedbackPanelV2({
                         <span className={`text-lg ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
                           {isAccepted ? "✓" : "✗"}
                         </span>
-                        <span 
+                        <span
                           className={`text-sm uppercase tracking-wider ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}
                           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                         >
@@ -537,7 +534,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* ✨ FIX: Show failed test case details for wrong answers (inside AI feedback section) */}
+                {}
                 {!isAccepted && submissionData?.results?.length > 0 && (
                   <div className="border border-[#EF4444]/20 rounded-lg overflow-hidden">
                     <div className="px-3 py-2 bg-[#EF4444]/10 border-b border-[#EF4444]/20">
@@ -605,7 +602,7 @@ export default function AIFeedbackPanelV2({
                   ))}
                 </div>
 
-                {/* Reveal more hints button */}
+                {}
                 {hasMoreHints && (
                   <RevealButton
                     label={nextHintLabel}
@@ -614,18 +611,18 @@ export default function AIFeedbackPanelV2({
                   />
                 )}
 
-                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-                {/* Phase 2.x: New Canonical Feedback Components */}
-                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {}
+                {}
+                {}
 
-                {/* RAG Memory Indicator - subtle note at top if memory was used */}
+                {}
                 {feedback.rag?.used && (
                   <div className="pt-2">
                     <MemoryIndicator rag={feedback.rag} variant="block" />
                   </div>
                 )}
 
-                {/* Pattern Insight Panel - shows pattern state (Phase 2.2) */}
+                {}
                 {feedback.pattern && feedback.pattern.state !== "none" && (
                   <div className="pt-4">
                     <PatternInsightPanel
@@ -635,7 +632,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Diagnosis Confidence Badge - shows confidence level (Phase 2.1) */}
+                {}
                 {feedback.confidence && (
                   <div className="pt-4 flex items-center gap-2">
                     <span
@@ -653,7 +650,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Legacy detected pattern display */}
+                {}
                 {feedback.detectedPattern && (
                   <div className="pt-2">
                     <button
@@ -708,10 +705,10 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* ✨ MIM V3.0 Insights - Machine Learning Predictions (NO LLM calls) */}
+                {}
                 {feedback.mimInsights && (
                   <div className="pt-4 border-t border-[#1A1814]">
-                    {/* Use V3 component if feedbackType is available, otherwise fallback to legacy */}
+                    {}
                     {feedback.mimInsights.feedbackType ? (
                       <MIMInsightsV3
                         insights={feedback.mimInsights}
@@ -743,7 +740,7 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* Full Explanation Toggle - v3.3 Enhanced with Correct Code */}
+                {}
                 {(feedback.hasExplanation || feedback.correctCode) &&
                   !hasMoreHints && (
                     <div className="pt-4 border-t border-[#1A1814]">
@@ -765,7 +762,7 @@ export default function AIFeedbackPanelV2({
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden mt-4 space-y-4"
                           >
-                            {/* Explanation Text */}
+                            {}
                             {feedback.explanation && (
                               <div className="border border-[#3D3D3D]/50 bg-[#0D0D0B] p-4 rounded-lg">
                                 <h5
@@ -789,7 +786,7 @@ export default function AIFeedbackPanelV2({
                               </div>
                             )}
 
-                            {/* v3.3: Root Cause Analysis */}
+                            {}
                             {(feedback.rootCauseSubtype ||
                               feedback.failureMechanism) && (
                               <div className="border border-[#EF4444]/30 bg-[#EF4444]/5 p-4 rounded-lg">
@@ -834,7 +831,7 @@ export default function AIFeedbackPanelV2({
                               </div>
                             )}
 
-                            {/* v3.3: Correct Code Solution */}
+                            {}
                             {feedback.correctCode && (
                               <div className="space-y-2">
                                 <h5
@@ -865,7 +862,7 @@ export default function AIFeedbackPanelV2({
                               </div>
                             )}
 
-                            {/* v3.3: Concept Reinforcement */}
+                            {}
                             {feedback.conceptReinforcement && (
                               <div className="border border-[#8B5CF6]/30 bg-[#8B5CF6]/5 p-4 rounded-lg">
                                 <h5
@@ -895,7 +892,7 @@ export default function AIFeedbackPanelV2({
                     </div>
                   )}
 
-                {/* Optimization Tips */}
+                {}
                 {feedback.optimizationTips?.length > 0 && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <h4
@@ -924,9 +921,9 @@ export default function AIFeedbackPanelV2({
                   </div>
                 )}
 
-                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-                {/* Difficulty Status Panel (Phase 2.3) - Only show when difficulty changed */}
-                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {}
+                {}
+                {}
                 {feedback.difficulty && (
                   <div className="pt-4 border-t border-[#1A1814]">
                     <DifficultyStatusPanel

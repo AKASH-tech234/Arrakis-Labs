@@ -60,7 +60,7 @@ function ProblemList({ problems, contestId, problemStats, userAttempts }) {
         {problems.map((problem, index) => {
           const attempt = userAttempts?.[problem.id];
           const solveCount = problemStats?.[problem.id] || 0;
-          
+
           return (
             <Link
               key={problem.id}
@@ -162,7 +162,7 @@ function Leaderboard({ entries, userRank, currentUserId }) {
           </thead>
           <tbody className="divide-y divide-[#1A1814]">
             {entries.map((entry) => (
-              <tr 
+              <tr
                 key={entry.userId}
                 className={entry.userId === currentUserId ? "bg-[#2A1F0F]" : "hover:bg-[#1A1814]/40"}
               >
@@ -182,9 +182,9 @@ function Leaderboard({ entries, userRank, currentUserId }) {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     {entry.profileImage ? (
-                      <img 
-                        src={entry.profileImage} 
-                        alt="" 
+                      <img
+                        src={entry.profileImage}
+                        alt=""
                         className="w-6 h-6 rounded-full"
                       />
                     ) : (
@@ -260,7 +260,7 @@ export default function ContestDetail() {
   } = useContestWebSocket(wsContestId, {
     token,
     onContestStart: () => {
-      
+
       fetchContest();
     },
     onContestEnd: () => {
@@ -303,7 +303,7 @@ export default function ContestDetail() {
     try {
       setRegistering(true);
       await contestApi.registerForContest(contestId);
-      // If contest is live, automatically join after registration
+
       if (contest?.isLive) {
         await contestApi.joinContest(contestId);
       }
@@ -380,8 +380,8 @@ export default function ContestDetail() {
   const isParticipating = contest?.registration?.status === 'participating';
 
   const getTimerVariant = () => {
-    if (timeLeft <= 300) return 'danger'; 
-    if (timeLeft <= 900) return 'warning'; 
+    if (timeLeft <= 300) return 'danger';
+    if (timeLeft <= 900) return 'warning';
     return 'default';
   };
 
@@ -570,7 +570,7 @@ export default function ContestDetail() {
                     <p className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Total Time</p>
                   </div>
                 </div>
-                
+
                 <div className="mt-4 pt-4 border-t border-[#1A1814]">
                   <Button as={Link} to={`/contests/${contestId}/analytics`} variant="ghost" size="sm">
                     View detailed analytics →

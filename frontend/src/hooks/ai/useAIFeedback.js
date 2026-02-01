@@ -174,9 +174,6 @@ export function useAIFeedback() {
   const feedback = useMemo(() => {
     if (!rawFeedback) return null;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 2.x: Extract canonical fields (MIM FACTS)
-    // ═══════════════════════════════════════════════════════════════════════════
     const diagnosis = rawFeedback.diagnosis || null;
     const confidence = rawFeedback.confidence || null;
     const pattern = rawFeedback.pattern || null;
@@ -185,29 +182,21 @@ export function useAIFeedback() {
     const feedbackContent = rawFeedback.feedback || null;
     const hint = rawFeedback.hint || null;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // COMPUTED PROPERTIES for UI convenience
-    // ═══════════════════════════════════════════════════════════════════════════
-    
-    // Confidence helpers
     const confidenceLevel = confidence?.confidenceLevel || "medium";
     const isHighConfidence = confidenceLevel === "high";
     const isLowConfidence = confidenceLevel === "low";
     const useHedgingLanguage = shouldUseHedgingLanguage(confidenceLevel);
-    
-    // Pattern helpers
+
     const patternState = pattern?.state || "none";
     const showPatternUI = shouldShowPattern(patternState);
     const hasConfirmedPattern = isPatternConfirmed(patternState);
     const patternMessage = PATTERN_STATE_MESSAGES[patternState] || null;
-    
-    // Difficulty helpers
+
     const difficultyAction = difficulty?.action || "maintain";
     const difficultyReason = difficulty?.reason || "default";
     const difficultyMessage = getDifficultyMessage(difficultyAction, difficultyReason);
     const difficultyChanged = difficultyAction !== "maintain";
-    
-    // RAG helpers
+
     const ragUsed = rag?.used || false;
 
     return {
@@ -231,14 +220,8 @@ export function useAIFeedback() {
         rawFeedback.complexity_analysis || rawFeedback.complexityAnalysis,
       edgeCases: rawFeedback.edge_cases || rawFeedback.edgeCases,
 
-      // ═══════════════════════════════════════════════════════════════════════════
-      // NEW: Phase 2.x Canonical Fields (MIM FACTS - treat as authoritative)
-      // ═══════════════════════════════════════════════════════════════════════════
-      
-      // Diagnosis from MIM (deterministic classification)
       diagnosis,
-      
-      // Calibrated confidence (Phase 2.1)
+
       confidence,
       confidenceLevel,
       confidenceColor: CONFIDENCE_COLORS[confidenceLevel] || CONFIDENCE_COLORS.medium,
@@ -246,34 +229,26 @@ export function useAIFeedback() {
       isHighConfidence,
       isLowConfidence,
       useHedgingLanguage,
-      
-      // Pattern state (Phase 2.2)
+
       pattern,
       patternState,
       showPatternUI,
       hasConfirmedPattern,
       patternMessage,
-      
-      // Difficulty decision (Phase 2.3)
+
       difficulty,
       difficultyAction,
       difficultyReason,
       difficultyMessage,
       difficultyChanged,
-      
-      // RAG metadata
+
       rag,
       ragUsed,
-      
-      // Feedback content from LLM
+
       feedbackContent,
-      
-      // Hint from agent
+
       hint,
 
-      // ═══════════════════════════════════════════════════════════════════════════
-      // LEGACY: v3.3 fields (backward compatibility)
-      // ═══════════════════════════════════════════════════════════════════════════
       rootCause: rawFeedback.root_cause || rawFeedback.rootCause,
       rootCauseSubtype:
         rawFeedback.root_cause_subtype || rawFeedback.rootCauseSubtype,
@@ -286,7 +261,6 @@ export function useAIFeedback() {
       conceptReinforcement:
         rawFeedback.concept_reinforcement || rawFeedback.conceptReinforcement,
 
-      // Legacy MIM insights
       mimInsights: rawFeedback.mim_insights || rawFeedback.mimInsights,
     };
   }, [rawFeedback, visibleHints, showFullExplanation]);

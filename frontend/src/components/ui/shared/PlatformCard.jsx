@@ -1,7 +1,3 @@
-/**
- * Reusable PlatformCard component for displaying coding platform stats
- * Used in Coding Profile page
- */
 import { ExternalLink } from "lucide-react";
 
 const platformLogos = {
@@ -14,28 +10,28 @@ const platformLogos = {
   custom: "🔗"
 };
 
-export default function PlatformCard({ 
-  platform, 
-  handle, 
-  profileUrl, 
-  stats = {}, 
+export default function PlatformCard({
+  platform,
+  handle,
+  profileUrl,
+  stats = {},
   syncStatus,
   lastSyncError,
-  onEdit, 
-  onSync, 
-  onDelete 
+  onEdit,
+  onSync,
+  onDelete
 }) {
   const logo = platformLogos[platform?.toLowerCase()] || platformLogos.custom;
-  
+
   return (
     <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
-      {/* Header */}
+      {}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">{logo}</span>
           <div>
-            <p 
-              className="text-sm font-semibold text-[#E8E4D9]" 
+            <p
+              className="text-sm font-semibold text-[#E8E4D9]"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
               {platform}
@@ -57,7 +53,7 @@ export default function PlatformCard({
         )}
       </div>
 
-      {/* Stats Grid */}
+      {}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-[#0A0A08] rounded-lg p-2.5">
           <p className="text-[9px] uppercase tracking-wider text-[#78716C]">Solved</p>
@@ -69,12 +65,12 @@ export default function PlatformCard({
         </div>
       </div>
 
-      {/* Sync Status */}
+      {}
       {syncStatus && (
         <div className="flex items-center gap-1.5 mb-3">
           <div className={`w-1.5 h-1.5 rounded-full ${
-            syncStatus === 'synced' ? 'bg-green-400' : 
-            syncStatus === 'pending' ? 'bg-yellow-400' : 
+            syncStatus === 'synced' ? 'bg-green-400' :
+            syncStatus === 'pending' ? 'bg-yellow-400' :
             lastSyncError ? 'bg-red-400' : 'bg-[#78716C]'
           }`}></div>
           <span className="text-[10px] text-[#78716C]">
@@ -83,7 +79,7 @@ export default function PlatformCard({
         </div>
       )}
 
-      {/* Actions */}
+      {}
       {(onEdit || onSync || onDelete) && (
         <div className="flex items-center gap-1.5 pt-2 border-t border-[#1A1814]">
           {onEdit && (

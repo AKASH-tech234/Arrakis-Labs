@@ -1,5 +1,3 @@
-
-
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
@@ -51,17 +49,17 @@ function StepCard({ step, index }) {
     >
       {}
       {index < steps.length - 1 && (
-        <div className="hidden lg:block absolute top-6 left-[calc(100%+8px)] w-[calc(100%-16px)] h-px 
-                        bg-gradient-to-r from-[#92400E]/40 to-transparent 
-                        group-hover:from-[#D97706]/70 
+        <div className="hidden lg:block absolute top-6 left-[calc(100%+8px)] w-[calc(100%-16px)] h-px
+                        bg-gradient-to-r from-[#92400E]/40 to-transparent
+                        group-hover:from-[#D97706]/70
                         transition-colors duration-150" />
       )}
 
       <div className="relative">
         {}
         <div
-          className="w-12 h-12 bg-gradient-to-br from-[#92400E] to-[#D97706] 
-                     flex items-center justify-center mb-6 
+          className="w-12 h-12 bg-gradient-to-br from-[#92400E] to-[#D97706]
+                     flex items-center justify-center mb-6
                      transition-all duration-150 group-hover:brightness-110"
           style={{
             clipPath: "polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%)",
@@ -78,7 +76,7 @@ function StepCard({ step, index }) {
         </div>
 
         <h3
-          className="text-lg font-medium text-[#E8E4D9] mb-3 tracking-wide uppercase 
+          className="text-lg font-medium text-[#E8E4D9] mb-3 tracking-wide uppercase
                      transition-colors duration-150 group-hover:text-[#F59E0B]"
           style={{
             fontFamily: "'Rajdhani', system-ui, sans-serif",
@@ -89,7 +87,7 @@ function StepCard({ step, index }) {
         </h3>
 
         <p
-          className="text-[#78716C] leading-relaxed text-sm 
+          className="text-[#78716C] leading-relaxed text-sm
                      transition-colors duration-150 group-hover:text-[#9A8F82]"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >

@@ -6,9 +6,6 @@ import OAConfigModal from "../../components/oa/OAConfigModal";
 import AppHeader from "../../components/layout/AppHeader";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui/ds";
 
-/**
- * OA Dashboard - Entry point for Online Assessment Practice
- */
 export default function OADashboard() {
   const navigate = useNavigate();
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -18,25 +15,21 @@ export default function OADashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check for active session and load stats
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
 
-        // Check for active session
         const activeRes = await oaService.getActiveSession();
         if (activeRes.success && activeRes.data) {
           setActiveSession(activeRes.data);
         }
 
-        // Load user stats
         const statsRes = await oaService.getUserStats();
         if (statsRes.success) {
           setStats(statsRes.data);
         }
 
-        // Load recent sessions
         const historyRes = await oaService.getSessionHistory(1, 5);
         if (historyRes.success) {
           setRecentSessions(historyRes.data.sessions);
@@ -51,7 +44,6 @@ export default function OADashboard() {
     loadData();
   }, []);
 
-  // Handle starting a new OA
   const handleStartOA = async (config) => {
     try {
       const response = await oaService.createSession({
@@ -69,7 +61,6 @@ export default function OADashboard() {
     }
   };
 
-  // Handle quick fight
   const handleQuickFight = async () => {
     try {
       const response = await oaService.quickFight();
@@ -83,7 +74,6 @@ export default function OADashboard() {
     }
   };
 
-  // Resume active session
   const handleResume = () => {
     if (activeSession) {
       navigate(`/oa/session/${activeSession.sessionId}`);
@@ -109,7 +99,7 @@ export default function OADashboard() {
             className="mb-10"
           />
 
-        {/* Error Alert */}
+        {}
           {error && (
             <Card className="mb-8 p-4 border-[#7F1D1D] bg-[#2A0F0F] text-[#FCA5A5]">
               <div className="flex items-start justify-between gap-4">
@@ -125,7 +115,7 @@ export default function OADashboard() {
             </Card>
           )}
 
-        {/* Active Session Banner */}
+        {}
           {activeSession && (
             <Card className="mb-10 bg-gradient-to-r from-[#2A1F0F] to-[#121210]">
               <div className="p-6 flex items-center justify-between gap-6">
@@ -164,9 +154,9 @@ export default function OADashboard() {
             </Card>
           )}
 
-        {/* Action Cards */}
+        {}
           <div className="grid md:grid-cols-2 gap-6 mb-10">
-          {/* Custom OA */}
+          {}
           <Card className="p-6 hover:border-[#92400E]/60 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-[#2A1F0F] border border-[#1A1814]">
@@ -195,7 +185,7 @@ export default function OADashboard() {
             </Button>
           </Card>
 
-          {/* Quick Fight */}
+          {}
           <Card className="p-6 hover:border-[#92400E]/60 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-[#2A1F0F] border border-[#1A1814]">

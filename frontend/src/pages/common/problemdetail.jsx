@@ -159,11 +159,9 @@ export default function ProblemDetail() {
         ? problemRaw.testCases
         : [],
 
-      // Company fields
       primaryCompany: problemRaw.primaryCompany || null,
       companies: problemRaw.companies || [],
 
-      // AI Metadata fields
       topic: problemRaw.topic || null,
       expectedApproach: problemRaw.expectedApproach || null,
       canonicalAlgorithms: problemRaw.canonicalAlgorithms || [],
@@ -180,23 +178,21 @@ export default function ProblemDetail() {
     }
     return lastAcceptedFromHistory;
   }, [lastSubmission, lastAcceptedFromHistory]);
-  // Code validation constants
+
   const MIN_CODE_LENGTH = 10;
-  const MAX_CODE_LENGTH = 65536; // 64KB
+  const MAX_CODE_LENGTH = 65536;
 
   const runOrSubmit = async (code, language, isSubmit = false) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    // Validate code is not empty
     if (!code || !code.trim()) {
       setStatus("error");
       setOutput("⚠️ No code to run. Please write your solution first.");
       return;
     }
 
-    // Validate minimum code length (prevents empty/placeholder submissions)
     const trimmedCode = code.trim();
     if (trimmedCode.length < MIN_CODE_LENGTH) {
       setStatus("error");
@@ -206,7 +202,6 @@ export default function ProblemDetail() {
       return;
     }
 
-    // Validate maximum code length
     if (code.length > MAX_CODE_LENGTH) {
       setStatus("error");
       setOutput(
@@ -238,19 +233,17 @@ export default function ProblemDetail() {
         ? await submitQuestion(payload)
         : await runQuestion(payload);
 
-      // Format output for LeetCode-style display in OutputPanel
-      // The OutputPanel expects a specific structure with results array
       const formattedOutput = {
         status: isSubmit ? data.status : (data.allPassed ? "accepted" : "wrong_answer"),
         results: data.results || [],
         passedCount: data.passedCount || 0,
         totalCount: data.totalCount || 0,
         allPassed: data.allPassed || false,
-        // For submit: include first failing index for easy navigation
+
         firstFailingIndex: data.firstFailingIndex ?? -1,
-        // Include AI feedback for submit results
+
         aiFeedback: isSubmit ? data.aiFeedback : null,
-        // Include submission ID for linking
+
         submissionId: data.submissionId || null,
       };
 
@@ -284,28 +277,23 @@ export default function ProblemDetail() {
           errorType: data.errorType || null,
           runtime: data.runtime || null,
           memory: data.memory || null,
-          // Pass test case results for display in result panel
+
           results: data.results || [],
           passedCount: data.passedCount || 0,
           totalCount: data.totalCount || 0,
           firstFailingIndex: data.firstFailingIndex ?? -1,
-          // ✨ FIX: Pass aiFeedback from backend response to avoid duplicate API calls
+
           aiFeedback: data.aiFeedback || null,
           backendSubmissionId: data.submissionId || null,
         };
 
-        // Record submission in context (includes aiFeedback if present)
         const submission = recordSubmission(submissionData);
 
         setLastSubmission(submissionData);
         setSubmitted(true);
 
-        // ✨ FIX: ALWAYS open submission result panel after Submit
-        // Panel visibility must NOT be conditional on verdict
-        // The panel should open for: Accepted, Wrong Answer, TLE, Runtime Error, etc.
         setShowFeedback(true);
 
-        // Fetch AI feedback if not already included and service is available
         if (!data.aiFeedback && aiServiceAvailable && !isAccepted) {
           fetchFeedback({
             questionId: id,
@@ -590,7 +578,7 @@ export default function ProblemDetail() {
             />
           </div>
 
-          {/* ✨ AI Feedback Side Panel - Shows hints progressively */}
+          {}
           {showFeedback && (
             <div
               className="flex-shrink-0 transition-all duration-300 ease-out"
@@ -604,14 +592,14 @@ export default function ProblemDetail() {
                 isVisible={showFeedback}
                 onClose={() => {
                   setShowFeedback(false);
-                  // Navigate to full results when panel is closed
+
                   if (lastSubmission) {
                     navigate(`/submissions/${lastSubmission.questionId}`);
                   }
                 }}
                 loading={feedbackLoading}
                 error={feedbackError}
-                // ✨ FIX: Pass submission data so panel can show results even without AI feedback
+
                 submissionData={lastSubmission}
                 feedback={
                   feedback ||

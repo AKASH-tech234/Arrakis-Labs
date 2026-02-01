@@ -12,17 +12,10 @@ import {
   reportGenerator,
 } from "../../services/oa/index.js";
 
-/**
- * Generate unique request ID for logging
- */
 const generateRequestId = () => `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-/**
- * Validate session creation request payload
- * @returns {Object} { valid: boolean, error?: string, field?: string }
- */
 const validateSessionPayload = (config) => {
-  // Duration validation
+
   if (!config.durationMinutes || typeof config.durationMinutes !== "number") {
     return { valid: false, error: "Duration is required and must be a number", field: "durationMinutes" };
   }
@@ -30,7 +23,6 @@ const validateSessionPayload = (config) => {
     return { valid: false, error: "Duration must be between 15 and 180 minutes", field: "durationMinutes" };
   }
 
-  // Question count validation
   const questionCount = config.questionCounts?.coding;
   if (questionCount !== undefined) {
     if (typeof questionCount !== "number" || questionCount < 1 || questionCount > 5) {
@@ -38,24 +30,20 @@ const validateSessionPayload = (config) => {
     }
   }
 
-  // Difficulty validation
   const validDifficulties = ["Easy", "Medium", "Hard", "mixed", "adaptive"];
   if (config.difficulty && !validDifficulties.includes(config.difficulty)) {
     return { valid: false, error: `Invalid difficulty. Must be one of: ${validDifficulties.join(", ")}`, field: "difficulty" };
   }
 
-  // Company mode validation
   const validCompanyModes = ["all", "selected"];
   if (config.companyMode && !validCompanyModes.includes(config.companyMode)) {
     return { valid: false, error: "Company mode must be 'all' or 'selected'", field: "companyMode" };
   }
 
-  // If company mode is selected, companies array should exist
   if (config.companyMode === "selected" && (!Array.isArray(config.selectedCompanies) || config.selectedCompanies.length === 0)) {
     return { valid: false, error: "Selected companies required when company mode is 'selected'", field: "selectedCompanies" };
   }
 
-  // Topics validation (optional but must be array if provided)
   if (config.selectedTopics && !Array.isArray(config.selectedTopics)) {
     return { valid: false, error: "Selected topics must be an array", field: "selectedTopics" };
   }
@@ -63,18 +51,6 @@ const validateSessionPayload = (config) => {
   return { valid: true };
 };
 
-/**
- * Create a new OA session
- * POST /api/oa/sessions
- * 
- * HTTP Status Codes:
- * - 201: Session created successfully
- * - 400: Invalid request payload (client error)
- * - 409: Active session already exists (conflict)
- * - 404: No questions found matching criteria
- * - 422: Insufficient questions for requested count
- * - 500: Server/database error
- */
 export const createSession = async (req, res) => {
   const requestId = generateRequestId();
   const userId = req.user._id;
@@ -84,9 +60,7 @@ export const createSession = async (req, res) => {
   console.log(`[OA Session] [${requestId}] Config:`, JSON.stringify(config, null, 2));
 
   try {
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 1: Validate request payload (400 Bad Request for invalid input)
-    // ═══════════════════════════════════════════════════════════════════════════
+
     const validation = validateSessionPayload(config);
     if (!validation.valid) {
       console.log(`[OA Session] [${requestId}] Validation failed: ${validation.error}`);
@@ -98,9 +72,6 @@ export const createSession = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 2: Check for existing active session (409 Conflict)
-    // ═══════════════════════════════════════════════════════════════════════════
     const existingSession = await OASession.findOne({
       userId,
       status: { $in: ["scheduled", "live", "paused"] },
@@ -122,11 +93,8 @@ export const createSession = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 3: Fetch questions strictly from database (404 if none found)
-    // ═══════════════════════════════════════════════════════════════════════════
     const requestedCount = config.questionCounts?.coding || 2;
-    
+
     const selectionResult = await questionSelectionEngine.selectQuestionsStrict(
       config,
       userId,
@@ -139,7 +107,6 @@ export const createSession = async (req, res) => {
       criteria: selectionResult.criteria,
     });
 
-    // No questions found at all
     if (selectionResult.totalAvailable === 0) {
       console.log(`[OA Session] [${requestId}] No questions found for criteria`);
       return res.status(404).json({
@@ -151,9 +118,6 @@ export const createSession = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 4: Validate question sufficiency (422 Unprocessable Entity)
-    // ═══════════════════════════════════════════════════════════════════════════
     if (selectionResult.questions.length < requestedCount) {
       console.log(`[OA Session] [${requestId}] Insufficient questions: ${selectionResult.questions.length}/${requestedCount}`);
       return res.status(422).json({
@@ -167,11 +131,8 @@ export const createSession = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 5: Create session atomically with transaction
-    // ═══════════════════════════════════════════════════════════════════════════
     const mongoSession = await mongoose.startSession();
-    
+
     try {
       let createdSession;
       let createdAnswers;
@@ -179,7 +140,6 @@ export const createSession = async (req, res) => {
       await mongoSession.withTransaction(async () => {
         const now = new Date();
 
-        // Save config
         const mappedConfig = {
           userId,
           companyMode: config.companyMode || "all",
@@ -204,7 +164,6 @@ export const createSession = async (req, res) => {
           { upsert: true, new: true, setDefaultsOnInsert: true, session: mongoSession }
         );
 
-        // Build questions array with snapshots
         const sessionQuestions = selectionResult.questions.map((q, idx) => ({
           refId: q._id,
           order: idx,
@@ -215,13 +174,11 @@ export const createSession = async (req, res) => {
           points: calculatePoints(q.difficulty),
         }));
 
-        // Calculate timing
         const startAt = config.scheduledStartAt ? new Date(config.scheduledStartAt) : now;
         const effectiveStartAt = Number.isNaN(startAt.getTime()) ? now : startAt;
         const startImmediately = effectiveStartAt.getTime() <= now.getTime();
         const endAt = new Date(effectiveStartAt.getTime() + config.durationMinutes * 60 * 1000);
 
-        // Generate unique session code
         let sessionCode = OASession.generateSessionCode();
         for (let attempt = 0; attempt < 5; attempt++) {
           const exists = await OASession.exists({ sessionCode });
@@ -229,7 +186,6 @@ export const createSession = async (req, res) => {
           sessionCode = OASession.generateSessionCode();
         }
 
-        // Create session
         const [session] = await OASession.create([{
           sessionCode,
           userId,
@@ -254,7 +210,6 @@ export const createSession = async (req, res) => {
 
         createdSession = session;
 
-        // Pre-create answer documents with all required fields
         const answerDocs = sessionQuestions.map((q, idx) => ({
           sessionId: session._id,
           userId: userId,
@@ -288,13 +243,11 @@ export const createSession = async (req, res) => {
 
     } catch (txError) {
       await mongoSession.endSession();
-      throw txError; // Re-throw to be caught by outer catch
+      throw txError;
     }
 
   } catch (error) {
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 6: Handle server errors (500 Internal Server Error)
-    // ═══════════════════════════════════════════════════════════════════════════
+
     console.error(`[OA Session] [${requestId}] Server error:`, {
       message: error.message,
       stack: error.stack,
@@ -305,14 +258,11 @@ export const createSession = async (req, res) => {
       success: false,
       error: "Failed to create OA session due to server error",
       code: "SERVER_ERROR",
-      requestId, // For support debugging
+      requestId,
     });
   }
 };
 
-/**
- * Calculate points based on difficulty
- */
 function calculatePoints(difficulty) {
   const map = {
     Easy: 100,
@@ -321,13 +271,9 @@ function calculatePoints(difficulty) {
   };
   return map[difficulty] || 200;
 }
-// Attach to exports for internal use
+
 createSession.calculatePoints = calculatePoints;
 
-/**
- * Get active session for user
- * GET /api/oa/sessions/active
- */
 export const getActiveSession = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -345,10 +291,8 @@ export const getActiveSession = async (req, res) => {
       });
     }
 
-    // Check and update status
     const updatedSession = await oaScheduler.checkSession(session._id);
 
-    // Calculate server time for timer sync
     const now = new Date();
     const remainingMs = Math.max(0, updatedSession.endAt - now);
 
@@ -378,10 +322,6 @@ export const getActiveSession = async (req, res) => {
   }
 };
 
-/**
- * Get session details (questions, answers, etc.)
- * GET /api/oa/sessions/:sessionId
- */
 export const getSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -399,10 +339,8 @@ export const getSession = async (req, res) => {
       });
     }
 
-    // Check and update status
     const updatedSession = await oaScheduler.checkSession(session._id);
 
-    // Only return full details if session is live or completed
     if (
       updatedSession.status === "scheduled" &&
       new Date() < updatedSession.startAt
@@ -419,7 +357,6 @@ export const getSession = async (req, res) => {
       });
     }
 
-    // Get answers
     const answers = await OAAnswer.find({ sessionId }).lean();
     const answersMap = {};
     answers.forEach((a) => {
@@ -434,11 +371,9 @@ export const getSession = async (req, res) => {
       };
     });
 
-    // Calculate server time for timer sync
     const now = new Date();
     const remainingMs = Math.max(0, updatedSession.endAt - now);
 
-    // Build questions list (don't expose full question content here)
     const questions = updatedSession.questions.map((q) => ({
       refId: q.refId,
       order: q.order,
@@ -477,16 +412,11 @@ export const getSession = async (req, res) => {
   }
 };
 
-/**
- * Get question details for OA
- * GET /api/oa/sessions/:sessionId/questions/:questionId
- */
 export const getQuestion = async (req, res) => {
   try {
     const { sessionId, questionId } = req.params;
     const userId = req.user._id;
 
-    // Verify session ownership and status
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -500,7 +430,6 @@ export const getQuestion = async (req, res) => {
       });
     }
 
-    // Check if question belongs to session
     const sessionQuestion = session.questions.find(
       (q) => q.refId.toString() === questionId
     );
@@ -512,7 +441,6 @@ export const getQuestion = async (req, res) => {
       });
     }
 
-    // Get full question details
     const Question = (await import("../../models/question/Question.js")).default;
     const question = await Question.findById(questionId).lean();
 
@@ -523,7 +451,6 @@ export const getQuestion = async (req, res) => {
       });
     }
 
-    // Get visible test cases
     const TestCase = (await import("../../models/question/TestCase.js")).default;
     const testCases = await TestCase.find({
       questionId,
@@ -533,7 +460,6 @@ export const getQuestion = async (req, res) => {
       .sort({ order: 1 })
       .lean();
 
-    // Infer input/output format from all active test cases (including hidden)
     const allTestCasesForFormat = await TestCase.find({
       questionId,
       isActive: true,
@@ -549,10 +475,8 @@ export const getQuestion = async (req, res) => {
       allTestCasesForFormat,
     );
 
-    // Get user's saved answer
     const answer = await OAAnswer.findOne({ sessionId, refId: questionId });
 
-    // Update current question index
     await OASession.findByIdAndUpdate(sessionId, {
       currentQuestionIndex: sessionQuestion.order,
     });
@@ -601,10 +525,6 @@ export const getQuestion = async (req, res) => {
   }
 };
 
-/**
- * Submit entire OA session
- * POST /api/oa/sessions/:sessionId/submit
- */
 export const submitSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -623,7 +543,6 @@ export const submitSession = async (req, res) => {
       });
     }
 
-    // Evaluate any pending submissions
     const answers = await OAAnswer.find({
       sessionId,
       "submission.isSubmitted": false,
@@ -646,12 +565,10 @@ export const submitSession = async (req, res) => {
       }
     }
 
-    // Update session status
     session.status = "submitted";
     session.submittedAt = new Date();
     await session.save();
 
-    // Generate report
     let report = null;
     try {
       report = await reportGenerator.generateReport(session._id);
@@ -679,10 +596,6 @@ export const submitSession = async (req, res) => {
   }
 };
 
-/**
- * Terminate session (forced end)
- * POST /api/oa/sessions/:sessionId/terminate
- */
 export const terminateSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -707,7 +620,6 @@ export const terminateSession = async (req, res) => {
     session.submittedAt = new Date();
     await session.save();
 
-    // Generate report for terminated session
     try {
       await reportGenerator.generateReport(session._id);
     } catch (err) {
@@ -732,10 +644,6 @@ export const terminateSession = async (req, res) => {
   }
 };
 
-/**
- * Sync timer with server
- * GET /api/oa/sessions/:sessionId/sync
- */
 export const syncTimer = async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -775,10 +683,6 @@ export const syncTimer = async (req, res) => {
   }
 };
 
-/**
- * Get user's session history
- * GET /api/oa/sessions
- */
 export const getSessionHistory = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -829,12 +733,8 @@ export const getSessionHistory = async (req, res) => {
   }
 };
 
-/**
- * Quick fight - start OA with random defaults
- * POST /api/oa/quick-fight
- */
 export const quickFight = async (req, res) => {
-  // Set default config for quick fight
+
   req.body = {
     companyMode: "all",
     selectedCompanies: [],
@@ -849,27 +749,18 @@ export const quickFight = async (req, res) => {
     startImmediately: true,
   };
 
-  // Delegate to createSession - all error handling is done there
   return createSession(req, res);
 };
 
-/**
- * Pre-flight availability check
- * GET /api/oa/availability
- * 
- * Returns available question count before session creation
- * Prevents user frustration by checking availability first
- */
 export const checkAvailability = async (req, res) => {
   const requestId = `avail_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   try {
     const userId = req.user._id;
     const { difficulty, topics, companies, companyMode } = req.query;
 
     console.log(`[OA Availability] [${requestId}] Checking for user: ${userId}`);
 
-    // Build config from query params
     const config = {
       difficulty: difficulty || "mixed",
       selectedTopics: topics ? topics.split(",").filter(Boolean) : [],
@@ -877,12 +768,10 @@ export const checkAvailability = async (req, res) => {
       selectedCompanies: companies ? companies.split(",").filter(Boolean) : [],
     };
 
-    // Get availability from question selection engine
     const availability = await questionSelectionEngine.checkAvailability(config, userId);
 
     console.log(`[OA Availability] [${requestId}] Result:`, availability);
 
-    // Check if user has active session
     const activeSession = await OASession.findOne({
       userId,
       status: { $in: ["scheduled", "live", "paused"] },

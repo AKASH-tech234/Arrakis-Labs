@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// LEARNING VELOCITY INDICATOR
-// Shows user's learning trajectory and progress trend
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
@@ -22,7 +17,6 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// Velocity configurations
 const VELOCITY_CONFIG = {
   accelerating: {
     icon: "🚀",
@@ -81,8 +75,8 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
 
   if (loading) {
     return (
-      <div 
-        className="rounded-xl border p-4" 
+      <div
+        className="rounded-xl border p-4"
         style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
       >
         <div className="flex items-center justify-center py-4">
@@ -98,13 +92,13 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
   }
 
   if (error) {
-    return null; // Silent fail for this widget
+    return null;
   }
 
   const velocity = data?.learning_velocity || "stable";
   const trajectory = data?.learning_trajectory || {};
   const config = VELOCITY_CONFIG[velocity] || VELOCITY_CONFIG.stable;
-  
+
   const totalSubmissions = trajectory.total_submissions || 0;
   const successRate = trajectory.success_rate || 0;
   const trend = trajectory.trend || "Building profile...";
@@ -116,14 +110,14 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-        style={{ 
+        style={{
           backgroundColor: `${config.color}10`,
           borderColor: `${config.color}30`
         }}
       >
         <span className="text-lg">{config.icon}</span>
         <div>
-          <span 
+          <span
             className="text-xs font-medium uppercase tracking-wider"
             style={{ color: config.color, fontFamily }}
           >
@@ -141,7 +135,7 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
       className={`rounded-xl border p-5 relative overflow-hidden bg-gradient-to-br ${config.gradient}`}
       style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
     >
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-4">
         <h3
           className="text-xs font-medium uppercase tracking-widest"
@@ -149,12 +143,12 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
         >
           Learning Velocity
         </h3>
-        <div 
+        <div
           className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
           style={{ backgroundColor: `${config.color}20` }}
         >
           <span className="text-sm">{config.icon}</span>
-          <span 
+          <span
             className="text-xs font-medium uppercase tracking-wider"
             style={{ color: config.color, fontFamily }}
           >
@@ -163,15 +157,15 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
         </div>
       </div>
 
-      {/* Main Content */}
+      {}
       <div className="space-y-4">
-        {/* Velocity Visualization */}
+        {}
         <div className="flex items-center gap-4">
           <motion.div
             className="text-4xl"
             animate={config.animation}
-            transition={{ 
-              duration: 2, 
+            transition={{
+              duration: 2,
               repeat: Infinity,
               ease: "easeInOut"
             }}
@@ -180,13 +174,13 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
             {config.icon}
           </motion.div>
           <div>
-            <p 
+            <p
               className="text-sm"
               style={{ color: COLORS.textPrimary, fontFamily }}
             >
               {config.description}
             </p>
-            <p 
+            <p
               className="text-xs mt-1"
               style={{ color: COLORS.textMuted }}
             >
@@ -195,16 +189,16 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
           </div>
         </div>
 
-        {/* Stats Row */}
+        {}
         <div className="grid grid-cols-3 gap-3">
-          <motion.div 
+          <motion.div
             className="text-center p-2 rounded-lg cursor-default"
             style={{ backgroundColor: COLORS.border }}
             whileHover={{ scale: 1.05, backgroundColor: `${COLORS.accent}20` }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <motion.div 
-              className="text-lg font-bold" 
+            <motion.div
+              className="text-lg font-bold"
               style={{ color: COLORS.accent, fontFamily }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -216,14 +210,14 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
               Skill Level
             </div>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="text-center p-2 rounded-lg cursor-default"
             style={{ backgroundColor: COLORS.border }}
             whileHover={{ scale: 1.05, backgroundColor: `${COLORS.textPrimary}10` }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <motion.div 
-              className="text-lg font-bold" 
+            <motion.div
+              className="text-lg font-bold"
               style={{ color: COLORS.textPrimary, fontFamily }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -235,17 +229,17 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
               Submissions
             </div>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="text-center p-2 rounded-lg cursor-default"
             style={{ backgroundColor: COLORS.border }}
             whileHover={{ scale: 1.05, backgroundColor: `${successRate >= 60 ? COLORS.success : COLORS.warning}20` }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <motion.div 
-              className="text-lg font-bold" 
-              style={{ 
+            <motion.div
+              className="text-lg font-bold"
+              style={{
                 color: successRate >= 60 ? COLORS.success : successRate >= 40 ? COLORS.warning : COLORS.error,
-                fontFamily 
+                fontFamily
               }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -263,7 +257,6 @@ export default function LearningVelocityIndicator({ userId, compact = false }) {
   );
 }
 
-// Compact inline version for headers
 export function LearningVelocityBadge({ userId }) {
   return <LearningVelocityIndicator userId={userId} compact />;
 }

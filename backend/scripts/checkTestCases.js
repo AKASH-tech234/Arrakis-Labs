@@ -7,17 +7,16 @@ async function checkTestCases() {
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('Connected to MongoDB\n');
 
-  // Find test cases with JSON brackets
   const jsonBracketCases = await TestCase.find({
     $or: [
       { stdin: { $regex: '\\[' } },
       { stdin: { $regex: '\\{' } },
     ]
   }).limit(20);
-  
+
   console.log('=== TEST CASES WITH JSON FORMAT ===');
   console.log('Found:', jsonBracketCases.length, 'test cases with brackets\n');
-  
+
   for (const tc of jsonBracketCases) {
     const q = await Question.findById(tc.questionId);
     console.log('---');
@@ -27,7 +26,6 @@ async function checkTestCases() {
     console.log('');
   }
 
-  // Get total counts
   const totalTestCases = await TestCase.countDocuments();
   const hiddenTestCases = await TestCase.countDocuments({ isHidden: true });
   const visibleTestCases = await TestCase.countDocuments({ isHidden: false });
@@ -37,7 +35,6 @@ async function checkTestCases() {
   console.log('Hidden test cases:', hiddenTestCases);
   console.log('Visible test cases:', visibleTestCases);
 
-  // Sample hidden test cases
   console.log('\n=== SAMPLE HIDDEN TEST CASES ===');
   const hiddenSamples = await TestCase.find({ isHidden: true }).limit(10);
   for (const tc of hiddenSamples) {

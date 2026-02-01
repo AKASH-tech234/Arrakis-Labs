@@ -98,7 +98,7 @@ export default function ContestEditor() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -118,12 +118,12 @@ export default function ContestEditor() {
 
   const addProblem = (problem) => {
     if (formData.problems.find(p => p.problemId === problem._id)) {
-      return; 
+      return;
     }
-    
+
     const order = formData.problems.length;
-    const label = String.fromCharCode(65 + order); 
-    
+    const label = String.fromCharCode(65 + order);
+
     setFormData(prev => ({
       ...prev,
       problems: [
@@ -181,7 +181,7 @@ export default function ContestEditor() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.startTime || !formData.duration) {
       setError('Name, start time, and duration are required');
       return;
@@ -241,7 +241,7 @@ export default function ContestEditor() {
 
   return (
     <div className="max-w-5xl space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -279,7 +279,7 @@ export default function ContestEditor() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Information */}
+        {}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -353,7 +353,7 @@ export default function ContestEditor() {
           </div>
         </motion.section>
 
-        {/* Problems Section */}
+        {}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -370,7 +370,7 @@ export default function ContestEditor() {
             <span className="text-[#78716C] text-sm">{formData.problems.length} selected</span>
           </div>
           <div className="p-6">
-            {/* Selected Problems */}
+            {}
             {formData.problems.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-xs font-medium text-[#78716C] uppercase tracking-widest mb-3">Selected Problems</h3>
@@ -425,7 +425,7 @@ export default function ContestEditor() {
               </div>
             )}
 
-            {/* Add Problems */}
+            {}
             <div>
               <h3 className="text-xs font-medium text-[#78716C] uppercase tracking-widest mb-3">Add Problems</h3>
               <div className="relative mb-3">
@@ -468,7 +468,7 @@ export default function ContestEditor() {
           </div>
         </motion.section>
 
-        {/* Scoring & Rules Section */}
+        {}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -584,7 +584,7 @@ export default function ContestEditor() {
           </div>
         </motion.section>
 
-        {/* Action Buttons */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

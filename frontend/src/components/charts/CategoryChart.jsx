@@ -1,5 +1,3 @@
-
-
 export default function CategoryChart({ categories }) {
   const data = Array.isArray(categories) ? categories : [];
   const maxTotal = Math.max(1, ...data.map((d) => Number(d.total) || 0));

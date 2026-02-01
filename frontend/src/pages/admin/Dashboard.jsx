@@ -1,5 +1,3 @@
-
-
 import { motion } from "framer-motion";
 
 const stats = [
@@ -208,7 +206,7 @@ export default function AdminDashboard() {
                 <a
                   key={item.type}
                   href={item.route}
-                  className="flex items-center justify-between p-3 border border-[#1A1814] 
+                  className="flex items-center justify-between p-3 border border-[#1A1814]
                              hover:border-[#78716C] transition-colors group"
                 >
                   <span

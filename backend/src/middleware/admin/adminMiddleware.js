@@ -81,11 +81,11 @@ export const requireSuperAdmin = (req, res, next) => {
 
 export const auditLog = (action, resourceType) => {
   return async (req, res, next) => {
-    
+
     const originalJson = res.json.bind(res);
 
     res.json = async function (data) {
-      
+
       if (data?.success !== false && res.statusCode < 400) {
         try {
           await AuditLog.log({
@@ -114,7 +114,7 @@ export const auditLog = (action, resourceType) => {
 
 function sanitizeLogData(data) {
   if (!data) return {};
-  
+
   const sanitized = { ...data };
 
   const sensitiveFields = ["password", "token", "secret", "stdin", "expectedStdout"];

@@ -1,5 +1,3 @@
-
-
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
@@ -83,7 +81,7 @@ export default function DataTable({
                       if (el) el.indeterminate = someSelected;
                     }}
                     onChange={handleSelectAll}
-                    className="w-4 h-4 bg-[#0A0A08] border border-[#1A1814] 
+                    className="w-4 h-4 bg-[#0A0A08] border border-[#1A1814]
                                checked:bg-[#F59E0B] checked:border-[#F59E0B]
                                focus:ring-1 focus:ring-[#F59E0B] cursor-pointer"
                   />
@@ -125,7 +123,7 @@ export default function DataTable({
           {}
           <tbody>
             {loading ? (
-              
+
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="border-b border-[#1A1814]/50">
                   {selectable && (
@@ -144,7 +142,7 @@ export default function DataTable({
                 </tr>
               ))
             ) : sortedData.length === 0 ? (
-              
+
               <tr>
                 <td
                   colSpan={columns.length + (selectable ? 1 : 0)}
@@ -159,7 +157,7 @@ export default function DataTable({
                 </td>
               </tr>
             ) : (
-              
+
               sortedData.map((row, idx) => (
                 <motion.tr
                   key={row.id}
@@ -180,7 +178,7 @@ export default function DataTable({
                         type="checkbox"
                         checked={selectedIds.includes(row.id)}
                         onChange={() => handleSelectRow(row.id)}
-                        className="w-4 h-4 bg-[#0A0A08] border border-[#1A1814] 
+                        className="w-4 h-4 bg-[#0A0A08] border border-[#1A1814]
                                    checked:bg-[#F59E0B] checked:border-[#F59E0B]
                                    focus:ring-1 focus:ring-[#F59E0B] cursor-pointer"
                       />

@@ -23,7 +23,7 @@ export const AdminAuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      
+
       try {
         const response = await getAdminProfile();
         if (response.success) setAdmin(response.admin);

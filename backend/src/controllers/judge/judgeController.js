@@ -14,21 +14,21 @@ import {
   getAttemptNumber,
   updateUserAIProfile,
 } from "../../utils/userStatsAggregator.js";
-// Hidden test case generation - TYPE-BASED (works for all 619+ problems)
+
 import {
   hasGeneratorForType,
   generateTestsByType,
   getAllRegisteredTypes,
   normalizeType,
 } from "../../services/judge/typeGeneratorRegistry.js";
-// Per-problem configs with reference solutions (for correct hidden test generation)
+
 import {
   hasProblem as hasRegisteredProblem,
   getProblemConfig,
   normalizeSlug,
 } from "../../services/judge/problemConfigRegistry.js";
 import { TestCaseGenerator } from "../../services/judge/testCaseGenerator.js";
-// Dynamic test case generator - generates tests by analyzing existing test cases
+
 import {
   generateDynamicTestInputs,
   computeExpectedOutputs,
@@ -354,42 +354,23 @@ export const submitCode = async (req, res) => {
       allTestCases.filter((tc) => !tc.isHidden).length,
     );
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // DYNAMIC HIDDEN TEST CASE GENERATION
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 
-    // THREE-TIER SYSTEM:
-    // 1. DB Test Cases - Always used (verified expected outputs)
-    // 2. Per-Problem Registry - Problems with registered reference solutions
-    //    get dynamically generated hidden tests with CORRECT expected outputs
-    // 3. Type-Based Fallback - DISABLED (no reference solutions = wrong outputs)
-    //
-    // SECURITY:
-    // - Generated test inputs/outputs are NEVER exposed to frontend on success
-    // - Only test number and pass/fail status are shown
-    // ═══════════════════════════════════════════════════════════════════════════
-    
     let generatedHiddenCases = [];
-    
-    // Get problem slug for registry lookup
+
     const problemSlug = question.slug || normalizeSlug(question.title || "");
     const problemType = question.categoryType || question.topic || "";
-    
+
     console.log(`\n[HiddenJudge] ═══════════════════════════════════════════════════`);
     console.log(`[HiddenJudge] Problem: "${question.title}"`);
     console.log(`[HiddenJudge] Slug: "${problemSlug}"`);
     console.log(`[HiddenJudge] Type: "${problemType}"`);
-    
-    // PRIORITY 1: Check for per-problem config with reference solution
+
     if (hasRegisteredProblem(problemSlug)) {
       console.log(`[HiddenJudge] ✅ Per-problem config FOUND (has reference solution)`);
       try {
         const problemConfig = getProblemConfig(problemSlug);
-        
-        // Create deterministic seed from user + problem (NOT Date.now for reproducibility)
+
         const submissionSeed = `${userId?.toString() || "anon"}-${questionId}`;
-        
-        // Generate hidden test cases with CORRECT expected outputs
+
         const generator = new TestCaseGenerator(problemConfig, submissionSeed);
         generatedHiddenCases = generator.generateAll({
           edgeCount: 3,
@@ -397,40 +378,35 @@ export const submitCode = async (req, res) => {
           stressCount: 2,
           adversarialCount: 2,
         });
-        
-        // Filter out any test cases that failed to generate expected outputs
+
         generatedHiddenCases = generatedHiddenCases.filter(tc => tc.expectedStdout !== null);
-        
+
         console.log(`[HiddenJudge] Generated ${generatedHiddenCases.length} hidden test cases with reference solutions`);
       } catch (genError) {
         console.error(`[HiddenJudge] ❌ Generation failed: ${genError.message}`);
         generatedHiddenCases = [];
       }
     } else {
-      // PRIORITY 2: Dynamic test generation
-      // Generate test INPUTS by analyzing existing test cases
-      // Expected outputs will be computed using user's code if they pass visible tests
+
       console.log(`[HiddenJudge] ⚠️ No per-problem config registered`);
       console.log(`[HiddenJudge] 🔄 Using DYNAMIC test generation (analyze existing tests)`);
-      
+
       try {
         const submissionSeed = `${userId?.toString() || "anon"}-${questionId}-dynamic`;
-        
-        // Generate test inputs based on problem structure and constraints
+
         const dynamicInputs = generateDynamicTestInputs(
           question,
           allTestCases,
           submissionSeed,
           { edgeCount: 3, randomCount: 5, stressCount: 2 }
         );
-        
+
         console.log(`[HiddenJudge] Generated ${dynamicInputs.length} dynamic test INPUTS`);
         console.log(`[HiddenJudge] Expected outputs will be computed from user's solution`);
-        
-        // Store for later - we'll compute outputs after visible tests pass
+
         generatedHiddenCases = dynamicInputs.map((input, idx) => ({
           stdin: input.stdin,
-          expectedStdout: null, // Will be computed later
+          expectedStdout: null,
           category: input.category || "dynamic",
           label: input.label || `Dynamic #${idx + 1}`,
           isHidden: true,
@@ -441,18 +417,9 @@ export const submitCode = async (req, res) => {
         generatedHiddenCases = [];
       }
     }
-    
+
     console.log(`[HiddenJudge] ═══════════════════════════════════════════════════\n`);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // TWO-PHASE TEST EXECUTION
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 1: Run all DB test cases (visible + hidden)
-    // PHASE 2: If user passes visible tests, generate dynamic hidden tests
-    //          using their solution to compute expected outputs
-    // ═══════════════════════════════════════════════════════════════════════════
-    
-    // Separate DB test cases by visibility
     const dbVisibleTests = allTestCases.filter(tc => !tc.isHidden).map(tc => ({
       stdin: tc.stdin,
       expectedStdout: tc.expectedStdout,
@@ -462,7 +429,7 @@ export const submitCode = async (req, res) => {
       category: "db_visible",
       fromDB: true,
     }));
-    
+
     const dbHiddenTests = allTestCases.filter(tc => tc.isHidden).map(tc => ({
       stdin: tc.stdin,
       expectedStdout: tc.expectedStdout,
@@ -472,7 +439,7 @@ export const submitCode = async (req, res) => {
       category: "db_hidden",
       fromDB: true,
     }));
-    
+
     console.log(`📊 DB Test Cases: ${dbVisibleTests.length} visible, ${dbHiddenTests.length} hidden`);
     console.log(`📊 Dynamic Test Inputs: ${generatedHiddenCases.length} (outputs pending)`);
 
@@ -488,11 +455,8 @@ export const submitCode = async (req, res) => {
     let firstFailingIndex = -1;
     let visibleTestsPassed = true;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 1: Run VISIBLE test cases first
-    // ═══════════════════════════════════════════════════════════════════════════
     console.log(`\n[Phase 1] Running ${dbVisibleTests.length} visible test cases...`);
-    
+
     for (let i = 0; i < dbVisibleTests.length; i++) {
       const tc = dbVisibleTests[i];
       try {
@@ -537,7 +501,7 @@ export const submitCode = async (req, res) => {
         visibleTestsPassed = false;
         const isServiceError = error.message.includes("unavailable");
         if (firstFailingIndex === -1) firstFailingIndex = results.length;
-        
+
         results.push({
           label: tc.label,
           isHidden: tc.isHidden,
@@ -549,19 +513,16 @@ export const submitCode = async (req, res) => {
           error: true,
           serviceError: isServiceError,
         });
-        
+
         if (isServiceError) break;
       }
     }
-    
+
     console.log(`[Phase 1] Visible tests result: ${visibleTestsPassed ? "✅ ALL PASSED" : "❌ FAILED"}`);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 2: Run DB HIDDEN test cases
-    // ═══════════════════════════════════════════════════════════════════════════
     if (!compileErrorOccurred && dbHiddenTests.length > 0) {
       console.log(`\n[Phase 2] Running ${dbHiddenTests.length} DB hidden test cases...`);
-      
+
       for (let i = 0; i < dbHiddenTests.length; i++) {
         const tc = dbHiddenTests[i];
         try {
@@ -603,7 +564,7 @@ export const submitCode = async (req, res) => {
         } catch (error) {
           const isServiceError = error.message.includes("unavailable");
           if (firstFailingIndex === -1) firstFailingIndex = results.length;
-          
+
           results.push({
             label: tc.label,
             isHidden: true,
@@ -615,49 +576,44 @@ export const submitCode = async (req, res) => {
             error: true,
             serviceError: isServiceError,
           });
-          
+
           if (isServiceError) break;
         }
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 3: Run DYNAMICALLY GENERATED test cases
-    // Only if user passed visible tests (their solution is likely correct)
-    // ═══════════════════════════════════════════════════════════════════════════
     const dynamicTestsNeedingOutput = generatedHiddenCases.filter(tc => tc.needsOutputComputation);
-    
+
     if (!compileErrorOccurred && visibleTestsPassed && dynamicTestsNeedingOutput.length > 0) {
       console.log(`\n[Phase 3] Computing outputs for ${dynamicTestsNeedingOutput.length} dynamic tests...`);
       console.log(`[Phase 3] Using user's solution as reference (passed visible tests)`);
-      
+
       for (let i = 0; i < dynamicTestsNeedingOutput.length; i++) {
         const tc = dynamicTestsNeedingOutput[i];
         try {
-          // Run user's code to get expected output
+
           const referenceExecution = await executePiston(
             code,
             language,
             tc.stdin,
-            3000, // Slightly longer timeout for generated tests
+            3000,
           );
-          
+
           if (referenceExecution.compileError || referenceExecution.timedOut || referenceExecution.exitCode !== 0) {
-            // Skip this test case if user's code fails on it
+
             console.log(`[Phase 3] Skipping dynamic test #${i + 1} - user code failed`);
             continue;
           }
-          
+
           const expectedOutput = referenceExecution.stdout.trim();
-          
-          // Now run again to verify consistency (same input should give same output)
+
           const verifyExecution = await executePiston(
             code,
             language,
             tc.stdin,
             3000,
           );
-          
+
           const passed =
             !verifyExecution.compileError &&
             !verifyExecution.timedOut &&
@@ -678,22 +634,22 @@ export const submitCode = async (req, res) => {
             runtimeError: verifyExecution.runtimeError || false,
             dynamicallyGenerated: true,
           });
-          
+
         } catch (error) {
           console.error(`[Phase 3] Error on dynamic test #${i + 1}: ${error.message}`);
-          // Skip failed dynamic tests - don't penalize user
+
         }
       }
-      
+
       console.log(`[Phase 3] Completed dynamic test execution`);
     } else if (generatedHiddenCases.length > 0 && generatedHiddenCases[0].expectedStdout !== null) {
-      // These are pre-generated cases with known outputs (from problemConfigRegistry)
+
       console.log(`\n[Phase 3] Running ${generatedHiddenCases.length} pre-generated hidden tests...`);
-      
+
       for (let i = 0; i < generatedHiddenCases.length; i++) {
         const tc = generatedHiddenCases[i];
-        if (tc.needsOutputComputation) continue; // Skip if needs computation but didn't qualify
-        
+        if (tc.needsOutputComputation) continue;
+
         try {
           const execution = await executePiston(
             code,
@@ -733,7 +689,7 @@ export const submitCode = async (req, res) => {
         } catch (error) {
           const isServiceError = error.message.includes("unavailable");
           if (firstFailingIndex === -1) firstFailingIndex = results.length;
-          
+
           results.push({
             label: tc.label || `Generated #${i + 1}`,
             isHidden: true,
@@ -745,7 +701,7 @@ export const submitCode = async (req, res) => {
             error: true,
             serviceError: isServiceError,
           });
-          
+
           if (isServiceError) break;
         }
       }
@@ -773,10 +729,9 @@ export const submitCode = async (req, res) => {
 
     let submission = null;
     if (userId) {
-      // Get attempt number for this user+problem combo
+
       const attemptNumber = await getAttemptNumber(userId, questionId);
 
-      // Denormalize problem fields for AI queries
       const problemCategory =
         question.topic ||
         (question.tags?.length > 0 ? question.tags[0] : "General");
@@ -789,31 +744,20 @@ export const submitCode = async (req, res) => {
         status,
         passedCount,
         totalCount: results.length,
-        // AI tracking fields
+
         attemptNumber,
-        // Denormalized problem fields (immutable historical data)
+
         problemCategory,
         problemDifficulty: question.difficulty,
         problemTags: question.tags || [],
-        // Don't store full test case results for security
+
       });
 
-      // Async update user's AI profile (non-blocking)
       updateUserAIProfile(userId).catch((err) =>
         console.error("[Submit] AI profile update failed:", err.message),
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // AI FEEDBACK GATE: Request AI for all submissions (LeetCode-style)
-    // ═══════════════════════════════════════════════════════════════════════════
-    // AI feedback runs for ALL verdicts:
-    // ✓ Accepted - performance tips, time/space complexity analysis
-    // ✓ Wrong Answer - needs diagnosis + failing test case reference
-    // ✓ TLE - needs algorithm optimization guidance
-    // ✓ Runtime Error - needs safety/correctness feedback
-    // ✗ Compile Error - show raw compiler output, not AI
-    // ✗ Internal Error - infrastructure issue, not code issue
     const AI_ELIGIBLE_STATUSES = [
       "accepted",
       "wrong_answer",
@@ -840,12 +784,10 @@ export const submitCode = async (req, res) => {
           question.topic ||
           (question.tags?.length > 0 ? question.tags[0] : "General");
 
-        // Get user's AI profile for personalization
         const { getUserAIProfile } =
           await import("../../utils/userStatsAggregator.js");
         const userProfile = await getUserAIProfile(userId).catch(() => null);
 
-        // Build failing test case context for AI (if applicable)
         const failingTestCase = firstFailingIndex >= 0 ? {
           index: firstFailingIndex,
           total: results.length,
@@ -856,7 +798,6 @@ export const submitCode = async (req, res) => {
           error: results[firstFailingIndex]?.stderr || "",
         } : null;
 
-        // Call AI service with enriched context
         aiFeedback = await getAIFeedback({
           userId: userId.toString(),
           problemId: questionId.toString(),
@@ -866,11 +807,11 @@ export const submitCode = async (req, res) => {
           language,
           verdict: status,
           userHistorySummary,
-          // Failing test case context for targeted AI feedback
+
           failingTestCase,
           passedCount,
           totalCount: results.length,
-          // Enhanced context for AI personalization
+
           problem: {
             title: question.title,
             difficulty: question.difficulty,
@@ -886,7 +827,7 @@ export const submitCode = async (req, res) => {
 
         if (aiFeedback) {
           console.log("[Submit] AI feedback received successfully");
-          // Mark submission as having received AI feedback
+
           if (submission) {
             submission.aiFeedbackReceived = true;
             await submission.save();
@@ -908,15 +849,13 @@ export const submitCode = async (req, res) => {
       data: {
         submissionId: submission?._id,
         status,
-        allPassed, // CRITICAL: Frontend needs this to show correct verdict icon
-        // LeetCode-style: expose hidden test case details on failure
-        // This allows users to see exactly where they failed
+        allPassed,
+
         firstFailingIndex: !allPassed ? firstFailingIndex : null,
         results: results.map((r, idx) => {
-          // CRITICAL: On wrong answer, expose ALL test case details (including hidden)
-          // LeetCode shows hidden test case input/output when submission fails
+
           const shouldExposeDetails = !allPassed || !r.isHidden;
-          
+
           return {
             label: r.label,
             isHidden: r.isHidden,
@@ -924,7 +863,7 @@ export const submitCode = async (req, res) => {
             timedOut: r.timedOut,
             compileError: r.compileError,
             runtimeError: r.runtimeError || false,
-            // Expose details for: all visible test cases, OR any test case when submission fails
+
             ...(shouldExposeDetails
               ? {
                   stdin: r.stdin,
@@ -949,9 +888,9 @@ export const submitCode = async (req, res) => {
               optimizationTips: aiFeedback.optimization_tips || [],
               complexityAnalysis: aiFeedback.complexity_analysis,
               edgeCases: aiFeedback.edge_cases || [],
-              // MIM V3.0 insights (transformed for frontend)
+
               mimInsights: transformMIMInsights(aiFeedback.mim_insights),
-              // v3.3: New fields for enhanced feedback
+
               rootCause: aiFeedback.root_cause || null,
               rootCauseSubtype: aiFeedback.root_cause_subtype || null,
               failureMechanism: aiFeedback.failure_mechanism || null,
@@ -959,7 +898,7 @@ export const submitCode = async (req, res) => {
               correctCodeExplanation:
                 aiFeedback.correct_code_explanation || null,
               conceptReinforcement: aiFeedback.concept_reinforcement || null,
-              // Reference to the failing test case for UI linking
+
               failingTestCaseRef: firstFailingIndex >= 0 ? {
                 index: firstFailingIndex,
                 label: results[firstFailingIndex]?.label || `Test Case ${firstFailingIndex + 1}`,
@@ -985,7 +924,22 @@ export const getSubmissions = async (req, res) => {
 
     const query = { userId };
     if (questionId) {
-      query.questionId = questionId;
+
+      if (mongoose.Types.ObjectId.isValid(questionId)) {
+        query.questionId = questionId;
+      } else {
+
+        const question = await Question.findOne({ slug: questionId }).select("_id").lean();
+        if (question) {
+          query.questionId = question._id;
+        } else {
+
+          return res.status(200).json({
+            success: true,
+            data: [],
+          });
+        }
+      }
     }
 
     const submissions = await Submission.find(query)
@@ -1027,13 +981,12 @@ export const getPublicQuestions = async (req, res) => {
       Question.countDocuments(query),
     ]);
 
-    // Normalize company names (capitalize first letter)
     const normalizedQuestions = questions.map(q => ({
       ...q,
-      primaryCompany: q.primaryCompany 
+      primaryCompany: q.primaryCompany
         ? q.primaryCompany.charAt(0).toUpperCase() + q.primaryCompany.slice(1).toLowerCase()
         : null,
-      companies: (q.companies || []).map(c => 
+      companies: (q.companies || []).map(c =>
         c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()
       ),
     }));
@@ -1059,10 +1012,13 @@ export const getPublicQuestions = async (req, res) => {
 
 export const getPublicQuestion = async (req, res) => {
   try {
-    const question = await Question.findOne({
-      _id: req.params.id,
-      isActive: true,
-    })
+    const { id } = req.params;
+
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id, isActive: true }
+      : { slug: id, isActive: true };
+
+    const question = await Question.findOne(query)
       .select("-__v -createdBy -updatedBy")
       .lean();
 
@@ -1074,7 +1030,7 @@ export const getPublicQuestion = async (req, res) => {
     }
 
     const visibleTestCases = await TestCase.find({
-      questionId: req.params.id,
+      questionId: question._id,
       isActive: true,
       isHidden: false,
     })
@@ -1082,7 +1038,7 @@ export const getPublicQuestion = async (req, res) => {
       .select("stdin expectedStdout label");
 
     const allTestCasesForFormat = await TestCase.find({
-      questionId: req.params.id,
+      questionId: question._id,
       isActive: true,
     })
       .sort({ order: 1 })
@@ -1093,7 +1049,6 @@ export const getPublicQuestion = async (req, res) => {
       allTestCasesForFormat,
     );
 
-    // Normalize company names (capitalize first letter)
     const normalizedPrimaryCompany = question.primaryCompany
       ? question.primaryCompany.charAt(0).toUpperCase() + question.primaryCompany.slice(1).toLowerCase()
       : null;

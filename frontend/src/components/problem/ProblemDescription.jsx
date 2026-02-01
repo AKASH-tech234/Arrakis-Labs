@@ -74,7 +74,7 @@ export default function ProblemDescription({ problem }) {
           </span>
         </div>
 
-        {/* Company Information */}
+        {}
         <div className="mt-4 pt-4 border-t border-[#3D3D3D]">
           <div className="flex items-center gap-2 text-[#78716C]">
             <Building2 className="w-4 h-4" />
@@ -85,8 +85,8 @@ export default function ProblemDescription({ problem }) {
           <p className="text-[#E8E4D9] text-sm mt-1">
             {problem.primaryCompany || "General Interview Problem"}
           </p>
-          
-          {/* Additional companies */}
+
+          {}
           {problem.companies?.length > 1 && (
             <div className="mt-3">
               <span className="text-[10px] uppercase text-[#78716C] tracking-wider">
@@ -181,7 +181,7 @@ export default function ProblemDescription({ problem }) {
         </div>
       </>
 
-      {/* AI Hints Section - Collapsible */}
+      {}
       {(problem?.topic ||
         problem?.timeComplexityHint ||
         problem?.canonicalAlgorithms?.length > 0) && (
@@ -203,7 +203,7 @@ export default function ProblemDescription({ problem }) {
 
           {showHints && (
             <div className="mt-4 space-y-4 animate-in fade-in duration-200">
-              {/* Topic Badge */}
+              {}
               {problem.topic && (
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase text-[#78716C]">
@@ -215,7 +215,7 @@ export default function ProblemDescription({ problem }) {
                 </div>
               )}
 
-              {/* Algorithms */}
+              {}
               {problem.canonicalAlgorithms?.length > 0 && (
                 <div>
                   <span className="text-[10px] uppercase text-[#78716C] block mb-2">
@@ -234,7 +234,7 @@ export default function ProblemDescription({ problem }) {
                 </div>
               )}
 
-              {/* Complexity Hints */}
+              {}
               {(problem.timeComplexityHint || problem.spaceComplexityHint) && (
                 <div className="flex gap-4">
                   {problem.timeComplexityHint && (
@@ -262,7 +262,7 @@ export default function ProblemDescription({ problem }) {
                 </div>
               )}
 
-              {/* Common Mistakes */}
+              {}
               {problem.commonMistakes?.length > 0 && (
                 <div>
                   <span className="flex items-center gap-2 text-[10px] uppercase text-[#78716C] mb-2">

@@ -8,16 +8,10 @@ import Question from "../models/question/Question.js";
 
 const router = express.Router();
 
-/**
- * @route   GET /api/users/:id/ai-profile
- * @desc    Get user's AI-computed cognitive profile
- * @access  Private
- */
 router.get("/:id/ai-profile", protect, async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Only allow users to access their own profile (or admin)
     if (req.user._id.toString() !== userId && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
@@ -41,16 +35,10 @@ router.get("/:id/ai-profile", protect, async (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/users/:id/ai-profile/refresh
- * @desc    Force refresh user's AI profile
- * @access  Private
- */
 router.post("/:id/ai-profile/refresh", protect, async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Only allow users to refresh their own profile (or admin)
     if (req.user._id.toString() !== userId && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
@@ -75,11 +63,6 @@ router.post("/:id/ai-profile/refresh", protect, async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/questions/:id/ai-context
- * @desc    Get problem's AI context for feedback generation
- * @access  Private
- */
 router.get("/questions/:id/ai-context", protect, async (req, res) => {
   try {
     const questionId = req.params.id;
@@ -97,7 +80,6 @@ router.get("/questions/:id/ai-context", protect, async (req, res) => {
       });
     }
 
-    // Build AI context (infer if fields not set)
     const aiContext = {
       title: question.title,
       description: question.description,
@@ -107,8 +89,8 @@ router.get("/questions/:id/ai-context", protect, async (req, res) => {
       topic:
         question.topic ||
         (question.tags?.length > 0 ? question.tags[0] : "General"),
-      expectedApproach: question.expectedApproach || null, // Let AI infer if not set
-      commonMistakes: question.commonMistakes || [], // Let AI infer if empty
+      expectedApproach: question.expectedApproach || null,
+      commonMistakes: question.commonMistakes || [],
       timeComplexityHint: question.timeComplexityHint || null,
       spaceComplexityHint: question.spaceComplexityHint || null,
     };

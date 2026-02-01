@@ -1,21 +1,9 @@
 import Question from "../../models/question/Question.js";
 import { UserOAHistory } from "../../models/oa/index.js";
 
-/**
- * Question Selection Engine
- * 
- * STRICT DATABASE-ONLY question selection for OA sessions.
- * 
- * Rules:
- * - NO fallback questions
- * - NO AI-generated questions
- * - NO hardcoded questions
- * - All questions MUST come from database
- * - Returns exact counts for proper HTTP status code handling
- */
 class QuestionSelectionEngine {
   constructor() {
-    // Topic name variations mapping (canonical -> all variations)
+
     this.TOPIC_VARIATIONS = {
       "Array": ["Array", "Arrays", "array", "arrays"],
       "String": ["String", "Strings", "string", "strings"],
@@ -42,17 +30,14 @@ class QuestionSelectionEngine {
     this.VALID_DIFFICULTIES = ["Easy", "Medium", "Hard"];
   }
 
-  /**
-   * Expand topic names to include all variations for database query
-   */
   expandTopics(topics) {
     if (!topics || topics.length === 0) return [];
-    
+
     const expanded = new Set();
     for (const topic of topics) {
-      // Add the original topic
+
       expanded.add(topic);
-      // Add all variations if it's a canonical name
+
       if (this.TOPIC_VARIATIONS[topic]) {
         this.TOPIC_VARIATIONS[topic].forEach(v => expanded.add(v));
       }
@@ -60,37 +45,23 @@ class QuestionSelectionEngine {
     return [...expanded];
   }
 
-  /**
-   * Build MongoDB query criteria from config
-   * @param {Object} config - Selection configuration
-   * @returns {Object} MongoDB query criteria
-   */
   buildCriteria(config) {
     const criteria = { isActive: true };
 
     const hasCompanies = config.companyMode === "selected" && config.selectedCompanies?.length > 0;
 
-    // Filter by companies field (not tags - tags are for topics)
-    // The Question schema has: companies: [String] - array of company names
     if (hasCompanies) {
       criteria.companies = { $in: config.selectedCompanies };
     }
-    // If no companies selected, return all active questions (companyMode: "all")
 
     return criteria;
   }
 
-  /**
-   * Normalize difficulty string to proper case
-   */
   normalizeDifficulty(difficulty) {
     const map = { easy: "Easy", medium: "Medium", hard: "Hard" };
     return map[difficulty?.toLowerCase()] || difficulty;
   }
 
-  /**
-   * Calculate difficulty distribution for mixed/adaptive modes
-   */
   calculateDifficultyDistribution(config, userHistory) {
     const { difficulty } = config;
 
@@ -102,19 +73,14 @@ class QuestionSelectionEngine {
       return { Easy: 30, Medium: 50, Hard: 20 };
     }
 
-    // Single difficulty mode
     const normalized = this.normalizeDifficulty(difficulty);
     if (this.VALID_DIFFICULTIES.includes(normalized)) {
       return { [normalized]: 100 };
     }
 
-    // Default to mixed
     return { Easy: 30, Medium: 50, Hard: 20 };
   }
 
-  /**
-   * Adaptive difficulty based on user performance
-   */
   adaptiveDifficultyDistribution(userHistory) {
     if (!userHistory || userHistory.totalOAs < 3) {
       return { Easy: 30, Medium: 50, Hard: 20 };
@@ -136,9 +102,6 @@ class QuestionSelectionEngine {
     return { Easy: 25, Medium: 50, Hard: 25 };
   }
 
-  /**
-   * Calculate bucket counts from percentages
-   */
   calculateBucketCounts(total, distribution) {
     const buckets = {};
     let assigned = 0;
@@ -149,7 +112,6 @@ class QuestionSelectionEngine {
       assigned += count;
     }
 
-    // Handle rounding errors - add to Medium
     if (assigned < total) {
       buckets["Medium"] = (buckets["Medium"] || 0) + (total - assigned);
     } else if (assigned > total) {
@@ -160,9 +122,6 @@ class QuestionSelectionEngine {
     return buckets;
   }
 
-  /**
-   * Get user's weak topics for weighted selection
-   */
   getWeakTopics(userHistory) {
     if (!userHistory?.topicProficiency) return [];
 
@@ -175,9 +134,6 @@ class QuestionSelectionEngine {
     return weak;
   }
 
-  /**
-   * Fisher-Yates shuffle
-   */
   shuffle(array) {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -187,22 +143,13 @@ class QuestionSelectionEngine {
     return shuffled;
   }
 
-  /**
-   * STRICT question selection - database only, no fallbacks
-   * 
-   * @param {Object} config - Selection configuration
-   * @param {string} userId - User ID for history check
-   * @param {number} requestedCount - Number of questions requested
-   * @returns {Object} { questions: Array, totalAvailable: number, criteria: Object }
-   */
   async selectQuestionsStrict(config, userId, requestedCount) {
     const startTime = Date.now();
-    
+
     console.log("[QuestionSelection] Starting STRICT selection");
     console.log("[QuestionSelection] Config:", JSON.stringify(config, null, 2));
     console.log("[QuestionSelection] Requested count:", requestedCount);
 
-    // Get user's history to avoid repeats
     const userHistory = await UserOAHistory.findOne({ userId });
     const attemptedIds = new Set(
       userHistory?.attemptedCoding?.map((c) => c.questionId.toString()) || []
@@ -210,11 +157,9 @@ class QuestionSelectionEngine {
 
     console.log("[QuestionSelection] User has attempted:", attemptedIds.size, "questions");
 
-    // Build base criteria
     const baseCriteria = this.buildCriteria(config);
     console.log("[QuestionSelection] Query criteria:", JSON.stringify(baseCriteria, null, 2));
 
-    // Count total available questions (excluding attempted)
     const totalAvailableQuery = {
       ...baseCriteria,
       _id: { $nin: Array.from(attemptedIds) },
@@ -224,7 +169,6 @@ class QuestionSelectionEngine {
 
     console.log("[QuestionSelection] Total available (excl. attempted):", totalAvailable);
 
-    // If no questions available, return early with count
     if (totalAvailable === 0) {
       return {
         questions: [],
@@ -238,14 +182,12 @@ class QuestionSelectionEngine {
       };
     }
 
-    // Calculate difficulty distribution
     const difficultyDist = this.calculateDifficultyDistribution(config, userHistory);
     const buckets = this.calculateBucketCounts(requestedCount, difficultyDist);
 
     console.log("[QuestionSelection] Difficulty distribution:", difficultyDist);
     console.log("[QuestionSelection] Target buckets:", buckets);
 
-    // Select questions by difficulty bucket
     const selected = [];
     const selectedIds = new Set();
     const weakTopics = this.getWeakTopics(userHistory);
@@ -260,11 +202,11 @@ class QuestionSelectionEngine {
       };
 
       try {
-        // Query with optional weak topic weighting
+
         let questions;
 
         if (weakTopics.length > 0) {
-          // Weighted selection favoring weak topics
+
           questions = await Question.aggregate([
             { $match: bucketCriteria },
             {
@@ -288,7 +230,7 @@ class QuestionSelectionEngine {
             { $limit: bucketCount },
           ]);
         } else {
-          // Simple random selection
+
           questions = await Question.aggregate([
             { $match: bucketCriteria },
             { $sample: { size: bucketCount } },
@@ -303,13 +245,11 @@ class QuestionSelectionEngine {
         }
       } catch (error) {
         console.error(`[QuestionSelection] Error selecting ${difficulty}:`, error.message);
-        // Don't swallow error silently - this is a DB issue
+
         throw new Error(`Database error while selecting ${difficulty} questions: ${error.message}`);
       }
     }
 
-    // If we couldn't fill all buckets, try to fill remaining from any available
-    // BUT only if we have at least some questions - NO FALLBACK TO FAKE DATA
     if (selected.length < requestedCount && selected.length > 0) {
       const remaining = requestedCount - selected.length;
       console.log(`[QuestionSelection] Need ${remaining} more questions from any difficulty`);
@@ -328,7 +268,6 @@ class QuestionSelectionEngine {
       selected.push(...fillQuestions);
     }
 
-    // Shuffle final selection and assign order
     const shuffled = this.shuffle(selected);
     const finalQuestions = shuffled.slice(0, requestedCount).map((q, idx) => ({
       ...q,
@@ -352,14 +291,9 @@ class QuestionSelectionEngine {
     };
   }
 
-  /**
-   * Check availability without selecting
-   * For pre-flight API
-   */
   async checkAvailability(config, userId) {
     console.log("[QuestionSelection] Checking availability");
 
-    // Get user's history
     const userHistory = await UserOAHistory.findOne({ userId });
     const attemptedIds = new Set(
       userHistory?.attemptedCoding?.map((c) => c.questionId.toString()) || []
@@ -368,7 +302,6 @@ class QuestionSelectionEngine {
     const baseCriteria = this.buildCriteria(config);
     const excludeAttempted = { _id: { $nin: Array.from(attemptedIds) } };
 
-    // Count by difficulty
     const byDifficulty = {};
     let total = 0;
 
@@ -395,22 +328,15 @@ class QuestionSelectionEngine {
     };
   }
 
-  /**
-   * Legacy method - wraps selectQuestionsStrict for backward compatibility
-   * @deprecated Use selectQuestionsStrict instead
-   */
   async selectQuestions(config, userId) {
     const count = config.questionCounts?.coding || 2;
     const result = await this.selectQuestionsStrict(config, userId, count);
-    
+
     return {
       coding: result.questions,
     };
   }
 
-  /**
-   * Quick fight mode selection
-   */
   async selectQuickFightQuestions(userId) {
     const defaultConfig = {
       companyMode: "all",

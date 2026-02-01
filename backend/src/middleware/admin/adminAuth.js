@@ -1,5 +1,3 @@
-
-
 import jwt from "jsonwebtoken";
 import User from "../../models/auth/User.js";
 
@@ -47,7 +45,7 @@ export const PERMISSIONS = {
 };
 
 export const ROLE_PERMISSIONS = {
-  super_admin: ["*"], 
+  super_admin: ["*"],
   admin: [
     "problems:*",
     "contests:*",
@@ -85,11 +83,11 @@ const getPermissionsForRole = (roleName) => {
   const expandedPermissions = [];
   for (const perm of permissions) {
     if (perm === "*") {
-      
+
       return ["*"];
     }
     if (perm.endsWith(":*")) {
-      
+
       const resource = perm.split(":")[0];
       const resourcePerms = PERMISSIONS[resource.toUpperCase()];
       if (resourcePerms) {
@@ -105,7 +103,7 @@ const getPermissionsForRole = (roleName) => {
 
 export const requireAdmin = async (req, res, next) => {
   try {
-    
+
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "No token provided" });
@@ -149,7 +147,7 @@ export const requirePermission = (...requiredPermissions) => {
     }
 
     const hasAllPermissions = requiredPermissions.every((perm) => {
-      
+
       if (userPermissions.includes(perm)) return true;
 
       const [resource] = perm.split(":");

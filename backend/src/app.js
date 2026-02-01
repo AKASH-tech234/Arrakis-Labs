@@ -116,10 +116,9 @@ const codeLimiter = rateLimit({
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
 
-// OA-specific rate limiter for code execution endpoints
 const oaCodeLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30, // 30 executions per minute per user during OA
+  max: 30,
   skip: () => process.env.NODE_ENV !== "production",
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
   message: {
@@ -160,7 +159,6 @@ app.use("/api/export", exportRoutes);
 app.use("/api/potd", potdRoutes);
 app.use("/api", discussionRoutes);
 
-// Serve exported PDFs - path relative to backend root
 app.use(
   "/exports",
   express.static(path.resolve(__dirname, "../../public/exports")),
@@ -178,15 +176,9 @@ app.get("/api/ai/health", getAIHealth);
 app.post("/api/ai/feedback", protect, requestAIFeedback);
 app.post("/api/ai/summary", protect, getAILearningSummary);
 
-// MIM (Misconception Identification Model) routes
 app.use("/api/mim", mimRoutes);
 
-// OA Practice routes
 app.use("/api/oa", oaRoutes);
-
-/* ======================================================
-   ERRORS
-====================================================== */
 
 app.use((req, res) =>
   res.status(404).json({ status: "error", message: "Route not found" }),

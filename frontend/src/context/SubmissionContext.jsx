@@ -8,10 +8,8 @@ import {
   useEffect,
 } from "react";
 
-// v3.2: Import event system for cross-component updates
 import { emitSubmissionUpdate } from "../hooks/ai/useAIFeedbackEnhanced";
 
-// v3.3: Import MIM refresh function to update profile after submissions
 import { refreshAllMIMComponents } from "../components/mim";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -191,15 +189,6 @@ export function SubmissionProvider({ children }) {
   const [state, dispatch] = useReducer(submissionReducer, initialState);
   const abortControllerRef = useRef(null);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SUBMISSION HANDLERS
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Record a completed submission
-   * If aiFeedback is included (from backend response), it will be set directly
-   * This avoids duplicate AI calls when backend already provides feedback
-   */
   const recordSubmission = useCallback((submissionData) => {
     const submission = {
       id:
@@ -214,8 +203,6 @@ export function SubmissionProvider({ children }) {
       payload: { submission },
     });
 
-    // ✨ NEW: If aiFeedback came with submission, set it immediately
-    // This avoids duplicate API calls - backend already provided feedback!
     if (submissionData.aiFeedback) {
       console.log(
         "[SubmissionContext] AI feedback already included from backend - skipping duplicate call",
@@ -235,12 +222,12 @@ export function SubmissionProvider({ children }) {
         complexityAnalysis: submissionData.aiFeedback.complexityAnalysis,
         edgeCases: submissionData.aiFeedback.edgeCases || [],
         improvementHint: submissionData.aiFeedback.improvementHint,
-        // ✨ NEW: Include MIM insights from backend
+
         mimInsights:
           submissionData.aiFeedback.mimInsights ||
           submissionData.aiFeedback.mim_insights ||
           null,
-        // v3.3: Enhanced feedback fields for full explanation
+
         rootCause: submissionData.aiFeedback.rootCause || null,
         rootCauseSubtype: submissionData.aiFeedback.rootCauseSubtype || null,
         failureMechanism: submissionData.aiFeedback.failureMechanism || null,
@@ -256,7 +243,6 @@ export function SubmissionProvider({ children }) {
         payload: { feedback: processedFeedback },
       });
 
-      // v3.2: Emit event for cross-component updates (MIM, profile, etc.)
       emitSubmissionUpdate({
         type: "submission_with_feedback",
         questionId: submission.questionId,
@@ -267,8 +253,6 @@ export function SubmissionProvider({ children }) {
         timestamp: Date.now(),
       });
 
-      // v3.3: Refresh MIM profile components after AI feedback received
-      // This ensures profile/recommendations/roadmap update after each submission
       console.log(
         "[SubmissionContext] Triggering MIM profile refresh after submission",
       );
@@ -358,7 +342,7 @@ export function SubmissionProvider({ children }) {
             complexityAnalysis: data.data.complexityAnalysis,
             edgeCases: data.data.edgeCases || [],
             improvementHint: data.data.improvementHint,
-            // ✨ NEW: Include MIM insights from API response
+
             mimInsights:
               data.data.mimInsights || data.data.mim_insights || null,
           };
@@ -368,7 +352,6 @@ export function SubmissionProvider({ children }) {
             payload: { feedback: processedFeedback },
           });
 
-          // v3.2: Emit event for cross-component updates (MIM, profile, etc.)
           emitSubmissionUpdate({
             type: "feedback_received",
             questionId: submission.questionId,
@@ -379,7 +362,6 @@ export function SubmissionProvider({ children }) {
             timestamp: Date.now(),
           });
 
-          // v3.3: Refresh MIM profile components after AI feedback
           console.log(
             "[SubmissionContext] Triggering MIM profile refresh after AI feedback",
           );

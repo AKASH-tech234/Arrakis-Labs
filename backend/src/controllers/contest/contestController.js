@@ -181,7 +181,7 @@ export const getContest = async (req, res) => {
         scoringRules: contest.scoringRules,
         penaltyRules: contest.penaltyRules,
         stats: contest.stats,
-        
+
         isUpcoming,
         isLive,
         hasEnded,
@@ -189,7 +189,7 @@ export const getContest = async (req, res) => {
         remainingTime: Math.max(0, Math.floor((contest.endTime - now) / 1000)),
         serverTime: now.toISOString(),
         onlineCount,
-        
+
         registration: registration
           ? {
               status: registration.status,
@@ -199,10 +199,10 @@ export const getContest = async (req, res) => {
               finalScore: registration.finalScore,
             }
           : null,
-        
+
         problems,
         problemStats,
-        
+
         editorial: hasEnded && contest.editorialVisible ? contest.editorial : null,
       },
     });
@@ -506,11 +506,11 @@ export const getContestProblem = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        
+
         contestId: contest._id,
         label: contestProblem.label,
         points: contestProblem.points,
-        
+
         id: problem._id,
         title: problem.title,
         description: problem.description,
@@ -521,13 +521,13 @@ export const getContestProblem = async (req, res) => {
 
         inputFormat,
         outputFormat,
-        
+
         sampleTestCases: visibleTestCases.map((tc) => ({
           label: tc.label,
           input: tc.stdin,
           expectedOutput: tc.expectedStdout,
         })),
-        
+
         attemptInfo,
         recentSubmissions: userSubmissions,
       },

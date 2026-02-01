@@ -1,5 +1,3 @@
-
-
 function formatTimeAgo(dateLike) {
   if (!dateLike) return "";
   const d = new Date(dateLike);

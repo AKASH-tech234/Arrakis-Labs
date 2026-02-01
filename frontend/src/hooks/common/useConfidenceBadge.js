@@ -1,35 +1,33 @@
-
-
 import { useMemo } from "react";
 
 const BADGE_CONFIG = {
   high: {
     level: "high",
     label: "High Confidence",
-    color: "#22C55E", 
+    color: "#22C55E",
     emoji: "🟢",
     description: "Consecutive accepted submissions",
   },
   medium: {
     level: "medium",
     label: "Medium Confidence",
-    color: "#F59E0B", 
+    color: "#F59E0B",
     emoji: "🟡",
     description: "Mixed results pattern",
   },
   low: {
     level: "low",
     label: "Low Confidence",
-    color: "#EF4444", 
+    color: "#EF4444",
     emoji: "🔴",
     description: "Frequent wrong answers",
   },
 };
 
 const THRESHOLDS = {
-  HIGH_STREAK: 3, 
-  LOW_FAIL_RATE: 0.6, 
-  RECENT_WINDOW: 10, 
+  HIGH_STREAK: 3,
+  LOW_FAIL_RATE: 0.6,
+  RECENT_WINDOW: 10,
 };
 
 function calculateConfidence(submissions) {
@@ -72,16 +70,16 @@ function calculateConfidence(submissions) {
   let badge;
 
   if (streak >= THRESHOLDS.HIGH_STREAK) {
-    
+
     badge = BADGE_CONFIG.high;
   } else if (
     recentStats.total > 0 &&
     recentStats.failed / recentStats.total > THRESHOLDS.LOW_FAIL_RATE
   ) {
-    
+
     badge = BADGE_CONFIG.low;
   } else {
-    
+
     badge = BADGE_CONFIG.medium;
   }
 

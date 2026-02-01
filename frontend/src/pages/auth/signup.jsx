@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -24,7 +23,7 @@ export default function Signup() {
       if (!response.credential) {
         throw new Error("No credentials received from Google");
       }
-      
+
       await loginWithGoogle(response.credential);
       navigate("/problems", { replace: true });
     } catch (err) {
@@ -44,14 +43,14 @@ export default function Signup() {
   };
 
   useEffect(() => {
-    
+
     const timer = setTimeout(() => {
       if (window.google) {
         window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "208012919124-f2s18cpj845hogatl2ptg451vnt5lju2.apps.googleusercontent.com",
           callback: handleGoogleResponse,
         });
-        
+
         handleGoogleSignIn();
       }
     }, 100);

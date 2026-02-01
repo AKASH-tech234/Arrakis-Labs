@@ -9,11 +9,6 @@ import {
   extractRAGMetadataFromResponse,
 } from "../../services/ai/aiService.js";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// VALIDATION GATES - Prevent unnecessary AI workflow execution
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Verdicts that should trigger AI feedback
 const AI_ELIGIBLE_VERDICTS = [
   "accepted",
   "wrong_answer",
@@ -21,7 +16,6 @@ const AI_ELIGIBLE_VERDICTS = [
   "runtime_error",
 ];
 
-// Verdicts that should NOT trigger AI (show raw error instead)
 const SKIP_AI_VERDICTS = [
   "compile_error",
   "internal_error",
@@ -29,14 +23,10 @@ const SKIP_AI_VERDICTS = [
   "running",
 ];
 
-// Cache for duplicate submission detection (in-memory, short-lived)
 const recentSubmissionCache = new Map();
-const CACHE_TTL_MS = 30000; // 30 seconds
+const CACHE_TTL_MS = 30000;
 const MAX_CACHE_SIZE = 1000;
 
-/**
- * Generate a unique hash for a submission to detect duplicates
- */
 function generateSubmissionHash(userId, questionId, code, verdict) {
   const codeHash = crypto
     .createHash("md5")
@@ -45,9 +35,6 @@ function generateSubmissionHash(userId, questionId, code, verdict) {
   return `${userId}:${questionId}:${codeHash}:${verdict}`;
 }
 
-/**
- * Check if this is a duplicate submission within the cache window
- */
 function isDuplicateSubmission(hash) {
   const cached = recentSubmissionCache.get(hash);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -56,11 +43,8 @@ function isDuplicateSubmission(hash) {
   return null;
 }
 
-/**
- * Cache a successful AI response for duplicate detection
- */
 function cacheSubmissionResponse(hash, response) {
-  // Prune old entries if cache is full
+
   if (recentSubmissionCache.size >= MAX_CACHE_SIZE) {
     const now = Date.now();
     for (const [key, value] of recentSubmissionCache.entries()) {
@@ -75,10 +59,6 @@ function cacheSubmissionResponse(hash, response) {
   });
 }
 
-/**
- * Validate required metadata for AI feedback
- * Returns { valid: boolean, error?: string }
- */
 function validateMetadata({ questionId, code, language, verdict, userId }) {
   const errors = [];
 
@@ -97,10 +77,6 @@ function validateMetadata({ questionId, code, language, verdict, userId }) {
   return { valid: true };
 }
 
-/**
- * Validate code is not empty or whitespace-only
- * Returns { valid: boolean, error?: string }
- */
 function validateCode(code) {
   if (!code) {
     return {
@@ -119,7 +95,6 @@ function validateCode(code) {
     };
   }
 
-  // Minimum meaningful code check
   if (trimmedCode.length < 10) {
     return {
       valid: false,
@@ -130,10 +105,6 @@ function validateCode(code) {
   return { valid: true };
 }
 
-/**
- * Check if verdict is eligible for AI feedback
- * Returns { eligible: boolean, reason?: string }
- */
 function checkVerdictEligibility(verdict) {
   const normalizedVerdict = String(verdict).toLowerCase().replace(/ /g, "_");
 
@@ -238,9 +209,6 @@ export const requestAIFeedback = async (req, res) => {
   try {
     const userId = req.user?._id;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // GATE 1: Authentication Check
-    // ═══════════════════════════════════════════════════════════════════════
     if (!userId) {
       log.warn("Unauthenticated request rejected");
       return res.status(401).json({
@@ -258,9 +226,6 @@ export const requestAIFeedback = async (req, res) => {
       codeLength: code?.length || 0,
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // GATE 2: Required Metadata Validation
-    // ═══════════════════════════════════════════════════════════════════════
     const metadataValidation = validateMetadata({
       questionId,
       code,
@@ -278,9 +243,6 @@ export const requestAIFeedback = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // GATE 3: Empty Code Validation
-    // ═══════════════════════════════════════════════════════════════════════
     const codeValidation = validateCode(code);
     if (!codeValidation.valid) {
       log.warn("Empty code rejected", { error: codeValidation.error });
@@ -291,9 +253,6 @@ export const requestAIFeedback = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // GATE 4: Verdict Eligibility Check (Skip AI for compile_error)
-    // ═══════════════════════════════════════════════════════════════════════
     const verdictCheck = checkVerdictEligibility(verdict);
     if (!verdictCheck.eligible) {
       log.info("Verdict not eligible for AI feedback", {
@@ -309,9 +268,6 @@ export const requestAIFeedback = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // GATE 5: Duplicate Submission Check (Return cached response)
-    // ═══════════════════════════════════════════════════════════════════════
     const submissionHash = generateSubmissionHash(
       userId.toString(),
       questionId,
@@ -386,7 +342,7 @@ export const requestAIFeedback = async (req, res) => {
       language,
       verdict,
       userHistorySummary,
-      // Pass full problem context for better AI responses
+
       problem: {
         title: question.title,
         difficulty: question.difficulty,
@@ -397,7 +353,7 @@ export const requestAIFeedback = async (req, res) => {
         commonMistakes: question.commonMistakes || [],
         timeComplexityHint: question.timeComplexityHint || null,
         spaceComplexityHint: question.spaceComplexityHint || null,
-        // v3.2: Add canonical algorithms for feedback grounding
+
         canonicalAlgorithms: question.canonicalAlgorithms || [],
       },
     });
@@ -422,17 +378,12 @@ export const requestAIFeedback = async (req, res) => {
     const totalDuration = Date.now() - startTime;
     log.success(`Request completed in ${totalDuration}ms`);
 
-    // Transform MIM V3.0 insights for frontend
     const transformedMIMInsights = transformMIMInsights(
       aiFeedback.mim_insights,
     );
 
-    // Extract RAG metadata for frontend
     const ragMetadata = extractRAGMetadataFromResponse(aiFeedback);
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OBSERVABILITY: Log key MIM decisions for monitoring
-    // ═══════════════════════════════════════════════════════════════════════════════
     if (transformedMIMInsights) {
       log.info("MIM insights summary", {
         userId: userId.toString(),
@@ -460,44 +411,29 @@ export const requestAIFeedback = async (req, res) => {
         optimizationTips: aiFeedback.optimization_tips,
         complexityAnalysis: aiFeedback.complexity_analysis,
         edgeCases: aiFeedback.edge_cases,
-        
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // NEW: Phase 2.x Canonical Fields (MIM FACTS - frontend treats as authoritative)
-        // ═══════════════════════════════════════════════════════════════════════════════
-        
-        // Diagnosis: Root cause classification from MIM (deterministic)
+
         diagnosis: transformedMIMInsights?.diagnosis || null,
-        
-        // Confidence: Calibrated confidence metadata (Phase 2.1)
+
         confidence: transformedMIMInsights?.confidence || null,
-        
-        // Pattern: Pattern state machine output (Phase 2.2)
+
         pattern: transformedMIMInsights?.pattern || null,
-        
-        // Difficulty: Difficulty policy decision (Phase 2.3)
+
         difficulty: transformedMIMInsights?.difficulty || null,
-        
-        // Feedback content from LLM agents
+
         feedback: {
           explanation: aiFeedback.explanation || null,
           correctCode: aiFeedback.correct_code || null,
           edgeCases: aiFeedback.edge_cases || null,
         },
-        
-        // Hint from hint agent
-        hint: aiFeedback.improvement_hint 
+
+        hint: aiFeedback.improvement_hint
           ? { text: aiFeedback.improvement_hint }
           : null,
-        
-        // RAG metadata
+
         rag: ragMetadata,
-        
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // LEGACY: MIM V3.0 insights (backward compatibility)
-        // ═══════════════════════════════════════════════════════════════════════════════
+
         mimInsights: transformedMIMInsights,
-        
-        // v3.3: Legacy fields for enhanced feedback (backward compatibility)
+
         rootCause: aiFeedback.root_cause || null,
         rootCauseSubtype: aiFeedback.root_cause_subtype || null,
         failureMechanism: aiFeedback.failure_mechanism || null,
@@ -511,7 +447,6 @@ export const requestAIFeedback = async (req, res) => {
       },
     };
 
-    // Cache successful response for duplicate detection
     cacheSubmissionResponse(submissionHash, responseBody);
 
     res.status(200).json(responseBody);
@@ -585,7 +520,7 @@ export const getAILearningSummary = async (req, res) => {
       language,
       verdict: "accepted",
       userHistorySummary,
-      // v3.2: Pass full problem context
+
       problem: {
         title: question.title,
         difficulty: question.difficulty,

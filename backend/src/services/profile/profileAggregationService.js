@@ -66,7 +66,7 @@ function monthKey(d) {
 function weekStartKey(d) {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = date.getUTCDay();
-  const diff = (day + 6) % 7; 
+  const diff = (day + 6) % 7;
   date.setUTCDate(date.getUTCDate() - diff);
   return isoDate(date);
 }
@@ -188,7 +188,7 @@ export async function upsertArrakisStats(userId) {
     {
       userId,
       ...stats,
-      
+
       skills: Object.fromEntries(stats.skills),
     },
     { upsert: true, new: true }

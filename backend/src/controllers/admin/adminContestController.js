@@ -118,7 +118,7 @@ export const createContest = async (req, res) => {
 
     let contestProblems = [];
     if (problems && problems.length > 0) {
-      
+
       const problemIds = problems.map((p) => p.problemId);
       const existingProblems = await Question.find({
         _id: { $in: problemIds },
@@ -139,7 +139,7 @@ export const createContest = async (req, res) => {
       contestProblems = problems.map((p, idx) => ({
         problem: p.problemId,
         order: p.order ?? idx,
-        label: p.label || String.fromCharCode(65 + idx), 
+        label: p.label || String.fromCharCode(65 + idx),
         points: p.points ?? 100,
       }));
     }

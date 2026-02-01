@@ -60,7 +60,6 @@ export default function Profile({ username, readOnly = false } = {}) {
 
   const { data: analytics } = useProfileAnalytics({ username });
 
-  // Debug: Log analytics data to see user._id
   useEffect(() => {
     console.log("[Profile] Analytics data:", analytics);
     console.log("[Profile] User ID:", analytics?.user?._id);
@@ -95,16 +94,14 @@ export default function Profile({ username, readOnly = false } = {}) {
     if (readOnly) return;
     try {
       setExportingPdf(true);
-      
-      // Request PDF as blob for direct download
+
       const response = await apiClient.post("/export/pdf", {
         format: "two_page",
         includeQr: true,
       }, {
         responseType: 'blob'
       });
-      
-      // Create blob URL and trigger download
+
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -222,7 +219,7 @@ export default function Profile({ username, readOnly = false } = {}) {
 
       <main className="pt-16">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 space-y-6">
-          {/* Profile Header Card */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -254,7 +251,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             <ProfileHeader user={analytics?.user} />
           </motion.div>
 
-          {/* Performance Overview */}
+          {}
           <motion.section
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -272,7 +269,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             <StatsOverview stats={analytics?.overview} />
           </motion.section>
 
-          {/* Cognitive Profile & Skill Radar - MIM */}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -297,7 +294,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           )}
 
-          {/* Problem Recommendations - MIM */}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -317,7 +314,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           )}
 
-          {/* Learning Roadmap - MIM */}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -337,7 +334,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           )}
 
-          {/* Contests - User Dashboard */}
+          {}
           <motion.section
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -368,7 +365,7 @@ export default function Profile({ username, readOnly = false } = {}) {
                 <div className="text-red-400 text-sm">{contestsError}</div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Live */}
+                  {}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-[#E8E4D9] text-sm font-semibold">Live now</h3>
@@ -415,7 +412,7 @@ export default function Profile({ username, readOnly = false } = {}) {
                     )}
                   </div>
 
-                  {/* Upcoming */}
+                  {}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-[#E8E4D9] text-sm font-semibold">Upcoming</h3>
@@ -492,7 +489,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </div>
           </motion.section>
 
-          {/* Activity Calendar */}
+          {}
           <motion.section
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -512,14 +509,14 @@ export default function Profile({ username, readOnly = false } = {}) {
             </div>
           </motion.section>
 
-          {/* Category & Submissions Grid */}
+          {}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {/* Category Breakdown */}
+            {}
             <motion.section variants={itemVariants}>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
@@ -535,7 +532,7 @@ export default function Profile({ username, readOnly = false } = {}) {
               </div>
             </motion.section>
 
-            {/* Recent Submissions */}
+            {}
             <motion.section variants={itemVariants}>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-gradient-to-b from-[#F59E0B] to-transparent rounded-full"></div>
@@ -554,7 +551,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           </motion.div>
 
-          {/* Progress Section */}
+          {}
           <motion.section
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -581,7 +578,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             />
           </motion.section>
 
-          {/* Insights & Patterns Section - Dynamic Component */}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -601,7 +598,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           )}
 
-          {/* Your Next Challenge - Prominent recommendation card */}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -624,7 +621,7 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           )}
 
-          {/* Topic Mastery Grid */}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
@@ -644,9 +641,9 @@ export default function Profile({ username, readOnly = false } = {}) {
             </motion.section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-          {/* AI INSIGHTS SUMMARY - Comprehensive MIM Dashboard */}
-          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+          {}
+          {}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 20 }}
@@ -654,7 +651,7 @@ export default function Profile({ username, readOnly = false } = {}) {
               transition={{ duration: 0.5, delay: 0.65, type: "spring", stiffness: 100 }}
             >
               <div className="flex items-center gap-2 mb-4">
-                <motion.div 
+                <motion.div
                   className="w-1 h-5 bg-gradient-to-b from-[#8B5CF6] to-transparent rounded-full"
                   animate={{ scaleY: [1, 1.2, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
@@ -666,14 +663,14 @@ export default function Profile({ username, readOnly = false } = {}) {
                   AI Insights Dashboard
                 </h2>
               </div>
-              
+
               <AIInsightsSummary userId={analytics.user._id} />
             </motion.section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-          {/* AI LEARNING CARDS - Focus Areas + Mistake Analysis */}
-          {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+          {}
+          {}
+          {}
           {analytics?.user?._id && (
             <motion.section
               initial={{ opacity: 0, y: 20 }}
@@ -681,7 +678,7 @@ export default function Profile({ username, readOnly = false } = {}) {
               transition={{ duration: 0.5, delay: 0.75, type: "spring", stiffness: 100 }}
             >
               <div className="flex items-center gap-2 mb-4">
-                <motion.div 
+                <motion.div
                   className="w-1 h-5 bg-gradient-to-b from-[#3B82F6] to-transparent rounded-full"
                   animate={{ scaleY: [1, 1.2, 1] }}
                   transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
@@ -693,9 +690,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                   Learning Focus
                 </h2>
               </div>
-              
-              {/* Learning Velocity - Full Width */}
-              <motion.div 
+
+              {}
+              <motion.div
                 className="mb-4"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -703,8 +700,8 @@ export default function Profile({ username, readOnly = false } = {}) {
               >
                 <LearningVelocityIndicator userId={analytics.user._id} />
               </motion.div>
-              
-              {/* Focus Areas + Mistake Analysis - Side by Side */}
+
+              {}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}

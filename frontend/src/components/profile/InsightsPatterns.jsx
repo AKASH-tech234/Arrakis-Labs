@@ -1,13 +1,7 @@
-// src/components/profile/InsightsPatterns.jsx
-// Dynamic component that fetches user insights and patterns from AI service
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INSIGHTS REFRESH EVENT SYSTEM
-// Allows insights to refresh after submissions
-// ═══════════════════════════════════════════════════════════════════════════════
 const insightsRefreshListeners = new Set();
 
 export function emitInsightsRefresh() {
@@ -30,9 +24,6 @@ function useInsightsRefresh(onRefresh) {
   }, [onRefresh]);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
 const COLORS = {
   bg: "#0A0A08",
   bgCard: "#0F0F0D",
@@ -50,16 +41,11 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SUB-COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Mistake Pattern Cloud
 const MistakePatternCloud = ({ patterns = [] }) => {
   const [hoveredPattern, setHoveredPattern] = useState(null);
 
   const maxCount = Math.max(...patterns.map(p => p.count || 1), 1);
-  
+
   const getSize = (count) => {
     const normalized = count / maxCount;
     if (normalized > 0.7) return "lg";
@@ -124,7 +110,6 @@ const MistakePatternCloud = ({ patterns = [] }) => {
   );
 };
 
-// Accuracy By Time Chart
 const AccuracyByTimeChart = ({ data = {} }) => {
   const timeSlots = [
     { key: "morning", label: "Morning", time: "6AM-12PM", icon: "🌅" },
@@ -189,7 +174,6 @@ const AccuracyByTimeChart = ({ data = {} }) => {
   );
 };
 
-// Skill Evolution Timeline
 const SkillEvolutionTimeline = ({ milestones = [] }) => {
   if (!milestones || milestones.length === 0) {
     return (
@@ -204,13 +188,13 @@ const SkillEvolutionTimeline = ({ milestones = [] }) => {
 
   return (
     <div className="relative">
-      {/* Timeline line */}
+      {}
       <div
         className="absolute left-3 top-0 bottom-0 w-0.5"
         style={{ backgroundColor: COLORS.border }}
       />
 
-      {/* Milestones */}
+      {}
       <div className="space-y-4">
         {milestones.slice(0, 5).map((milestone, index) => (
           <motion.div
@@ -220,7 +204,7 @@ const SkillEvolutionTimeline = ({ milestones = [] }) => {
             transition={{ delay: index * 0.1 }}
             className="relative pl-8"
           >
-            {/* Dot */}
+            {}
             <div
               className="absolute left-1.5 w-3 h-3 rounded-full border-2"
               style={{
@@ -229,7 +213,7 @@ const SkillEvolutionTimeline = ({ milestones = [] }) => {
               }}
             />
 
-            {/* Content */}
+            {}
             <div
               className="p-3 rounded-lg border"
               style={{
@@ -262,7 +246,6 @@ const SkillEvolutionTimeline = ({ milestones = [] }) => {
   );
 };
 
-// Focus Areas Component
 const FocusAreas = ({ areas = [] }) => {
   if (!areas || areas.length === 0) {
     return (
@@ -295,16 +278,12 @@ const FocusAreas = ({ areas = [] }) => {
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 export default function InsightsPatterns({ userId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch data function
   const fetchData = useCallback(async () => {
     if (!userId) {
       console.log("[InsightsPatterns] No userId, skipping fetch");
@@ -327,12 +306,10 @@ export default function InsightsPatterns({ userId }) {
     }
   }, [userId]);
 
-  // Initial fetch
   useEffect(() => {
     fetchData();
   }, [fetchData, refreshKey]);
 
-  // Listen for refresh events
   const handleRefresh = useCallback(() => {
     console.log("[InsightsPatterns] Refresh triggered");
     setRefreshKey((k) => k + 1);
@@ -340,7 +317,6 @@ export default function InsightsPatterns({ userId }) {
 
   useInsightsRefresh(handleRefresh);
 
-  // Loading state
   if (loading) {
     return (
       <div className="rounded-xl border p-6" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
@@ -359,7 +335,6 @@ export default function InsightsPatterns({ userId }) {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="rounded-xl border p-6" style={{ backgroundColor: `${COLORS.error}10`, borderColor: `${COLORS.error}30` }}>
@@ -375,7 +350,6 @@ export default function InsightsPatterns({ userId }) {
     );
   }
 
-  // Extract data from profile
   const mistakePatterns = data?.mistake_analysis?.top_mistakes?.map(m => ({
     name: typeof m === 'string' ? m : m.cause || m.name,
     count: typeof m === 'object' ? m.count || 1 : 1
@@ -387,7 +361,7 @@ export default function InsightsPatterns({ userId }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {/* Mistake Patterns */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -403,7 +377,7 @@ export default function InsightsPatterns({ userId }) {
         <MistakePatternCloud patterns={mistakePatterns} />
       </motion.div>
 
-      {/* Peak Performance Times */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -420,7 +394,7 @@ export default function InsightsPatterns({ userId }) {
         <AccuracyByTimeChart data={accuracyByTime} />
       </motion.div>
 
-      {/* Focus Areas or Milestones */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
