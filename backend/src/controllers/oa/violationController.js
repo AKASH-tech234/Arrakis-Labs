@@ -1,16 +1,11 @@
 import { OASession, OAViolation } from "../../models/oa/index.js";
 
-/**
- * Record a proctoring violation
- * POST /api/oa/sessions/:sessionId/violations
- */
 export const recordViolation = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { type, metadata } = req.body;
     const userId = req.user._id;
 
-    // Validate type
     const validTypes = [
       "tab_hidden",
       "tab_blur",
@@ -26,7 +21,6 @@ export const recordViolation = async (req, res) => {
       });
     }
 
-    // Verify session is active
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -40,7 +34,6 @@ export const recordViolation = async (req, res) => {
       });
     }
 
-    // Check if proctoring warnings are enabled (warningsAllowed > 0 means proctoring active)
     if (!session.proctoring?.warningsAllowed || session.proctoring.warningsAllowed <= 0) {
       return res.json({
         success: true,
@@ -51,12 +44,10 @@ export const recordViolation = async (req, res) => {
       });
     }
 
-    // Get current warning count
     const currentWarnings = session.proctoring.warningCount || 0;
     const warningsAllowed = session.proctoring.warningsAllowed || 3;
     const newWarningNumber = currentWarnings + 1;
 
-    // Create violation record (include userId as required by schema)
     const violation = await OAViolation.create({
       sessionId,
       userId,
@@ -67,11 +58,9 @@ export const recordViolation = async (req, res) => {
       },
     });
 
-    // Update session warning count
     session.proctoring.warningCount = newWarningNumber;
     session.proctoring.lastViolationAt = new Date();
 
-    // Check if should terminate
     let terminated = false;
     if (newWarningNumber > warningsAllowed) {
       session.status = "terminated";
@@ -103,16 +92,11 @@ export const recordViolation = async (req, res) => {
   }
 };
 
-/**
- * Get violations for a session
- * GET /api/oa/sessions/:sessionId/violations
- */
 export const getViolations = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user._id;
 
-    // Verify session ownership
     const session = await OASession.findOne({
       _id: sessionId,
       userId,

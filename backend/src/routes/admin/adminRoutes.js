@@ -126,7 +126,7 @@ router.get(
   async (req, res) => {
     try {
       const AuditLog = (await import("../../models/admin/AuditLog.js")).default;
-      
+
       const {
         page = 1,
         limit = 50,

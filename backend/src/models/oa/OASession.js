@@ -1,14 +1,9 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
 
-/**
- * OA Session Schema
- * The source of truth for a live OA session
- * Timer is ALWAYS derived from startAt + endAt (backend authoritative)
- */
 const oaSessionSchema = new mongoose.Schema(
   {
-    // === IDENTIFICATION ===
+
     sessionCode: {
       type: String,
       required: true,
@@ -27,8 +22,6 @@ const oaSessionSchema = new mongoose.Schema(
       required: true,
     },
 
-    // === STATUS (State Machine) ===
-    // scheduled → live → submitted/terminated/expired
     status: {
       type: String,
       enum: ["scheduled", "live", "paused", "submitted", "terminated", "expired"],
@@ -36,7 +29,6 @@ const oaSessionSchema = new mongoose.Schema(
       index: true,
     },
 
-    // === TIMING (Backend Authoritative - CRITICAL) ===
     startAt: {
       type: Date,
       required: true,
@@ -60,7 +52,6 @@ const oaSessionSchema = new mongoose.Schema(
       required: true,
     },
 
-    // === LOCKED QUESTIONS (Immutable after creation) ===
     questions: [
       {
         order: { type: Number, required: true },
@@ -69,7 +60,7 @@ const oaSessionSchema = new mongoose.Schema(
           ref: "Question",
           required: true,
         },
-        // Snapshots for stable reporting (question data at time of OA)
+
         titleSnapshot: String,
         topicSnapshot: String,
         difficultySnapshot: String,
@@ -78,7 +69,6 @@ const oaSessionSchema = new mongoose.Schema(
       },
     ],
 
-    // === PROCTORING STATE ===
     proctoring: {
       warningsAllowed: { type: Number, default: 3 },
       warningCount: { type: Number, default: 0 },
@@ -87,14 +77,12 @@ const oaSessionSchema = new mongoose.Schema(
       actionOnExceed: { type: String, default: "auto_submit" },
     },
 
-    // === TERMINATION ===
     terminatedReason: {
       type: String,
       enum: ["warnings_exceeded", "time_expired", "manual", "system", null],
       default: null,
     },
 
-    // === METADATA ===
     companyContext: {
       type: String,
       default: null,
@@ -108,26 +96,22 @@ const oaSessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes for scheduler queries
 oaSessionSchema.index({ status: 1, startAt: 1 });
 oaSessionSchema.index({ status: 1, endAt: 1 });
 oaSessionSchema.index({ userId: 1, status: 1 });
 oaSessionSchema.index({ userId: 1, createdAt: -1 });
 
-// Generate unique session code
 oaSessionSchema.statics.generateSessionCode = function () {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = crypto.randomBytes(4).toString("hex").toUpperCase();
   return `OA-${timestamp}-${random}`;
 };
 
-// Check if session is within valid time window
 oaSessionSchema.methods.isWithinTimeWindow = function () {
   const now = new Date();
   return now >= this.startAt && now <= this.endAt;
 };
 
-// Get remaining time in seconds
 oaSessionSchema.methods.getRemainingSeconds = function () {
   const now = new Date();
   if (now >= this.endAt) return 0;
@@ -135,7 +119,6 @@ oaSessionSchema.methods.getRemainingSeconds = function () {
   return Math.floor((this.endAt - now) / 1000);
 };
 
-// Transition to live status
 oaSessionSchema.methods.transitionToLive = async function () {
   if (this.status !== "scheduled") {
     throw new Error(`Cannot transition from ${this.status} to live`);
@@ -145,7 +128,6 @@ oaSessionSchema.methods.transitionToLive = async function () {
   return this.save();
 };
 
-// Submit the session
 oaSessionSchema.methods.submit = async function (reason = null) {
   if (this.status !== "live") {
     throw new Error(`Cannot submit session in ${this.status} status`);
@@ -158,7 +140,6 @@ oaSessionSchema.methods.submit = async function (reason = null) {
   return this.save();
 };
 
-// Terminate the session
 oaSessionSchema.methods.terminate = async function (reason) {
   if (!["scheduled", "live"].includes(this.status)) {
     throw new Error(`Cannot terminate session in ${this.status} status`);

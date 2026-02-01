@@ -102,7 +102,7 @@ const QuestionList = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,14 +112,14 @@ const QuestionList = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-            <h1 
+            <h1
               className="text-2xl font-bold text-[#E8E4D9] tracking-wide"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
               Questions
             </h1>
           </div>
-          <p 
+          <p
             className="text-[#78716C] text-xs uppercase tracking-widest ml-3"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -136,7 +136,7 @@ const QuestionList = () => {
         </Link>
       </motion.div>
 
-      {/* Filters Section */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -170,7 +170,7 @@ const QuestionList = () => {
         </div>
       </motion.div>
 
-      {/* Error Display */}
+      {}
       {error && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -178,7 +178,7 @@ const QuestionList = () => {
           className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center gap-3"
         >
           <AlertTriangle className="h-5 w-5 text-red-400" />
-          <span 
+          <span
             className="text-red-400"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -187,7 +187,7 @@ const QuestionList = () => {
         </motion.div>
       )}
 
-      {/* Questions List */}
+      {}
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
@@ -199,7 +199,7 @@ const QuestionList = () => {
           className="text-center py-16 rounded-xl border border-[#1A1814] bg-[#0F0F0D]"
         >
           <FileText className="h-12 w-12 text-[#78716C] mx-auto mb-4" />
-          <p 
+          <p
             className="text-[#78716C] uppercase tracking-wider"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -220,7 +220,7 @@ const QuestionList = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
         >
-          {/* Table Header */}
+          {}
           <div className="flex items-center justify-between gap-4 py-4 px-5 border-b border-[#1A1814] mb-2">
             <div className="flex items-center gap-6 flex-1">
               <span
@@ -256,7 +256,7 @@ const QuestionList = () => {
             </span>
           </div>
 
-          {/* Question Rows */}
+          {}
           <div className="space-y-2">
             {questions.map((question, index) => (
               <motion.div
@@ -266,12 +266,12 @@ const QuestionList = () => {
                 transition={{ duration: 0.3, delay: index * 0.03 }}
                 className="group relative overflow-hidden rounded-xl border border-[#1A1814] bg-[#0F0F0D] hover:border-[#D97706]/40 transition-all duration-300"
               >
-                {/* Top accent line on hover */}
+                {}
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
+
                 <div className="flex items-center justify-between gap-4 py-4 px-5">
                   <div className="flex items-center gap-6 flex-1 min-w-0">
-                    {/* Title & Tags */}
+                    {}
                     <div className="w-[40%] min-w-0">
                       <Link
                         to={`/admin/questions/${question._id}`}
@@ -295,7 +295,7 @@ const QuestionList = () => {
                       )}
                     </div>
 
-                    {/* Difficulty Badge */}
+                    {}
                     <div className="w-20 flex justify-center">
                       <span
                         className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider border ${getDifficultyBadge(question.difficulty)}`}
@@ -305,7 +305,7 @@ const QuestionList = () => {
                       </span>
                     </div>
 
-                    {/* AI Status */}
+                    {}
                     <div className="w-24 justify-center hidden md:flex">
                       {question.topic && question.canonicalAlgorithms?.length > 0 ? (
                         <span
@@ -328,10 +328,10 @@ const QuestionList = () => {
                       )}
                     </div>
 
-                    {/* Test Cases */}
+                    {}
                     <div className="w-24 justify-center hidden sm:flex">
                       <div className="flex items-center gap-2">
-                        <span 
+                        <span
                           className="text-[#E8E4D9] font-medium"
                           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                         >
@@ -347,7 +347,7 @@ const QuestionList = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {}
                   <div className="flex items-center gap-1 w-28 justify-end">
                     <Link
                       to={`/admin/questions/${question._id}`}
@@ -376,7 +376,7 @@ const QuestionList = () => {
             ))}
           </div>
 
-          {/* Pagination */}
+          {}
           {pagination.pages > 1 && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -391,7 +391,7 @@ const QuestionList = () => {
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <span 
+              <span
                 className="px-4 py-2 text-[#78716C] text-sm uppercase tracking-wider"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
@@ -409,7 +409,7 @@ const QuestionList = () => {
         </motion.div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <motion.div
@@ -419,14 +419,14 @@ const QuestionList = () => {
           >
             <div className="flex items-center gap-2 mb-3">
               <div className="w-1 h-5 bg-gradient-to-b from-red-500 to-transparent rounded-full"></div>
-              <h3 
+              <h3
                 className="text-lg font-semibold text-[#E8E4D9]"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Delete Question?
               </h3>
             </div>
-            <p 
+            <p
               className="text-[#78716C] mb-6 text-sm"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >

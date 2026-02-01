@@ -1,7 +1,5 @@
-
-
 const statusStyles = {
-  
+
   draft: { bg: "bg-[#1A1814]", text: "text-[#78716C]", label: "Draft" },
   review: { bg: "bg-[#92400E]/20", text: "text-[#D97706]", label: "Review" },
   published: {
@@ -102,7 +100,7 @@ export default function StatusBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 ${style.bg} ${style.text} ${sizeClasses[size]} 
+      className={`inline-flex items-center gap-1.5 ${style.bg} ${style.text} ${sizeClasses[size]}
                   uppercase tracking-wider`}
       style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
     >

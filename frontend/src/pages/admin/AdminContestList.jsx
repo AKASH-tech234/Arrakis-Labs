@@ -17,7 +17,7 @@ function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmText
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -173,7 +173,7 @@ export default function AdminContestList() {
 
   return (
     <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header Section */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -200,7 +200,7 @@ export default function AdminContestList() {
         </Link>
       </motion.div>
 
-      {/* Filters & Search */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -234,9 +234,9 @@ export default function AdminContestList() {
         </div>
       </motion.div>
 
-      {/* Error Alert */}
+      {}
       {error && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 flex items-center justify-between"
@@ -251,7 +251,7 @@ export default function AdminContestList() {
         </motion.div>
       )}
 
-      {/* Contest List */}
+      {}
       {loading ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -297,7 +297,7 @@ export default function AdminContestList() {
               className="group rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-5 hover:border-[#D97706]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[#D97706]/5"
             >
               <div className="flex items-center justify-between">
-                {/* Left: Contest Info */}
+                {}
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="p-3 rounded-lg bg-[#1A1814] group-hover:bg-[#D97706]/10 transition-colors">
                     <Trophy className="h-5 w-5 text-[#78716C] group-hover:text-[#D97706] transition-colors" />
@@ -336,7 +336,7 @@ export default function AdminContestList() {
                   </div>
                 </div>
 
-                {/* Right: Actions */}
+                {}
                 <div className="flex items-center gap-1 ml-4">
                   <button
                     onClick={() => navigate(`/admin/contests/${contest._id}/edit`)}

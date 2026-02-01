@@ -21,8 +21,8 @@ import rateLimit from "express-rate-limit";
 const router = express.Router();
 
 const contestCodeLimiter = rateLimit({
-  windowMs: 60 * 1000, 
-  max: 10, 
+  windowMs: 60 * 1000,
+  max: 10,
   message: {
     success: false,
     message: "Too many submissions. Please wait before trying again.",
@@ -34,7 +34,7 @@ const contestCodeLimiter = rateLimit({
 
 const contestRunLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30, 
+  max: 30,
   message: {
     success: false,
     message: "Too many test runs. Please wait before trying again.",

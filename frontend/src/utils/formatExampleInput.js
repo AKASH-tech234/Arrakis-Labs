@@ -1,5 +1,3 @@
-
-
 export function formatExampleInput(input) {
   if (typeof input !== "string") return input;
 

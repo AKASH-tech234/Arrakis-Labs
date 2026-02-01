@@ -2,35 +2,35 @@ import mongoose from "mongoose";
 
 const publishedPOTDSchema = new mongoose.Schema(
   {
-    
+
     activeDate: {
       type: Date,
       required: [true, "Active date is required"],
       unique: true,
       index: true,
     },
-    
+
     problemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Question",
       required: [true, "Problem ID is required"],
     },
-    
+
     calendarEntry: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "POTDCalendar",
     },
-    
+
     startTime: {
       type: Date,
       required: true,
     },
-    
+
     endTime: {
       type: Date,
       required: true,
     },
-    
+
     stats: {
       totalAttempts: {
         type: Number,
@@ -45,7 +45,7 @@ const publishedPOTDSchema = new mongoose.Schema(
         default: 0,
       },
     },
-    
+
     status: {
       type: String,
       enum: ["active", "completed", "cancelled"],

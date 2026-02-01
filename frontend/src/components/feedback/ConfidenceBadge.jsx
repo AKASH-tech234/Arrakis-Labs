@@ -1,38 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFIDENCE BADGE COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════════
-// 
-// Phase 2.1 Upgrade: Now supports API-provided confidence levels
-// 
-// UI RULES:
-// - HIGH (>=0.80): Green badge, "High confidence diagnosis"
-// - MEDIUM (>=0.65): Yellow badge, "Likely issue"
-// - LOW (<0.65): Grey badge, "Exploratory feedback"
-//
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { motion } from "framer-motion";
 import {
   CONFIDENCE_COLORS,
   CONFIDENCE_LABELS,
 } from "../../types/ai.types.js";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// DIAGNOSIS CONFIDENCE BADGE (NEW - Phase 2.1)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * DiagnosisConfidenceBadge - Shows MIM diagnosis confidence level
- * 
- * Use this for AI feedback panels to show confidence in the diagnosis.
- * 
- * @param {Object} props
- * @param {"high" | "medium" | "low"} props.confidenceLevel - Confidence tier from API
- * @param {number} [props.confidenceScore] - Optional raw score (0-1)
- * @param {"small" | "medium" | "large"} [props.size] - Badge size
- * @param {boolean} [props.showCalibrated] - Show calibration indicator
- * @param {string} [props.className] - Additional CSS classes
- */
 export function DiagnosisConfidenceBadge({
   confidenceLevel = "medium",
   confidenceScore,
@@ -71,16 +42,16 @@ export function DiagnosisConfidenceBadge({
         }}
         title={confidenceScore ? `Confidence: ${Math.round(confidenceScore * 100)}%` : label}
       >
-        {/* Confidence dot indicator */}
+        {}
         <span
           className={`rounded-full ${iconSizes[size]}`}
           style={{ backgroundColor: color }}
         />
 
-        {/* Label */}
+        {}
         <span>{label}</span>
 
-        {/* Calibration indicator */}
+        {}
         {showCalibrated && (
           <span title="Calibrated confidence">
             <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -92,10 +63,6 @@ export function DiagnosisConfidenceBadge({
     </motion.div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LEGACY CONFIDENCE BADGE (preserved for backward compatibility)
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function ConfidenceBadge({
   badge,
@@ -124,7 +91,7 @@ export default function ConfidenceBadge({
       animate={{ opacity: 1, scale: 1 }}
       className={`inline-flex items-center gap-1.5 ${className}`}
     >
-      {/* Badge pill */}
+      {}
       <div
         className={`inline-flex items-center gap-1.5 rounded-full border ${sizeClasses[size]} uppercase tracking-wider`}
         style={{
@@ -134,16 +101,16 @@ export default function ConfidenceBadge({
           color: badge.color,
         }}
       >
-        {/* Confidence dot */}
+        {}
         <span
           className={`rounded-full ${iconSizes[size]}`}
           style={{ backgroundColor: badge.color }}
         />
 
-        {/* Label */}
+        {}
         <span>{badge.label}</span>
 
-        {/* Streak indicator */}
+        {}
         {showStreak && badge.streak > 0 && (
           <span
             className="ml-1 px-1.5 rounded-full text-[10px]"
@@ -156,7 +123,7 @@ export default function ConfidenceBadge({
         )}
       </div>
 
-      {/* Description */}
+      {}
       {showDescription && (
         <span
           className="text-[#78716C] text-xs"

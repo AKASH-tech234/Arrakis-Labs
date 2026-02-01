@@ -25,7 +25,7 @@ if __name__ == "__main__":
 `,
   javascript: `// Write your solution here
 function solve() {
-  
+
 }
 
 solve();
@@ -36,9 +36,9 @@ using namespace std;
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
-    
+
     // Write your solution here
-    
+
     return 0;
 }
 `,
@@ -48,7 +48,7 @@ public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         // Write your solution here
-        
+
     }
 }
 `,
@@ -76,7 +76,7 @@ function TestCasePanel({ testCases, results, isRunning }) {
           let statusColor = 'text-gray-400';
           if (result?.passed) statusColor = 'text-green-400';
           else if (result && !result.passed) statusColor = 'text-red-400';
-          
+
           return (
             <button
               key={idx}
@@ -258,7 +258,7 @@ export default function ContestProblem() {
   const [runResults, setRunResults] = useState(null);
   const [submitResult, setSubmitResult] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [activePanel, setActivePanel] = useState('testcases'); 
+  const [activePanel, setActivePanel] = useState('testcases');
 
   const editorRef = useRef(null);
 
@@ -276,7 +276,7 @@ export default function ContestProblem() {
     {
       serverTime,
       onEnd: () => {
-        
+
         setError('Contest has ended. Submissions are no longer accepted.');
       },
     }
@@ -413,8 +413,8 @@ export default function ContestProblem() {
   }
 
   const getTimerColor = () => {
-    if (timeLeft <= 300) return 'text-red-400'; 
-    if (timeLeft <= 900) return 'text-yellow-400'; 
+    if (timeLeft <= 300) return 'text-red-400';
+    if (timeLeft <= 900) return 'text-yellow-400';
     return 'text-white';
   };
 
@@ -688,7 +688,7 @@ export default function ContestProblem() {
                 <SubmissionHistory
                   submissions={submissions}
                   onSelect={(sub) => {
-                    
+
                   }}
                 />
               )}

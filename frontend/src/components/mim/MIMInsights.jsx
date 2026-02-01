@@ -1,37 +1,28 @@
-// src/components/mim/MIMInsights.jsx
-// Displays MIM root cause prediction and insights in feedback view
 import { motion, AnimatePresence } from "framer-motion";
 
-// V3.1 Taxonomy - Primary root causes and their subtypes
 const rootCauseLabels = {
-  // PRIMARY ROOT CAUSES (V3.1)
+
   correctness: "Correctness Issue",
   efficiency: "Efficiency Issue",
   implementation: "Implementation Issue",
   understanding_gap: "Understanding Gap",
   problem_misinterpretation: "Problem Misinterpretation",
 
-  // SUBTYPES - Correctness
   wrong_invariant: "Wrong Invariant",
   incorrect_boundary: "Incorrect Boundary",
   partial_case_handling: "Partial Case Handling",
 
-  // SUBTYPES - Efficiency
   brute_force_under_constraints: "Brute Force Under Constraints",
   premature_optimization: "Premature Optimization",
 
-  // SUBTYPES - Implementation
   state_loss: "State Loss",
 
-  // SUBTYPES - Understanding Gap
   misread_constraint: "Misread Constraint",
 
-  // SUBTYPES - Problem Misinterpretation (NEW)
   wrong_input_format: "Wrong Input Format",
   wrong_problem_entirely: "Wrong Problem Entirely",
   misread_constraints: "Misread Constraints",
 
-  // LEGACY (for backward compatibility with old data)
   boundary_condition_blindness: "Boundary Condition Issue",
   off_by_one_error: "Off-by-One Error",
   integer_overflow: "Integer Overflow",
@@ -118,7 +109,7 @@ export default function MIMInsights({ insights, expanded = false }) {
       transition={{ duration: 0.4 }}
       className="rounded-lg border border-[#D97706]/20 bg-[#0A0A08]/60 overflow-hidden"
     >
-      {/* Header */}
+      {}
       <div className="px-4 py-3 border-b border-[#D97706]/10 flex items-center gap-2">
         <span className="text-[#D97706]">🧠</span>
         <span
@@ -130,7 +121,7 @@ export default function MIMInsights({ insights, expanded = false }) {
       </div>
 
       <div className="p-4">
-        {/* Root Cause */}
+        {}
         {failure_cause && (
           <div className="mb-4">
             <p
@@ -151,7 +142,7 @@ export default function MIMInsights({ insights, expanded = false }) {
           </div>
         )}
 
-        {/* Readiness Scores (compact) */}
+        {}
         {Object.keys(readiness_scores).length > 0 && expanded && (
           <div className="mb-4">
             <p
@@ -175,7 +166,7 @@ export default function MIMInsights({ insights, expanded = false }) {
           </div>
         )}
 
-        {/* Similar Mistakes */}
+        {}
         {similar_mistakes.length > 0 && expanded && (
           <div className="mb-4">
             <p
@@ -192,7 +183,7 @@ export default function MIMInsights({ insights, expanded = false }) {
           </div>
         )}
 
-        {/* Recommended Focus */}
+        {}
         {recommended_focus.length > 0 && expanded && (
           <div>
             <p
@@ -218,7 +209,7 @@ export default function MIMInsights({ insights, expanded = false }) {
           </div>
         )}
 
-        {/* Confidence note */}
+        {}
         {confidence < 0.5 && (
           <p className="text-[#78716C] text-[10px] mt-3 italic">
             ⚠ Low confidence prediction. Complete more problems for better

@@ -57,7 +57,7 @@ export const adminLogout = async () => {
   try {
     await adminApi.post("/logout");
   } finally {
-    
+
   }
 };
 

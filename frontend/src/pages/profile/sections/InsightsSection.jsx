@@ -1,14 +1,3 @@
-/**
- * Insights Section
- *
- * AI-powered analysis and recommendations section.
- * Components: CognitiveProfile, SkillRadarChart, ProblemRecommendations,
- *             InsightsPatterns, NextProblemCard, WeakAreaFocus, TopicMasteryGrid,
- *             AIInsightsSummary
- *
- * This section contains MIM (Mentat Intelligence Model) components and is lazy-loaded.
- */
-
 import { memo } from "react";
 import { motion } from "framer-motion";
 import {
@@ -24,7 +13,6 @@ import {
 } from "../../../components/profile/AdvancedProfileWidgets";
 import AIInsightsSummary from "../../../components/profile/AIInsightsSummary";
 
-// Animation variants
 const sectionVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: (delay = 0) => ({
@@ -34,9 +22,6 @@ const sectionVariants = {
   }),
 };
 
-/**
- * Section Header Component
- */
 const SectionHeader = memo(function SectionHeader({
   title,
   gradient = "from-[#D97706]",
@@ -65,9 +50,6 @@ const SectionHeader = memo(function SectionHeader({
   );
 });
 
-/**
- * Cognitive Profile & Skill Radar Section
- */
 const CognitiveProfileSection = memo(function CognitiveProfileSection({
   userId,
 }) {
@@ -91,9 +73,6 @@ const CognitiveProfileSection = memo(function CognitiveProfileSection({
   );
 });
 
-/**
- * Problem Recommendations Section
- */
 const RecommendationsSection = memo(function RecommendationsSection({
   userId,
 }) {
@@ -112,9 +91,6 @@ const RecommendationsSection = memo(function RecommendationsSection({
   );
 });
 
-/**
- * Insights & Patterns Section
- */
 const PatternsSection = memo(function PatternsSection({ userId }) {
   if (!userId) return null;
 
@@ -131,9 +107,6 @@ const PatternsSection = memo(function PatternsSection({ userId }) {
   );
 });
 
-/**
- * Next Challenge Section - Prominent recommendation cards
- */
 const NextChallengeSection = memo(function NextChallengeSection({ userId }) {
   if (!userId) return null;
 
@@ -153,9 +126,6 @@ const NextChallengeSection = memo(function NextChallengeSection({ userId }) {
   );
 });
 
-/**
- * Topic Mastery Section
- */
 const TopicMasterySection = memo(function TopicMasterySection({ userId }) {
   if (!userId) return null;
 
@@ -172,9 +142,6 @@ const TopicMasterySection = memo(function TopicMasterySection({ userId }) {
   );
 });
 
-/**
- * AI Insights Dashboard Section
- */
 const AIInsightsDashboard = memo(function AIInsightsDashboard({ userId }) {
   if (!userId) return null;
 
@@ -194,12 +161,6 @@ const AIInsightsDashboard = memo(function AIInsightsDashboard({ userId }) {
   );
 });
 
-/**
- * Insights Section - Main Export
- *
- * Props:
- * - userId: User ID for MIM components (required)
- */
 function InsightsSection({ userId }) {
   if (!userId) {
     return (
@@ -211,22 +172,22 @@ function InsightsSection({ userId }) {
 
   return (
     <div className="space-y-6">
-      {/* Cognitive Profile & Skill Radar */}
+      {}
       <CognitiveProfileSection userId={userId} />
 
-      {/* Problem Recommendations */}
+      {}
       <RecommendationsSection userId={userId} />
 
-      {/* Insights & Patterns */}
+      {}
       <PatternsSection userId={userId} />
 
-      {/* Next Challenge */}
+      {}
       <NextChallengeSection userId={userId} />
 
-      {/* Topic Mastery */}
+      {}
       <TopicMasterySection userId={userId} />
 
-      {/* AI Insights Dashboard */}
+      {}
       <AIInsightsDashboard userId={userId} />
     </div>
   );

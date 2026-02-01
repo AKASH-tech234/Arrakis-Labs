@@ -16,9 +16,9 @@ const monacoLanguageByUiLanguage = {
 
 const defaultCode = {
   Python: `# cook your dish here`,
-  
+
   JavaScript: `// cook your dish here`,
-  
+
   Java: `/* package codechef; */
 
 import java.util.*;
@@ -32,7 +32,7 @@ class CodeChef
         // your code goes here
     }
 }`,
-  
+
   "C++": `#include <bits/stdc++.h>
 using namespace std;
 
@@ -82,7 +82,7 @@ const formatCode = (code, language) => {
 
   const openBrackets = ["{", "(", "["];
   const closeBrackets = ["}", ")", "]"];
-  
+
   const formattedLines = lines.map((line) => {
     let trimmed = line.trim();
     if (!trimmed) return "";
@@ -91,29 +91,29 @@ const formatCode = (code, language) => {
     if (startsWithClose && indentLevel > 0) {
       indentLevel--;
     }
-    
+
     const formattedLine = indent() + trimmed;
 
     const endsWithOpen = openBrackets.some(b => trimmed.endsWith(b));
-    
+
     const endsWithColon = language === "Python" && trimmed.endsWith(":");
-    
+
     if (endsWithOpen || endsWithColon) {
       indentLevel++;
     }
-    
+
     return formattedLine;
   });
-  
+
   return formattedLines.join("\n");
 };
 
-export default function CodeEditor({ 
-  onRun, 
-  onSubmit, 
-  isFullscreen = false, 
+export default function CodeEditor({
+  onRun,
+  onSubmit,
+  isFullscreen = false,
   onToggleFullscreen,
-  onRestore 
+  onRestore
 }) {
   const [language, setLanguage] = useState("Python");
   const [code, setCode] = useState(defaultCode[language]);
@@ -124,7 +124,7 @@ export default function CodeEditor({
   const [codeByLang, setCodeByLang] = useState(() => ({ ...defaultCode }));
 
   const handleLanguageChange = (newLang) => {
-    
+
     setCodeByLang(prev => ({ ...prev, [language]: code }));
     setLanguage(newLang);
     setCode(codeByLang[newLang] || defaultCode[newLang]);
@@ -165,7 +165,6 @@ export default function CodeEditor({
     (editor, monaco) => {
       editorRef.current = editor;
 
-      // Ctrl/Cmd + Enter => Submit (keeps old behavior)
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
         onSubmit?.(editor.getValue(), language);
       });
@@ -189,7 +188,7 @@ export default function CodeEditor({
               <span className="uppercase">{language}</span>
               <Icons.ChevronDown />
             </button>
-            
+
             {showLangDropdown && (
               <div className="absolute top-full left-0 mt-1 bg-[#121210] border border-[#1A1814] shadow-lg z-50 min-w-[140px] py-1">
                 {languageOptions.map((lang) => (

@@ -27,7 +27,7 @@ const questionSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
-    // URL-friendly slug for problem identification (e.g., "two-sum", "valid-palindrome")
+
     slug: {
       type: String,
       sparse: true,
@@ -70,54 +70,52 @@ const questionSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    // Problem type for UI category column (e.g., "Math", "Array")
+
     categoryType: {
       type: String,
       default: null,
       index: true,
     },
-    // Primary topic/category (e.g., "Arrays", "Dynamic Programming")
+
     topic: {
       type: String,
       default: null,
       index: true,
     },
-    // AI-assist fields (optional - inferred dynamically if not set)
+
     expectedApproach: {
       type: String,
-      default: null, // e.g., "Two pointers", "Binary search"
+      default: null,
     },
     commonMistakes: {
       type: [String],
-      default: [], // Known pitfalls for this problem
+      default: [],
     },
     timeComplexityHint: {
       type: String,
-      default: null, // Expected O() notation
+      default: null,
     },
     spaceComplexityHint: {
       type: String,
-      default: null, // Expected memory complexity
+      default: null,
     },
-    // v3.2: Canonical algorithms for AI feedback grounding
-    // e.g., ["bipartite_matching", "max_flow"] for task assignment problems
+
     canonicalAlgorithms: {
       type: [String],
-      default: [], // Preferred algorithms for this problem
+      default: [],
     },
-    // Company information - which companies ask this problem
-    // primary_company: The main company shown in problem lists (optional)
+
     primaryCompany: {
       type: String,
       default: null,
       trim: true,
     },
-    // companies: All companies that ask this problem (can include primary)
+
     companies: {
       type: [String],
       default: [],
     },
-    // For optimistic concurrency control
+
     version: {
       type: Number,
       default: 1,
@@ -155,37 +153,17 @@ questionSchema.index({ title: "text", description: "text" });
 questionSchema.index({ difficulty: 1, isActive: 1 });
 questionSchema.index({ tags: 1 });
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════
- * SLUG GENERATION - Critical for Hidden Test Case Generation
- * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * WHY THIS MATTERS:
- * The hidden test case generator (problemConfigRegistry.js) looks up problem
- * configurations by slug. If the slug doesn't match a registered problem,
- * NO hidden test cases will be generated - only DB test cases will run.
- * 
- * SLUG FORMAT: lowercase, alphanumeric + hyphens only
- * Example: "Repeated Substring Check" → "repeated-substring-check"
- */
-
-/**
- * Generate a URL-friendly slug from any string
- * @param {string} str - Input string (e.g., problem title)
- * @returns {string} Normalized slug
- */
 function generateSlug(str) {
   if (!str) return "";
   return str
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, "")  // Remove special chars (keep letters, numbers, spaces, hyphens)
-    .replace(/\s+/g, "-")          // Replace spaces with hyphens
-    .replace(/-+/g, "-")           // Collapse multiple hyphens
-    .replace(/^-|-$/g, "");        // Trim leading/trailing hyphens
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
-// Auto-generate slug from title before saving (for new documents)
 questionSchema.pre("save", function (next) {
   if (!this.slug && this.title) {
     this.slug = generateSlug(this.title);
@@ -194,12 +172,8 @@ questionSchema.pre("save", function (next) {
   next();
 });
 
-/**
- * Virtual getter: Always returns a usable slug, even if not stored in DB
- * This ensures hidden test generation works for existing questions without slug field
- */
 questionSchema.virtual("effectiveSlug").get(function () {
-  // Use stored slug if available, otherwise generate from title
+
   return this.slug || generateSlug(this.title);
 });
 

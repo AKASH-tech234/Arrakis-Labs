@@ -7,18 +7,11 @@ import {
   UserOAHistory,
 } from "../../models/oa/index.js";
 
-/**
- * OA Report Generator
- * Generates comprehensive post-OA reports
- */
 class ReportGenerator {
-  /**
-   * Generate a complete OA report
-   */
+
   async generateReport(sessionId) {
     console.log("[ReportGenerator] Generating report for session:", sessionId);
 
-    // Check if report already exists
     const existingReport = await OAReport.findOne({ sessionId });
     if (existingReport) {
       console.log("[ReportGenerator] Report already exists");
@@ -33,7 +26,6 @@ class ReportGenerator {
     const answers = await OAAnswer.find({ sessionId });
     const violations = await OAViolation.find({ sessionId });
 
-    // Calculate all metrics
     const codingPerformance = this.calculateCodingPerformance(session, answers);
     const score = this.calculateTotalScore(codingPerformance, session);
     const topicWise = await this.calculateTopicBreakdown(session, answers);
@@ -50,10 +42,8 @@ class ReportGenerator {
       session,
     });
 
-    // Build raw answers for audit
     const rawAnswers = await this.buildRawAnswers(session, answers);
 
-    // Create report
     const report = await OAReport.create({
       sessionId,
       userId: session.userId,
@@ -70,16 +60,12 @@ class ReportGenerator {
       rawAnswers,
     });
 
-    // Update user history
     await this.updateUserHistory(session.userId, report, session, answers);
 
     console.log("[ReportGenerator] Report generated successfully");
     return report;
   }
 
-  /**
-   * Calculate coding performance metrics
-   */
   calculateCodingPerformance(session, answers) {
     const totalQuestions = session.questions.length;
     let attempted = 0;
@@ -112,7 +98,7 @@ class ReportGenerator {
           totalScore += Math.round(q.points * passRate);
         }
       } else if (answer?.answer?.code && answer.answer.code.trim()) {
-        // Code written but not submitted
+
         attempted++;
       }
     }
@@ -129,9 +115,6 @@ class ReportGenerator {
     };
   }
 
-  /**
-   * Calculate total score
-   */
   calculateTotalScore(codingPerformance, session) {
     const earned = codingPerformance.score;
     const total = codingPerformance.maxScore || session.totalPoints || 100;
@@ -140,9 +123,6 @@ class ReportGenerator {
     return { earned, total, percentage };
   }
 
-  /**
-   * Calculate topic-wise breakdown
-   */
   async calculateTopicBreakdown(session, answers) {
     const topicMap = new Map();
 
@@ -211,9 +191,6 @@ class ReportGenerator {
     return result.sort((a, b) => b.attempted - a.attempted);
   }
 
-  /**
-   * Calculate difficulty-wise breakdown
-   */
   calculateDifficultyBreakdown(session, answers) {
     const result = {
       easy: { attempted: 0, fullySolved: 0, total: 0, accuracy: 0, avgTestCasePass: 0, totalPassRate: 0 },
@@ -245,7 +222,6 @@ class ReportGenerator {
       }
     }
 
-    // Calculate averages
     for (const key of ["easy", "medium", "hard"]) {
       const stats = result[key];
       stats.accuracy =
@@ -258,9 +234,6 @@ class ReportGenerator {
     return result;
   }
 
-  /**
-   * Calculate time analysis
-   */
   calculateTimeAnalysis(session, answers) {
     const perQuestion = [];
     let totalTime = 0;
@@ -322,9 +295,6 @@ class ReportGenerator {
     };
   }
 
-  /**
-   * Assess integrity based on violations
-   */
   assessIntegrity(session, violations) {
     const tabSwitches = violations.filter(
       (v) => v.type === "tab_hidden" || v.type === "tab_blur"
@@ -353,19 +323,14 @@ class ReportGenerator {
     };
   }
 
-  /**
-   * Generate AI insights
-   */
   async generateInsights(data) {
     const { score, codingPerformance, topicWise, difficultyWise, integrity } = data;
 
-    // Determine practice level
     const practiceLevel = OAReport.calculatePracticeLevel(
       score.percentage,
       difficultyWise
     );
 
-    // Find weak and strong topics
     const weakTopics = topicWise
       .filter((t) => t.avgTestCasePass < 0.5 && t.attempted >= 1)
       .sort((a, b) => a.avgTestCasePass - b.avgTestCasePass)
@@ -378,10 +343,8 @@ class ReportGenerator {
       .slice(0, 3)
       .map((t) => t.topic);
 
-    // Generate recommendations
     const recommendations = [];
 
-    // Handle edge case: no questions attempted at all
     if (codingPerformance.attempted === 0) {
       recommendations.push({
         type: "participation",
@@ -389,7 +352,7 @@ class ReportGenerator {
         actionable: "Try to attempt at least one problem next time, even if partially",
       });
     } else if (codingPerformance.fullySolved === 0 && codingPerformance.partiallySolved === 0) {
-      // All attempted but none passed
+
       recommendations.push({
         type: "fundamentals",
         message: "Focus on understanding problem requirements before coding",
@@ -432,7 +395,6 @@ class ReportGenerator {
       });
     }
 
-    // Get recommended problems
     const recommendedProblems = await this.getRecommendedProblems(
       weakTopics,
       data.session.userId
@@ -451,9 +413,6 @@ class ReportGenerator {
     };
   }
 
-  /**
-   * Get recommended problems based on weak topics
-   */
   async getRecommendedProblems(weakTopics, userId) {
     if (weakTopics.length === 0) return [];
 
@@ -483,9 +442,6 @@ class ReportGenerator {
     }));
   }
 
-  /**
-   * Estimate percentile (simplified)
-   */
   estimatePercentile(percentage) {
     if (percentage >= 90) return 95;
     if (percentage >= 80) return 85;
@@ -495,9 +451,6 @@ class ReportGenerator {
     return 25;
   }
 
-  /**
-   * Build raw answers for audit
-   */
   async buildRawAnswers(session, answers) {
     return session.questions.map((q) => {
       const answer = answers.find(
@@ -521,24 +474,15 @@ class ReportGenerator {
     });
   }
 
-  /**
-   * Calculate total time
-   */
   calculateTotalTime(session) {
     const start = session.actualStartedAt || session.startAt;
     const end = session.submittedAt || session.endAt;
     return Math.floor((new Date(end) - new Date(start)) / 1000);
   }
 
-  /**
-   * Update user history after OA
-   */
   async updateUserHistory(userId, report, session, answers) {
     const history = await UserOAHistory.getOrCreate(userId);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // DEFENSIVE: Ensure maps and objects exist (handles legacy/corrupted data)
-    // ═══════════════════════════════════════════════════════════════════════════
     if (!history.topicProficiency || !(history.topicProficiency instanceof Map)) {
       history.topicProficiency = new Map();
     }
@@ -549,13 +493,12 @@ class ReportGenerator {
         hard: { attempted: 0, fullySolved: 0, avgPassRate: 0 },
       };
     }
-    // Ensure each difficulty level exists
+
     const defaultDiffStats = { attempted: 0, fullySolved: 0, avgPassRate: 0 };
     if (!history.difficultyProficiency.easy) history.difficultyProficiency.easy = { ...defaultDiffStats };
     if (!history.difficultyProficiency.medium) history.difficultyProficiency.medium = { ...defaultDiffStats };
     if (!history.difficultyProficiency.hard) history.difficultyProficiency.hard = { ...defaultDiffStats };
 
-    // Update attempted questions
     for (const q of session.questions) {
       const answer = answers.find(
         (a) => a.refId.toString() === q.refId.toString()
@@ -587,7 +530,6 @@ class ReportGenerator {
         });
       }
 
-      // Update topic proficiency
       const topic = q.topicSnapshot;
       if (topic) {
         const topicStats = history.topicProficiency.get(topic) || {
@@ -611,7 +553,6 @@ class ReportGenerator {
         history.topicProficiency.set(topic, topicStats);
       }
 
-      // Update difficulty proficiency
       const diff = (q.difficultySnapshot || "Medium").toLowerCase();
       const diffKey =
         diff === "easy" ? "easy" : diff === "hard" ? "hard" : "medium";
@@ -624,7 +565,6 @@ class ReportGenerator {
       if (passRate === 1) diffStats.fullySolved++;
     }
 
-    // Update overall stats
     await history.updateAfterOA(report);
   }
 }

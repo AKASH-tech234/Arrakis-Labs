@@ -18,14 +18,10 @@ import AppHeader from "../../components/layout/AppHeader";
 import { Badge, Button, Card } from "../../components/ui/ds";
 import { ARRAKIS_MONACO_THEME, defineArrakisMonacoTheme } from "../../components/editor/arrakisMonacoTheme";
 
-/**
- * OA Session Page - The main OA experience
- */
 export default function OASession() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
-  // Session state
   const {
     session,
     questions,
@@ -38,7 +34,6 @@ export default function OASession() {
     isSubmitting,
   } = useOASession(sessionId);
 
-  // Timer state
   const {
     formattedTime,
     remainingMs,
@@ -49,12 +44,11 @@ export default function OASession() {
     sessionId,
     session?.endAt,
     useCallback(() => {
-      // Time's up - auto submit
+
       handleSubmitOA();
     }, [])
   );
 
-  // Current question state
   const [questionDetail, setQuestionDetail] = useState(null);
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
@@ -65,18 +59,15 @@ export default function OASession() {
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [violationWarning, setViolationWarning] = useState(null);
 
-  // Track time spent on current question
   const questionStartTime = useRef(Date.now());
   const timeSpentRef = useRef(0);
 
-  // Autosave
   const { save: autosave, isSaving, lastSaved } = useAutosave(
     sessionId,
     currentQuestion?.refId,
     500
   );
 
-  // Tab visibility / proctoring
   const { violations, warningsRemaining, isTerminated } = useTabVisibility(
     sessionId,
     session?.proctoring?.warningsAllowed > 0,
@@ -87,7 +78,6 @@ export default function OASession() {
         terminated: data.terminated,
       });
 
-      // Clear warning after 5 seconds
       setTimeout(() => setViolationWarning(null), 5000);
 
       if (data.terminated) {
@@ -96,10 +86,8 @@ export default function OASession() {
     }
   );
 
-  // Prevent accidental navigation away
   useBeforeUnload(session?.status === "live");
 
-  // Load question details when current question changes
   useEffect(() => {
     if (!session || !currentQuestion) return;
 
@@ -113,7 +101,6 @@ export default function OASession() {
         if (response.success) {
           setQuestionDetail(response.data);
 
-          // Restore saved code or use starter code
           if (response.data.savedAnswer?.code) {
             setCode(response.data.savedAnswer.code);
             setLanguage(response.data.savedAnswer.language || "python");
@@ -123,7 +110,6 @@ export default function OASession() {
             setCode("");
           }
 
-          // Reset results
           setRunResults(null);
           setSubmitResults(currentQuestion.answer?.isSubmitted ? {
             verdict: currentQuestion.answer.verdict,
@@ -131,7 +117,6 @@ export default function OASession() {
             total: currentQuestion.answer.totalCount,
           } : null);
 
-          // Reset time tracking
           questionStartTime.current = Date.now();
           timeSpentRef.current = currentQuestion.answer?.timeSpent || 0;
         }
@@ -143,7 +128,6 @@ export default function OASession() {
     loadQuestion();
   }, [sessionId, currentQuestion?.refId, session]);
 
-  // Handle code change with autosave
   const handleCodeChange = (newCode) => {
     setCode(newCode);
 
@@ -151,17 +135,14 @@ export default function OASession() {
     autosave(newCode, language, elapsed);
   };
 
-  // Handle language change
   const handleLanguageChange = (newLang) => {
     setLanguage(newLang);
 
-    // Load starter code for new language if code is empty
     if (!code.trim() && questionDetail?.starterCode?.[newLang]) {
       setCode(questionDetail.starterCode[newLang]);
     }
   };
 
-  // Run code
   const handleRun = async () => {
     if (!code.trim()) return;
 
@@ -184,7 +165,6 @@ export default function OASession() {
     }
   };
 
-  // Submit answer
   const handleSubmitAnswer = async () => {
     if (!code.trim()) return;
 
@@ -207,10 +187,9 @@ export default function OASession() {
     }
   };
 
-  // Submit entire OA
   const handleSubmitOA = async () => {
     try {
-      // Save current code first
+
       const elapsed = Math.floor((Date.now() - questionStartTime.current) / 1000);
       await oaService.saveAnswer(sessionId, currentQuestion?.refId, {
         code,
@@ -225,7 +204,6 @@ export default function OASession() {
     }
   };
 
-  // Navigate questions
   const goToPrev = () => {
     if (currentQuestionIndex > 0) {
       goToQuestion(currentQuestionIndex - 1);
@@ -278,7 +256,7 @@ export default function OASession() {
             Session Not Active
           </h2>
           <p className="text-[#A29A8C] mb-6" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-            This session is {session?.status}. 
+            This session is {session?.status}.
           </p>
           <Button onClick={() => navigate(`/oa/report/${sessionId}`)} variant="primary" size="md">
             View Report
@@ -293,7 +271,7 @@ export default function OASession() {
       <AppHeader />
       <main className="pt-14">
         <div className="h-[calc(100vh-56px)] text-white flex flex-col overflow-hidden">
-      {/* Violation Warning */}
+      {}
       {violationWarning && (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-[#2A0F0F]/95 border border-[#7F1D1D] text-[#FCA5A5] px-6 py-3 rounded-none flex items-center gap-3 animate-pulse">
           <AlertTriangle className="w-5 h-5" />
@@ -301,7 +279,7 @@ export default function OASession() {
         </div>
       )}
 
-      {/* Top Bar */}
+      {}
       <div className="bg-[#121210] border-b border-[#1A1814] px-6 py-3 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -321,7 +299,7 @@ export default function OASession() {
           </Badge>
         </div>
 
-        {/* Timer */}
+        {}
         <div
           className={`flex items-center gap-2 px-5 py-2.5 font-mono text-lg font-semibold shadow-inner border rounded-none ${
             isCritical
@@ -335,7 +313,7 @@ export default function OASession() {
           <span className="tabular-nums">{formattedTime}</span>
         </div>
 
-        {/* Actions */}
+        {}
         <div className="flex items-center gap-4">
           {isSaving && (
             <div className="flex items-center gap-2 text-sm text-[#A29A8C]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
@@ -361,11 +339,11 @@ export default function OASession() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Question */}
+        {}
         <div className="w-1/2 border-r border-[#1A1814] flex flex-col overflow-hidden bg-[#0A0A08]">
-          {/* Question Header */}
+          {}
           <div className="bg-[#121210] px-5 py-4 border-b border-[#1A1814]">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-xl text-white">
@@ -396,7 +374,7 @@ export default function OASession() {
             )}
           </div>
 
-          {/* Question Content */}
+          {}
           <div className="flex-1 overflow-y-auto p-4">
             {questionDetail ? (
               <>
@@ -447,7 +425,7 @@ export default function OASession() {
                   </div>
                 )}
 
-                {/* Sample Test Cases */}
+                {}
                 {questionDetail.testCases?.length > 0 && (
                   <div>
                     <h3 className="text-sm font-bold text-[#A29A8C] mb-3 flex items-center gap-2 uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
@@ -490,14 +468,14 @@ export default function OASession() {
             )}
           </div>
 
-          {/* Question Navigation */}
+          {}
           <div className="bg-[#121210] px-5 py-4 border-t border-[#1A1814] flex items-center justify-between">
             <Button onClick={goToPrev} disabled={currentQuestionIndex === 0} variant="secondary" size="sm">
               <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
 
-            {/* Question Pills */}
+            {}
             <div className="flex items-center gap-2">
               {questions.map((q, idx) => (
                 <button
@@ -527,9 +505,9 @@ export default function OASession() {
           </div>
         </div>
 
-        {/* Right Panel - Editor */}
+        {}
         <div className="w-1/2 flex flex-col overflow-hidden bg-[#121210]">
-          {/* Editor Header */}
+          {}
           <div className="bg-[#121210] px-5 py-3 border-b border-[#1A1814] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-xs text-[#A29A8C] uppercase tracking-wider font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Language</span>
@@ -560,7 +538,7 @@ export default function OASession() {
             </div>
           </div>
 
-          {/* Code Editor */}
+          {}
           <div className="flex-1 overflow-hidden">
             <Editor
               value={code}
@@ -586,7 +564,7 @@ export default function OASession() {
             />
           </div>
 
-          {/* Results Panel */}
+          {}
           {(runResults || submitResults) && (
             <div className="bg-[#121210] border-t border-[#1A1814] max-h-64 overflow-y-auto">
               <div className="p-4">
@@ -685,7 +663,7 @@ export default function OASession() {
         </div>
       </div>
 
-      {/* Submit Confirmation Modal */}
+      {}
       {showConfirmSubmit && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
           <Card className="p-8 max-w-md w-full mx-4 shadow-2xl">

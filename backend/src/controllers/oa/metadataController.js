@@ -1,7 +1,6 @@
 import { CompanyOAPattern } from "../../models/oa/index.js";
 import Question from "../../models/question/Question.js";
 
-// Topic name variations mapping (DB value -> Display name)
 const TOPIC_VARIATIONS = {
   "Array": ["Array", "Arrays", "array", "arrays"],
   "String": ["String", "Strings", "string", "strings"],
@@ -25,7 +24,6 @@ const TOPIC_VARIATIONS = {
   "Math": ["Math", "math", "Mathematics"],
 };
 
-// Build reverse lookup: variation -> canonical name
 const VARIATION_TO_CANONICAL = {};
 for (const [canonical, variations] of Object.entries(TOPIC_VARIATIONS)) {
   for (const v of variations) {
@@ -33,7 +31,6 @@ for (const [canonical, variations] of Object.entries(TOPIC_VARIATIONS)) {
   }
 }
 
-// Get all topic variations for query
 const ALL_TOPIC_VARIATIONS = Object.values(TOPIC_VARIATIONS).flat();
 
 const DEFAULT_COMPANIES = [
@@ -70,16 +67,9 @@ const DURATION_OPTIONS = [
   { value: 120, label: "2 hours" },
 ];
 
-/**
- * Get OA metadata for frontend configuration
- * NOW FETCHES ACTUAL AVAILABLE DATA FROM DATABASE
- * GET /api/oa/metadata
- */
 export const getOAMetadata = async (req, res) => {
   try {
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Fetch actual topics from database questions
-    // ═══════════════════════════════════════════════════════════════════════════
+
     const topicAggregation = await Question.aggregate([
       { $match: { isActive: true } },
       {
@@ -92,16 +82,14 @@ export const getOAMetadata = async (req, res) => {
       },
     ]);
 
-    // Combine all topic sources and normalize to canonical names
     let availableTopics = [];
     const foundTopicsSet = new Set();
-    
+
     if (topicAggregation.length > 0) {
       const { topics, categoryTypes, allTags } = topicAggregation[0];
       const flatTags = (allTags || []).flat();
       const allTopicValues = [...(topics || []), ...(categoryTypes || []), ...flatTags];
-      
-      // Map to canonical names and dedupe
+
       for (const t of allTopicValues) {
         if (!t) continue;
         const canonical = VARIATION_TO_CANONICAL[t.toLowerCase()];
@@ -109,19 +97,14 @@ export const getOAMetadata = async (req, res) => {
           foundTopicsSet.add(canonical);
         }
       }
-      
+
       availableTopics = [...foundTopicsSet].sort();
     }
 
-    // If no topics found, fall back to all canonical topics
     if (availableTopics.length === 0) {
       availableTopics = Object.keys(TOPIC_VARIATIONS);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Fetch actual companies from database (from 'companies' field)
-    // The Question schema has: companies: [String] - array of company names
-    // ═══════════════════════════════════════════════════════════════════════════
     const companyAggregation = await Question.aggregate([
       { $match: { isActive: true, companies: { $exists: true, $ne: [] } } },
       { $unwind: "$companies" },
@@ -134,7 +117,6 @@ export const getOAMetadata = async (req, res) => {
       { $sort: { count: -1 } },
     ]);
 
-    // Normalize company names (dedupe case variations like "Google" and "google")
     const companyMap = new Map();
     for (const c of companyAggregation) {
       const normalized = c._id.charAt(0).toUpperCase() + c._id.slice(1);
@@ -146,14 +128,11 @@ export const getOAMetadata = async (req, res) => {
         companyMap.set(normalized, { name: normalized, count: c.count, variations: [c._id] });
       }
     }
-    
+
     const availableCompanies = Array.from(companyMap.values())
       .sort((a, b) => b.count - a.count)
       .map(c => ({ name: c.name, count: c.count, variations: c.variations }));
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Get question counts by difficulty
-    // ═══════════════════════════════════════════════════════════════════════════
     const difficultyCounts = await Question.aggregate([
       { $match: { isActive: true } },
       {
@@ -171,14 +150,11 @@ export const getOAMetadata = async (req, res) => {
 
     const totalQuestions = Object.values(questionsByDifficulty).reduce((a, b) => a + b, 0);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Build response with actual database data
-    // ═══════════════════════════════════════════════════════════════════════════
     const companies = availableCompanies.length > 0
       ? availableCompanies.map((c) => ({
           name: c.name,
           count: c.count,
-          variations: c.variations, // Include all case variations for querying
+          variations: c.variations,
           logo: null,
           defaultTopics: [],
           difficultyDistribution: DIFFICULTY_DISTRIBUTIONS.mixed,
@@ -191,22 +167,22 @@ export const getOAMetadata = async (req, res) => {
           logo: null,
           defaultTopics: [],
           difficultyDistribution: DIFFICULTY_DISTRIBUTIONS.mixed,
-          available: false, // Not available in DB
+          available: false,
         }));
 
     res.json({
       success: true,
       data: {
-        // Available topics from actual questions
+
         topics: availableTopics,
-        // Available companies from actual questions
+
         companies,
-        // Question availability stats
+
         questionStats: {
           total: totalQuestions,
           byDifficulty: questionsByDifficulty,
         },
-        // Configuration options
+
         difficultyOptions: ["Easy", "Medium", "Hard", "mixed", "adaptive"],
         difficultyDistributions: DIFFICULTY_DISTRIBUTIONS,
         durationOptions: DURATION_OPTIONS,
@@ -238,10 +214,6 @@ export const getOAMetadata = async (req, res) => {
   }
 };
 
-/**
- * Seed company patterns (admin endpoint)
- * POST /api/oa/admin/seed-companies
- */
 export const seedCompanyPatterns = async (req, res) => {
   try {
     const companiesData = [

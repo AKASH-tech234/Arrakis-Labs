@@ -1,5 +1,3 @@
-
-
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -194,7 +192,7 @@ export default function ProblemList() {
   };
 
   const handleDelete = () => {
-    
+
     console.log("Deleting problem:", deleteModal.problem?.slug);
     setDeleteModal({ open: false, problem: null });
   };
@@ -224,8 +222,8 @@ export default function ProblemList() {
         </div>
         <Link
           to="/admin/problems/new"
-          className="px-4 py-2 bg-gradient-to-r from-[#92400E] to-[#D97706] text-[#0A0A08] 
-                     hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300 
+          className="px-4 py-2 bg-gradient-to-r from-[#92400E] to-[#D97706] text-[#0A0A08]
+                     hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300
                      text-xs uppercase tracking-[0.15em]"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
@@ -314,7 +312,7 @@ export default function ProblemList() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedIds([])}
-              className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9] 
+              className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] hover:text-[#E8E4D9]
                          hover:border-[#78716C] transition-colors text-xs uppercase tracking-wider"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
@@ -322,7 +320,7 @@ export default function ProblemList() {
             </button>
             <button
               onClick={handleBulkDelete}
-              className="px-3 py-1.5 border border-red-900/50 text-red-400 hover:bg-red-900/20 
+              className="px-3 py-1.5 border border-red-900/50 text-red-400 hover:bg-red-900/20
                          transition-colors text-xs uppercase tracking-wider"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >

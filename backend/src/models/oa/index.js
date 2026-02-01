@@ -1,4 +1,3 @@
-// OA Models Index
 export { default as CompanyOAPattern } from "./CompanyOAPattern.js";
 export { default as OAConfig } from "./OAConfig.js";
 export { default as OASession } from "./OASession.js";

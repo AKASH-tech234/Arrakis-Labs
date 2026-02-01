@@ -1,10 +1,5 @@
-// src/components/profile/ProfileWidgets.jsx
-// Dynamic, responsive profile widgets matching Arrakis theme
 import { motion } from "framer-motion";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
 const COLORS = {
   bg: "#0A0A08",
   bgCard: "#0F0F0D",
@@ -19,29 +14,25 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// DIFFICULTY PROGRESS BARS
-// Horizontal progress bars for Easy/Medium/Hard solve rates
-// ═══════════════════════════════════════════════════════════════════════════════
 export function DifficultyProgressBars({ stats = {} }) {
   const difficulties = [
-    { 
-      label: "Easy", 
-      solved: stats.easySolved || 0, 
+    {
+      label: "Easy",
+      solved: stats.easySolved || 0,
       total: stats.easyTotal || 0,
-      color: "#22C55E" 
+      color: "#22C55E"
     },
-    { 
-      label: "Medium", 
-      solved: stats.mediumSolved || 0, 
+    {
+      label: "Medium",
+      solved: stats.mediumSolved || 0,
       total: stats.mediumTotal || 0,
-      color: "#D97706" 
+      color: "#D97706"
     },
-    { 
-      label: "Hard", 
-      solved: stats.hardSolved || 0, 
+    {
+      label: "Hard",
+      solved: stats.hardSolved || 0,
       total: stats.hardTotal || 0,
-      color: "#EF4444" 
+      color: "#EF4444"
     },
   ];
 
@@ -55,7 +46,7 @@ export function DifficultyProgressBars({ stats = {} }) {
       <div className="space-y-4">
         {difficulties.map((diff, index) => {
           const percentage = diff.total > 0 ? (diff.solved / diff.total) * 100 : 0;
-          
+
           return (
             <motion.div
               key={diff.label}
@@ -88,7 +79,7 @@ export function DifficultyProgressBars({ stats = {} }) {
         })}
       </div>
 
-      {/* Summary */}
+      {}
       <div className="mt-4 pt-4 border-t flex items-center justify-between" style={{ borderColor: COLORS.border }}>
         <span className="text-xs" style={{ color: COLORS.textMuted }}>
           Total Solved

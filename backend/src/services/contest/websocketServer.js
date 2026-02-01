@@ -6,10 +6,10 @@ import leaderboardService from "./leaderboardService.js";
 class ContestWebSocketServer {
   constructor() {
     this.wss = null;
-    this.rooms = new Map(); 
-    this.clientData = new WeakMap(); 
+    this.rooms = new Map();
+    this.clientData = new WeakMap();
     this.heartbeatInterval = null;
-    this.redisContestSubscriptions = new Map(); 
+    this.redisContestSubscriptions = new Map();
   }
 
   ensureRedisSubscription(contestId) {
@@ -19,7 +19,7 @@ class ContestWebSocketServer {
       contestId,
       async (event) => {
         try {
-          
+
           const leaderboard = await leaderboardService.getTopN(contestId, 50);
           this.notifyLeaderboardUpdate(contestId, {
             entries: leaderboard.entries,
@@ -54,10 +54,10 @@ class ContestWebSocketServer {
   }
 
   initialize(server) {
-    this.wss = new WebSocketServer({ 
+    this.wss = new WebSocketServer({
       server,
       path: "/ws/contest",
-      
+
       verifyClient: ({ origin, req }, callback) => {
         const allowedOrigins = [
           process.env.FRONTEND_URL,
@@ -101,7 +101,7 @@ class ContestWebSocketServer {
   }
 
   handleConnection(ws, req) {
-    
+
     this.clientData.set(ws, {
       isAlive: true,
       userId: null,
@@ -173,7 +173,7 @@ class ContestWebSocketServer {
 
   async handleAuthenticate(ws, payload) {
     const { token } = payload || {};
-    
+
     if (!token) {
       this.send(ws, { type: "auth_error", message: "Token required" });
       return;
@@ -182,10 +182,10 @@ class ContestWebSocketServer {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const data = this.clientData.get(ws);
-      
+
       data.userId = decoded.id;
       data.authenticated = true;
-      
+
       this.send(ws, {
         type: "authenticated",
         userId: decoded.id,
@@ -201,7 +201,7 @@ class ContestWebSocketServer {
       if (!cookieHeader) return false;
 
       const cookies = cookie.parse(cookieHeader);
-      
+
       const token = cookies.userToken || cookies.token;
       if (!token) return false;
 
@@ -245,7 +245,7 @@ class ContestWebSocketServer {
     this.ensureRedisSubscription(contestId);
 
     const leaderboard = await leaderboardService.getTopN(contestId, 20);
-    
+
     this.send(ws, {
       type: "joined_contest",
       contestId,
@@ -305,7 +305,7 @@ class ContestWebSocketServer {
         this.rooms.delete(contestId);
         this.cleanupRedisSubscription(contestId);
       } else {
-        
+
         this.broadcastToContest(contestId, {
           type: "participant_count",
           count: room.size,

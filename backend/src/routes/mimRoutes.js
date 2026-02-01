@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// MIM (Misconception Identification Model) Routes
-// Proxy routes for MIM AI service endpoints
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import express from "express";
 import { protect } from "../middleware/auth/authMiddleware.js";
 import { verifyAdmin } from "../middleware/admin/adminMiddleware.js";
@@ -16,9 +11,6 @@ import {
 
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STRUCTURED LOGGING
-// ─────────────────────────────────────────────────────────────────────────────
 const LOG_PREFIX = {
   INFO: "\x1b[36m[MIM-ROUTE]\x1b[0m",
   SUCCESS: "\x1b[32m[MIM-ROUTE]\x1b[0m",
@@ -40,14 +32,6 @@ const log = {
     ),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PUBLIC ROUTES
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/mim/status
- * Get MIM model status (public)
- */
 router.get("/status", async (req, res) => {
   try {
     log.info("MIM status requested");
@@ -71,20 +55,11 @@ router.get("/status", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PROTECTED ROUTES (require authentication)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/mim/profile/:userId
- * Get user's cognitive profile
- */
 router.get("/profile/:userId", protect, async (req, res) => {
   try {
     const { userId } = req.params;
     const requestingUserId = req.user?._id?.toString();
 
-    // Users can only access their own profile (unless admin)
     if (userId !== requestingUserId && !req.user?.isAdmin) {
       return res.status(403).json({
         success: false,
@@ -113,17 +88,12 @@ router.get("/profile/:userId", protect, async (req, res) => {
   }
 });
 
-/**
- * GET /api/mim/recommend/:userId
- * Get personalized problem recommendations
- */
 router.get("/recommend/:userId", protect, async (req, res) => {
   try {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit) || 5;
     const requestingUserId = req.user?._id?.toString();
 
-    // Users can only get their own recommendations
     if (userId !== requestingUserId && !req.user?.isAdmin) {
       return res.status(403).json({
         success: false,
@@ -155,16 +125,11 @@ router.get("/recommend/:userId", protect, async (req, res) => {
   }
 });
 
-/**
- * GET /api/mim/predict/:userId/:problemId
- * Get pre-submission prediction
- */
 router.get("/predict/:userId/:problemId", protect, async (req, res) => {
   try {
     const { userId, problemId } = req.params;
     const requestingUserId = req.user?._id?.toString();
 
-    // Users can only get their own predictions
     if (userId !== requestingUserId && !req.user?.isAdmin) {
       return res.status(403).json({
         success: false,
@@ -193,14 +158,6 @@ router.get("/predict/:userId/:problemId", protect, async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADMIN ROUTES (require admin authentication)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * POST /api/mim/train
- * Trigger MIM model training (admin only)
- */
 router.post("/train", verifyAdmin, async (req, res) => {
   try {
     log.info("MIM training triggered by admin", {

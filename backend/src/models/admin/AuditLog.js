@@ -38,12 +38,12 @@ const auditLogSchema = new mongoose.Schema(
     resourceId: {
       type: mongoose.Schema.Types.ObjectId,
     },
-    
+
     details: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
-    
+
     ipAddress: {
       type: String,
     },
@@ -65,7 +65,7 @@ auditLogSchema.statics.log = async function (data) {
     await this.create(data);
   } catch (error) {
     console.error("[AuditLog] Failed to log action:", error.message);
-    
+
   }
 };
 

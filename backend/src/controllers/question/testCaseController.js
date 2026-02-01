@@ -74,11 +74,11 @@ export const createTestCase = async (req, res) => {
     let finalStdin, finalExpectedStdout;
 
     if (stdin !== undefined) {
-      
+
       finalStdin = stdin;
       finalExpectedStdout = expectedStdout;
     } else if (input !== undefined) {
-      
+
       finalStdin = jsonToStdin(input);
       finalExpectedStdout = outputToStdout(expectedOutput);
     } else {

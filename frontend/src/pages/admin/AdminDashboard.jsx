@@ -18,7 +18,6 @@ import {
   Flame,
 } from "lucide-react";
 
-// Skeleton loader component for consistent loading states
 const SkeletonCard = ({ accent = false }) => (
   <div className={`rounded-xl border ${accent ? 'border-[#D97706]/30 bg-[#D97706]/5' : 'border-[#1A1814] bg-[#0F0F0D]'} p-5`}>
     <div className="flex items-center justify-between">
@@ -77,13 +76,12 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
-  // Error state
   if (error) {
     return (
       <div className="space-y-8">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-          <h1 
+          <h1
             className="text-2xl font-bold text-[#E8E4D9] tracking-wide"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -98,7 +96,6 @@ const AdminDashboard = () => {
     );
   }
 
-  // Prepare stat cards data
   const statCards = [
     {
       title: "Total Questions",
@@ -125,8 +122,7 @@ const AdminDashboard = () => {
     },
   ];
 
-  // Calculate total questions for progress bars
-  const totalQuestions = stats?.questions?.total || 1; // Prevent division by zero
+  const totalQuestions = stats?.questions?.total || 1;
 
   const difficultyBreakdown = [
     { label: "Easy", count: stats?.questions?.byDifficulty?.Easy ?? 0, color: "text-[#78716C]", bg: "bg-[#78716C]" },
@@ -142,7 +138,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -150,14 +146,14 @@ const AdminDashboard = () => {
       >
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-          <h1 
+          <h1
             className="text-2xl font-bold text-[#E8E4D9] tracking-wide"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
             Dashboard
           </h1>
         </div>
-        <p 
+        <p
           className="text-[#78716C] text-sm uppercase tracking-widest ml-3"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
@@ -165,7 +161,7 @@ const AdminDashboard = () => {
         </p>
       </motion.div>
 
-      {/* Quick Actions */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -182,13 +178,13 @@ const AdminDashboard = () => {
               <Upload className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <h3 
+              <h3
                 className="font-semibold text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Upload CSV
               </h3>
-              <p 
+              <p
                 className="text-xs text-[#78716C] uppercase tracking-wider mt-0.5"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
@@ -208,13 +204,13 @@ const AdminDashboard = () => {
               <FileText className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <h3 
+              <h3
                 className="font-semibold text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 New Question
               </h3>
-              <p 
+              <p
                 className="text-xs text-[#78716C] uppercase tracking-wider mt-0.5"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
@@ -234,13 +230,13 @@ const AdminDashboard = () => {
               <LayoutDashboard className="h-5 w-5 text-[#D97706]" />
             </div>
             <div>
-              <h3 
+              <h3
                 className="font-semibold text-[#E8E4D9] group-hover:text-[#F59E0B] transition-colors"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Manage Questions
               </h3>
-              <p 
+              <p
                 className="text-xs text-[#78716C] uppercase tracking-wider mt-0.5"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
@@ -251,7 +247,7 @@ const AdminDashboard = () => {
         </Link>
       </motion.div>
 
-      {/* Stats Overview Section Header */}
+      {}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -259,7 +255,7 @@ const AdminDashboard = () => {
         className="flex items-center gap-2"
       >
         <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-        <h2 
+        <h2
           className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
@@ -267,7 +263,7 @@ const AdminDashboard = () => {
         </h2>
       </motion.div>
 
-      {/* Stats Cards */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -289,20 +285,20 @@ const AdminDashboard = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p 
+                  <p
                     className="text-[10px] uppercase tracking-widest text-[#78716C] mb-1.5"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
                     {stat.title}
                   </p>
-                  <p 
+                  <p
                     className="text-3xl font-bold text-[#E8E4D9]"
                     style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                   >
                     {stat.value.toLocaleString()}
                   </p>
                   {stat.subtext && (
-                    <p 
+                    <p
                       className="text-[10px] text-[#78716C] mt-1.5 uppercase tracking-wider"
                       style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                     >
@@ -320,7 +316,7 @@ const AdminDashboard = () => {
                   className="mt-4 text-xs text-[#D97706] hover:text-[#F59E0B] inline-flex items-center gap-1 uppercase tracking-wider transition-colors"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
-                  View all 
+                  View all
                   <span className="text-sm">→</span>
                 </Link>
               )}
@@ -329,7 +325,7 @@ const AdminDashboard = () => {
         )}
       </motion.div>
 
-      {/* Analytics Section */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -343,11 +339,11 @@ const AdminDashboard = () => {
           </>
         ) : (
           <>
-            {/* Questions by Difficulty */}
+            {}
             <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-6 hover:border-[#D97706]/40 transition-colors">
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-1 h-4 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-                <h3 
+                <h3
                   className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
@@ -357,7 +353,7 @@ const AdminDashboard = () => {
               <div className="space-y-4">
                 {difficultyBreakdown.map((item, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <span 
+                    <span
                       className={`font-semibold text-sm uppercase tracking-wider ${item.color}`}
                       style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                     >
@@ -372,7 +368,7 @@ const AdminDashboard = () => {
                           className={`h-full rounded-full ${item.bg}`}
                         />
                       </div>
-                      <span 
+                      <span
                         className="text-[#E8E4D9] w-8 text-right font-bold"
                         style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                       >
@@ -384,11 +380,11 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Submissions by Status */}
+            {}
             <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-6 hover:border-[#D97706]/40 transition-colors">
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-1 h-4 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-                <h3 
+                <h3
                   className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                 >
@@ -402,14 +398,14 @@ const AdminDashboard = () => {
                       <div className="p-2.5 rounded-lg bg-[#1A1814]">
                         <item.icon className={`h-4 w-4 ${item.color}`} />
                       </div>
-                      <span 
+                      <span
                         className="text-[#E8E4D9] text-sm font-medium"
                         style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                       >
                         {item.label}
                       </span>
                     </div>
-                    <span 
+                    <span
                       className={`font-bold text-lg ${item.color}`}
                       style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
                     >
@@ -423,7 +419,7 @@ const AdminDashboard = () => {
         )}
       </motion.div>
 
-      {/* Additional Quick Links */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -431,7 +427,7 @@ const AdminDashboard = () => {
       >
         <div className="flex items-center gap-2 mb-4">
           <div className="w-1 h-5 bg-gradient-to-b from-[#D97706] to-transparent rounded-full"></div>
-          <h2 
+          <h2
             className="text-[#E8E4D9] text-xs font-medium uppercase tracking-widest"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -447,13 +443,13 @@ const AdminDashboard = () => {
               <Flame className="h-5 w-5 text-[#78716C] group-hover:text-[#D97706] transition-colors" />
             </div>
             <div>
-              <h3 
+              <h3
                 className="text-[#E8E4D9] font-medium group-hover:text-[#F59E0B] transition-colors"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 POTD Scheduler
               </h3>
-              <p 
+              <p
                 className="text-[10px] text-[#78716C] uppercase tracking-wider"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
@@ -469,13 +465,13 @@ const AdminDashboard = () => {
               <Trophy className="h-5 w-5 text-[#78716C] group-hover:text-[#D97706] transition-colors" />
             </div>
             <div>
-              <h3 
+              <h3
                 className="text-[#E8E4D9] font-medium group-hover:text-[#F59E0B] transition-colors"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
                 Manage Contests
               </h3>
-              <p 
+              <p
                 className="text-[10px] text-[#78716C] uppercase tracking-wider"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >

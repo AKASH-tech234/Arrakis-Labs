@@ -22,7 +22,7 @@ import {
 export default function AdminContestList() {
   const { admin } = useAdminAuth();
   const navigate = useNavigate();
-  
+
   const [contests, setContests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,7 +39,7 @@ export default function AdminContestList() {
       setLoading(true);
       const params = { page, limit: 20 };
       if (filter !== 'all') params.status = filter;
-      
+
       const response = await adminApi.get('/contests', { params });
       setContests(response.data.data);
       setPagination(response.data.pagination);
@@ -121,7 +121,7 @@ export default function AdminContestList() {
 
   return (
     <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -144,7 +144,7 @@ export default function AdminContestList() {
         </Link>
       </motion.div>
 
-      {/* Filters */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -176,7 +176,7 @@ export default function AdminContestList() {
         </motion.div>
       )}
 
-      {/* Table */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -299,7 +299,7 @@ export default function AdminContestList() {
         </table>
       </motion.div>
 
-      {/* Pagination */}
+      {}
       {pagination && pagination.pages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-[#78716C] text-sm">

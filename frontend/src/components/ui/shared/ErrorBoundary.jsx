@@ -1,20 +1,5 @@
-/**
- * ErrorBoundary Component
- *
- * A React Error Boundary that catches JavaScript errors in child components.
- * Provides graceful degradation and optional retry functionality.
- *
- * Usage:
- * <ErrorBoundary fallback={<ErrorFallback />}>
- *   <MyComponent />
- * </ErrorBoundary>
- */
-
 import { Component } from "react";
 
-/**
- * Default Fallback UI for errors
- */
 export function ErrorFallback({ error, resetError, sectionName }) {
   return (
     <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center">
@@ -36,9 +21,6 @@ export function ErrorFallback({ error, resetError, sectionName }) {
   );
 }
 
-/**
- * Section Loading Fallback
- */
 export function SectionLoading({ sectionName }) {
   return (
     <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-6 animate-pulse">
@@ -60,9 +42,6 @@ export function SectionLoading({ sectionName }) {
   );
 }
 
-/**
- * Error Boundary Class Component
- */
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -77,7 +56,6 @@ class ErrorBoundary extends Component {
     console.error("[ErrorBoundary] Caught error:", error);
     console.error("[ErrorBoundary] Error info:", errorInfo);
 
-    // Optional: Report to error tracking service
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
@@ -89,7 +67,7 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback provided
+
       if (this.props.fallback) {
         if (typeof this.props.fallback === "function") {
           return this.props.fallback({
@@ -100,7 +78,6 @@ class ErrorBoundary extends Component {
         return this.props.fallback;
       }
 
-      // Default fallback
       return (
         <ErrorFallback
           error={this.state.error}

@@ -37,7 +37,7 @@ export default function ContestDetail() {
         adminApi.get(`/contests/${id}`),
         adminApi.get(`/contests/${id}/participants`),
       ]);
-      
+
       setContest(contestRes.data.data);
       setParticipants(participantsRes.data.data || []);
       setLeaderboard(participantsRes.data.data?.filter(p => p.totalScore > 0) || []);
@@ -50,7 +50,7 @@ export default function ContestDetail() {
 
   const handleSendAnnouncement = async () => {
     if (!announcement.trim()) return;
-    
+
     try {
       setSendingAnnouncement(true);
       await adminApi.post(`/contests/${id}/announce`, { message: announcement });
@@ -67,7 +67,7 @@ export default function ContestDetail() {
     if (!confirm('Are you sure you want to force end this contest? This action cannot be undone.')) {
       return;
     }
-    
+
     try {
       await adminApi.post(`/contests/${id}/end`);
       fetchContestData();
@@ -79,7 +79,7 @@ export default function ContestDetail() {
   const handleExtendTime = async () => {
     const minutes = prompt('Enter additional minutes to extend:');
     if (!minutes || isNaN(minutes)) return;
-    
+
     try {
       await adminApi.put(`/contests/${id}` , {
         duration: contest.duration + parseInt(minutes),
@@ -137,7 +137,7 @@ export default function ContestDetail() {
 
   return (
     <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -163,7 +163,7 @@ export default function ContestDetail() {
             <p className="text-[#78716C] mt-1 ml-3 text-sm">{contest.description || 'No description'}</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {contest.status === 'live' && (
             <>
@@ -191,7 +191,7 @@ export default function ContestDetail() {
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -236,7 +236,7 @@ export default function ContestDetail() {
         </div>
       </motion.div>
 
-      {/* Tabs */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -260,10 +260,10 @@ export default function ContestDetail() {
         </div>
       </motion.div>
 
-      {/* Tab Content */}
+      {}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Contest Settings */}
+          {}
           <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
             <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">Contest Settings</h3>
             <dl className="space-y-3">
@@ -290,7 +290,7 @@ export default function ContestDetail() {
             </dl>
           </div>
 
-          {/* Problems */}
+          {}
           <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
             <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">Problems</h3>
             <div className="space-y-2">

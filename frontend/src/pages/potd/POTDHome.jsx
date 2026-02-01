@@ -31,7 +31,7 @@ export default function POTDHome() {
 
       <main className="pt-16">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 space-y-6">
-          {/* Compact Header */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -78,7 +78,7 @@ export default function POTDHome() {
             </div>
           </motion.div>
 
-          {/* Main Grid - POTD Card + Streak */}
+          {}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" key={refreshKey}>
             <div className="lg:col-span-2">
               <POTDCard />
@@ -88,7 +88,7 @@ export default function POTDHome() {
             </div>
           </div>
 
-          {/* Calendar - Compact */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

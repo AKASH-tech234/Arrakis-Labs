@@ -1,19 +1,3 @@
-/**
- * Auto-Fill Question Metadata
- * ============================
- *
- * Smart script to auto-populate AI-required fields based on problem title analysis.
- * Uses pattern matching to infer:
- * - topic
- * - expectedApproach
- * - timeComplexityHint
- * - spaceComplexityHint
- * - canonicalAlgorithms
- * - commonMistakes
- *
- * Usage: node scripts/autoFillQuestionMetadata.js
- */
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
@@ -31,12 +15,8 @@ import Question from "../src/models/question/Question.js";
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/arrakis";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PATTERN RULES - Map keywords in title to metadata
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const TOPIC_PATTERNS = [
-  // Graph algorithms
+
   {
     pattern: /bipartite|matching|assignment/i,
     topic: "Graphs",
@@ -93,7 +73,6 @@ const TOPIC_PATTERNS = [
     approach: "Use Bellman-Ford and check for updates after V-1 iterations",
   },
 
-  // Tree algorithms
   {
     pattern: /binary tree|tree traversal|inorder|preorder|postorder/i,
     topic: "Trees",
@@ -162,7 +141,6 @@ const TOPIC_PATTERNS = [
     approach: "Use binary lifting or Euler tour technique",
   },
 
-  // Array/String algorithms
   {
     pattern: /two.*sum|pair.*sum/i,
     topic: "Arrays",
@@ -254,7 +232,6 @@ const TOPIC_PATTERNS = [
     approach: "Use regex or character-by-character validation",
   },
 
-  // Dynamic Programming
   {
     pattern: /knapsack|subset.*sum|target.*sum/i,
     topic: "Dynamic Programming",
@@ -322,7 +299,6 @@ const TOPIC_PATTERNS = [
     approach: "Use memoization with string indices",
   },
 
-  // Other algorithms
   {
     pattern: /greedy|interval|scheduling/i,
     topic: "Greedy",
@@ -378,7 +354,6 @@ const TOPIC_PATTERNS = [
     approach: "Use mathematical properties and formulas",
   },
 
-  // Maze/Grid specific
   {
     pattern: /maze|labyrinth|escape/i,
     topic: "Graphs",
@@ -405,14 +380,12 @@ const TOPIC_PATTERNS = [
   },
 ];
 
-// Difficulty-based complexity hints
 const COMPLEXITY_BY_DIFFICULTY = {
   Easy: { time: "O(n)", space: "O(1) or O(n)" },
   Medium: { time: "O(n log n) or O(n²)", space: "O(n)" },
   Hard: { time: "O(n²) or O(n log n) or O(V+E)", space: "O(n) or O(n²)" },
 };
 
-// Common mistakes by topic
 const COMMON_MISTAKES_BY_TOPIC = {
   Arrays: [
     "Off-by-one errors in indices",
@@ -494,7 +467,6 @@ function inferMetadata(question) {
     commonMistakes: [],
   };
 
-  // Check each pattern
   for (const rule of TOPIC_PATTERNS) {
     if (rule.pattern.test(titleLower)) {
       metadata.topic = rule.topic;
@@ -507,12 +479,10 @@ function inferMetadata(question) {
     }
   }
 
-  // Fallback to tags if no pattern matched
   if (!metadata.topic && tags && tags.length > 0) {
     metadata.topic = tags[0];
   }
 
-  // Set common mistakes based on topic
   if (metadata.topic && COMMON_MISTAKES_BY_TOPIC[metadata.topic]) {
     metadata.commonMistakes = COMMON_MISTAKES_BY_TOPIC[metadata.topic];
   } else {
@@ -523,7 +493,6 @@ function inferMetadata(question) {
     ];
   }
 
-  // Default values if still null
   if (!metadata.topic) metadata.topic = "General";
   if (!metadata.expectedApproach)
     metadata.expectedApproach =
@@ -540,7 +509,6 @@ async function main() {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB\n");
 
-    // Fetch all questions
     const questions = await Question.find({ isActive: true })
       .select(
         "_id title difficulty tags topic expectedApproach commonMistakes timeComplexityHint spaceComplexityHint canonicalAlgorithms",
@@ -550,14 +518,12 @@ async function main() {
 
     console.log(`📊 Found ${questions.length} questions\n`);
 
-    // Questions needing update
     const needsUpdate = questions.filter(
       (q) => !q.topic || !q.expectedApproach || !q.canonicalAlgorithms?.length,
     );
 
     console.log(`🔧 ${needsUpdate.length} questions need metadata\n`);
 
-    // Infer metadata for each
     const updates = needsUpdate.map((q) => ({
       _id: q._id,
       title: q.title,
@@ -566,7 +532,6 @@ async function main() {
       inferred: inferMetadata(q),
     }));
 
-    // Write to review file
     const outputPath = join(__dirname, "../docs/questions_auto_filled.json");
     fs.writeFileSync(outputPath, JSON.stringify(updates, null, 2));
 
@@ -588,7 +553,6 @@ async function main() {
       );
     });
 
-    // Ask for confirmation
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,

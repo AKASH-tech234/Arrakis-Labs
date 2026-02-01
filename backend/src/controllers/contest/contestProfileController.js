@@ -64,7 +64,7 @@ function computeBestRank(history) {
 }
 
 function computePlatformCounts(history) {
-  
+
   return {
     arrakis: history.length,
   };
@@ -210,7 +210,7 @@ export async function getContestRating(req, res) {
           ratingChange: reg.ratingChange,
         };
       })
-      
+
       .filter((p) => p.date);
 
     return res.json({ success: true, data: { points } });

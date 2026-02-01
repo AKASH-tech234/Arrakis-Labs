@@ -1,16 +1,11 @@
 import { OAReport, OASession } from "../../models/oa/index.js";
 import { reportGenerator } from "../../services/oa/index.js";
 
-/**
- * Get report for a session
- * GET /api/oa/sessions/:sessionId/report
- */
 export const getReport = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user._id;
 
-    // Verify session ownership
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -23,7 +18,6 @@ export const getReport = async (req, res) => {
       });
     }
 
-    // Check if session is completed
     if (!["submitted", "terminated", "expired"].includes(session.status)) {
       return res.status(400).json({
         success: false,
@@ -32,11 +26,10 @@ export const getReport = async (req, res) => {
       });
     }
 
-    // Get or generate report
     let report = await OAReport.findOne({ sessionId });
 
     if (!report) {
-      // Generate report on demand
+
       try {
         report = await reportGenerator.generateReport(sessionId);
       } catch (err) {
@@ -75,16 +68,11 @@ export const getReport = async (req, res) => {
   }
 };
 
-/**
- * Get detailed answers for report review
- * GET /api/oa/sessions/:sessionId/report/answers
- */
 export const getReportAnswers = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user._id;
 
-    // Verify session ownership
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -97,7 +85,6 @@ export const getReportAnswers = async (req, res) => {
       });
     }
 
-    // Check if session is completed
     if (!["submitted", "terminated", "expired"].includes(session.status)) {
       return res.status(400).json({
         success: false,
@@ -105,7 +92,6 @@ export const getReportAnswers = async (req, res) => {
       });
     }
 
-    // Get report with raw answers
     const report = await OAReport.findOne({ sessionId }).select("rawAnswers");
 
     if (!report) {
@@ -131,15 +117,10 @@ export const getReportAnswers = async (req, res) => {
   }
 };
 
-/**
- * Get user's overall OA statistics
- * GET /api/oa/stats
- */
 export const getUserStats = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Get all completed reports
     const reports = await OAReport.find({ userId }).lean();
 
     if (reports.length === 0) {
@@ -156,12 +137,10 @@ export const getUserStats = async (req, res) => {
       });
     }
 
-    // Calculate aggregate stats
     const totalOAs = reports.length;
     const avgScore =
       reports.reduce((sum, r) => sum + (r.score?.percentage || 0), 0) / totalOAs;
 
-    // Get last 5 for trend
     const recent = reports
       .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
       .slice(0, 5);
@@ -180,7 +159,6 @@ export const getUserStats = async (req, res) => {
       else if (recentAvg < olderAvg - 5) trend = "declining";
     }
 
-    // Aggregate topic stats
     const topicAgg = {};
     for (const report of reports) {
       for (const topic of report.topicWise || []) {
@@ -220,7 +198,6 @@ export const getUserStats = async (req, res) => {
       .slice(0, 3)
       .map((t) => t.topic);
 
-    // Determine practice level
     let practiceLevel = "beginner";
     if (totalOAs >= 10 && avgScore >= 80) practiceLevel = "advanced";
     else if (totalOAs >= 5 && avgScore >= 70) practiceLevel = "intermediate";

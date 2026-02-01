@@ -1,12 +1,3 @@
-/**
- * Import/Update Questions with AI-Required Fields
- * ================================================
- *
- * This script reads the filled questions_to_fill.json and updates MongoDB.
- *
- * Usage: node scripts/importQuestionsSync.js
- */
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
@@ -16,10 +7,8 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
 dotenv.config({ path: join(__dirname, "../.env") });
 
-// Import models
 import Question from "../src/models/question/Question.js";
 import Submission from "../src/models/profile/Submission.js";
 
@@ -32,7 +21,6 @@ async function importQuestionData() {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
-    // Read the filled data file
     const inputPath = join(__dirname, "../docs/questions_to_fill.json");
 
     if (!fs.existsSync(inputPath)) {
@@ -56,7 +44,6 @@ async function importQuestionData() {
       try {
         const { questionId, toFill } = q;
 
-        // Skip if all values are still "FILL_ME"
         const allEmpty = Object.values(toFill).every(
           (v) => v === "FILL_ME" || (Array.isArray(v) && v[0] === "FILL_ME"),
         );
@@ -67,7 +54,6 @@ async function importQuestionData() {
           continue;
         }
 
-        // Build update object (only non-FILL_ME values)
         const updateFields = {};
 
         if (toFill.categoryType && toFill.categoryType !== "FILL_ME") {
@@ -110,7 +96,6 @@ async function importQuestionData() {
           continue;
         }
 
-        // Update the question
         const result = await Question.findByIdAndUpdate(
           questionId,
           { $set: updateFields },
@@ -138,7 +123,6 @@ async function importQuestionData() {
     console.log(`   ❌ Errors: ${errors}`);
     console.log("=".repeat(60));
 
-    // Step 2: Backfill Submissions with denormalized problem data
     console.log("\n🔄 Backfilling Submissions with problem data...\n");
 
     const submissions = await Submission.find({
@@ -167,7 +151,7 @@ async function importQuestionData() {
           submissionUpdates++;
         }
       } catch (err) {
-        // Silently skip
+
       }
     }
 

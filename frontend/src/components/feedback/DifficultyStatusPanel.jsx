@@ -1,73 +1,43 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// DIFFICULTY STATUS PANEL (Phase 2.3)
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Displays difficulty adjustment decisions from MIM difficulty policy.
-//
-// UI RULES:
-// - NEVER say "you should try harder problems"
-// - Only explain system decisions:
-//   - maintain + pattern_unresolved: "Difficulty maintained to reinforce correctness"
-//   - maintain + low_confidence: "Difficulty maintained (diagnosis uncertain)"
-//   - increase: "Difficulty increased due to consistent success"
-//   - decrease: "Difficulty adjusted to strengthen fundamentals"
-//
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { motion } from "framer-motion";
 import { getDifficultyMessage } from "../../types/ai.types.js";
 
-// Difficulty action configuration
 const DIFFICULTY_CONFIG = {
   increase: {
     icon: "📈",
-    color: "#22C55E", // Green - progress
+    color: "#22C55E",
     bgClass: "bg-[#22C55E]/5",
     borderClass: "border-[#22C55E]/20",
     label: "Difficulty Increased",
   },
   maintain: {
     icon: "➡️",
-    color: "#78716C", // Grey - neutral
+    color: "#78716C",
     bgClass: "bg-[#78716C]/5",
     borderClass: "border-[#78716C]/20",
     label: "Difficulty Maintained",
   },
   decrease: {
     icon: "📉",
-    color: "#3B82F6", // Blue - supportive
+    color: "#3B82F6",
     bgClass: "bg-[#3B82F6]/5",
     borderClass: "border-[#3B82F6]/20",
     label: "Difficulty Adjusted",
   },
 };
 
-/**
- * DifficultyStatusPanel - Shows difficulty adjustment decision from MIM
- *
- * @param {Object} props
- * @param {Object} props.difficulty - Difficulty DTO from API
- * @param {string} props.difficulty.action - "increase" | "maintain" | "decrease"
- * @param {string} props.difficulty.reason - Reason code for the decision
- * @param {string} props.difficulty.confidenceTier - Confidence tier that influenced decision
- * @param {boolean} [props.showOnlyWhenChanged] - Only show if action !== "maintain"
- * @param {boolean} [props.compact] - Use compact display
- * @param {string} [props.className] - Additional CSS classes
- */
 export default function DifficultyStatusPanel({
   difficulty,
   showOnlyWhenChanged = false,
   compact = false,
   className = "",
 }) {
-  // Don't render if no difficulty data
+
   if (!difficulty) {
     return null;
   }
 
   const { action, reason, confidenceTier } = difficulty;
 
-  // Optionally hide if action is maintain
   if (showOnlyWhenChanged && action === "maintain") {
     return null;
   }
@@ -75,7 +45,6 @@ export default function DifficultyStatusPanel({
   const config = DIFFICULTY_CONFIG[action] || DIFFICULTY_CONFIG.maintain;
   const message = getDifficultyMessage(action, reason);
 
-  // Compact version
   if (compact) {
     return (
       <DifficultyStatusBadge difficulty={difficulty} className={className} />
@@ -90,11 +59,11 @@ export default function DifficultyStatusPanel({
       className={`rounded-lg border p-3 ${config.bgClass} ${config.borderClass} ${className}`}
     >
       <div className="flex items-start gap-3">
-        {/* Icon */}
+        {}
         <span className="text-xl flex-shrink-0">{config.icon}</span>
 
         <div className="flex-1 min-w-0">
-          {/* Header */}
+          {}
           <div className="flex items-center gap-2">
             <span
               className="text-xs font-semibold uppercase tracking-wider"
@@ -107,7 +76,7 @@ export default function DifficultyStatusPanel({
             </span>
           </div>
 
-          {/* Message - the ONLY thing shown to user about difficulty */}
+          {}
           <p
             className="text-[#E8E4D9] text-sm mt-1 leading-relaxed"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
@@ -115,7 +84,7 @@ export default function DifficultyStatusPanel({
             {message}
           </p>
 
-          {/* Confidence tier indicator (subtle) */}
+          {}
           {confidenceTier && action !== "maintain" && (
             <p
               className="text-[#78716C] text-[10px] mt-2 uppercase tracking-wider"
@@ -130,16 +99,12 @@ export default function DifficultyStatusPanel({
   );
 }
 
-/**
- * Compact badge version for inline use
- */
 export function DifficultyStatusBadge({ difficulty, className = "" }) {
   if (!difficulty) return null;
 
   const { action, reason } = difficulty;
   const config = DIFFICULTY_CONFIG[action] || DIFFICULTY_CONFIG.maintain;
 
-  // Don't show badge for maintain (nothing changed)
   if (action === "maintain") {
     return null;
   }
@@ -160,9 +125,6 @@ export function DifficultyStatusBadge({ difficulty, className = "" }) {
   );
 }
 
-/**
- * Inline text version for embedding in sentences
- */
 export function DifficultyStatusText({ difficulty, className = "" }) {
   if (!difficulty) return null;
 

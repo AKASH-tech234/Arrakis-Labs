@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// MISTAKE ANALYSIS CARD
-// Shows top mistakes and recurring patterns from MIM profile
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
@@ -20,9 +15,8 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// Mistake type icons - mapped to actual MIM root causes
 const MISTAKE_ICONS = {
-  // Correctness subtypes
+
   off_by_one: "🔢",
   boundary_condition: "⚠️",
   boundary_condition_blindness: "⚠️",
@@ -30,31 +24,26 @@ const MISTAKE_ICONS = {
   comparison_error: "⚖️",
   partial_case_handling: "📋",
   missing_edge_case: "🔲",
-  
-  // Implementation subtypes
+
   state_loss: "💾",
   state_mutation: "💾",
   null_reference: "🚫",
   type_mismatch: "🔀",
   resource_leak: "💧",
-  
-  // Efficiency subtypes  
+
   wrong_complexity: "⏱️",
   time_complexity: "⏱️",
   suboptimal_data_structure: "📊",
   redundant_operations: "🔁",
   missing_memoization: "🧮",
-  
-  // Understanding gap subtypes
+
   misread_constraints: "📖",
   wrong_problem_entirely: "❓",
   missing_requirements: "📝",
-  
-  // Algorithm-related
+
   algorithm_choice: "🎯",
   logic_error: "🧠",
-  
-  // Default
+
   default: "❌",
 };
 
@@ -64,7 +53,6 @@ function getMistakeIcon(mistakeType) {
   return MISTAKE_ICONS[key] || MISTAKE_ICONS.default;
 }
 
-// Format mistake name for display
 function formatMistakeName(name) {
   if (!name) return "Unknown";
   return name
@@ -123,8 +111,7 @@ export default function MistakeAnalysisCard({ userId }) {
   }
 
   const mistakeAnalysis = data?.mistake_analysis || {};
-  
-  // Parse top_mistakes - can be [{cause, count}] or legacy [string]
+
   const rawTopMistakes = mistakeAnalysis.top_mistakes || [];
   const topMistakes = rawTopMistakes.map(m => {
     if (typeof m === 'string') {
@@ -132,8 +119,7 @@ export default function MistakeAnalysisCard({ userId }) {
     }
     return { cause: m.cause || m.type || m.name || 'Unknown', count: m.count || 1 };
   }).filter(m => m.cause && m.cause !== 'Unknown');
-  
-  // Parse recurring_patterns - can be [{pattern, count}] or legacy [string]
+
   const rawPatterns = mistakeAnalysis.recurring_patterns || [];
   const recurringPatterns = rawPatterns.map(p => {
     if (typeof p === 'string') {
@@ -141,22 +127,20 @@ export default function MistakeAnalysisCard({ userId }) {
     }
     return { pattern: p.pattern || p.name || p.type || 'Unknown', count: p.count || 1 };
   }).filter(p => p.pattern && p.pattern !== 'Unknown');
-  
-  // Get patterns from profile.patterns if recurring_patterns is empty
+
   const profilePatterns = data?.patterns || {};
   const additionalPatterns = Object.entries(profilePatterns).map(([pattern, count]) => ({
     pattern,
     count: typeof count === 'number' ? count : 1
   }));
-  
-  // Combine patterns (avoiding duplicates)
+
   const allPatterns = [...recurringPatterns];
   additionalPatterns.forEach(ap => {
     if (!allPatterns.some(p => p.pattern === ap.pattern)) {
       allPatterns.push(ap);
     }
   });
-  
+
   const totalMistakes = mistakeAnalysis.total_mistakes || 0;
 
   const hasData = topMistakes.length > 0 || allPatterns.length > 0;
@@ -177,7 +161,7 @@ export default function MistakeAnalysisCard({ userId }) {
           Mistake Analysis
         </h3>
         {totalMistakes > 0 && (
-          <span 
+          <span
             className="text-xs px-2 py-0.5 rounded"
             style={{ backgroundColor: `${COLORS.error}20`, color: COLORS.error }}
           >
@@ -198,10 +182,10 @@ export default function MistakeAnalysisCard({ userId }) {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Top Mistakes */}
+          {}
           {topMistakes.length > 0 && (
             <div>
-              <h4 
+              <h4
                 className="text-[10px] uppercase tracking-wider mb-2"
                 style={{ color: COLORS.textMuted }}
               >
@@ -219,7 +203,7 @@ export default function MistakeAnalysisCard({ userId }) {
                     style={{ backgroundColor: `${COLORS.error}10` }}
                   >
                     <div className="flex items-center gap-2.5">
-                      <motion.span 
+                      <motion.span
                         className="text-lg"
                         whileHover={{ scale: 1.2, rotate: 10 }}
                         transition={{ type: "spring", stiffness: 400 }}
@@ -230,7 +214,7 @@ export default function MistakeAnalysisCard({ userId }) {
                         {formatMistakeName(mistake.cause)}
                       </span>
                     </div>
-                    <motion.span 
+                    <motion.span
                       className="text-xs px-2 py-0.5 rounded-full font-medium"
                       style={{ backgroundColor: `${COLORS.error}20`, color: COLORS.error }}
                       whileHover={{ scale: 1.1 }}
@@ -243,10 +227,10 @@ export default function MistakeAnalysisCard({ userId }) {
             </div>
           )}
 
-          {/* Recurring Patterns */}
+          {}
           {allPatterns.length > 0 && (
             <div>
-              <h4 
+              <h4
                 className="text-[10px] uppercase tracking-wider mb-2"
                 style={{ color: COLORS.textMuted }}
               >
@@ -261,16 +245,16 @@ export default function MistakeAnalysisCard({ userId }) {
                     transition={{ delay: index * 0.05 }}
                     whileHover={{ scale: 1.05, y: -2 }}
                     className="text-xs px-2.5 py-1.5 rounded-lg border cursor-default inline-flex items-center gap-1.5"
-                    style={{ 
+                    style={{
                       backgroundColor: `${COLORS.warning}10`,
                       borderColor: `${COLORS.warning}30`,
                       color: COLORS.warning,
-                      fontFamily 
+                      fontFamily
                     }}
                   >
                     <span>{formatMistakeName(patternObj.pattern)}</span>
                     {patternObj.count > 1 && (
-                      <span 
+                      <span
                         className="text-[10px] px-1.5 py-0.5 rounded-full"
                         style={{ backgroundColor: `${COLORS.warning}20` }}
                       >
@@ -283,12 +267,12 @@ export default function MistakeAnalysisCard({ userId }) {
             </div>
           )}
 
-          {/* Expand/Collapse */}
+          {}
           {(topMistakes.length > 3 || allPatterns.length > 4) && (
             <button
               onClick={() => setExpanded(!expanded)}
               className="w-full text-center text-xs py-2 rounded-lg transition-colors"
-              style={{ 
+              style={{
                 color: COLORS.accent,
                 backgroundColor: `${COLORS.accent}10`
               }}

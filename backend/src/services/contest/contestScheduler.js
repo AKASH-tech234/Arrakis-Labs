@@ -4,7 +4,7 @@ import wsServer from "./websocketServer.js";
 
 class ContestScheduler {
   constructor() {
-    this.timers = new Map(); 
+    this.timers = new Map();
     this.checkInterval = null;
   }
 
@@ -56,9 +56,9 @@ class ContestScheduler {
 
       const upcoming = await Contest.find({
         status: "scheduled",
-        startTime: { 
-          $gt: now, 
-          $lte: new Date(now.getTime() + oneHour) 
+        startTime: {
+          $gt: now,
+          $lte: new Date(now.getTime() + oneHour)
         },
         isActive: true,
       });
@@ -82,7 +82,7 @@ class ContestScheduler {
     const timers = {};
 
     const startDelay = Math.max(0, contest.startTime.getTime() - now);
-    if (startDelay > 0 && startDelay < 24 * 60 * 60 * 1000) { 
+    if (startDelay > 0 && startDelay < 24 * 60 * 60 * 1000) {
       timers.startTimer = setTimeout(async () => {
         const freshContest = await Contest.findById(contestId);
         if (freshContest && freshContest.status === "scheduled") {

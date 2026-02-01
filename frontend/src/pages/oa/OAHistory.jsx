@@ -5,16 +5,12 @@ import oaService from "../../services/oaService";
 import AppHeader from "../../components/layout/AppHeader";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui/ds";
 
-/**
- * OA History Page - View all past OA sessions
- */
 export default function OAHistory() {
   const [sessions, setSessions] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Load sessions
   useEffect(() => {
     const loadSessions = async () => {
       try {
@@ -69,7 +65,7 @@ export default function OAHistory() {
             <SectionTitle title="OA History" subtitle="Review your past OA sessions" />
           </div>
 
-        {/* Filters */}
+        {}
         <div className="mb-8 flex items-center gap-4">
           <span
             className="text-[#A29A8C]"
@@ -92,7 +88,7 @@ export default function OAHistory() {
           </select>
         </div>
 
-        {/* Sessions List */}
+        {}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#F59E0B]"></div>
@@ -216,7 +212,7 @@ export default function OAHistory() {
               </table>
             </Card>
 
-            {/* Pagination */}
+            {}
             {pagination.pages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-2">
                 <Button

@@ -1,5 +1,3 @@
-
-
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfidenceBadge from "./ConfidenceBadge";
@@ -167,7 +165,7 @@ export default function AIFeedbackModal({
   confidenceBadge = null,
   onViewWeeklyReport = null,
 }) {
-  
+
   const [showHint, setShowHint] = useState(false);
   const [showPattern, setShowPattern] = useState(false);
 

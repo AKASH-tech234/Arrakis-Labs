@@ -1,5 +1,3 @@
-// Activity Heatmap - GitHub-style contribution calendar
-// Fixed: responsive layout, auto-scroll to current week, seamless UI
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
@@ -75,13 +73,11 @@ export default function ActivityHeatmap({ activity }) {
   const scrollContainerRef = useRef(null);
   const { data: activityData, maxCount } = buildHeatmapData(activity);
 
-  // Calculate total submissions
   const totalSubmissions = (activity || []).reduce((sum, d) => sum + (d.count || 0), 0);
 
-  // Auto-scroll to the right (current week) on mount
   useEffect(() => {
     if (scrollContainerRef.current) {
-      // Scroll to the end (current week)
+
       scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
     }
   }, []);
@@ -107,7 +103,7 @@ export default function ActivityHeatmap({ activity }) {
 
   return (
     <div className="w-full">
-      {/* Stats Header */}
+      {}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
           <div>
@@ -122,14 +118,14 @@ export default function ActivityHeatmap({ activity }) {
         </div>
       </div>
 
-      {/* Scrollable Heatmap Container */}
-      <div 
+      {}
+      <div
         ref={scrollContainerRef}
         className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#D97706]/30 scrollbar-track-transparent"
         style={{ scrollBehavior: 'smooth' }}
       >
         <div className="inline-block min-w-max">
-          {/* Month Labels */}
+          {}
           <div className="flex mb-2 ml-10">
             {monthPositions.map(({ month, weekIndex }, index) => {
               const nextWeekIndex = monthPositions[index + 1]?.weekIndex || WEEKS;
@@ -152,15 +148,15 @@ export default function ActivityHeatmap({ activity }) {
             })}
           </div>
 
-          {/* Heatmap Grid */}
+          {}
           <div className="flex">
-            {/* Day Labels */}
+            {}
             <div className="flex flex-col mr-2 flex-shrink-0" style={{ gap: `${CELL_GAP}px` }}>
               {dayLabels.map((label, index) => (
                 <span
                   key={index}
                   className="text-[#78716C] text-[10px] tracking-wider font-medium flex items-center"
-                  style={{ 
+                  style={{
                     fontFamily: "'Rajdhani', system-ui, sans-serif",
                     height: `${CELL_SIZE}px`,
                     opacity: index % 2 === 1 ? 1 : 0.5
@@ -171,7 +167,7 @@ export default function ActivityHeatmap({ activity }) {
               ))}
             </div>
 
-            {/* Weeks Grid */}
+            {}
             <div className="flex" style={{ gap: `${CELL_GAP}px` }}>
               {activityData.map((week, weekIndex) => (
                 <motion.div
@@ -188,30 +184,30 @@ export default function ActivityHeatmap({ activity }) {
                       className={`rounded-sm cursor-pointer transition-all duration-200 relative group
                         ${day.isToday ? 'ring-2 ring-[#D97706] ring-offset-1 ring-offset-[#0A0A08]' : ''}
                         hover:ring-2 hover:ring-[#F59E0B] hover:ring-offset-1 hover:ring-offset-[#0A0A08]`}
-                      style={{ 
+                      style={{
                         backgroundColor: levelColors[day.level],
                         width: `${CELL_SIZE}px`,
                         height: `${CELL_SIZE}px`,
                       }}
                       whileHover={{ scale: 1.2 }}
                     >
-                      {/* Tooltip */}
+                      {}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 pointer-events-none">
                         <div className="bg-[#1A1814] border border-[#D97706]/40 rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg">
                           <div className="text-[#E8E4D9] font-medium">
                             {day.count} submission{day.count !== 1 ? 's' : ''}
                           </div>
                           <div className="text-[#78716C]">
-                            {new Date(day.date).toLocaleDateString('en-US', { 
-                              weekday: 'short', 
-                              month: 'short', 
+                            {new Date(day.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
                               day: 'numeric',
                               year: 'numeric'
                             })}
                           </div>
                           {day.isToday && <div className="text-[#D97706] text-[10px] mt-1">Today</div>}
                         </div>
-                        {/* Tooltip arrow */}
+                        {}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A1814]" />
                       </div>
                     </motion.div>
@@ -223,19 +219,19 @@ export default function ActivityHeatmap({ activity }) {
         </div>
       </div>
 
-      {/* Legend */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
         className="flex items-center justify-between mt-4 pt-4 border-t border-[#D97706]/20"
       >
-        {/* Scroll hint */}
+        {}
         <span className="text-[#78716C] text-[10px]">
           ← Scroll to see older activity
         </span>
 
-        {/* Legend */}
+        {}
         <div className="flex items-center gap-2">
           <span
             className="text-[#78716C] text-[10px] uppercase tracking-wider font-medium"
@@ -249,7 +245,7 @@ export default function ActivityHeatmap({ activity }) {
               <motion.div
                 key={index}
                 className="rounded-sm hover:ring-1 hover:ring-[#F59E0B]"
-                style={{ 
+                style={{
                   backgroundColor: color,
                   width: `${CELL_SIZE}px`,
                   height: `${CELL_SIZE}px`,

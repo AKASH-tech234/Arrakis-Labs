@@ -59,11 +59,11 @@ export default function StreakWidget({ compact = false }) {
   if (compact) {
     return (
       <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Flame className={`w-4 h-4 ${getFlameColor(currentStreak)}`} />
-            <span 
+            <span
               className="text-xs font-semibold text-[#E8E4D9] uppercase tracking-wider"
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
@@ -73,9 +73,9 @@ export default function StreakWidget({ compact = false }) {
           <span className="text-[10px] text-[#78716C]">{getStreakMessage(currentStreak)}</span>
         </div>
 
-        {/* Current Streak */}
+        {}
         <div className="flex items-baseline gap-1 mb-3">
-          <span 
+          <span
             className="text-3xl font-bold text-[#E8E4D9]"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -84,7 +84,7 @@ export default function StreakWidget({ compact = false }) {
           <span className="text-xs text-[#78716C]">days</span>
         </div>
 
-        {/* Mini Stats */}
+        {}
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
             <Trophy className="w-3 h-3 text-yellow-400 mx-auto mb-0.5" />
@@ -112,9 +112,9 @@ export default function StreakWidget({ compact = false }) {
 
   return (
     <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-4">
-        <h3 
+        <h3
           className="text-sm font-semibold text-[#E8E4D9] flex items-center gap-2 uppercase tracking-wider"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
         >
@@ -124,7 +124,7 @@ export default function StreakWidget({ compact = false }) {
         <span className="text-[10px] text-[#78716C]">{getStreakMessage(currentStreak)}</span>
       </div>
 
-      {/* Streak Circle */}
+      {}
       <div className="flex items-center justify-center mb-4">
         <div className="relative">
           <div
@@ -135,7 +135,7 @@ export default function StreakWidget({ compact = false }) {
             }`}
           >
             <div className="text-center">
-              <div 
+              <div
                 className="text-2xl font-bold text-[#E8E4D9]"
                 style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
               >
@@ -154,7 +154,7 @@ export default function StreakWidget({ compact = false }) {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {}
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center p-2 bg-[#0A0A08] rounded-lg">
           <Trophy className="w-3.5 h-3.5 text-yellow-400 mx-auto mb-1" />
@@ -180,7 +180,7 @@ export default function StreakWidget({ compact = false }) {
         </div>
       </div>
 
-      {/* Tips */}
+      {}
       {currentStreak === 0 && (
         <div className="mt-3 p-2.5 bg-[#D97706]/10 border border-[#D97706]/20 rounded-lg">
           <p className="text-xs text-[#D97706]">

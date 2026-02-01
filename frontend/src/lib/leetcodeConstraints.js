@@ -1,5 +1,3 @@
-
-
 function normalize(text) {
   if (!text || typeof text !== "string") return "";
 

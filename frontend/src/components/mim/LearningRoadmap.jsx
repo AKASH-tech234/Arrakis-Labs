@@ -1,13 +1,7 @@
-// src/components/mim/LearningRoadmap.jsx
-// Displays user's personalized learning roadmap from MIM V2.1
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getMIMRoadmap } from "../../services/ai/aiApi";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ROADMAP REFRESH EVENT SYSTEM
-// Allows roadmap to refresh after submissions
-// ═══════════════════════════════════════════════════════════════════════════════
 const roadmapRefreshListeners = new Set();
 
 export function emitRoadmapRefresh() {
@@ -30,7 +24,6 @@ function useRoadmapRefresh(onRefresh) {
   }, [onRefresh]);
 }
 
-// Phase icons and colors
 const PHASE_CONFIG = {
   foundation: {
     icon: "🏗️",
@@ -64,7 +57,6 @@ const PHASE_CONFIG = {
   },
 };
 
-// Step status styling
 const STEP_STATUS_CONFIG = {
   completed: {
     bg: "bg-[#10B981]/20",
@@ -86,7 +78,6 @@ const STEP_STATUS_CONFIG = {
   },
 };
 
-// Difficulty badge component
 const DifficultyBadge = ({ difficulty }) => {
   const config = {
     Easy: { bg: "bg-[#10B981]/20", text: "text-[#10B981]" },
@@ -105,7 +96,6 @@ const DifficultyBadge = ({ difficulty }) => {
   );
 };
 
-// Roadmap step component
 const RoadmapStep = ({ step, index, isLast }) => {
   const statusConfig =
     STEP_STATUS_CONFIG[step.status] || STEP_STATUS_CONFIG.pending;
@@ -121,13 +111,13 @@ const RoadmapStep = ({ step, index, isLast }) => {
       transition={{ duration: 0.4, delay: index * 0.1 }}
       className="relative"
     >
-      {/* Timeline connector */}
+      {}
       {!isLast && (
         <div className="absolute left-4 top-10 bottom-0 w-0.5 bg-linear-to-b from-[#D97706]/30 to-transparent" />
       )}
 
       <div className={`flex gap-4 pb-6`}>
-        {/* Step indicator */}
+        {}
         <div
           className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${statusConfig.bg} ${statusConfig.border} border-2`}
         >
@@ -136,7 +126,7 @@ const RoadmapStep = ({ step, index, isLast }) => {
           </span>
         </div>
 
-        {/* Step content */}
+        {}
         <div className="flex-1">
           <div className="flex items-start justify-between gap-4 mb-2">
             <div>
@@ -160,7 +150,7 @@ const RoadmapStep = ({ step, index, isLast }) => {
             <DifficultyBadge difficulty={step.targetDifficulty} />
           </div>
 
-          {/* Progress bar */}
+          {}
           {step.status !== "pending" && (
             <div className="mt-2">
               <div className="flex justify-between text-xs mb-1">
@@ -185,7 +175,6 @@ const RoadmapStep = ({ step, index, isLast }) => {
   );
 };
 
-// Milestone badge component
 const MilestoneBadge = ({ milestone, index }) => {
   const isAchieved = milestone.achieved;
 
@@ -222,7 +211,7 @@ const MilestoneBadge = ({ milestone, index }) => {
         )}
       </div>
 
-      {/* Tooltip */}
+      {}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
         <div className="bg-[#1A1814] border border-[#D97706]/30 rounded-lg px-3 py-2 text-xs text-[#A8A29E] whitespace-nowrap">
           {milestone.description || milestone.name}
@@ -232,7 +221,6 @@ const MilestoneBadge = ({ milestone, index }) => {
   );
 };
 
-// Phase indicator component
 const PhaseIndicator = ({ currentPhase }) => {
   const phases = [
     "foundation",
@@ -328,7 +316,6 @@ export default function LearningRoadmap({ userId, compact = false }) {
     fetchRoadmap();
   }, [fetchRoadmap, refreshKey]);
 
-  // Listen for refresh events (triggered after submissions)
   const handleRefresh = useCallback(() => {
     console.log("[LearningRoadmap] Refresh triggered");
     setRefreshKey((k) => k + 1);
@@ -386,7 +373,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
       transition={{ duration: 0.5 }}
       className="rounded-lg border border-[#D97706]/20 bg-linear-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm overflow-hidden"
     >
-      {/* Header */}
+      {}
       <div className="px-6 py-4 border-b border-[#D97706]/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -413,10 +400,10 @@ export default function LearningRoadmap({ userId, compact = false }) {
       </div>
 
       <div className="p-6">
-        {/* Phase indicator */}
+        {}
         {!compact && <PhaseIndicator currentPhase={currentPhase} />}
 
-        {/* Current phase info */}
+        {}
         <div className="mb-6 p-3 rounded-lg bg-[#1A1814]/50 border border-[#D97706]/10">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">
@@ -434,7 +421,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
           </p>
         </div>
 
-        {/* Roadmap steps */}
+        {}
         <div className="mb-6">
           <h4
             className="text-[#78716C] text-xs uppercase tracking-wider mb-4"
@@ -462,7 +449,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
           )}
         </div>
 
-        {/* Milestones */}
+        {}
         {!compact && milestones.length > 0 && (
           <div>
             <h4
@@ -483,7 +470,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Profile summary */}
+        {}
         {!compact && profile_summary && (
           <div className="mt-6 pt-4 border-t border-[#D97706]/10">
             <div className="flex items-center justify-between text-xs text-[#78716C]">
@@ -500,7 +487,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
                 </span>
               </span>
             </div>
-            {/* Weak and Strong Topics */}
+            {}
             {(profile_summary.weakTopics?.length > 0 ||
               profile_summary.strongTopics?.length > 0) && (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -525,7 +512,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Difficulty Adjustment Insight */}
+        {}
         {!compact && difficultyAdjustment && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -540,7 +527,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
               Adaptive Difficulty
             </h4>
             <div className="bg-[#1A1814]/50 rounded-lg p-4 border border-[#D97706]/10">
-              {/* Next Difficulty */}
+              {}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[#A8A29E] text-xs">Recommended Next</span>
                 <span
@@ -557,14 +544,14 @@ export default function LearningRoadmap({ userId, compact = false }) {
                 </span>
               </div>
 
-              {/* Adjustment Reason */}
+              {}
               {difficultyAdjustment.reason && (
                 <p className="text-[#78716C] text-xs mb-3 italic">
                   "{difficultyAdjustment.reason}"
                 </p>
               )}
 
-              {/* Frustration & Boredom Indices */}
+              {}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -614,7 +601,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
                 </div>
               </div>
 
-              {/* Confidence */}
+              {}
               {difficultyAdjustment.confidence !== undefined && (
                 <div className="mt-3 text-center">
                   <span className="text-[#78716C] text-[10px]">
@@ -629,7 +616,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
           </motion.div>
         )}
 
-        {/* Topic Dependencies */}
+        {}
         {!compact && topicDependencies.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}

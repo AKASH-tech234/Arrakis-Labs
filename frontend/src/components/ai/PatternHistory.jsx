@@ -1,13 +1,5 @@
-// src/components/ai/PatternHistory.jsx
-// Pattern History Component - Shows recurring mistake patterns over time
-// Part of MIM v3.0 Frontend Integration
-
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const COLORS = {
   bg: "#0A0A08",
@@ -25,10 +17,6 @@ const COLORS = {
 };
 
 const fontFamily = "'Rajdhani', 'Orbitron', system-ui, sans-serif";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PATTERN CATEGORY CONFIGS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const PATTERN_CATEGORIES = {
   boundary_condition_blindness: {
@@ -103,10 +91,6 @@ const PATTERN_CATEGORIES = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PATTERN HISTORY CARD
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
   const config = PATTERN_CATEGORIES[pattern] || {
     name: pattern.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
@@ -132,7 +116,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
         backgroundColor: COLORS.bgCard,
       }}
     >
-      {/* Header */}
+      {}
       <button
         onClick={onToggle}
         className="w-full px-4 py-3 flex items-center justify-between transition-colors hover:bg-opacity-50"
@@ -165,7 +149,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Severity Badge */}
+          {}
           <span
             className="px-2 py-1 rounded text-[10px] uppercase font-semibold"
             style={{
@@ -180,7 +164,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
                 : "Rare"}
           </span>
 
-          {/* Expand Arrow */}
+          {}
           <motion.span
             animate={{ rotate: isExpanded ? 180 : 0 }}
             style={{ color: COLORS.textMuted }}
@@ -190,7 +174,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
         </div>
       </button>
 
-      {/* Expanded Content */}
+      {}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -200,7 +184,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
             transition={{ duration: 0.2 }}
             className="px-4 pb-4"
           >
-            {/* Description */}
+            {}
             <p
               className="text-sm mb-4 pt-2"
               style={{ color: COLORS.textSecondary, fontFamily }}
@@ -208,7 +192,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
               {config.description}
             </p>
 
-            {/* Progress Bar */}
+            {}
             <div className="mb-4">
               <div className="flex justify-between text-xs mb-1">
                 <span style={{ color: COLORS.textMuted }}>Frequency</span>
@@ -228,7 +212,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
               </div>
             </div>
 
-            {/* Resources */}
+            {}
             {config.resources.length > 0 && (
               <div>
                 <span
@@ -255,7 +239,7 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
               </div>
             )}
 
-            {/* Last Occurrence */}
+            {}
             {lastOccurrence && (
               <div
                 className="mt-4 pt-3 text-xs"
@@ -274,17 +258,12 @@ function PatternCard({ pattern, count, lastOccurrence, isExpanded, onToggle }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN PATTERN HISTORY COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export default function PatternHistory({
   patterns = [],
   title = "Your Pattern History",
 }) {
   const [expandedPattern, setExpandedPattern] = useState(null);
 
-  // Sort patterns by count (most frequent first)
   const sortedPatterns = [...patterns].sort((a, b) => b.count - a.count);
 
   if (patterns.length === 0) {
@@ -308,13 +287,12 @@ export default function PatternHistory({
     );
   }
 
-  // Calculate stats
   const totalOccurrences = patterns.reduce((sum, p) => sum + p.count, 0);
   const mostCommon = sortedPatterns[0];
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <span style={{ color: COLORS.accent }}>📊</span>
@@ -333,7 +311,7 @@ export default function PatternHistory({
         </span>
       </div>
 
-      {/* Quick Stats */}
+      {}
       <div
         className="grid grid-cols-2 gap-3 p-4 rounded-lg mb-4"
         style={{
@@ -371,7 +349,7 @@ export default function PatternHistory({
         </div>
       </div>
 
-      {/* Pattern List */}
+      {}
       <div className="space-y-3">
         {sortedPatterns.map((item) => (
           <PatternCard
@@ -389,7 +367,7 @@ export default function PatternHistory({
         ))}
       </div>
 
-      {/* Improvement Tip */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -421,10 +399,6 @@ export default function PatternHistory({
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MINI PATTERN BADGE (for inline use)
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export function PatternBadge({ pattern, count, size = "normal" }) {
   const config = PATTERN_CATEGORIES[pattern] || {

@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// AI INSIGHTS SUMMARY
-// Comprehensive dashboard showing ALL MIM and Agent outputs
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
@@ -24,7 +19,6 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -38,8 +32,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { type: "spring", stiffness: 100, damping: 15 }
   }
@@ -50,10 +44,6 @@ const pulseAnimation = {
   transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INSIGHT CARDS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function InsightCard({ title, icon, value, subtitle, color, trend, children }) {
   return (
     <motion.div
@@ -62,21 +52,21 @@ function InsightCard({ title, icon, value, subtitle, color, trend, children }) {
       className="rounded-xl border p-4 relative overflow-hidden group"
       style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
     >
-      {/* Background glow */}
-      <div 
+      {}
+      <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ 
+        style={{
           background: `radial-gradient(circle at 50% 50%, ${color}10 0%, transparent 70%)`
         }}
       />
-      
+
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-2">
           <span className="text-2xl">{icon}</span>
           {trend && (
-            <motion.span 
+            <motion.span
               className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-medium"
-              style={{ 
+              style={{
                 backgroundColor: `${trend === 'up' ? COLORS.success : trend === 'down' ? COLORS.error : COLORS.textMuted}20`,
                 color: trend === 'up' ? COLORS.success : trend === 'down' ? COLORS.error : COLORS.textMuted
               }}
@@ -86,16 +76,16 @@ function InsightCard({ title, icon, value, subtitle, color, trend, children }) {
             </motion.span>
           )}
         </div>
-        
-        <h4 
+
+        <h4
           className="text-[10px] uppercase tracking-wider mb-1"
           style={{ color: COLORS.textMuted, fontFamily }}
         >
           {title}
         </h4>
-        
+
         {value && (
-          <motion.div 
+          <motion.div
             className="text-2xl font-bold mb-1"
             style={{ color, fontFamily }}
             initial={{ scale: 0.5 }}
@@ -105,13 +95,13 @@ function InsightCard({ title, icon, value, subtitle, color, trend, children }) {
             {value}
           </motion.div>
         )}
-        
+
         {subtitle && (
           <p className="text-xs" style={{ color: COLORS.textSecondary }}>
             {subtitle}
           </p>
         )}
-        
+
         {children}
       </div>
     </motion.div>
@@ -120,7 +110,7 @@ function InsightCard({ title, icon, value, subtitle, color, trend, children }) {
 
 function ProgressBar({ value, max = 100, color, label, showPercentage = true }) {
   const percentage = Math.min((value / max) * 100, 100);
-  
+
   return (
     <div className="space-y-1">
       {label && (
@@ -143,10 +133,6 @@ function ProgressBar({ value, max = 100, color, label, showPercentage = true }) 
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function AIInsightsSummary({ userId }) {
   const [data, setData] = useState(null);
@@ -198,7 +184,6 @@ export default function AIInsightsSummary({ userId }) {
     );
   }
 
-  // Extract all data
   const {
     skill_level,
     learning_velocity,
@@ -221,7 +206,6 @@ export default function AIInsightsSummary({ userId }) {
   const topMistakes = mistake_analysis.top_mistakes || [];
   const patterns = mistake_analysis.recurring_patterns || [];
 
-  // Velocity to trend mapping
   const velocityTrend = {
     accelerating: 'up',
     stable: 'stable',
@@ -242,11 +226,11 @@ export default function AIInsightsSummary({ userId }) {
       className="rounded-xl border overflow-hidden"
       style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
     >
-      {/* Header */}
+      {}
       <div className="p-4 border-b" style={{ borderColor: COLORS.border }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <motion.div 
+            <motion.div
               className="text-2xl"
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
@@ -254,7 +238,7 @@ export default function AIInsightsSummary({ userId }) {
               🤖
             </motion.div>
             <div>
-              <h3 
+              <h3
                 className="text-sm font-medium"
                 style={{ color: COLORS.textPrimary, fontFamily }}
               >
@@ -265,8 +249,8 @@ export default function AIInsightsSummary({ userId }) {
               </p>
             </div>
           </div>
-          
-          {/* Tabs */}
+
+          {}
           <div className="flex gap-1 bg-[#1A1814] rounded-lg p-1">
             {tabs.map(tab => (
               <motion.button
@@ -289,7 +273,7 @@ export default function AIInsightsSummary({ userId }) {
         </div>
       </div>
 
-      {/* Content */}
+      {}
       <div className="p-4">
         <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
@@ -308,7 +292,7 @@ export default function AIInsightsSummary({ userId }) {
                 subtitle="Current assessment"
                 color={COLORS.accent}
               />
-              
+
               <InsightCard
                 title="Learning Velocity"
                 icon="🚀"
@@ -317,7 +301,7 @@ export default function AIInsightsSummary({ userId }) {
                 color={velocityTrend === 'up' ? COLORS.success : velocityTrend === 'down' ? COLORS.warning : COLORS.info}
                 trend={velocityTrend}
               />
-              
+
               <InsightCard
                 title="Success Rate"
                 icon="✅"
@@ -325,7 +309,7 @@ export default function AIInsightsSummary({ userId }) {
                 subtitle={`${learning_trajectory.total_correct || 0} / ${totalSubmissions}`}
                 color={successRate >= 60 ? COLORS.success : successRate >= 40 ? COLORS.warning : COLORS.error}
               />
-              
+
               <InsightCard
                 title="Mistakes Tracked"
                 icon="🔍"
@@ -345,7 +329,7 @@ export default function AIInsightsSummary({ userId }) {
               exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              {/* Readiness Scores */}
+              {}
               <motion.div variants={itemVariants} className="space-y-3">
                 <h4 className="text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.textSecondary }}>
                   Difficulty Readiness
@@ -355,15 +339,15 @@ export default function AIInsightsSummary({ userId }) {
                     <div key={diff} className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs" style={{ color: COLORS.textPrimary }}>{diff}</span>
-                        <span 
+                        <span
                           className="text-xs font-bold"
                           style={{ color: score >= 0.6 ? COLORS.success : score >= 0.4 ? COLORS.warning : COLORS.textMuted }}
                         >
                           {Math.round(score * 100)}%
                         </span>
                       </div>
-                      <ProgressBar 
-                        value={score * 100} 
+                      <ProgressBar
+                        value={score * 100}
                         color={score >= 0.6 ? COLORS.success : score >= 0.4 ? COLORS.warning : COLORS.textMuted}
                         showPercentage={false}
                       />
@@ -372,7 +356,7 @@ export default function AIInsightsSummary({ userId }) {
                 </div>
               </motion.div>
 
-              {/* Strengths & Weaknesses */}
+              {}
               <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: COLORS.success }}>
@@ -416,7 +400,7 @@ export default function AIInsightsSummary({ userId }) {
                 </div>
               </motion.div>
 
-              {/* Topic Success Rates */}
+              {}
               {Object.keys(topic_success_rates).length > 0 && (
                 <motion.div variants={itemVariants}>
                   <h4 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: COLORS.textSecondary }}>
@@ -455,9 +439,9 @@ export default function AIInsightsSummary({ userId }) {
               exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              {/* Last MIM Decision */}
+              {}
               {last_mim?.root_cause && (
-                <motion.div 
+                <motion.div
                   variants={itemVariants}
                   className="p-3 rounded-lg border"
                   style={{ backgroundColor: `${COLORS.purple}10`, borderColor: `${COLORS.purple}30` }}
@@ -466,7 +450,7 @@ export default function AIInsightsSummary({ userId }) {
                     🧠 Last MIM Decision
                   </h4>
                   <div className="flex items-center gap-3">
-                    <span 
+                    <span
                       className="text-sm px-2 py-1 rounded"
                       style={{ backgroundColor: `${COLORS.purple}20`, color: COLORS.textPrimary }}
                     >
@@ -481,7 +465,7 @@ export default function AIInsightsSummary({ userId }) {
                 </motion.div>
               )}
 
-              {/* Top Mistakes from MIM */}
+              {}
               {topMistakes.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <h4 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: COLORS.error }}>
@@ -503,7 +487,7 @@ export default function AIInsightsSummary({ userId }) {
                           <span className="text-sm" style={{ color: COLORS.textPrimary }}>
                             {cause?.replace(/_/g, ' ')}
                           </span>
-                          <span 
+                          <span
                             className="text-xs px-2 py-0.5 rounded-full"
                             style={{ backgroundColor: `${COLORS.error}20`, color: COLORS.error }}
                           >
@@ -516,7 +500,7 @@ export default function AIInsightsSummary({ userId }) {
                 </motion.div>
               )}
 
-              {/* Recurring Patterns */}
+              {}
               {patterns.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <h4 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: COLORS.warning }}>
@@ -533,7 +517,7 @@ export default function AIInsightsSummary({ userId }) {
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: i * 0.1 }}
                           className="text-xs px-2.5 py-1.5 rounded-lg border inline-flex items-center gap-1.5"
-                          style={{ 
+                          style={{
                             backgroundColor: `${COLORS.warning}10`,
                             borderColor: `${COLORS.warning}30`,
                             color: COLORS.warning
@@ -552,7 +536,7 @@ export default function AIInsightsSummary({ userId }) {
                 </motion.div>
               )}
 
-              {/* Recent Learning Recommendations */}
+              {}
               {recent_learning.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <h4 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: COLORS.info }}>
@@ -575,7 +559,7 @@ export default function AIInsightsSummary({ userId }) {
                 </motion.div>
               )}
 
-              {/* Recent Difficulty Actions */}
+              {}
               {recent_difficulty_actions.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <h4 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: COLORS.accent }}>

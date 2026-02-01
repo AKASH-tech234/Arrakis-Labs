@@ -15,10 +15,7 @@ export function AuthProvider({ children }) {
         const me = await getMe();
         if (!cancelled) {
           setUser(me);
-          // ═══════════════════════════════════════════════════════════════════
-          // USER ID LOGGING - For E2E Testing
-          // Copy this ID to use with: python scripts/test_user_flow.py <user_id>
-          // ═══════════════════════════════════════════════════════════════════
+
           if (me && me.id) {
             console.log(
               "═══════════════════════════════════════════════════════════════",
@@ -58,7 +55,7 @@ export function AuthProvider({ children }) {
       async login(email, password) {
         const result = await signin({ email, password });
         setUser(result.user);
-        // Log user ID after login for E2E testing
+
         if (result.user && result.user.id) {
           console.log(
             "═══════════════════════════════════════════════════════════════",
@@ -75,7 +72,7 @@ export function AuthProvider({ children }) {
       async register({ name, email, password, passwordConfirm }) {
         const result = await signup({ name, email, password, passwordConfirm });
         setUser(result.user);
-        // Log user ID after registration for E2E testing
+
         if (result.user && result.user.id) {
           console.log(
             "═══════════════════════════════════════════════════════════════",
@@ -92,7 +89,7 @@ export function AuthProvider({ children }) {
       async loginWithGoogle(token) {
         const result = await googleAuth(token);
         setUser(result.user);
-        // Log user ID after Google auth for E2E testing
+
         if (result.user && result.user.id) {
           console.log(
             "═══════════════════════════════════════════════════════════════",

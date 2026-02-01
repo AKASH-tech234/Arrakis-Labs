@@ -1,10 +1,7 @@
-// src/components/mim/SkillRadarChart.jsx
-// Interactive radar chart visualization of user's topic competencies
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
 
-// Calculate point position on radar
 const calculatePoint = (angle, value, maxValue, radius) => {
   const normalizedValue = (value / maxValue) * radius;
   const radian = ((angle - 90) * Math.PI) / 180;
@@ -14,13 +11,12 @@ const calculatePoint = (angle, value, maxValue, radius) => {
   };
 };
 
-// Radar grid component
 const RadarGrid = ({ levels = 4, labels, radius, center }) => {
   const angleStep = 360 / labels.length;
 
   return (
     <g>
-      {/* Concentric polygons */}
+      {}
       {[...Array(levels)].map((_, levelIndex) => {
         const levelRadius = ((levelIndex + 1) / levels) * radius;
         const points = labels.map((_, i) => {
@@ -39,7 +35,7 @@ const RadarGrid = ({ levels = 4, labels, radius, center }) => {
         );
       })}
 
-      {/* Axis lines */}
+      {}
       {labels.map((label, i) => {
         const point = calculatePoint(i * angleStep, 1, 1, radius);
         return (
@@ -56,7 +52,7 @@ const RadarGrid = ({ levels = 4, labels, radius, center }) => {
         );
       })}
 
-      {/* Labels */}
+      {}
       {labels.map((label, i) => {
         const point = calculatePoint(i * angleStep, 1, 1, radius + 20);
         return (
@@ -78,7 +74,6 @@ const RadarGrid = ({ levels = 4, labels, radius, center }) => {
   );
 };
 
-// Animated data polygon
 const DataPolygon = ({
   skills,
   maxValue,
@@ -114,7 +109,6 @@ const DataPolygon = ({
   );
 };
 
-// Data point markers
 const DataPoints = ({ skills, maxValue, radius, center, color, onHover }) => {
   const angleStep = 360 / skills.length;
 
@@ -149,7 +143,6 @@ const DataPoints = ({ skills, maxValue, radius, center, color, onHover }) => {
   );
 };
 
-// Skill tooltip
 const SkillTooltip = ({ skill, position }) => {
   if (!skill) return null;
 
@@ -194,7 +187,6 @@ const SkillTooltip = ({ skill, position }) => {
   );
 };
 
-// Legend component
 const Legend = ({ items }) => (
   <div className="flex flex-wrap justify-center gap-4 mt-4">
     {items.map((item) => (
@@ -239,19 +231,15 @@ export default function SkillRadarChart({
     fetchProfile();
   }, [fetchProfile]);
 
-  // Process skill data from profile
   const skillData = useMemo(() => {
     if (!profile) return [];
 
-    // Extract skill levels from profile
     const skillLevels = profile.skill_levels || profile.readiness_scores || {};
     const strengths = profile.strengths || [];
     const weaknesses = profile.weaknesses || [];
 
-    // Build skills array
     const skills = [];
 
-    // Add topic competencies
     Object.entries(skillLevels).forEach(([topic, level]) => {
       const value = typeof level === "number" ? level * 100 : 50;
       skills.push({
@@ -262,7 +250,6 @@ export default function SkillRadarChart({
       });
     });
 
-    // If no skill levels, create from strengths/weaknesses
     if (skills.length === 0) {
       strengths.forEach((s) =>
         skills.push({ name: s, value: 75, isStrength: true }),
@@ -272,7 +259,6 @@ export default function SkillRadarChart({
       );
     }
 
-    // Ensure minimum skills for visualization
     const defaultTopics = [
       "Arrays",
       "Strings",
@@ -289,7 +275,6 @@ export default function SkillRadarChart({
       });
     }
 
-    // Limit to reasonable number
     return skills.slice(0, 8);
   }, [profile]);
 
@@ -348,7 +333,7 @@ export default function SkillRadarChart({
       transition={{ duration: 0.5 }}
       className="rounded-lg border border-[#D97706]/20 bg-linear-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm p-4"
     >
-      {/* Header */}
+      {}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-[#D97706]">📊</span>
         <h3
@@ -359,14 +344,14 @@ export default function SkillRadarChart({
         </h3>
       </div>
 
-      {/* Radar Chart */}
+      {}
       <div
         className="relative"
         onMouseMove={handleMouseMove}
         style={{ width: size, height: size }}
       >
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {/* Grid */}
+          {}
           <RadarGrid
             levels={4}
             labels={skillData.map((s) => s.name)}
@@ -374,7 +359,7 @@ export default function SkillRadarChart({
             center={center}
           />
 
-          {/* Data polygon */}
+          {}
           <DataPolygon
             skills={skillData}
             maxValue={maxValue}
@@ -383,7 +368,7 @@ export default function SkillRadarChart({
             color="#D97706"
           />
 
-          {/* Data points */}
+          {}
           <DataPoints
             skills={skillData}
             maxValue={maxValue}
@@ -394,13 +379,13 @@ export default function SkillRadarChart({
           />
         </svg>
 
-        {/* Tooltip */}
+        {}
         {hoveredSkill && (
           <SkillTooltip skill={hoveredSkill} position={mousePos} />
         )}
       </div>
 
-      {/* Legend */}
+      {}
       {showLegend && (
         <div className="mt-4 pt-4 border-t border-[#D97706]/10">
           <div className="flex flex-wrap justify-center gap-2">

@@ -45,7 +45,7 @@ export const schedulePOTD = async (req, res) => {
     const existingSchedule = await POTDCalendar.findOne({ scheduledDate: date });
 
     if (existingSchedule) {
-      
+
       if (existingSchedule.isPublished) {
         return res.status(400).json({
           success: false,
@@ -80,13 +80,13 @@ export const schedulePOTD = async (req, res) => {
     });
 
     if (date.getTime() === today.getTime()) {
-      
+
       await potdScheduler.checkAndPublishTodaysPOTD();
     }
 
     res.status(201).json({
       success: true,
-      message: date.getTime() === today.getTime() 
+      message: date.getTime() === today.getTime()
         ? "POTD scheduled and published successfully for today"
         : "POTD scheduled successfully",
       data: newSchedule,
@@ -108,14 +108,14 @@ export const getScheduledPOTDs = async (req, res) => {
     let start, end;
 
     if (month && year) {
-      
+
       start = new Date(Date.UTC(year, month - 1, 1));
       end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
     } else if (startDate && endDate) {
       start = new Date(startDate);
       end = new Date(endDate);
     } else {
-      
+
       const now = new Date();
       start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
       end = new Date(
@@ -136,7 +136,7 @@ export const getScheduledPOTDs = async (req, res) => {
       if (schedule.isPublished) {
         status = "published";
       } else if (scheduleDate < today) {
-        status = "missed"; 
+        status = "missed";
       } else if (scheduleDate.getTime() === today.getTime()) {
         status = "today";
       } else {
@@ -388,7 +388,7 @@ export const getPOTDAnalytics = async (req, res) => {
 export const getSchedulerStatus = async (req, res) => {
   try {
     const status = potdScheduler.getStatus();
-    
+
     res.json({
       success: true,
       data: status,

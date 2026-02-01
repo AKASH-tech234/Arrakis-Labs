@@ -7,7 +7,7 @@ import { Shield, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 const AdminLogin = () => {
   const { login, isAuthenticated, loading: authLoading } = useAdminAuth();
   const navigate = useNavigate();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -38,13 +38,13 @@ const AdminLogin = () => {
     }
 
     const result = await login(email, password);
-    
+
     if (result.success) {
       navigate("/admin/dashboard");
     } else {
       setError(result.message || "Invalid credentials");
     }
-    
+
     setLoading(false);
   };
 
@@ -55,15 +55,15 @@ const AdminLogin = () => {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#D97706]/3 rounded-full blur-3xl" />
       </div>
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md px-6 relative z-10"
       >
         {}
         <div className="text-center mb-8">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1 }}
@@ -76,7 +76,7 @@ const AdminLogin = () => {
         </div>
 
         {}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -84,7 +84,7 @@ const AdminLogin = () => {
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400"
@@ -154,7 +154,7 @@ const AdminLogin = () => {
         </motion.div>
 
         {}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}

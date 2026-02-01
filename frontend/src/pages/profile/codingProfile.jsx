@@ -142,7 +142,7 @@ export default function CodingProfile() {
 
   useEffect(() => {
     reload();
-    
+
   }, []);
 
   const connectedPlatforms = useMemo(() => {
@@ -242,7 +242,7 @@ export default function CodingProfile() {
 
       <main className="pt-16">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 space-y-6">
-          {/* Header Card */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -380,7 +380,7 @@ export default function CodingProfile() {
                 </button>
               </div>
 
-              {/* Platform Cards Grid */}
+              {}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {platforms.length === 0 ? (
                   <div className="col-span-full rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 text-[#78716C] text-sm">
@@ -388,11 +388,11 @@ export default function CodingProfile() {
                   </div>
                 ) : (
                   platforms.map((p) => (
-                    <div 
-                      key={p?.id || p?._id || `${p?.platform || "platform"}:${p?.profileUrl || ""}`} 
+                    <div
+                      key={p?.id || p?._id || `${p?.platform || "platform"}:${p?.profileUrl || ""}`}
                       className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors"
                     >
-                      {/* Header */}
+                      {}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{platformLogos[p.platform?.toLowerCase()] || platformLogos.custom}</span>
@@ -415,7 +415,7 @@ export default function CodingProfile() {
                         )}
                       </div>
 
-                      {/* Stats */}
+                      {}
                       <div className="grid grid-cols-2 gap-2 mb-3">
                         <div className="bg-[#0A0A08] rounded-lg p-2.5">
                           <p className="text-[9px] uppercase tracking-wider text-[#78716C]">Solved</p>
@@ -427,19 +427,19 @@ export default function CodingProfile() {
                         </div>
                       </div>
 
-                      {/* Sync Status */}
+                      {}
                       {p.syncStatus && (
                         <div className="flex items-center gap-1.5 mb-3">
                           <div className={`w-1.5 h-1.5 rounded-full ${
-                            p.syncStatus === 'synced' ? 'bg-green-400' : 
-                            p.syncStatus === 'pending' ? 'bg-yellow-400' : 
+                            p.syncStatus === 'synced' ? 'bg-green-400' :
+                            p.syncStatus === 'pending' ? 'bg-yellow-400' :
                             p.lastSyncError ? 'bg-red-400' : 'bg-[#78716C]'
                           }`}></div>
                           <span className="text-[10px] text-[#78716C]">{p.syncStatus}</span>
                         </div>
                       )}
 
-                      {/* Actions */}
+                      {}
                       <div className="flex items-center gap-1.5 pt-2 border-t border-[#1A1814]">
                         <button
                           type="button"

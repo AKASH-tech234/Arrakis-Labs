@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Company OA Pattern Schema
- * Stores company-specific OA configurations and patterns
- */
 const companyOAPatternSchema = new mongoose.Schema(
   {
     companyName: {
@@ -25,7 +21,6 @@ const companyOAPatternSchema = new mongoose.Schema(
       default: null,
     },
 
-    // === OA STRUCTURE ===
     oaStructure: {
       totalDurationMinutes: { type: Number, default: 90 },
       sections: [
@@ -38,19 +33,17 @@ const companyOAPatternSchema = new mongoose.Schema(
       ],
     },
 
-    // === DIFFICULTY DISTRIBUTION ===
     difficultyDistribution: {
       coding: {
-        easy: { type: Number, default: 20 }, // percentage
+        easy: { type: Number, default: 20 },
         medium: { type: Number, default: 50 },
         hard: { type: Number, default: 30 },
       },
     },
 
-    // === TOPIC WEIGHTS (frequency of topics in OAs) ===
     topicWeights: {
       type: Map,
-      of: Number, // topic -> weight (1-10)
+      of: Number,
       default: new Map([
         ["Array", 8],
         ["String", 7],
@@ -65,7 +58,6 @@ const companyOAPatternSchema = new mongoose.Schema(
       ]),
     },
 
-    // === OA SETTINGS ===
     settings: {
       partialScoringCoding: { type: Boolean, default: true },
       allowLanguages: {
@@ -75,7 +67,6 @@ const companyOAPatternSchema = new mongoose.Schema(
       tabSwitchWarnings: { type: Number, default: 3 },
     },
 
-    // === STATS ===
     stats: {
       totalAttempts: { type: Number, default: 0 },
       avgScore: { type: Number, default: 0 },
@@ -87,10 +78,8 @@ const companyOAPatternSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes
 companyOAPatternSchema.index({ companySlug: 1, isActive: 1 });
 
-// Static method to get or create default companies
 companyOAPatternSchema.statics.seedDefaults = async function () {
   const defaults = [
     {

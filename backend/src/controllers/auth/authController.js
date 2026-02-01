@@ -141,7 +141,7 @@ export const googleAuth = async (req, res) => {
     }
 
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    
+
     let payload;
     try {
       const ticket = await client.verifyIdToken({
@@ -169,7 +169,7 @@ export const googleAuth = async (req, res) => {
     let user = await User.findOne({ googleId: id });
 
     if (user) {
-      
+
       user.lastLogin = new Date();
       await user.save();
       return sendTokenResponse(user, 200, res, "Logged in with Google");
@@ -178,7 +178,7 @@ export const googleAuth = async (req, res) => {
     user = await User.findOne({ email });
 
     if (user) {
-      
+
       user.googleId = id;
       user.profileImage = picture || user.profileImage;
       user.lastLogin = new Date();
@@ -278,7 +278,7 @@ export const githubAuth = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    
+
     res.clearCookie("userToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

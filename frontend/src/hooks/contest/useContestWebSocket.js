@@ -79,7 +79,7 @@ export function useContestWebSocket(contestId, options = {}) {
     switch (type) {
       case 'connected':
       case 'authenticated':
-        
+
         break;
 
       case 'joined_contest':
@@ -106,7 +106,7 @@ export function useContestWebSocket(contestId, options = {}) {
         break;
 
       case 'solve_notification':
-        
+
         setLastUpdate(Date.now());
         break;
 
@@ -122,7 +122,7 @@ export function useContestWebSocket(contestId, options = {}) {
       case 'announcement':
         setAnnouncements(prev => [
           { id: Date.now(), ...data },
-          ...prev.slice(0, 9) 
+          ...prev.slice(0, 9)
         ]);
         break;
 
@@ -131,7 +131,7 @@ export function useContestWebSocket(contestId, options = {}) {
         break;
 
       case 'pong':
-        
+
         break;
 
       default:

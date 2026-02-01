@@ -1,13 +1,7 @@
-// src/components/mim/CognitiveProfile.jsx
-// Displays user's MIM cognitive profile with strengths and weaknesses
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PROFILE REFRESH EVENT SYSTEM
-// Allows profile components to refresh after submissions
-// ═══════════════════════════════════════════════════════════════════════════════
 const profileRefreshListeners = new Set();
 
 export function emitProfileRefresh() {
@@ -101,7 +95,6 @@ export default function CognitiveProfile({ userId, compact = false }) {
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch profile function - reusable for initial load and refresh
   const fetchProfile = useCallback(async () => {
     if (!userId) {
       console.log("[CognitiveProfile] No userId, skipping fetch");
@@ -124,12 +117,10 @@ export default function CognitiveProfile({ userId, compact = false }) {
     }
   }, [userId]);
 
-  // Initial fetch
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile, refreshKey]);
 
-  // Listen for profile refresh events (triggered after submissions)
   const handleRefresh = useCallback(() => {
     console.log("[CognitiveProfile] Refresh triggered - reloading profile");
     setRefreshKey((k) => k + 1);
@@ -178,7 +169,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
     weaknesses = [],
     readiness_scores = {},
     learning_trajectory = {},
-    // v3.2: NEW fields from persisted profile
+
     skill_level = null,
     learning_velocity = null,
     mistake_analysis = {},
@@ -188,7 +179,6 @@ export default function CognitiveProfile({ userId, compact = false }) {
     is_persisted = false,
   } = profile;
 
-  // Helper to format mistake cause for display
   const formatMistakeCause = (cause) => {
     return cause.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
@@ -200,7 +190,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
       transition={{ duration: 0.5 }}
       className="rounded-lg border border-[#D97706]/20 bg-gradient-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm overflow-hidden"
     >
-      {/* Header */}
+      {}
       <div className="px-6 py-4 border-b border-[#D97706]/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -245,7 +235,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
       </div>
 
       <div className="p-6">
-        {/* Focus Areas (v3.2) - Show prominently */}
+        {}
         {!compact && focus_areas.length > 0 && (
           <div className="mb-6 p-4 bg-[#D97706]/5 rounded-lg border border-[#D97706]/20">
             <h4
@@ -267,10 +257,10 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Strengths & Weaknesses */}
+        {}
         {!compact && (
           <>
-            {/* Strengths */}
+            {}
             {strengths.length > 0 && (
               <div className="mb-6">
                 <h4
@@ -292,7 +282,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
               </div>
             )}
 
-            {/* Weaknesses */}
+            {}
             {weaknesses.length > 0 && (
               <div className="mb-6">
                 <h4
@@ -316,7 +306,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </>
         )}
 
-        {/* Mistake Analysis (v3.2) */}
+        {}
         {!compact && mistake_analysis?.top_mistakes?.length > 0 && (
           <div className="mb-6">
             <h4
@@ -346,7 +336,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Learning Trajectory Stats */}
+        {}
         {!compact && learning_trajectory && (
           <div className="mb-6">
             <h4
@@ -356,7 +346,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
               Learning Progress
             </h4>
             <div className="grid grid-cols-3 gap-3">
-              {/* Total Submissions */}
+              {}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -374,7 +364,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
                 </p>
               </motion.div>
 
-              {/* Success Rate */}
+              {}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -392,7 +382,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
                 </p>
               </motion.div>
 
-              {/* Total Correct */}
+              {}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -413,7 +403,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Recent Learning Recommendations (v3.2) */}
+        {}
         {!compact && recent_learning?.length > 0 && (
           <div className="mb-6">
             <h4
@@ -449,7 +439,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Readiness Scores */}
+        {}
         {Object.keys(readiness_scores).length > 0 && (
           <div>
             <h4
@@ -476,7 +466,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
           </div>
         )}
 
-        {/* Last MIM Analysis (v3.2) */}
+        {}
         {!compact && last_mim?.root_cause && (
           <div className="mt-4 pt-4 border-t border-[#D97706]/10">
             <p className="text-[#78716C] text-[10px] uppercase tracking-wider">

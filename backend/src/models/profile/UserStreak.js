@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const userStreakSchema = new mongoose.Schema(
   {
-    
+
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -10,46 +10,46 @@ const userStreakSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    
+
     currentStreak: {
       type: Number,
       default: 0,
       min: 0,
     },
-    
+
     maxStreak: {
       type: Number,
       default: 0,
       min: 0,
     },
-    
+
     lastSolvedDate: {
       type: Date,
       default: null,
     },
-    
+
     streakStartDate: {
       type: Date,
       default: null,
     },
-    
+
     totalPOTDsSolved: {
       type: Number,
       default: 0,
       min: 0,
     },
-    
+
     totalPOTDsAttempted: {
       type: Number,
       default: 0,
       min: 0,
     },
-    
+
     streakFreezes: {
       type: Number,
       default: 0,
     },
-    
+
     milestones: [
       {
         streak: Number,
@@ -73,7 +73,7 @@ userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
   let streakDoc = await this.findOne({ userId });
 
   if (!streakDoc) {
-    
+
     streakDoc = new this({
       userId,
       currentStreak: 1,
@@ -116,17 +116,17 @@ userStreakSchema.statics.updateStreak = async function (userId, solvedDate) {
     streakDoc.lastSolvedDate &&
     streakDoc.lastSolvedDate.getTime() === yesterday.getTime()
   ) {
-    
+
     streakDoc.currentStreak += 1;
     streakIncreased = true;
   } else if (
     !streakDoc.lastSolvedDate ||
     streakDoc.lastSolvedDate.getTime() < yesterday.getTime()
   ) {
-    
+
     streakDoc.currentStreak = 1;
     streakDoc.streakStartDate = today;
-    streakIncreased = true; 
+    streakIncreased = true;
   }
 
   if (streakDoc.currentStreak > streakDoc.maxStreak) {

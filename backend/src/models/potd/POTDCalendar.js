@@ -2,36 +2,36 @@ import mongoose from "mongoose";
 
 const potdCalendarSchema = new mongoose.Schema(
   {
-    
+
     scheduledDate: {
       type: Date,
       required: [true, "Scheduled date is required"],
       unique: true,
       index: true,
     },
-    
+
     problemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Question",
       required: [true, "Problem ID is required"],
     },
-    
+
     scheduledBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",
       required: true,
     },
-    
+
     isPublished: {
       type: Boolean,
       default: false,
     },
-    
+
     publishedAt: {
       type: Date,
       default: null,
     },
-    
+
     notes: {
       type: String,
       maxlength: 500,

@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -73,7 +71,7 @@ function ProgressDots({ phases, currentPhase }) {
 }
 
 export default function AILoadingScreen({
-  variant = "full", 
+  variant = "full",
   phases = DEFAULT_PHASES,
   showSpinner = true,
   showProgress = true,

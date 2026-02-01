@@ -1,12 +1,3 @@
-/**
- * Migration Script: Set categoryType for existing questions
- * 
- * This script updates all questions that have null categoryType
- * by inferring the category from the question title.
- * 
- * Usage: node scripts/migrateCategoryType.js
- */
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
@@ -16,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/arraki
 
 function inferCategoryFromTitle(title) {
   const t = (title || "").toLowerCase();
-  
+
   if (t.includes("array") || t.includes("sorted")) return "Arrays";
   if (t.includes("linked list") || t.includes("cycle detection")) return "Linked Lists";
   if (t.includes("tree") || t.includes("binary tree") || t.includes("bst")) return "Trees";
@@ -34,7 +25,7 @@ function inferCategoryFromTitle(title) {
   if (t.includes("heap") || t.includes("largest") || t.includes("smallest") || t.includes("kth")) return "Heaps";
   if (t.includes("two pointer") || t.includes("sliding")) return "Two Pointers";
   if (t.includes("recursion") || t.includes("recursive")) return "Recursion";
-  
+
   return "General";
 }
 
@@ -48,7 +39,6 @@ async function runMigration() {
     const db = mongoose.connection.db;
     const questionsCollection = db.collection("questions");
 
-    // Find questions with null or missing categoryType
     const questionsToUpdate = await questionsCollection.find({
       $or: [
         { categoryType: null },
@@ -66,12 +56,12 @@ async function runMigration() {
     let updated = 0;
     for (const q of questionsToUpdate) {
       const category = inferCategoryFromTitle(q.title);
-      
+
       await questionsCollection.updateOne(
         { _id: q._id },
         { $set: { categoryType: category } }
       );
-      
+
       console.log(`  ✅ "${q.title}" → ${category}`);
       updated++;
     }

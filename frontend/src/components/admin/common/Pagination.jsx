@@ -1,5 +1,3 @@
-
-
 export default function Pagination({
   currentPage,
   totalPages,
@@ -64,8 +62,8 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] 
-                     hover:text-[#E8E4D9] hover:border-[#78716C] 
+          className="px-3 py-1.5 border border-[#1A1814] text-[#78716C]
+                     hover:text-[#E8E4D9] hover:border-[#78716C]
                      disabled:opacity-30 disabled:cursor-not-allowed
                      transition-colors duration-200 text-xs uppercase tracking-wider"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
@@ -108,8 +106,8 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-3 py-1.5 border border-[#1A1814] text-[#78716C] 
-                     hover:text-[#E8E4D9] hover:border-[#78716C] 
+          className="px-3 py-1.5 border border-[#1A1814] text-[#78716C]
+                     hover:text-[#E8E4D9] hover:border-[#78716C]
                      disabled:opacity-30 disabled:cursor-not-allowed
                      transition-colors duration-200 text-xs uppercase tracking-wider"
           style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}

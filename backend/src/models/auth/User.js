@@ -87,7 +87,7 @@ const userSchema = new mongoose.Schema(
         default: null,
       },
     },
-    // AI-computed cognitive profile (pre-computed for fast access)
+
     aiProfile: {
       weakTopics: {
         type: [String],
@@ -98,11 +98,11 @@ const userSchema = new mongoose.Schema(
         default: [],
       },
       commonMistakes: {
-        type: [String], // Recurring mistake patterns
+        type: [String],
         default: [],
       },
       recurringPatterns: {
-        type: [String], // Abstract patterns (e.g., "off-by-one errors")
+        type: [String],
         default: [],
       },
       successRate: {
@@ -116,12 +116,12 @@ const userSchema = new mongoose.Schema(
         default: 0,
       },
       recentCategories: {
-        type: [String], // Last N categories attempted
+        type: [String],
         default: [],
       },
       skillLevels: {
         type: Map,
-        of: Number, // topic -> skill level (0-100)
+        of: Number,
         default: {},
       },
       learningStyle: {
@@ -139,9 +139,9 @@ const userSchema = new mongoose.Schema(
         default: null,
       },
     },
-    // MIM Learning Roadmap (persisted, updated after each submission)
+
     learningRoadmap: {
-      // Current position in learning journey
+
       currentPhase: {
         type: String,
         enum: [
@@ -153,7 +153,7 @@ const userSchema = new mongoose.Schema(
         ],
         default: "foundation",
       },
-      // 5-step micro roadmap
+
       steps: [
         {
           stepNumber: { type: Number, required: true },
@@ -174,29 +174,29 @@ const userSchema = new mongoose.Schema(
           completedAt: { type: Date },
         },
       ],
-      // Topic dependencies (derived from co-occurrence)
+
       topicDependencies: {
         type: Map,
-        of: [String], // topic -> prerequisite topics
+        of: [String],
         default: {},
       },
-      // Milestones achieved
+
       milestones: [
         {
           name: { type: String },
           description: { type: String },
           achievedAt: { type: Date },
-          evidence: { type: String }, // e.g., "Solved 5 Medium DP problems"
+          evidence: { type: String },
         },
       ],
-      // Long-term goals
+
       targetLevel: {
         type: String,
         enum: ["Beginner", "Easy", "Medium", "Hard", "Expert"],
         default: "Medium",
       },
       estimatedWeeksToTarget: { type: Number, default: null },
-      // Difficulty adjustment state
+
       difficultyAdjustment: {
         currentDifficulty: {
           type: String,
@@ -213,7 +213,7 @@ const userSchema = new mongoose.Schema(
         boredomIndex: { type: Number, default: 0, min: 0, max: 1 },
         lastAdjusted: { type: Date },
       },
-      // Roadmap metadata
+
       generatedAt: { type: Date },
       lastUpdated: { type: Date },
       version: { type: String, default: "v2.0" },

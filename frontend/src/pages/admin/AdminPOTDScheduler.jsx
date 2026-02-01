@@ -130,12 +130,12 @@ export default function AdminPOTDScheduler() {
     today.setUTCHours(0, 0, 0, 0);
 
     if (clickedDate < today) {
-      return; 
+      return;
     }
 
     const existingSchedule = scheduleMap[day];
     if (existingSchedule?.isLocked) {
-      return; 
+      return;
     }
 
     setSelectedDate(clickedDate);
@@ -163,7 +163,7 @@ export default function AdminPOTDScheduler() {
         today.setUTCHours(0, 0, 0, 0);
         const schedDate = new Date(selectedDate);
         schedDate.setUTCHours(0, 0, 0, 0);
-        
+
         if (schedDate.getTime() === today.getTime()) {
           alert("✅ POTD scheduled and published for today! It's now visible on the problems page.");
         } else {
@@ -324,7 +324,7 @@ export default function AdminPOTDScheduler() {
 
   return (
     <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-1 h-8 bg-gradient-to-b from-[#D97706] to-[#D97706]/20 rounded-full" />
@@ -447,7 +447,7 @@ export default function AdminPOTDScheduler() {
       {}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-[#0F0F0D] rounded-xl border border-[#1A1814] p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"

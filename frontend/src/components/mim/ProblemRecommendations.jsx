@@ -1,14 +1,8 @@
-// src/components/mim/ProblemRecommendations.jsx
-// Displays MIM-recommended problems for the user
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMRecommendations } from "../../services/ai/aiApi";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// RECOMMENDATIONS REFRESH EVENT SYSTEM
-// Allows recommendations to refresh after submissions
-// ═══════════════════════════════════════════════════════════════════════════════
 const recommendationsRefreshListeners = new Set();
 
 export function emitRecommendationsRefresh() {
@@ -80,14 +74,14 @@ const RecommendationCard = ({ recommendation, index }) => {
         to={`/problems/${problem_id}`}
         className="group block relative overflow-hidden rounded-lg border border-[#D97706]/20 py-4 px-5 transition-all duration-300 hover:border-[#D97706]/50 hover:shadow-lg hover:shadow-[#D97706]/15 bg-[#0A0A08]/40"
       >
-        {/* Hover gradient */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-r from-[#D97706]/0 via-[#D97706]/5 to-[#92400E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Top accent line */}
+        {}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         <div className="relative z-10">
-          {/* Header row */}
+          {}
           <div className="flex items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <span className="text-[#D97706] text-xs">#{index + 1}</span>
@@ -106,7 +100,7 @@ const RecommendationCard = ({ recommendation, index }) => {
             </span>
           </div>
 
-          {/* Meta row */}
+          {}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {category && (
@@ -130,7 +124,7 @@ const RecommendationCard = ({ recommendation, index }) => {
             )}
           </div>
 
-          {/* Reason tooltip */}
+          {}
           <AnimatePresence>
             {showReason && reason && (
               <motion.div
@@ -161,7 +155,6 @@ export default function ProblemRecommendations({
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch recommendations function - reusable for initial load and refresh
   const fetchRecommendations = useCallback(async () => {
     if (!userId) return;
 
@@ -171,31 +164,28 @@ export default function ProblemRecommendations({
     try {
       console.log("[ProblemRecommendations] Fetching for user:", userId);
       const data = await getMIMRecommendations({ userId, limit });
-      
-      // v3.3: Store metadata about static recommendations
+
       if (data?.is_static) {
         console.log("[ProblemRecommendations] Received static recommendations");
       }
-      
-      // Filter duplicates by problem_id AND title in frontend as safety net
+
       const rawRecommendations = data?.recommendations || [];
       const seenIds = new Set();
       const seenTitles = new Set();
       const uniqueRecommendations = rawRecommendations.filter(rec => {
         const id = rec.problem_id;
         const title = (rec.title || '').toLowerCase().trim();
-        
-        // Skip if we've seen this ID or title before
+
         if (seenIds.has(id) || seenTitles.has(title)) {
           console.log(`[ProblemRecommendations] Filtering duplicate: ${title} (id: ${id})`);
           return false;
         }
-        
+
         if (id) seenIds.add(id);
         if (title) seenTitles.add(title);
         return true;
       });
-      
+
       console.log(`[ProblemRecommendations] Got ${rawRecommendations.length} recs, ${uniqueRecommendations.length} unique`);
       setRecommendations(uniqueRecommendations);
     } catch (err) {
@@ -206,12 +196,10 @@ export default function ProblemRecommendations({
     }
   }, [userId, limit]);
 
-  // Initial fetch and refresh when refreshKey changes
   useEffect(() => {
     fetchRecommendations();
   }, [fetchRecommendations, refreshKey]);
 
-  // Listen for refresh events (triggered after submissions)
   const handleRefresh = useCallback(() => {
     console.log("[ProblemRecommendations] Refresh triggered");
     setRefreshKey((k) => k + 1);
@@ -219,7 +207,6 @@ export default function ProblemRecommendations({
 
   useRecommendationsRefresh(handleRefresh);
 
-  // Don't render if no userId
   if (!userId) return null;
 
   return (
@@ -229,7 +216,7 @@ export default function ProblemRecommendations({
       transition={{ duration: 0.5 }}
       className="rounded-lg border border-[#D97706]/20 bg-gradient-to-br from-[#1A1814]/60 to-[#0A0A08]/60 backdrop-blur-sm overflow-hidden"
     >
-      {/* Header */}
+      {}
       <div className="px-6 py-4 border-b border-[#D97706]/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-[#D97706]">🎯</span>
@@ -248,7 +235,7 @@ export default function ProblemRecommendations({
         )}
       </div>
 
-      {/* Content */}
+      {}
       <div className="p-4">
         {loading && (
           <div className="flex items-center justify-center py-8">

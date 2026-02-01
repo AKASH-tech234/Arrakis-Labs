@@ -1,7 +1,7 @@
 export const ARRAKIS_MONACO_THEME = "arrakis-dark";
 
 export function defineArrakisMonacoTheme(monaco) {
-  // Keep colors aligned with the Arrakis/Landing palette.
+
   monaco.editor.defineTheme(ARRAKIS_MONACO_THEME, {
     base: "vs-dark",
     inherit: true,

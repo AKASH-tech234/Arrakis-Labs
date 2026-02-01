@@ -1,5 +1,3 @@
-
-
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { TIMELINE_EVENT_TYPES } from "../../hooks/profile/useLearningTimeline";
@@ -232,7 +230,7 @@ export default function LearningTimeline({
   emptyMessage = "No activity yet. Start solving problems!",
   className = "",
 }) {
-  
+
   const displayedEvents = useMemo(
     () => timeline.slice(0, limit),
     [timeline, limit],

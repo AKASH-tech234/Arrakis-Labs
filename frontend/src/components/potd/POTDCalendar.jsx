@@ -77,7 +77,6 @@ export default function POTDCalendar({ compact = false }) {
       month === today.getUTCMonth() &&
       year === today.getUTCFullYear();
 
-    // Base styles
     let cellBg = "bg-[#0A0A08]";
     let textColor = "text-[#4A4A45]";
     let indicator = null;
@@ -121,11 +120,11 @@ export default function POTDCalendar({ compact = false }) {
 
   return (
     <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-4 h-4 text-[#D97706]" />
-          <h3 
+          <h3
             className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-wider"
             style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
           >
@@ -151,14 +150,14 @@ export default function POTDCalendar({ compact = false }) {
         </div>
       </div>
 
-      {/* Calendar Grid */}
+      {}
       {loading ? (
         <div className="h-48 flex items-center justify-center">
           <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#1A1814] border-t-[#D97706]"></div>
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Day Headers */}
+          {}
           <div className="grid grid-cols-7 gap-1">
             {dayNames.map((day, i) => (
               <div
@@ -170,20 +169,20 @@ export default function POTDCalendar({ compact = false }) {
             ))}
           </div>
 
-          {/* Days Grid */}
+          {}
           <div className="grid grid-cols-7 gap-1">
-            {/* Empty cells */}
+            {}
             {Array.from({ length: firstDayOfMonth }).map((_, index) => (
               <div key={`empty-${index}`} className={compact ? "w-7 h-7" : "w-8 h-8"}></div>
             ))}
 
-            {/* Day cells */}
+            {}
             {Array.from({ length: daysInMonth }).map((_, index) => renderDay(index + 1))}
           </div>
         </div>
       )}
 
-      {/* Legend */}
+      {}
       <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-[#1A1814]">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-green-400"></div>
@@ -199,7 +198,7 @@ export default function POTDCalendar({ compact = false }) {
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {}
       {summary && !compact && (
         <div className="grid grid-cols-3 gap-2 mt-3">
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">

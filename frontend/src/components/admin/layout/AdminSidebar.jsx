@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -102,7 +100,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         background: "linear-gradient(180deg, #0D0D0B 0%, #0A0A08 100%)",
       }}
     >
-      {/* Logo Section */}
+      {}
       <div className="h-16 flex items-center justify-between px-4 border-b border-[#1A1814]">
         {!collapsed && (
           <div className="flex items-center gap-3">
@@ -134,11 +132,11 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         )}
       </div>
 
-      {/* Collapse Toggle Button */}
+      {}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-[#1A1814] bg-[#0D0D0B] 
-                   flex items-center justify-center text-[#78716C] hover:text-[#D97706] 
+        className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-[#1A1814] bg-[#0D0D0B]
+                   flex items-center justify-center text-[#78716C] hover:text-[#D97706]
                    hover:border-[#D97706]/50 hover:bg-[#D97706]/10 transition-all duration-200 shadow-lg">
         {collapsed ? (
           <ChevronRight className="h-3.5 w-3.5" />
@@ -147,11 +145,11 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         )}
       </button>
 
-      {/* Navigation */}
+      {}
       <nav className="h-[calc(100%-4rem)] overflow-y-auto py-4 px-3 scrollbar-thin scrollbar-thumb-[#1A1814] scrollbar-track-transparent">
         {navSections.map((section) => (
           <div key={section.id} className="mb-4">
-            {/* Section Title */}
+            {}
             {section.title && !collapsed && (
               <button
                 onClick={() => toggleSection(section.id)}
@@ -175,7 +173,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
               </button>
             )}
 
-            {/* Section Items */}
+            {}
             <AnimatePresence initial={false}>
               {(expandedSections.includes(section.id) || collapsed) && (
                 <motion.div
@@ -202,7 +200,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
                                     } ${collapsed ? "justify-center" : ""}`}
                         title={collapsed ? item.label : undefined}
                       >
-                        {/* Active indicator bar */}
+                        {}
                         {active && (
                           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-gradient-to-b from-[#F59E0B] via-[#D97706] to-[#92400E] rounded-full shadow-lg shadow-[#D97706]/30" />
                         )}
@@ -236,7 +234,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
                           </span>
                         )}
 
-                        {/* Hover glow effect */}
+                        {}
                         {active && !collapsed && (
                           <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-[#D97706] shadow-lg shadow-[#D97706]/50 animate-pulse" />
                         )}
@@ -249,7 +247,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
           </div>
         ))}
 
-        {/* Danger Zone */}
+        {}
         {!collapsed && (
           <div className="mt-6 pt-4 border-t border-[#1A1814]/60">
             <div className="flex items-center gap-2 px-2 py-2 mb-1">
@@ -292,7 +290,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
           </div>
         )}
 
-        {/* Collapsed Danger Zone */}
+        {}
         {collapsed && (
           <div className="mt-6 pt-4 border-t border-[#1A1814]/60">
             <NavLink

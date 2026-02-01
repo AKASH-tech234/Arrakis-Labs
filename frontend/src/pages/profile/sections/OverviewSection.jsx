@@ -1,19 +1,9 @@
-/**
- * Overview Section
- *
- * Lightweight section that loads first - contains identity and quick stats.
- * Components: ProfileHeader, StatsOverview, DifficultyProgressBars
- *
- * This section is designed to render quickly and give users immediate feedback.
- */
-
 import { memo } from "react";
 import { motion } from "framer-motion";
 import ProfileHeader from "../../../components/charts/ProfileHeader";
 import StatsOverview from "../../../components/charts/StatsOverview";
 import { DifficultyProgressBars } from "../../../components/profile/ProfileWidgets";
 
-// Animation variants
 const sectionVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: (delay = 0) => ({
@@ -23,9 +13,6 @@ const sectionVariants = {
   }),
 };
 
-/**
- * Section Header Component - reusable styled header
- */
 const SectionHeader = memo(function SectionHeader({
   title,
   gradient = "from-[#D97706]",
@@ -45,9 +32,6 @@ const SectionHeader = memo(function SectionHeader({
   );
 });
 
-/**
- * Profile Header Card - Identity section with actions
- */
 const ProfileHeaderCard = memo(function ProfileHeaderCard({
   user,
   onCopyLink,
@@ -90,9 +74,6 @@ const ProfileHeaderCard = memo(function ProfileHeaderCard({
   );
 });
 
-/**
- * Performance Stats Section
- */
 const PerformanceOverview = memo(function PerformanceOverview({ stats }) {
   return (
     <motion.section
@@ -107,9 +88,6 @@ const PerformanceOverview = memo(function PerformanceOverview({ stats }) {
   );
 });
 
-/**
- * Difficulty Progress Section
- */
 const DifficultyProgress = memo(function DifficultyProgress({ overview }) {
   return (
     <motion.section
@@ -133,17 +111,6 @@ const DifficultyProgress = memo(function DifficultyProgress({ overview }) {
   );
 });
 
-/**
- * Overview Section - Main Export
- *
- * Props passed from parent:
- * - analytics: Profile analytics data
- * - readOnly: Whether profile is in read-only mode
- * - onCopyLink: Handler for copy link action
- * - onExportPdf: Handler for PDF export action
- * - exportingPdf: Loading state for PDF export
- * - actionMessage: Feedback message for actions
- */
 function OverviewSection({
   analytics,
   readOnly = false,
@@ -154,7 +121,7 @@ function OverviewSection({
 }) {
   return (
     <div className="space-y-6">
-      {/* Profile Header Card */}
+      {}
       <ProfileHeaderCard
         user={analytics?.user}
         onCopyLink={onCopyLink}
@@ -164,10 +131,10 @@ function OverviewSection({
         readOnly={readOnly}
       />
 
-      {/* Performance Overview */}
+      {}
       <PerformanceOverview stats={analytics?.overview} />
 
-      {/* Difficulty Progress */}
+      {}
       <DifficultyProgress overview={analytics?.overview} />
     </div>
   );

@@ -10,7 +10,7 @@ export const protect = async (req, res, next) => {
     } else if (req.cookies.userToken) {
       token = req.cookies.userToken;
     } else if (req.cookies.token) {
-      
+
       token = req.cookies.token;
     }
 
@@ -69,7 +69,7 @@ export const optionalAuth = async (req, res, next) => {
     } else if (req.cookies.userToken) {
       token = req.cookies.userToken;
     } else if (req.cookies.token) {
-      
+
       token = req.cookies.token;
     }
 
@@ -80,7 +80,7 @@ export const optionalAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    
+
     next();
   }
 };

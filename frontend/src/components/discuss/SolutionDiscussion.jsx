@@ -119,7 +119,7 @@ export default function SolutionDiscussion({ problemId, lastAcceptedSubmission }
 
   useEffect(() => {
     load();
-    
+
   }, [problemId, sort, language]);
 
   const openThread = async (post) => {

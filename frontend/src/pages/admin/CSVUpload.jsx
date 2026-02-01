@@ -39,15 +39,15 @@ const CSVUpload = () => {
       "text/csv": [".csv"],
     },
     maxFiles: 1,
-    maxSize: 5 * 1024 * 1024, 
+    maxSize: 5 * 1024 * 1024,
   });
 
   const handlePreview = async () => {
     if (!file) return;
-    
+
     setPreviewing(true);
     setError(null);
-    
+
     try {
       const response = await previewCSV(file);
       if (response.success) {
@@ -65,10 +65,10 @@ const CSVUpload = () => {
 
   const handleUpload = async () => {
     if (!file) return;
-    
+
     setUploading(true);
     setError(null);
-    
+
     try {
       const response = await uploadCSV(file);
       if (response.success) {
@@ -88,7 +88,7 @@ const CSVUpload = () => {
     const template = `title,description,difficulty,category,constraints,examples,test_cases,tags,primary_company,companies
 Two Sum,"Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",Easy,Arrays,"2 <= nums.length <= 10^4
 -10^9 <= nums[i] <= 10^9","[{""input"": ""[2,7,11,15], target=9"", ""output"": ""[0,1]"", ""explanation"": ""Because nums[0] + nums[1] == 9""}]","[{""input"": {""nums"": [2,7,11,15], ""target"": 9}, ""expected_output"": [0,1], ""is_hidden"": false}, {""input"": {""nums"": [3,2,4], ""target"": 6}, ""expected_output"": [1,2], ""is_hidden"": false}, {""input"": {""nums"": [3,3], ""target"": 6}, ""expected_output"": [0,1], ""is_hidden"": true}]","[""Array"", ""Hash Table""]",Amazon,"Amazon, Google, Microsoft"`;
-    
+
     const blob = new Blob([template], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -165,7 +165,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
 
       {}
       {error && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-4 rounded-xl bg-red-500/10 border border-red-500/30"
@@ -211,7 +211,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
 
       {}
       {preview && !result && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-6 rounded-xl bg-[#0F0F0D] border border-[#1A1814]"
@@ -267,7 +267,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
 
       {}
       {result && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="p-6 rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/30"
@@ -305,7 +305,7 @@ Two Sum,"Given an array of integers nums and an integer target, return indices o
       )}
 
       {}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}

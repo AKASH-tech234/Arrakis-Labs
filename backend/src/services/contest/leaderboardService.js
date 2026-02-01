@@ -15,7 +15,7 @@ class LeaderboardService {
       console.warn("⚠ Redis not configured (REDIS_URL missing) - leaderboard will use fallback");
       return false;
     }
-    
+
     try {
       this.redis = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
@@ -43,7 +43,7 @@ class LeaderboardService {
 
       await this.redis.connect();
       await this.subscriber.connect();
-      
+
       this.isConnected = true;
       console.log("✓ Redis Leaderboard Service connected");
 
@@ -73,14 +73,14 @@ class LeaderboardService {
 
   calculateCompositeScore(problemsSolved, totalTimeSeconds, penaltyMinutes = 0) {
 
-    const MAX_TIME = 1000000; 
+    const MAX_TIME = 1000000;
 
     const totalTime = totalTimeSeconds + (penaltyMinutes * 60);
 
     const timeComponent = MAX_TIME - Math.min(totalTime, MAX_TIME - 1);
 
     const score = (problemsSolved * 10000000) + timeComponent;
-    
+
     return score;
   }
 
@@ -89,7 +89,7 @@ class LeaderboardService {
     const problemsSolved = Math.floor(compositeScore / 10000000);
     const timeComponent = compositeScore % 10000000;
     const totalTimeSeconds = MAX_TIME - timeComponent;
-    
+
     return { problemsSolved, totalTimeSeconds };
   }
 
@@ -101,12 +101,12 @@ class LeaderboardService {
 
     const { problemsSolved, totalTimeSeconds, penaltyMinutes = 0 } = data;
     const score = this.calculateCompositeScore(problemsSolved, totalTimeSeconds, penaltyMinutes);
-    
+
     const leaderboardKey = this.getLeaderboardKey(contestId);
     const userDataKey = this.getUserDataKey(contestId, userId);
 
     try {
-      
+
       const pipeline = this.redis.pipeline();
 
       pipeline.zadd(leaderboardKey, score, userId);
@@ -144,7 +144,7 @@ class LeaderboardService {
 
     try {
       const leaderboardKey = this.getLeaderboardKey(contestId);
-      
+
       const rank = await this.redis.zrevrank(leaderboardKey, userId);
       return rank !== null ? rank + 1 : null;
     } catch (error) {
@@ -177,7 +177,7 @@ class LeaderboardService {
         const userId = results[i];
         const score = parseFloat(results[i + 1]);
         const { problemsSolved, totalTimeSeconds } = this.decodeCompositeScore(score);
-        
+
         entries.push({
           userId,
           rank: start + (i / 2) + 1,
@@ -221,7 +221,7 @@ class LeaderboardService {
         const entryUserId = results[i];
         const score = parseFloat(results[i + 1]);
         const { problemsSolved, totalTimeSeconds } = this.decodeCompositeScore(score);
-        
+
         entries.push({
           userId: entryUserId,
           rank: start + (i / 2) + 1,
@@ -295,7 +295,7 @@ class LeaderboardService {
     }
 
     const channel = this.getContestChannelKey(contestId);
-    
+
     const messageHandler = (ch, message) => {
       if (ch === channel) {
         try {
@@ -320,10 +320,10 @@ class LeaderboardService {
 
     try {
       const leaderboardKey = this.getLeaderboardKey(contestId);
-      const expireSeconds = (durationMinutes + 1440) * 60; 
-      
+      const expireSeconds = (durationMinutes + 1440) * 60;
+
       await this.redis.expire(leaderboardKey, expireSeconds);
-      
+
       console.log(`[Leaderboard] Initialized contest ${contestId}`);
       return true;
     } catch (error) {
@@ -340,8 +340,8 @@ class LeaderboardService {
       const frozenKey = `${leaderboardKey}:frozen`;
 
       await this.redis.copy(leaderboardKey, frozenKey, "REPLACE");
-      await this.redis.expire(frozenKey, 86400 * 7); 
-      
+      await this.redis.expire(frozenKey, 86400 * 7);
+
       console.log(`[Leaderboard] Frozen contest ${contestId}`);
       return true;
     } catch (error) {
@@ -362,7 +362,7 @@ class LeaderboardService {
         const userId = results[i];
         const score = parseFloat(results[i + 1]);
         const { problemsSolved, totalTimeSeconds } = this.decodeCompositeScore(score);
-        
+
         entries.push({
           userId,
           rank: (i / 2) + 1,
@@ -384,11 +384,11 @@ class LeaderboardService {
     try {
       const pattern = `contest:${contestId}:*`;
       const keys = await this.redis.keys(pattern);
-      
+
       if (keys.length > 0) {
         await this.redis.del(...keys);
       }
-      
+
       console.log(`[Leaderboard] Cleaned up contest ${contestId}`);
       return true;
     } catch (error) {

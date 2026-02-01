@@ -1,5 +1,3 @@
-
-
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
@@ -51,7 +49,7 @@ async function main() {
   console.log("=".repeat(60));
   console.log("PlatformStats Seed Script");
   console.log("=".repeat(60));
-  
+
   if (isDryRun) {
     console.log("⚠️  DRY RUN MODE - No changes will be written to DB\n");
   }

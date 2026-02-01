@@ -1,5 +1,3 @@
-
-
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,12 +7,12 @@ export default function Drawer({
   title,
   subtitle,
   children,
-  width = "md", 
-  side = "right", 
+  width = "md",
+  side = "right",
   showOverlay = true,
   footer,
 }) {
-  
+
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -76,8 +74,8 @@ export default function Drawer({
             animate={slideVariants[side].animate}
             exit={slideVariants[side].exit}
             transition={{ type: "tween", duration: 0.25 }}
-            className={`fixed top-0 bottom-0 ${side === "left" ? "left-0" : "right-0"} 
-                        ${widthClasses[width]} border-${side === "left" ? "r" : "l"} 
+            className={`fixed top-0 bottom-0 ${side === "left" ? "left-0" : "right-0"}
+                        ${widthClasses[width]} border-${side === "left" ? "r" : "l"}
                         border-[#1A1814] z-50 flex flex-col`}
             style={{ backgroundColor: "#0A0A08" }}
           >
@@ -101,7 +99,7 @@ export default function Drawer({
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center text-[#78716C] 
+                className="w-8 h-8 flex items-center justify-center text-[#78716C]
                            hover:text-[#E8E4D9] hover:bg-[#1A1814] transition-colors"
               >
                 ✕

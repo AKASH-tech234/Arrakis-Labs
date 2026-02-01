@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * OA Configuration Schema
- * Stores user's OA preferences before session creation
- */
 const oaConfigSchema = new mongoose.Schema(
   {
     userId: {
@@ -13,7 +9,6 @@ const oaConfigSchema = new mongoose.Schema(
       index: true,
     },
 
-    // === COMPANY SELECTION ===
     companyMode: {
       type: String,
       enum: ["all", "selected", "quick_fight"],
@@ -24,10 +19,9 @@ const oaConfigSchema = new mongoose.Schema(
       default: [],
     },
 
-    // === TOPIC SELECTION ===
     selectedTopics: {
       type: [String],
-      default: [], // Empty = all topics
+      default: [],
       enum: [
         "",
         "Array",
@@ -53,19 +47,16 @@ const oaConfigSchema = new mongoose.Schema(
       ],
     },
 
-    // === DIFFICULTY ===
     difficulty: {
       type: String,
       enum: ["easy", "medium", "hard", "adaptive", "mixed"],
       default: "mixed",
     },
 
-    // === QUESTION COUNTS ===
     questionCounts: {
       coding: { type: Number, default: 2, min: 1, max: 5 },
     },
 
-    // === TIMING ===
     timingMode: {
       type: String,
       enum: ["fixed", "company_specific"],
@@ -78,14 +69,12 @@ const oaConfigSchema = new mongoose.Schema(
       max: 180,
     },
 
-    // === PREFERENCES ===
     preferredLanguages: {
       type: [String],
       default: ["python", "cpp", "java"],
       enum: ["python", "cpp", "java", "javascript", "c", "go", "rust"],
     },
 
-    // === SCHEDULING ===
     startMode: {
       type: String,
       enum: ["now", "scheduled"],
@@ -96,7 +85,6 @@ const oaConfigSchema = new mongoose.Schema(
       default: null,
     },
 
-    // === PROCTORING ===
     proctoring: {
       enableTabSwitchDetection: { type: Boolean, default: true },
       warningsAllowed: { type: Number, default: 3, min: 1, max: 10 },
@@ -111,10 +99,8 @@ const oaConfigSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes
 oaConfigSchema.index({ userId: 1, createdAt: -1 });
 
-// Virtual for duration based on mode
 oaConfigSchema.virtual("effectiveDuration").get(function () {
   return this.fixedDurationMinutes;
 });

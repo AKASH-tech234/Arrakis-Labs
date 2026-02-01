@@ -1,12 +1,3 @@
-/**
- * Analytics Section
- *
- * Data-heavy section containing charts, submissions, and activity data.
- * Components: ActivityHeatmap, CategoryChart, SubmissionSummary, Contests
- *
- * This section contains heavier visualizations and is lazy-loaded.
- */
-
 import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -14,7 +5,6 @@ import ActivityHeatmap from "../../../components/charts/ActivityHeatmap";
 import CategoryChart from "../../../components/charts/CategoryChart";
 import SubmissionSummary from "../../../components/charts/SubmissionSummary";
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -44,9 +34,6 @@ const sectionVariants = {
   }),
 };
 
-/**
- * Section Header Component
- */
 const SectionHeader = memo(function SectionHeader({
   title,
   gradient = "from-[#D97706]",
@@ -70,9 +57,6 @@ const SectionHeader = memo(function SectionHeader({
   );
 });
 
-/**
- * Activity Calendar Section
- */
 const ActivityCalendar = memo(function ActivityCalendar({ activity }) {
   return (
     <motion.section
@@ -89,9 +73,6 @@ const ActivityCalendar = memo(function ActivityCalendar({ activity }) {
   );
 });
 
-/**
- * Category & Submissions Grid
- */
 const CategorySubmissionsGrid = memo(function CategorySubmissionsGrid({
   categories,
   submissions,
@@ -103,7 +84,7 @@ const CategorySubmissionsGrid = memo(function CategorySubmissionsGrid({
       animate="visible"
       className="grid grid-cols-1 md:grid-cols-2 gap-4"
     >
-      {/* Category Breakdown */}
+      {}
       <motion.section variants={itemVariants}>
         <SectionHeader title="Category Breakdown" gradient="from-[#F59E0B]" />
         <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
@@ -111,7 +92,7 @@ const CategorySubmissionsGrid = memo(function CategorySubmissionsGrid({
         </div>
       </motion.section>
 
-      {/* Recent Submissions */}
+      {}
       <motion.section variants={itemVariants}>
         <SectionHeader title="Recent Submissions" gradient="from-[#F59E0B]" />
         <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
@@ -122,9 +103,6 @@ const CategorySubmissionsGrid = memo(function CategorySubmissionsGrid({
   );
 });
 
-/**
- * Contests Section
- */
 const ContestsPanel = memo(function ContestsPanel({
   contests,
   contestsLoading,
@@ -160,7 +138,7 @@ const ContestsPanel = memo(function ContestsPanel({
           <div className="text-red-400 text-sm">{contestsError}</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Live Contests */}
+            {}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[#E8E4D9] text-sm font-semibold">
@@ -209,7 +187,7 @@ const ContestsPanel = memo(function ContestsPanel({
               )}
             </div>
 
-            {/* Upcoming Contests */}
+            {}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[#E8E4D9] text-sm font-semibold">
@@ -284,19 +262,6 @@ const ContestsPanel = memo(function ContestsPanel({
   );
 });
 
-/**
- * Analytics Section - Main Export
- *
- * Props:
- * - analytics: Profile analytics data
- * - contests: Contest data { live: [], upcoming: [] }
- * - contestsLoading: Loading state for contests
- * - contestsError: Error message for contests
- * - formatDate: Date formatter function
- * - onRegister: Handler for contest registration
- * - busy: Busy state object for contests
- * - readOnly: Whether profile is read-only
- */
 function AnalyticsSection({
   analytics,
   contests,
@@ -309,16 +274,16 @@ function AnalyticsSection({
 }) {
   return (
     <div className="space-y-6">
-      {/* Activity Calendar */}
+      {}
       <ActivityCalendar activity={analytics?.activity} />
 
-      {/* Category & Submissions */}
+      {}
       <CategorySubmissionsGrid
         categories={analytics?.categories}
         submissions={analytics?.recentSubmissions}
       />
 
-      {/* Contests */}
+      {}
       <ContestsPanel
         contests={contests}
         contestsLoading={contestsLoading}

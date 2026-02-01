@@ -7,12 +7,11 @@ import POTDBanner from "../../components/potd/POTDBanner";
 import { ProblemRecommendations } from "../../components/mim";
 import { getPublicQuestions } from "../../services/common/api";
 
-// Get userId from localStorage (same pattern as other pages)
 function getCurrentUserId() {
   try {
     const token = localStorage.getItem("arrakis_token");
     if (!token) return null;
-    // Decode JWT payload (basic decode, not verification)
+
     const payload = JSON.parse(atob(token.split(".")[1]));
     return payload?.id || payload?.userId || payload?._id || null;
   } catch {
@@ -28,7 +27,6 @@ export default function ProblemLibrary() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [userId, setUserId] = useState(null);
 
-  // Get current user ID on mount
   useEffect(() => {
     setUserId(getCurrentUserId());
   }, []);
@@ -145,7 +143,7 @@ export default function ProblemLibrary() {
             <POTDBanner />
           </motion.div>
 
-          {/* MIM Recommendations (only shown if user is logged in) */}
+          {}
           {userId && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -161,7 +159,7 @@ export default function ProblemLibrary() {
             </motion.div>
           )}
 
-          {/* Problem List */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

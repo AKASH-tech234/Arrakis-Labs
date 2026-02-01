@@ -113,9 +113,9 @@ async function validateContestSubmission(contest, registration, problemId, userI
   const now = new Date();
 
   if (contest.status !== "live" && contest.status !== "scheduled") {
-    
+
     if (now >= contest.startTime && now < contest.endTime) {
-      
+
       contest.status = "live";
       await contest.save();
     } else if (now >= contest.endTime) {
@@ -464,7 +464,7 @@ export const contestSubmit = async (req, res) => {
         solveCount,
       });
     } else {
-      
+
       wsServer.notifySubmissionResult(contest._id.toString(), userId.toString(), {
         submissionId: submission._id,
         problemLabel: problemData.label,

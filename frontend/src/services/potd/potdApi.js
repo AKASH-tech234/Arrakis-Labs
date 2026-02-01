@@ -251,7 +251,7 @@ export const getStreakLeaderboard = async (limit = 10) => {
 
 export const getSchedulerStatus = async () => {
   try {
-    
+
     const response = await apiClient.get("/admin/potd/scheduler-status");
     return {
       success: true,

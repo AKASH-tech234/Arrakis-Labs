@@ -15,13 +15,12 @@ const TabButton = ({ active, onClick, children }) => (
   </button>
 );
 
-// Format input for display (handle arrays, objects, primitives)
 function formatInputDisplay(stdin) {
   if (!stdin) return "";
-  
+
   const lines = stdin.split("\n").filter(Boolean);
   const formatted = [];
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     try {
@@ -37,49 +36,47 @@ function formatInputDisplay(stdin) {
       formatted.push(trimmed);
     }
   }
-  
+
   return formatted.join("\n");
 }
 
-// Format output for display
 function formatOutputDisplay(output) {
   if (!output) return "";
   return String(output).trim();
 }
 
-// Parse test results from output
 function parseTestResults(output) {
   if (!output) return null;
-  
+
   try {
     const data = typeof output === "string" ? JSON.parse(output) : output;
-    
+
     if (data.results && Array.isArray(data.results)) {
-      // Determine the actual status based on results
+
       let status = data.status;
       if (!status) {
         if (data.allPassed) {
           status = "accepted";
         } else {
-          // Check specific error types
+
           const hasCompileError = data.results.some(r => r.compileError);
           const hasRuntimeError = data.results.some(r => r.runtimeError);
           const hasTLE = data.results.some(r => r.timedOut);
-          
+
           if (hasCompileError) status = "compile_error";
           else if (hasTLE) status = "time_limit_exceeded";
           else if (hasRuntimeError) status = "runtime_error";
           else status = "wrong_answer";
         }
       }
-      
+
       return {
         isSubmit: data.status !== undefined,
         status,
         results: data.results,
         passedCount: data.passedCount || 0,
         totalCount: data.totalCount || data.results.length,
-        // Derive allPassed from status OR explicit flag OR count check
+
         allPassed: data.allPassed ?? (status === "accepted") ?? (data.passedCount === data.results.length),
         firstFailingIndex: data.firstFailingIndex ?? -1,
         submissionId: data.submissionId || null,
@@ -92,7 +89,6 @@ function parseTestResults(output) {
   }
 }
 
-// Status badge component
 function StatusBadge({ passed, timedOut, compileError, runtimeError }) {
   if (compileError) {
     return (
@@ -134,14 +130,11 @@ function StatusBadge({ passed, timedOut, compileError, runtimeError }) {
   );
 }
 
-// LeetCode-style test case display
 function TestCaseDisplay({ result, index, isSubmit }) {
   const { stdin, expectedStdout, actualStdout, passed, timedOut, compileError, runtimeError, stderr, isHidden } = result;
-  
-  // Check if we have actual data to display (backend now exposes hidden test case data on failure)
+
   const hasData = stdin !== undefined || expectedStdout !== undefined || actualStdout !== undefined;
-  
-  // Only show "hidden" message if we truly have no data
+
   if (isHidden && !hasData) {
     return (
       <div className="space-y-4">
@@ -158,7 +151,7 @@ function TestCaseDisplay({ result, index, isSubmit }) {
 
   return (
     <div className="space-y-4">
-      {/* Hidden test case indicator - LeetCode style */}
+      {}
       {isHidden && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
           <span className="text-yellow-400 text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
@@ -166,8 +159,8 @@ function TestCaseDisplay({ result, index, isSubmit }) {
           </span>
         </div>
       )}
-      
-      {/* Input */}
+
+      {}
       <div>
         <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
           Input:
@@ -179,7 +172,7 @@ function TestCaseDisplay({ result, index, isSubmit }) {
         </div>
       </div>
 
-      {/* Your Output */}
+      {}
       <div>
         <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
           Your Output:
@@ -191,7 +184,7 @@ function TestCaseDisplay({ result, index, isSubmit }) {
         </div>
       </div>
 
-      {/* Expected Output */}
+      {}
       <div>
         <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
           Expected Output:
@@ -203,7 +196,7 @@ function TestCaseDisplay({ result, index, isSubmit }) {
         </div>
       </div>
 
-      {/* Status */}
+      {}
       <div>
         <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
           Status:
@@ -211,7 +204,7 @@ function TestCaseDisplay({ result, index, isSubmit }) {
         <StatusBadge passed={passed} timedOut={timedOut} compileError={compileError} runtimeError={runtimeError} />
       </div>
 
-      {/* Error Output */}
+      {}
       {stderr && (
         <div>
           <div className="text-[#78716C] text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
@@ -228,12 +221,11 @@ function TestCaseDisplay({ result, index, isSubmit }) {
   );
 }
 
-// Submit result summary - LeetCode-style
 function SubmitResultSummary({ parsedData, onViewTestCase }) {
   const { status, passedCount, totalCount, results, allPassed, submissionId } = parsedData;
-  
+
   const firstFailingIndex = results.findIndex(r => !r.passed);
-  
+
   const statusConfig = {
     accepted: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/30", label: "Accepted", icon: <Check className="w-6 h-6" /> },
     wrong_answer: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", label: "Wrong Answer", icon: <X className="w-6 h-6" /> },
@@ -241,12 +233,12 @@ function SubmitResultSummary({ parsedData, onViewTestCase }) {
     compile_error: { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", label: "Compile Error", icon: <AlertTriangle className="w-6 h-6" /> },
     runtime_error: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", label: "Runtime Error", icon: <AlertTriangle className="w-6 h-6" /> },
   };
-  
+
   const config = statusConfig[status] || statusConfig.wrong_answer;
-  
+
   return (
     <div className="space-y-4">
-      {/* Main Status - LeetCode-style header */}
+      {}
       <div className={`${config.bg} ${config.border} border rounded-lg p-5`}>
         <div className="flex items-center gap-4">
           <div className={`w-12 h-12 rounded-full ${config.bg} flex items-center justify-center ${config.color}`}>
@@ -261,8 +253,8 @@ function SubmitResultSummary({ parsedData, onViewTestCase }) {
             </div>
           </div>
         </div>
-        
-        {/* LeetCode-style stats grid for Accepted submissions */}
+
+        {}
         {allPassed && (
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-green-500/20">
             <div className="text-center">
@@ -292,8 +284,8 @@ function SubmitResultSummary({ parsedData, onViewTestCase }) {
           </div>
         )}
       </div>
-      
-      {/* First Failing Test Case - only for wrong answers */}
+
+      {}
       {firstFailingIndex >= 0 && (
         <div className="border border-red-500/20 rounded-lg overflow-hidden bg-red-500/5">
           <div className="flex items-center justify-between px-4 py-3 border-b border-red-500/20 bg-red-500/10">
@@ -308,14 +300,14 @@ function SubmitResultSummary({ parsedData, onViewTestCase }) {
               View All Tests →
             </button>
           </div>
-          
+
           <div className="p-4">
             <TestCaseDisplay result={results[firstFailingIndex]} index={firstFailingIndex} isSubmit={true} />
           </div>
         </div>
       )}
-      
-      {/* Test Case Grid */}
+
+      {}
       <div className="border border-[#1A1814] rounded-lg p-4">
         <div className="text-[#78716C] text-xs uppercase tracking-wider mb-3" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
           All Test Cases
@@ -326,8 +318,8 @@ function SubmitResultSummary({ parsedData, onViewTestCase }) {
               key={idx}
               onClick={() => onViewTestCase(idx)}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                r.passed 
-                  ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30" 
+                r.passed
+                  ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
                   : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
               }`}
             >
@@ -345,24 +337,23 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
   const [currentTestCase, setCurrentTestCase] = useState(0);
 
   const parsedData = useMemo(() => parseTestResults(output), [output]);
-  
+
   const visibleResults = useMemo(() => {
     if (!parsedData?.results) return [];
     return parsedData.results.filter(r => !r.isHidden);
   }, [parsedData]);
-  
+
   const displayResults = useMemo(() => {
     if (!parsedData?.results) return [];
     return parsedData.isSubmit ? parsedData.results : visibleResults;
   }, [parsedData, visibleResults]);
 
-  // Reset to first failing when output changes
   useEffect(() => {
     if (parsedData && displayResults.length > 0) {
       const firstFailing = displayResults.findIndex(r => !r.passed);
       setCurrentTestCase(firstFailing >= 0 ? firstFailing : 0);
     }
-  }, [output]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [output]);
 
   const statusConfig = {
     idle: { color: "text-[#3D3D3D]", bg: "", label: "" },
@@ -417,7 +408,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
 
         return (
           <div className="space-y-4">
-            {/* LeetCode-style "All Testcases Passed" Banner for Run */}
+            {}
             {!parsedData.isSubmit && parsedData.allPassed && (
               <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -434,17 +425,17 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
               </div>
             )}
 
-            {/* LeetCode-style Status Banner for Submit */}
+            {}
             {parsedData.isSubmit && (
               <div className={`rounded-lg p-4 flex items-center gap-3 ${
-                parsedData.allPassed 
-                  ? "bg-green-500/10 border border-green-500/30" 
+                parsedData.allPassed
+                  ? "bg-green-500/10 border border-green-500/30"
                   : "bg-red-500/10 border border-red-500/30"
               }`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   parsedData.allPassed ? "bg-green-500/20" : "bg-red-500/20"
                 }`}>
-                  {parsedData.allPassed 
+                  {parsedData.allPassed
                     ? <Check className="w-5 h-5 text-green-400" />
                     : <X className="w-5 h-5 text-red-400" />
                   }
@@ -460,7 +451,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
               </div>
             )}
 
-            {/* Test Case Navigation */}
+            {}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
@@ -481,8 +472,8 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
                   <ChevronRight className="w-4 h-4 text-[#78716C]" />
                 </button>
               </div>
-              
-              {/* Navigation dots */}
+
+              {}
               <div className="flex gap-1">
                 {displayResults.map((r, idx) => (
                   <button
@@ -499,9 +490,9 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
               </div>
             </div>
 
-            <TestCaseDisplay 
-              result={currentResult} 
-              index={currentTestCase} 
+            <TestCaseDisplay
+              result={currentResult}
+              index={currentTestCase}
               isSubmit={parsedData.isSubmit}
             />
           </div>
@@ -510,15 +501,14 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
 
       if (activeTab === "result") {
         return (
-          <SubmitResultSummary 
-            parsedData={parsedData} 
+          <SubmitResultSummary
+            parsedData={parsedData}
             onViewTestCase={handleViewTestCase}
           />
         );
       }
     }
 
-    // Fallback raw output
     return (
       <pre
         className="text-[#E8E4D9] text-xs whitespace-pre-wrap leading-relaxed"
@@ -530,11 +520,11 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
   };
 
   return (
-    <div 
+    <div
       className="arrakis-output border-t border-[#1A1814] bg-[#0A0A08] flex flex-col"
       style={{ height: height ? `${height}px` : undefined }}
     >
-      {/* Resize Handle */}
+      {}
       <div
         onMouseDown={onResizeStart}
         className="h-1 cursor-row-resize bg-[#1A1814] hover:bg-[#92400E]/50 transition-colors duration-150 flex-shrink-0 group"
@@ -544,30 +534,30 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {}
       <div className="flex items-center justify-between px-2 bg-[#121210] border-b border-[#1A1814]">
         <div className="flex items-center">
-          <TabButton 
-            active={activeTab === "output"} 
+          <TabButton
+            active={activeTab === "output"}
             onClick={() => setActiveTab("output")}
           >
             Output
           </TabButton>
-          <TabButton 
-            active={activeTab === "testcase"} 
+          <TabButton
+            active={activeTab === "testcase"}
             onClick={() => setActiveTab("testcase")}
           >
             Testcase
           </TabButton>
-          <TabButton 
-            active={activeTab === "result"} 
+          <TabButton
+            active={activeTab === "result"}
             onClick={() => setActiveTab("result")}
           >
             Result
           </TabButton>
         </div>
-        
-        {/* Status Indicator */}
+
+        {}
         {status !== "idle" && (
           <div className={`flex items-center gap-2 px-3 py-1 rounded ${
             parsedData?.allPassed ? "bg-[#22C55E]/10" : currentStatus.bg
@@ -577,13 +567,13 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
             )}
             {status === "success" && <Check className="w-3 h-3 text-[#22C55E]" />}
             {status === "error" && <X className="w-3 h-3 text-[#EF4444]" />}
-            <span 
+            <span
               className={`text-[10px] uppercase tracking-wider ${
                 parsedData?.allPassed ? "text-[#22C55E]" : currentStatus.color
               }`}
               style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
             >
-              {parsedData?.status === "accepted" ? "Accepted" : 
+              {parsedData?.status === "accepted" ? "Accepted" :
                parsedData?.status === "wrong_answer" ? "Wrong Answer" :
                parsedData?.status === "time_limit_exceeded" ? "TLE" :
                parsedData?.status === "compile_error" ? "Compile Error" :
@@ -599,7 +589,7 @@ export default function OutputPanel({ output, status, height, onResizeStart }) {
         )}
       </div>
 
-      {/* Content */}
+      {}
       <div className="flex-1 p-4 overflow-auto">
         {renderContent()}
       </div>

@@ -1,4 +1,3 @@
-
 import AnimatedShaderHero from "../ui/animated-shader-hero";
 
 export default function Hero() {

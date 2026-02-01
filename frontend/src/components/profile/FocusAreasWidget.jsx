@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// FOCUS AREAS WIDGET
-// Shows AI-recommended learning focus areas from MIM profile
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +17,6 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// Topic icons mapping
 const TOPIC_ICONS = {
   arrays: "📊",
   strings: "🔤",
@@ -76,8 +70,8 @@ export default function FocusAreasWidget({ userId }) {
 
   if (loading) {
     return (
-      <div 
-        className="rounded-xl border p-5" 
+      <div
+        className="rounded-xl border p-5"
         style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
       >
         <div className="flex items-center justify-center py-6">
@@ -94,8 +88,8 @@ export default function FocusAreasWidget({ userId }) {
 
   if (error) {
     return (
-      <div 
-        className="rounded-xl border p-5" 
+      <div
+        className="rounded-xl border p-5"
         style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
       >
         <p className="text-sm text-center" style={{ color: COLORS.textMuted }}>
@@ -105,15 +99,12 @@ export default function FocusAreasWidget({ userId }) {
     );
   }
 
-  // Get focus areas from multiple sources in priority order
   const focusAreas = data?.focus_areas || [];
   const weaknesses = data?.weaknesses || [];
   const recentLearning = data?.recent_learning || [];
-  
-  // Combine and deduplicate
+
   const allFocusAreas = [...new Set([...focusAreas, ...weaknesses])].slice(0, 5);
-  
-  // Get learning recommendations if available
+
   const learningRecs = recentLearning.slice(0, 3);
 
   const hasData = allFocusAreas.length > 0 || learningRecs.length > 0;
@@ -134,7 +125,7 @@ export default function FocusAreasWidget({ userId }) {
           AI Focus Areas
         </h3>
         {allFocusAreas.length > 0 && (
-          <span 
+          <span
             className="text-[10px] px-2 py-0.5 rounded"
             style={{ backgroundColor: `${COLORS.info}20`, color: COLORS.info }}
           >
@@ -155,7 +146,7 @@ export default function FocusAreasWidget({ userId }) {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Focus Areas */}
+          {}
           {allFocusAreas.length > 0 && (
             <div className="space-y-2">
               {allFocusAreas.map((area, index) => (
@@ -164,20 +155,20 @@ export default function FocusAreasWidget({ userId }) {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
-                  whileHover={{ 
-                    scale: 1.02, 
+                  whileHover={{
+                    scale: 1.02,
                     x: 5,
                     borderColor: `${COLORS.accent}60`
                   }}
                   className="flex items-center justify-between p-3 rounded-lg border group cursor-pointer transition-shadow hover:shadow-lg"
-                  style={{ 
+                  style={{
                     backgroundColor: `${COLORS.accent}05`,
                     borderColor: `${COLORS.accent}20`
                   }}
                   onClick={() => handlePractice(area)}
                 >
                   <div className="flex items-center gap-3">
-                    <motion.span 
+                    <motion.span
                       className="text-xl"
                       whileHover={{ scale: 1.3, rotate: 10 }}
                       transition={{ type: "spring", stiffness: 400 }}
@@ -185,7 +176,7 @@ export default function FocusAreasWidget({ userId }) {
                       {getTopicIcon(area)}
                     </motion.span>
                     <div>
-                      <span 
+                      <span
                         className="text-sm font-medium"
                         style={{ color: COLORS.textPrimary, fontFamily }}
                       >
@@ -213,10 +204,10 @@ export default function FocusAreasWidget({ userId }) {
             </div>
           )}
 
-          {/* Recent Learning Insights */}
+          {}
           {learningRecs.length > 0 && (
             <div>
-              <h4 
+              <h4
                 className="text-[10px] uppercase tracking-wider mb-2"
                 style={{ color: COLORS.textMuted }}
               >
@@ -239,8 +230,8 @@ export default function FocusAreasWidget({ userId }) {
             </div>
           )}
 
-          {/* Motivational Footer */}
-          <div 
+          {}
+          <div
             className="pt-3 border-t text-center"
             style={{ borderColor: COLORS.border }}
           >

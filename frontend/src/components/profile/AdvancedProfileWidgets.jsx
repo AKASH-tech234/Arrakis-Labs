@@ -1,13 +1,8 @@
-// src/components/profile/AdvancedProfileWidgets.jsx
-// Advanced dynamic profile widgets - fetches data from backend/AI service
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getMIMProfile, getMIMRecommendations } from "../../services/ai/aiApi";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
 const COLORS = {
   bg: "#0A0A08",
   bgCard: "#0F0F0D",
@@ -25,9 +20,6 @@ const COLORS = {
 
 const fontFamily = "'Rajdhani', system-ui, sans-serif";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// REFRESH EVENT SYSTEM
-// ═══════════════════════════════════════════════════════════════════════════════
 const advancedWidgetListeners = new Set();
 
 export function emitAdvancedWidgetsRefresh() {
@@ -45,9 +37,6 @@ function useAdvancedWidgetsRefresh(onRefresh) {
   }, [onRefresh]);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MASTERY LEVEL HELPERS
-// ═══════════════════════════════════════════════════════════════════════════════
 const MASTERY_LEVELS = [
   { name: "Novice", min: 0, max: 0.2, color: "#78716C" },
   { name: "Beginner", min: 0.2, max: 0.4, color: "#EF4444" },
@@ -62,14 +51,9 @@ function getMasteryLevel(score) {
       return level;
     }
   }
-  return MASTERY_LEVELS[MASTERY_LEVELS.length - 1]; // Expert for 1.0
+  return MASTERY_LEVELS[MASTERY_LEVELS.length - 1];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 1. TOPIC MASTERY GRID (UPGRADED)
-// Shows actual topic-level mastery with skill levels (Novice → Expert)
-// Now uses topic_success_rates and category_performance from MIM profile
-// ═══════════════════════════════════════════════════════════════════════════════
 export function TopicMasteryGrid({ userId, showLevels = true }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -92,33 +76,30 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
   useEffect(() => { fetchData(); }, [fetchData]);
   useAdvancedWidgetsRefresh(fetchData);
 
-  // Build topic mastery from REAL profile data - prioritize actual topics over difficulties
   const buildTopicMastery = () => {
     if (!data) return [];
-    
+
     const topics = [];
-    
-    // Priority 1: Topic success rates (actual topic mastery)
+
     const topicSuccessRates = data.topic_success_rates || {};
     Object.entries(topicSuccessRates).forEach(([topic, rate]) => {
       const numericRate = typeof rate === 'number' ? rate : parseFloat(rate) || 0;
       const level = getMasteryLevel(numericRate);
-      topics.push({ 
+      topics.push({
         name: topic,
-        mastery: numericRate, 
+        mastery: numericRate,
         level: level.name,
         levelColor: level.color,
-        problemsSolved: null, // Will be populated if available
+        problemsSolved: null,
         isTopicBased: true
       });
     });
-    
-    // Priority 2: Category performance (from submissions)
+
     const categoryPerf = data.category_performance || data.learning_trajectory?.category_performance || {};
     Object.entries(categoryPerf).forEach(([cat, perf]) => {
-      // Skip if we already have this topic
+
       if (topics.some(t => t.name.toLowerCase() === cat.toLowerCase())) return;
-      
+
       let rate, total, passed;
       if (typeof perf === 'object') {
         total = perf.total || 0;
@@ -129,7 +110,7 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
         total = null;
         passed = null;
       }
-      
+
       const level = getMasteryLevel(rate);
       topics.push({
         name: cat,
@@ -141,27 +122,25 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
         isTopicBased: true
       });
     });
-    
-    // Priority 3: Difficulty readiness (if no topic data available)
+
     if (topics.length === 0) {
       const readiness = data.readiness_scores || {};
       Object.entries(readiness).forEach(([diff, score]) => {
         const numericScore = typeof score === 'number' ? score : parseFloat(score) || 0;
         const level = getMasteryLevel(numericScore);
-        topics.push({ 
-          name: `${diff} Problems`, 
-          mastery: numericScore, 
+        topics.push({
+          name: `${diff} Problems`,
+          mastery: numericScore,
           level: level.name,
           levelColor: level.color,
           isTopicBased: false
         });
       });
     }
-    
-    // Sort by mastery descending (show strengths first)
+
     topics.sort((a, b) => b.mastery - a.mastery);
-    
-    return topics.slice(0, 12); // Max 12 for display
+
+    return topics.slice(0, 12);
   };
 
   if (loading) {
@@ -236,8 +215,8 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
           ))}
         </div>
       )}
-      
-      {/* Legend */}
+
+      {}
       {topics.length > 0 && showLevels && (
         <div className="mt-4 pt-3 border-t flex flex-wrap gap-3" style={{ borderColor: COLORS.border }}>
           {MASTERY_LEVELS.map((level) => (
@@ -252,10 +231,9 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
   );
 }
 
-// Individual topic row component
 function TopicMasteryRow({ topic, index, showLevel }) {
   const percentage = Math.round(topic.mastery * 100);
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -274,10 +252,10 @@ function TopicMasteryRow({ topic, index, showLevel }) {
           {showLevel && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider"
-              style={{ 
+              style={{
                 backgroundColor: `${topic.levelColor}20`,
                 color: topic.levelColor,
-                fontFamily 
+                fontFamily
               }}
             >
               {topic.level}
@@ -295,7 +273,7 @@ function TopicMasteryRow({ topic, index, showLevel }) {
           </span>
         </div>
       </div>
-      <div 
+      <div
         className="h-2 rounded-full overflow-hidden"
         style={{ backgroundColor: COLORS.border }}
       >
@@ -311,10 +289,6 @@ function TopicMasteryRow({ topic, index, showLevel }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 2. NEXT PROBLEM CARD
-// Single highlighted "Your Next Challenge" card with REAL problem details
-// ═══════════════════════════════════════════════════════════════════════════════
 export function NextProblemCard({ userId }) {
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -327,19 +301,19 @@ export function NextProblemCard({ userId }) {
     setError(null);
     try {
       console.log("[NextProblemCard] Fetching recommendations for:", userId);
-      const data = await getMIMRecommendations({ userId, limit: 3 }); // Fetch a few to filter duplicates
+      const data = await getMIMRecommendations({ userId, limit: 3 });
       console.log("[NextProblemCard] Response:", data);
-      
+
       if (data && data.recommendations && data.recommendations.length > 0) {
-        // Filter duplicates by ID and title, get the first unique one
+
         const seenIds = new Set();
         const seenTitles = new Set();
         const uniqueRecs = data.recommendations.filter(rec => {
           const id = rec.problem_id;
           const title = (rec.title || '').toLowerCase().trim();
-          
+
           if (seenIds.has(id) || seenTitles.has(title)) return false;
-          
+
           if (id) seenIds.add(id);
           if (title) seenTitles.add(title);
           return true;
@@ -444,14 +418,14 @@ export function NextProblemCard({ userId }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl border p-5 relative overflow-hidden"
-      style={{ 
-        backgroundColor: COLORS.bgCard, 
+      style={{
+        backgroundColor: COLORS.bgCard,
         borderColor: COLORS.accent,
         boxShadow: `0 0 20px ${COLORS.accent}20`
       }}
     >
-      {/* Accent glow */}
-      <div 
+      {}
+      <div
         className="absolute top-0 left-0 right-0 h-1"
         style={{ backgroundColor: COLORS.accent }}
       />
@@ -507,10 +481,6 @@ export function NextProblemCard({ userId }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 3. WEAK AREA FOCUS
-// Highlighted weak topics with practice suggestions - uses REAL profile data
-// ═══════════════════════════════════════════════════════════════════════════════
 export function WeakAreaFocus({ userId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -538,7 +508,7 @@ export function WeakAreaFocus({ userId }) {
   useAdvancedWidgetsRefresh(fetchData);
 
   const handlePractice = (topic) => {
-    // Navigate to problems filtered by topic
+
     navigate(`/problems?tag=${encodeURIComponent(topic)}`);
   };
 
@@ -580,10 +550,8 @@ export function WeakAreaFocus({ userId }) {
     );
   }
 
-  // Get weak areas from REAL profile data
   const weakAreas = data?.weaknesses || data?.focus_areas || [];
-  
-  // If no specific weak areas, check readiness scores for low-scoring difficulties
+
   const lowReadinessDifficulties = [];
   if (weakAreas.length === 0 && data?.readiness_scores) {
     Object.entries(data.readiness_scores).forEach(([diff, score]) => {
@@ -592,7 +560,7 @@ export function WeakAreaFocus({ userId }) {
       }
     });
   }
-  
+
   const displayAreas = weakAreas.length > 0 ? weakAreas : lowReadinessDifficulties;
 
   return (
@@ -661,9 +629,6 @@ export function WeakAreaFocus({ userId }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// DEFAULT EXPORT
-// ═══════════════════════════════════════════════════════════════════════════════
 export default {
   TopicMasteryGrid,
   NextProblemCard,

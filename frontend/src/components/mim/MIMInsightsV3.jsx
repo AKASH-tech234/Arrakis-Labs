@@ -1,13 +1,3 @@
-// src/components/mim/MIMInsightsV3.jsx
-// MIM V3.0 - Polymorphic Feedback Display Component
-// Handles: correctness, performance, and reinforcement feedback types
-//
-// Phase 2.x Upgrade: Now displays canonical fields:
-// - diagnosis: Root cause classification (FACT from MIM)
-// - confidence: Calibrated confidence metadata (Phase 2.1)
-// - pattern: Pattern state machine output (Phase 2.2)
-// - difficulty: Difficulty policy decision (Phase 2.3)
-
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {
@@ -17,10 +7,6 @@ import {
   getDifficultyMessage,
   shouldShowPattern,
 } from "../../types/ai.types.js";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// V3.0 ROOT CAUSE LABELS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const ROOT_CAUSE_CONFIG = {
   correctness: {
@@ -62,7 +48,7 @@ const ROOT_CAUSE_CONFIG = {
 };
 
 const SUBTYPE_LABELS = {
-  // Correctness subtypes
+
   logic_error: "Logic Error",
   edge_case_handling: "Edge Case Handling",
   off_by_one: "Off-by-One Error",
@@ -71,39 +57,35 @@ const SUBTYPE_LABELS = {
   wrong_invariant: "Wrong Invariant",
   incorrect_boundary: "Incorrect Boundary",
   partial_case_handling: "Partial Case Handling",
-  // Implementation subtypes
+
   syntax_error: "Syntax Error",
   type_error: "Type Error",
   null_handling: "Null Handling",
   state_loss: "State Loss",
-  // Understanding subtypes
+
   concept_confusion: "Concept Confusion",
   algorithm_misapplication: "Wrong Algorithm",
   misread_constraint: "Misread Constraint",
-  // Efficiency subtypes
+
   time_complexity: "Time Complexity",
   space_complexity: "Space Complexity",
   redundant_operations: "Redundant Operations",
   brute_force_under_constraints: "Brute Force Under Constraints",
   premature_optimization: "Premature Optimization",
-  // Problem misinterpretation subtypes (V3.1 NEW)
+
   wrong_input_format: "Wrong Input Format",
   wrong_problem_entirely: "Wrong Problem Entirely",
   misread_constraints: "Misread Constraints",
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFIDENCE BADGE COMPONENT (Updated for Phase 2.1)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function ConfidenceBadge({ confidence, confidenceLevel }) {
-  // Use API-provided confidence level if available (Phase 2.1)
+
   let level = confidenceLevel;
   let percentage = null;
 
   if (typeof confidence === "number") {
     percentage = Math.round(confidence * 100);
-    // Derive level from score if not provided
+
     if (!level) {
       level = confidence >= 0.8 ? "high" : confidence >= 0.65 ? "medium" : "low";
     }
@@ -126,13 +108,6 @@ function ConfidenceBadge({ confidence, confidenceLevel }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 2.x CANONICAL DISPLAY COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Displays Phase 2.1 confidence metadata
- */
 function ConfidenceMetadataSection({ confidence }) {
   if (!confidence) return null;
 
@@ -159,9 +134,6 @@ function ConfidenceMetadataSection({ confidence }) {
   );
 }
 
-/**
- * Displays Phase 2.2 pattern state
- */
 function PatternStateSection({ pattern }) {
   if (!pattern || !shouldShowPattern(pattern.state)) return null;
 
@@ -202,9 +174,6 @@ function PatternStateSection({ pattern }) {
   );
 }
 
-/**
- * Displays Phase 2.3 difficulty decision
- */
 function DifficultyDecisionSection({ difficulty }) {
   if (!difficulty || difficulty.action === "maintain") return null;
 
@@ -238,10 +207,6 @@ function DifficultyDecisionSection({ difficulty }) {
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// RECURRING WARNING COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function RecurringWarning({ count, relatedProblems = [] }) {
   if (count <= 1) return null;
@@ -778,7 +743,7 @@ export default function MIMInsightsV3({ insights, expanded = true }) {
         {/* ═══════════════════════════════════════════════════════════════════════════════ */}
         {/* Phase 2.x Canonical Sections */}
         {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        
+
         {/* Phase 2.1: Confidence Metadata */}
         {confidence && expanded && (
           <div className="mt-4 pt-4 border-t border-[#3D3D3D]/30">

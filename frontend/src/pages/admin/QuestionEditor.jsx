@@ -34,14 +34,14 @@ const QuestionEditor = () => {
     constraints: "",
     tags: [],
     examples: [{ input: "", output: "", explanation: "" }],
-    // AI Metadata fields
+
     topic: "",
     expectedApproach: "",
     canonicalAlgorithms: [],
     timeComplexityHint: "",
     spaceComplexityHint: "",
     commonMistakes: [],
-    // Company fields
+
     primaryCompany: "",
     companies: [],
   });
@@ -69,14 +69,14 @@ const QuestionEditor = () => {
                 q.examples?.length > 0
                   ? q.examples
                   : [{ input: "", output: "", explanation: "" }],
-              // AI Metadata fields
+
               topic: q.topic || "",
               expectedApproach: q.expectedApproach || "",
               canonicalAlgorithms: q.canonicalAlgorithms || [],
               timeComplexityHint: q.timeComplexityHint || "",
               spaceComplexityHint: q.spaceComplexityHint || "",
               commonMistakes: q.commonMistakes || [],
-              // Company fields
+
               primaryCompany: q.primaryCompany || "",
               companies: q.companies || [],
             });
@@ -237,7 +237,7 @@ const QuestionEditor = () => {
     setFormData((prev) => ({
       ...prev,
       companies: prev.companies.filter((c) => c !== company),
-      // If removing primary company, clear it
+
       primaryCompany: prev.primaryCompany === company ? "" : prev.primaryCompany,
     }));
   };
@@ -257,7 +257,7 @@ const QuestionEditor = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-      {/* Header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -283,7 +283,7 @@ const QuestionEditor = () => {
         </div>
       </motion.div>
 
-      {/* Error Alert */}
+      {}
       {error && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -297,9 +297,9 @@ const QuestionEditor = () => {
         </motion.div>
       )}
 
-      {/* Form */}
+      {}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -317,7 +317,7 @@ const QuestionEditor = () => {
           />
         </motion.div>
 
-        {/* Difficulty */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -348,7 +348,7 @@ const QuestionEditor = () => {
           </div>
         </motion.div>
 
-        {/* Description */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -366,7 +366,7 @@ const QuestionEditor = () => {
           />
         </motion.div>
 
-        {/* Constraints */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -384,7 +384,7 @@ const QuestionEditor = () => {
           />
         </motion.div>
 
-        {/* Tags */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -420,7 +420,7 @@ const QuestionEditor = () => {
           />
         </motion.div>
 
-        {/* Company Information Section */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -438,9 +438,9 @@ const QuestionEditor = () => {
               <p className="text-xs text-[#78716C]">Which companies ask this problem (optional)</p>
             </div>
           </div>
-          
+
           <div className="p-5 space-y-5">
-            {/* Primary Company */}
+            {}
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
                 Primary Company
@@ -460,7 +460,7 @@ const QuestionEditor = () => {
               </p>
             </div>
 
-            {/* Companies */}
+            {}
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
                 Companies
@@ -501,7 +501,7 @@ const QuestionEditor = () => {
           </div>
         </motion.div>
 
-        {/* AI Metadata Section */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -519,9 +519,9 @@ const QuestionEditor = () => {
               <p className="text-xs text-[#78716C]">For intelligent feedback</p>
             </div>
           </div>
-          
+
           <div className="p-5 space-y-5">
-            {/* Topic */}
+            {}
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
                 Topic
@@ -555,7 +555,7 @@ const QuestionEditor = () => {
               </select>
             </div>
 
-            {/* Expected Approach */}
+            {}
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
                 Expected Approach
@@ -569,7 +569,7 @@ const QuestionEditor = () => {
               />
             </div>
 
-            {/* Canonical Algorithms */}
+            {}
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
                 Canonical Algorithms
@@ -601,7 +601,7 @@ const QuestionEditor = () => {
               />
             </div>
 
-            {/* Complexity Hints - Row */}
+            {}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
@@ -633,7 +633,7 @@ const QuestionEditor = () => {
               </div>
             </div>
 
-            {/* Common Mistakes */}
+            {}
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
                 Common Mistakes
@@ -667,7 +667,7 @@ const QuestionEditor = () => {
           </div>
         </motion.div>
 
-        {/* Examples Section */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -695,7 +695,7 @@ const QuestionEditor = () => {
               Add Example
             </button>
           </div>
-          
+
           <div className="p-5 space-y-4">
             {formData.examples.map((example, index) => (
               <div
@@ -765,7 +765,7 @@ const QuestionEditor = () => {
           </div>
         </motion.div>
 
-        {/* Action Buttons */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -798,7 +798,7 @@ const QuestionEditor = () => {
         </motion.div>
       </form>
 
-      {/* Test Cases Link */}
+      {}
       {isEditing && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}

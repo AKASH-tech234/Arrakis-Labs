@@ -1,17 +1,12 @@
 import { OASession, OAAnswer } from "../../models/oa/index.js";
 import { evaluationEngine } from "../../services/oa/index.js";
 
-/**
- * Autosave answer (debounced from frontend)
- * PUT /api/oa/sessions/:sessionId/answers/:questionId
- */
 export const saveAnswer = async (req, res) => {
   try {
     const { sessionId, questionId } = req.params;
     const { code, language, timeSpent } = req.body;
     const userId = req.user._id;
 
-    // Verify session is active
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -25,7 +20,6 @@ export const saveAnswer = async (req, res) => {
       });
     }
 
-    // Verify question belongs to session
     const sessionQuestion = session.questions.find(
       (q) => q.refId.toString() === questionId
     );
@@ -37,7 +31,6 @@ export const saveAnswer = async (req, res) => {
       });
     }
 
-    // Update or create answer
     const now = new Date();
     const answer = await OAAnswer.findOneAndUpdate(
       { sessionId, refId: questionId },
@@ -74,17 +67,12 @@ export const saveAnswer = async (req, res) => {
   }
 };
 
-/**
- * Run code (practice run without submitting)
- * POST /api/oa/sessions/:sessionId/answers/:questionId/run
- */
 export const runCode = async (req, res) => {
   try {
     const { sessionId, questionId } = req.params;
     const { code, language, customInput } = req.body;
     const userId = req.user._id;
 
-    // Verify session is active
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -98,7 +86,6 @@ export const runCode = async (req, res) => {
       });
     }
 
-    // Verify question belongs to session
     const sessionQuestion = session.questions.find(
       (q) => q.refId.toString() === questionId
     );
@@ -110,7 +97,6 @@ export const runCode = async (req, res) => {
       });
     }
 
-    // Autosave before running
     await OAAnswer.findOneAndUpdate(
       { sessionId, refId: questionId },
       {
@@ -123,7 +109,6 @@ export const runCode = async (req, res) => {
       { upsert: true }
     );
 
-    // Run against visible test cases
     const results = await evaluationEngine.runCode(questionId, code, language);
 
     res.json({
@@ -140,17 +125,12 @@ export const runCode = async (req, res) => {
   }
 };
 
-/**
- * Submit answer for evaluation
- * POST /api/oa/sessions/:sessionId/answers/:questionId/submit
- */
 export const submitAnswer = async (req, res) => {
   try {
     const { sessionId, questionId } = req.params;
     const { code, language } = req.body;
     const userId = req.user._id;
 
-    // Verify session is active
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
@@ -164,7 +144,6 @@ export const submitAnswer = async (req, res) => {
       });
     }
 
-    // Verify question belongs to session
     const sessionQuestion = session.questions.find(
       (q) => q.refId.toString() === questionId
     );
@@ -176,7 +155,6 @@ export const submitAnswer = async (req, res) => {
       });
     }
 
-    // Autosave before submission
     await OAAnswer.findOneAndUpdate(
       { sessionId, refId: questionId },
       {
@@ -189,7 +167,6 @@ export const submitAnswer = async (req, res) => {
       { upsert: true }
     );
 
-    // Evaluate against all test cases (including hidden)
     const result = await evaluationEngine.evaluateCodingSubmission(
       sessionId,
       questionId,
@@ -198,7 +175,6 @@ export const submitAnswer = async (req, res) => {
       userId
     );
 
-    // Get updated answer for points
     const answer = await OAAnswer.findOne({ sessionId, refId: questionId });
 
     res.json({
@@ -223,16 +199,11 @@ export const submitAnswer = async (req, res) => {
   }
 };
 
-/**
- * Get answer for a question
- * GET /api/oa/sessions/:sessionId/answers/:questionId
- */
 export const getAnswer = async (req, res) => {
   try {
     const { sessionId, questionId } = req.params;
     const userId = req.user._id;
 
-    // Verify session ownership
     const session = await OASession.findOne({
       _id: sessionId,
       userId,
