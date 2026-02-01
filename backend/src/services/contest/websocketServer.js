@@ -2,6 +2,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import cookie from "cookie";
 import leaderboardService from "./leaderboardService.js";
+import ContestRegistration from "../../models/contest/ContestRegistration.js";
+import mongoose from "mongoose";
 
 class ContestWebSocketServer {
   constructor() {
@@ -12,6 +14,78 @@ class ContestWebSocketServer {
     this.redisContestSubscriptions = new Map(); 
   }
 
+  async buildLeaderboardPayload(contestId, page = 1, pageSize = 50) {
+    const safePage = Math.max(1, parseInt(page) || 1);
+    const safePageSize = Math.max(1, Math.min(200, parseInt(pageSize) || 50));
+
+    if (leaderboardService.isAvailable?.()) {
+      const leaderboard = await leaderboardService.getLeaderboard(
+        contestId,
+        safePage,
+        safePageSize
+      );
+
+      const userIds = (leaderboard.entries || []).map((e) => e.userId);
+      const users = userIds.length
+        ? await mongoose
+            .model("User")
+            .find({ _id: { $in: userIds } }, "name profileImage")
+            .lean()
+        : [];
+      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+
+      const entries = (leaderboard.entries || []).map((entry) => {
+        const user = userMap.get(entry.userId);
+        return {
+          rank: entry.rank,
+          userId: entry.userId,
+          username: user?.name || "Unknown",
+          profileImage: user?.profileImage,
+          problemsSolved: entry.problemsSolved,
+          totalTime: entry.totalTimeSeconds,
+          totalTimeFormatted: entry.totalTimeSeconds,
+        };
+      });
+
+      return {
+        entries,
+        total: leaderboard.total || entries.length,
+        page: leaderboard.page || safePage,
+        pageSize: leaderboard.pageSize || safePageSize,
+      };
+    }
+
+    if (!/^[0-9a-fA-F]{24}$/.test(String(contestId))) {
+      return { entries: [], total: 0, page: safePage, pageSize: safePageSize };
+    }
+
+    const skip = (safePage - 1) * safePageSize;
+    const regs = await ContestRegistration.getLeaderboard(
+      new mongoose.Types.ObjectId(contestId),
+      { limit: safePageSize, skip }
+    );
+
+    const entries = (regs || []).map((reg) => {
+      const userId = reg.user?._id?.toString() || reg.user?.toString();
+      return {
+        rank: reg.rank,
+        userId,
+        username: reg.user?.name || "Unknown",
+        profileImage: reg.user?.profileImage,
+        problemsSolved: reg.problemsSolved || 0,
+        totalTime: reg.totalTime || 0,
+        totalTimeFormatted: reg.totalTime || 0,
+      };
+    });
+
+    return {
+      entries,
+      total: entries.length,
+      page: safePage,
+      pageSize: safePageSize,
+    };
+  }
+
   ensureRedisSubscription(contestId) {
     if (this.redisContestSubscriptions.has(contestId)) return;
 
@@ -20,10 +94,13 @@ class ContestWebSocketServer {
       async (event) => {
         try {
           
-          const leaderboard = await leaderboardService.getTopN(contestId, 50);
+          const leaderboard = await this.buildLeaderboardPayload(contestId, 1, 50);
           this.notifyLeaderboardUpdate(contestId, {
             entries: leaderboard.entries,
             event,
+            page: leaderboard.page,
+            pageSize: leaderboard.pageSize,
+            total: leaderboard.total,
           });
         } catch (error) {
           console.error(
@@ -244,7 +321,7 @@ class ContestWebSocketServer {
 
     this.ensureRedisSubscription(contestId);
 
-    const leaderboard = await leaderboardService.getTopN(contestId, 20);
+    const leaderboard = await this.buildLeaderboardPayload(contestId, 1, 20);
     
     this.send(ws, {
       type: "joined_contest",
@@ -273,7 +350,7 @@ class ContestWebSocketServer {
       return;
     }
 
-    const leaderboard = await leaderboardService.getLeaderboard(
+    const leaderboard = await this.buildLeaderboardPayload(
       data.contestId,
       page,
       pageSize

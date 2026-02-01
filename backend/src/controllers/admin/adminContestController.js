@@ -445,7 +445,7 @@ export const getRegistrations = async (req, res) => {
         .sort({ finalScore: -1, totalTime: 1 })
         .skip(skip)
         .limit(parseInt(limit))
-        .populate("user", "name email profileImage")
+        .populate("user", "name email username profileImage")
         .lean(),
       ContestRegistration.countDocuments(query),
     ]);

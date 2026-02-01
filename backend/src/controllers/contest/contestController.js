@@ -8,8 +8,12 @@ import wsServer from "../../services/contest/websocketServer.js";
 import mongoose from "mongoose";
 import { inferIOFormatsFromTestCases } from "../../utils/ioFormatInference.js";
 
+function isMongoObjectIdString(value) {
+  return typeof value === "string" && /^[0-9a-fA-F]{24}$/.test(value);
+}
+
 function getContestLookup(contestId) {
-  return mongoose.Types.ObjectId.isValid(contestId)
+  return isMongoObjectIdString(contestId)
     ? { _id: contestId }
     : { slug: contestId };
 }
@@ -114,7 +118,7 @@ export const getContest = async (req, res) => {
     const userId = req.user?._id;
     const now = new Date();
 
-    const query = mongoose.Types.ObjectId.isValid(contestId)
+    const query = isMongoObjectIdString(contestId)
       ? { _id: contestId }
       : { slug: contestId };
 
@@ -568,32 +572,65 @@ export const getLeaderboard = async (req, res) => {
     );
     const isFrozen = isLive && now >= freezeTime && contest.freezeLeaderboardMinutes > 0;
 
+    const parsedPage = Math.max(1, parseInt(page) || 1);
+    const parsedLimit = Math.max(1, Math.min(200, parseInt(limit) || 50));
+
+    let entries = [];
+    let total = 0;
+    let pageSize = parsedLimit;
+
     const leaderboardData = await leaderboardService.getLeaderboard(
       contest._id.toString(),
-      parseInt(page),
-      parseInt(limit)
+      parsedPage,
+      parsedLimit
     );
 
-    const userIds = leaderboardData.entries.map((e) => e.userId);
-    const users = await mongoose.model("User").find(
-      { _id: { $in: userIds } },
-      "name profileImage"
-    ).lean();
+    if (leaderboardService.isAvailable?.() && (leaderboardData.entries || []).length > 0) {
+      const userIds = leaderboardData.entries.map((e) => e.userId);
+      const users = await mongoose.model("User").find(
+        { _id: { $in: userIds } },
+        "name profileImage"
+      ).lean();
 
-    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
-    const entries = leaderboardData.entries.map((entry) => {
-      const user = userMap.get(entry.userId);
-      return {
-        rank: entry.rank,
-        userId: entry.userId,
-        username: user?.name || "Unknown",
-        profileImage: user?.profileImage,
-        problemsSolved: entry.problemsSolved,
-        totalTime: entry.totalTimeSeconds,
-        totalTimeFormatted: formatTime(entry.totalTimeSeconds),
-      };
-    });
+      entries = leaderboardData.entries.map((entry) => {
+        const user = userMap.get(entry.userId);
+        return {
+          rank: entry.rank,
+          userId: entry.userId,
+          username: user?.name || "Unknown",
+          profileImage: user?.profileImage,
+          problemsSolved: entry.problemsSolved,
+          totalTime: entry.totalTimeSeconds,
+          totalTimeFormatted: formatTime(entry.totalTimeSeconds),
+        };
+      });
+
+      total = leaderboardData.total || entries.length;
+      pageSize = leaderboardData.pageSize || parsedLimit;
+    } else {
+      const skip = (parsedPage - 1) * parsedLimit;
+      const regs = await ContestRegistration.getLeaderboard(contest._id, {
+        limit: parsedLimit,
+        skip,
+      });
+
+      entries = regs.map((reg) => ({
+        rank: reg.rank,
+        userId: reg.user?._id?.toString() || reg.user?.toString(),
+        username: reg.user?.name || "Unknown",
+        profileImage: reg.user?.profileImage,
+        problemsSolved: reg.problemsSolved || 0,
+        totalTime: reg.totalTime || 0,
+        totalTimeFormatted: formatTime(reg.totalTime || 0),
+      }));
+
+      total = await ContestRegistration.countDocuments({
+        contest: contest._id,
+        status: { $in: ["participating", "completed"] },
+      });
+    }
 
     let userRank = null;
     if (userId) {
@@ -604,9 +641,9 @@ export const getLeaderboard = async (req, res) => {
       success: true,
       data: {
         entries,
-        total: leaderboardData.total,
-        page: leaderboardData.page,
-        pageSize: leaderboardData.pageSize,
+        total,
+        page: parsedPage,
+        pageSize,
         isFrozen,
         frozenAt: isFrozen ? freezeTime : null,
         userRank,

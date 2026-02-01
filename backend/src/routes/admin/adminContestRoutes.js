@@ -41,6 +41,9 @@ router.post("/:id/end", auditLog("END_CONTEST"), endContest);
 
 router.get("/:id/registrations", getRegistrations);
 
+// Alias for participants (same as registrations)
+router.get("/:id/participants", getRegistrations);
+
 router.post(
   "/:id/disqualify/:userId",
   auditLog("DISQUALIFY_PARTICIPANT"),

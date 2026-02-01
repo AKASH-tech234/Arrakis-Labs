@@ -14,6 +14,10 @@ const MAX_CODE_SIZE = 65536;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 
+function isMongoObjectIdString(value) {
+  return typeof value === "string" && /^[0-9a-fA-F]{24}$/.test(value);
+}
+
 const LANGUAGE_MAP = {
   javascript: { language: "javascript", version: "18.15.0" },
   python: { language: "python", version: "3.10.0" },
@@ -28,7 +32,7 @@ const LANGUAGE_MAP = {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function getContestLookup(contestId) {
-  return mongoose.Types.ObjectId.isValid(contestId)
+  return isMongoObjectIdString(contestId)
     ? { _id: contestId }
     : { slug: contestId };
 }

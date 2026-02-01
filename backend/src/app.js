@@ -14,9 +14,11 @@ import authRoutes from "./routes/auth/authRoutes.js";
 import adminRoutes from "./routes/admin/adminRoutes.js";
 import contestRoutes from "./routes/contest/contestRoutes.js";
 import adminContestRoutes from "./routes/admin/adminContestRoutes.js";
+import plagiarismAdminRoutes from "./routes/admin/plagiarismAdminRoutes.js";
 import profileRoutes from "./routes/profile/profileRoutes.js";
 import publicRoutes from "./routes/profile/publicRoutes.js";
 import exportRoutes from "./routes/profile/exportRoutes.js";
+import integrityRoutes from "./routes/profile/integrityRoutes.js";
 import potdRoutes from "./routes/potd/potdRoutes.js";
 import adminPOTDRoutes from "./routes/admin/adminPOTDRoutes.js";
 import mimRoutes from "./routes/mimRoutes.js";
@@ -46,6 +48,7 @@ import wsServer from "./services/contest/websocketServer.js";
 import contestScheduler from "./services/contest/contestScheduler.js";
 import potdScheduler from "./services/potd/potdScheduler.js";
 import oaScheduler from "./services/oa/oaScheduler.js";
+import { getJobRunner } from "./services/plagiarism/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -152,8 +155,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/admin/potd", adminPOTDRoutes);
+app.use("/api/admin/plagiarism", plagiarismAdminRoutes);
 app.use("/api/contests", contestRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/integrity", integrityRoutes);
 app.use("/api/users", aiProfileRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/export", exportRoutes);
@@ -209,6 +214,18 @@ const startServer = async () => {
     console.log(`✓ Server running on http://localhost:${PORT}`);
   });
 
+  // Start background plagiarism worker so queued jobs actually process.
+  // Non-critical: if it fails to start, the server should still run.
+  const plagiarismJobRunner = getJobRunner();
+  try {
+    plagiarismJobRunner.start();
+  } catch (runnerError) {
+    console.warn(
+      "Plagiarism job runner failed to start:",
+      runnerError?.message || runnerError,
+    );
+  }
+
   wsServer.initialize(server);
   await contestScheduler.initialize();
   await potdScheduler.initialize();
@@ -218,6 +235,14 @@ const startServer = async () => {
     contestScheduler.shutdown();
     potdScheduler.shutdown();
     oaScheduler.shutdown();
+    try {
+      plagiarismJobRunner.stop();
+    } catch (runnerError) {
+      console.warn(
+        "Plagiarism job runner failed to stop:",
+        runnerError?.message || runnerError,
+      );
+    }
     wsServer.close();
     await leaderboardService.disconnect();
     server.close(() => mongoose.connection.close());

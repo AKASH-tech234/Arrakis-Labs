@@ -148,9 +148,27 @@ class ContestScheduler {
 
       this.clearTimers(contest._id.toString());
 
+      // Trigger plagiarism detection (runs asynchronously in background)
+      this.triggerPlagiarismCheck(contest._id);
+
       console.log(`[Scheduler] Contest ended: ${contest.name}`);
     } catch (error) {
       console.error(`[Scheduler] End contest error (${contest.name}):`, error.message);
+    }
+  }
+
+  /**
+   * Trigger plagiarism detection for a contest (non-blocking)
+   */
+  async triggerPlagiarismCheck(contestId) {
+    try {
+      const { getJobRunner } = await import("../plagiarism/index.js");
+      const jobRunner = getJobRunner();
+      await jobRunner.queueContest(contestId);
+      console.log(`[Scheduler] Plagiarism check queued for contest ${contestId}`);
+    } catch (error) {
+      console.error(`[Scheduler] Failed to queue plagiarism check:`, error.message);
+      // Don't throw - plagiarism check failure shouldn't affect contest end
     }
   }
 
