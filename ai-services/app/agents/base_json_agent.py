@@ -7,13 +7,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.exceptions import OutputParserException
 from app.cache.redis_cache import redis_cache
-# DEPRECATED: File-based caching replaced by Redis
-# from app.cache.agent_cache import get_cached as get_file_cached, set_cached as set_file_cached
 
 from app.services.llm import get_llm, AllProvidersRateLimitedError, are_all_rate_limited
 from app.metrics.agent_metries import record_metric
-# DEPRECATED: File-based caching replaced by Redis
-# from app.cache.agent_cache import get_cached, set_cached
 
 logger = logging.getLogger("base_json_agent")
 
@@ -97,20 +93,7 @@ def run_json_agent(
         chain = prompt | llm | parser
         logger.debug("   └─ Chain constructed, invoking LLM...")
         
-        # ═══════════════════════════════════════════════════════════════════
-        # VERBOSE LOGGING: Full prompt being sent to LLM
-        # ═══════════════════════════════════════════════════════════════════
         format_instructions = parser.get_format_instructions()
-        print(f"\n{'='*80}")
-        print(f"🔷 [{agent_name}] LLM INPUT")
-        print(f"{'='*80}")
-        print(f"📌 System Prompt (first 500 chars):")
-        print(f"{system_prompt[:500]}..." if len(system_prompt) > 500 else system_prompt)
-        print(f"\n📌 Context (first 1000 chars):")
-        print(f"{safe_context[:1000]}..." if len(safe_context) > 1000 else safe_context)
-        print(f"\n📌 Full context length: {len(safe_context)} chars")
-        print(f"{'='*80}\n")
-        
         llm_start = time.time()
 
         try:
@@ -119,18 +102,6 @@ def run_json_agent(
                 "format_instructions": format_instructions,
             })
             llm_elapsed = time.time() - llm_start
-            
-            # ═══════════════════════════════════════════════════════════════════
-            # VERBOSE LOGGING: Full LLM response
-            # ═══════════════════════════════════════════════════════════════════
-            print(f"\n{'='*80}")
-            print(f"🔶 [{agent_name}] LLM OUTPUT")
-            print(f"{'='*80}")
-            print(f"⏱️  LLM call took: {llm_elapsed:.2f}s")
-            print(f"📤 Response:")
-            print(f"{result.model_dump_json(indent=2)}")
-            print(f"{'='*80}\n")
-            
             logger.info(f"✅ [{agent_name}] LLM call successful in {llm_elapsed:.2f}s")
 
         except OutputParserException as ope:

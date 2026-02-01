@@ -38,11 +38,6 @@ def log_event(event: str, **kwargs):
 
 log_event("module_loaded", module="routes")
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Configuration
-# ═══════════════════════════════════════════════════════════════════════════════
-# IMPORTANT: This timeout MUST match SYNC_TOTAL_BUDGET_SECONDS in sync_workflow.py
-# The workflow needs 60s for quality-first agent completions (no skipping)
 MAX_REQUEST_SECONDS = 65  # 60s workflow + 5s buffer for I/O
 log_event("config_loaded", max_request_seconds=MAX_REQUEST_SECONDS)
 

@@ -5,13 +5,13 @@ MIM - Mentat Intelligence Model
 A persistent cognitive layer that predicts learning trajectories,
 failure root causes, and user readiness for the Arrakis Labs platform.
 
-V3.0 Enhancements (State Estimator Architecture):
-- NEW: 4-category ROOT_CAUSE taxonomy (correctness, efficiency, implementation, understanding_gap)
-- NEW: 16 fine-grained SUBTYPES with validation
-- NEW: Deterministic FAILURE_MECHANISM derivation (not ML)
-- NEW: Delta-based features (what changed vs. absolute counts)
-- NEW: Separated pipelines: Failed → CorrectnessFeedback, Accepted → ReinforcementFeedback
-- NEW: User state snapshot injection for personalization
+V3.0 Architecture (State Estimator):
+- 4-category ROOT_CAUSE taxonomy (correctness, efficiency, implementation, understanding_gap)
+- 16 fine-grained SUBTYPES with validation
+- Deterministic FAILURE_MECHANISM derivation (not ML)
+- Delta-based features (what changed vs. absolute counts)
+- Separated pipelines: Failed → CorrectnessFeedback, Accepted → ReinforcementFeedback
+- User state snapshot injection for personalization
 
 Components:
 - taxonomy/: ROOT_CAUSE, SUBTYPES, failure_mechanism_rules
@@ -20,15 +20,10 @@ Components:
 - inference/: mim_decision_node, feedback_generator
 - training/: dataset_builder, train_root_cause, train_subtype
 
-Legacy Components (V2.0 - deprecated):
+Legacy Components (V2.0):
 - feature_extractor: MongoDB submissions → ML features (60 dims)
 - model: Sklearn models for prediction (RandomForest, GradientBoosting)
-- inference: Real-time prediction service
-- schemas: Old Pydantic models (15 root causes - DEPRECATED)
-
-Migration:
-- Use app.mim.compat for backward compatibility
-- See scripts/retrain_all_models.py for V3.0 training
+- schemas: Old Pydantic models (15 root causes)
 """
 
 import warnings
@@ -94,13 +89,6 @@ except ImportError:
     MIMDecisionNode = None
     run_mim_inference = None
 
-# Legacy imports (DEPRECATED - wrapped for backwards compatibility)
-try:
-    from app.mim.inference_deprecated import MIMInference, get_mim_inference
-except ImportError:
-    MIMInference = None
-    get_mim_inference = None
-
 # Model (DEPRECATED - use MIMDecisionNode)
 from app.mim.model import MIMModel, get_mim_model
 
@@ -147,13 +135,13 @@ __all__ = [
     "generate_reinforcement_feedback",
     
     # ═══════════════════════════════════════════════════════════════════════════
-    # V2.0 LEGACY EXPORTS (DEPRECATED)
+    # V2.0 LEGACY EXPORTS
     # ═══════════════════════════════════════════════════════════════════════════
     
-    # Constants (DEPRECATED)
+    # Constants
     "ROOT_CAUSE_CATEGORIES",
     
-    # Core prediction schemas (DEPRECATED)
+    # Core prediction schemas
     "MIMPrediction",
     "MIMRootCause", 
     "MIMReadiness",
@@ -171,9 +159,7 @@ __all__ = [
     "MIMTrainingExample",
     "MIMLabelingTask",
     
-    # Services (DEPRECATED)
-    "MIMInference",
-    "get_mim_inference",
+    # Services
     "MIMModel",
     "get_mim_model",
     "MIMFeatureExtractor",

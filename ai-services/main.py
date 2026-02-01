@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-# Load environment variables from .env file FIRST (before any other imports)
 load_dotenv()
 
 from fastapi import FastAPI, Request
@@ -81,11 +80,8 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 logger = StructuredLogger("main")
 
-print("\n" + "="*80)
-print("🚀 MENTAT TRIALS AI SERVICE")
-print("="*80)
+print(" MENTAT TRIALS AI SERVICE")
 print(f"📅 Starting at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-print("="*80 + "\n")
 
 logger.info("service_startup", message="STARTING MENTAT TRIALS AI SERVICE")
 
@@ -217,5 +213,5 @@ print(f"📝 API Docs: http://localhost:8000/docs")
 print(f"📋 Health: http://localhost:8000/health")
 print("="*80 + "\n")
 
-logger.info("router_registered", routes=["/health", "/ai/feedback", "/ai/weekly-report"])
+logger.info("router_registered", routes=["/health", "/ai/feedback", ])
 logger.info("service_ready", message="AI Service ready to accept requests")

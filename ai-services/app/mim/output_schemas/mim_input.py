@@ -24,7 +24,7 @@ class MIMInput(BaseModel):
     
     class Config:
         extra = "forbid"
-        validate_all = True
+        validate_default = True
     
     # ═══════════════════════════════════════════════════════════════════════════
     # SUBMISSION DATA (required)
