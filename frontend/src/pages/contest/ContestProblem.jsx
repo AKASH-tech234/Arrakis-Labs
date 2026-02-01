@@ -289,7 +289,7 @@ export default function ContestProblem() {
         contestApi.getContestProblem(contestId, problemId),
         contestApi.getContest(contestId),
       ]);
-      setProblem(problemRes.data);
+      setProblem(problemRes);
       setContest(contestRes.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load problem');

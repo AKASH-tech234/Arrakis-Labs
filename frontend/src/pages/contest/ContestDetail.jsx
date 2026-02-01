@@ -303,6 +303,10 @@ export default function ContestDetail() {
     try {
       setRegistering(true);
       await contestApi.registerForContest(contestId);
+      // If contest is live, automatically join after registration
+      if (contest?.isLive) {
+        await contestApi.joinContest(contestId);
+      }
       fetchContest();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to register');
@@ -474,9 +478,15 @@ export default function ContestDetail() {
                   </div>
 
                   {!isParticipating ? (
-                    <Button onClick={handleJoin} disabled={joining} variant="primary" size="md">
-                      {joining ? "Joining..." : "Join Contest"}
-                    </Button>
+                    !isRegistered ? (
+                      <Button onClick={handleRegister} disabled={registering} variant="primary" size="md">
+                        {registering ? "Registering..." : "Register & Join"}
+                      </Button>
+                    ) : (
+                      <Button onClick={handleJoin} disabled={joining} variant="primary" size="md">
+                        {joining ? "Joining..." : "Join Contest"}
+                      </Button>
+                    )
                   ) : (
                     <Badge variant="success">Participating</Badge>
                   )}
