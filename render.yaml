@@ -3,7 +3,7 @@ services:
     name: arrakis-ai-service
     runtime: python
     region: oregon
-    plan: starter
+    plan: free
     rootDir: ai-services
     buildCommand: pip install -r requirement.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
@@ -42,7 +42,7 @@ services:
     name: arrakis-backend
     runtime: node
     region: oregon
-    plan: starter
+    plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
@@ -84,7 +84,7 @@ services:
   - type: web
     name: arrakis-frontend
     runtime: static
-    plan: starter
+    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
