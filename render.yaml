@@ -84,7 +84,6 @@ services:
   - type: web
     name: arrakis-frontend
     runtime: static
-    region: oregon
     plan: starter
     rootDir: frontend
     buildCommand: npm install && npm run build
