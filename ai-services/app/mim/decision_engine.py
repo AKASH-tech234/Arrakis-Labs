@@ -380,9 +380,20 @@ class MIMDecisionEngine:
         
         This is the main entry point - replaces old predict() method.
         
+        v3.x HARDENED: Preserves partial results on failure.
+        If pattern detection succeeds but later stages fail,
+        the pattern is preserved in the degraded decision.
+        
         Returns MIMDecision with all agent instructions pre-computed.
         """
         start_time = time.time()
+        
+        # v3.x: Track partial results for graceful degradation
+        pattern: Optional[PatternResult] = None
+        root_cause_result: Optional[Dict[str, Any]] = None
+        migrated_root_cause: Optional[str] = None
+        readiness_result: Optional[Dict[str, Any]] = None
+        performance_result: Optional[Dict[str, Any]] = None
         
         try:
             # 1. Extract features
@@ -425,6 +436,7 @@ class MIMDecisionEngine:
                 }
             
             # 3. Run pattern engine (now with migrated root cause)
+            # v3.x: Pattern captured before later stages that might fail
             pattern = self.pattern_engine.detect_pattern(
                 root_cause=migrated_root_cause,  # V3.1: Use migrated cause
                 root_cause_confidence=root_cause_result["confidence"],
@@ -507,7 +519,14 @@ class MIMDecisionEngine:
             
         except Exception as e:
             logger.error(f"MIM decision failed: {e}", exc_info=True)
-            return self._fallback_decision(submission, user_history)
+            # v3.x HARDENED: Preserve partial results in degraded decision
+            return self._fallback_decision(
+                submission, 
+                user_history,
+                preserved_pattern=pattern,
+                preserved_root_cause=migrated_root_cause,
+                preserved_confidence=root_cause_result.get("confidence") if root_cause_result else None,
+            )
     
     def _compute_difficulty_action(
         self,
@@ -577,6 +596,7 @@ class MIMDecisionEngine:
         code: str,
         verdict: str,
         problem_context: Optional[Dict[str, Any]],
+        root_cause_result: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         V3.0: Infer granular subtype and failure mechanism from code patterns.
@@ -586,6 +606,13 @@ class MIMDecisionEngine:
         - efficiency: brute_force_under_constraints, premature_optimization
         - implementation: incorrect_boundary, state_loss, partial_case_handling
         - understanding_gap: misread_constraint, wrong_invariant
+        
+        Args:
+            root_cause: The migrated root cause category
+            code: User's submitted code
+            verdict: Judge verdict (e.g., "wrong_answer", "tle")
+            problem_context: Problem metadata
+            root_cause_result: Full result dict from ML model (for misinterpretation details)
         
         Returns:
             (subtype, failure_mechanism)
@@ -772,8 +799,9 @@ class MIMDecisionEngine:
         root_cause = self._migrate_root_cause(raw_root_cause)
         
         # V3.0: Infer subtype and failure mechanism using new taxonomy
+        # V3.1: Pass root_cause_result for misinterpretation details access
         subtype, failure_mechanism = self._infer_subtype(
-            root_cause, code, verdict, problem_context
+            root_cause, code, verdict, problem_context, root_cause_result
         )
         
         # If no failure mechanism, try to derive using rules engine
@@ -968,26 +996,52 @@ class MIMDecisionEngine:
         self,
         submission: Dict[str, Any],
         user_history: List[Dict[str, Any]],
+        preserved_pattern: Optional[PatternResult] = None,
+        preserved_root_cause: Optional[str] = None,
+        preserved_confidence: Optional[float] = None,
     ) -> MIMDecision:
-        """Generate fallback decision when inference fails."""
+        """
+        Generate fallback decision when inference fails.
+        
+        v3.x HARDENED: Preserves partial results from before failure.
+        If pattern detection succeeded before a later stage failed,
+        we retain that pattern in the degraded decision.
+        """
         # Handle None user_history
         user_history = user_history or []
         
         verdict = submission.get("verdict", "").lower()
         
-        # Default cause based on verdict
-        if "time" in verdict:
-            cause = "time_complexity_issue"
-        elif "runtime" in verdict:
-            cause = "boundary_condition_blindness"
+        # v3.x: Use preserved root cause if available, else infer from verdict
+        if preserved_root_cause:
+            cause = preserved_root_cause
+            confidence = preserved_confidence if preserved_confidence else 0.5
+            model_version = "fallback-preserved"
         else:
-            cause = "logic_error"
+            # Default cause based on verdict
+            if "time" in verdict:
+                cause = "time_complexity_issue"
+            elif "runtime" in verdict:
+                cause = "boundary_condition_blindness"
+            else:
+                cause = "logic_error"
+            confidence = 0.3
+            model_version = "fallback"
+        
+        # v3.x: Use preserved pattern if available
+        pattern = preserved_pattern if preserved_pattern else PatternResult()
+        
+        if preserved_pattern:
+            logger.info(
+                f"🛡️ Fallback preserving pattern | name={pattern.pattern_name} "
+                f"recurring={pattern.is_recurring} count={pattern.recurrence_count}"
+            )
         
         return MIMDecision(
             root_cause=cause,
-            root_cause_confidence=0.3,
+            root_cause_confidence=confidence,
             root_cause_alternatives=[],
-            pattern=PatternResult(),
+            pattern=pattern,  # v3.x: Preserved pattern
             difficulty_action=DifficultyAction(
                 action="maintain",
                 current_level="Medium",
@@ -1000,7 +1054,7 @@ class MIMDecisionEngine:
             user_weak_topics=[],
             feedback_instruction=FeedbackInstruction(
                 root_cause=cause,
-                root_cause_confidence=0.3,
+                root_cause_confidence=confidence,
                 tone="encouraging",
             ),
             hint_instruction=HintInstruction(
@@ -1013,7 +1067,7 @@ class MIMDecisionEngine:
             ),
             focus_areas=["General practice"],
             is_cold_start=len(user_history) < MIN_SUBMISSIONS_FOR_FULL_FEATURES,
-            model_version="fallback",
+            model_version=model_version,
         )
     
     def reload_model(self) -> bool:

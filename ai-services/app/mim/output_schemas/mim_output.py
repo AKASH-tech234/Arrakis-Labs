@@ -21,6 +21,12 @@ class ConfidenceMetadata(BaseModel):
     Confidence calibration metadata (Phase 2.1).
     
     Provides transparency about prediction confidence for downstream consumers.
+    
+    v3.x Intelligence Upgrade Additions:
+    - adjusted_confidence: Context-adjusted confidence for actionability
+    - regression_detected: Whether regression was detected
+    - pattern_unblocked: Whether pattern detection was contextually unblocked
+    - execution_mode: Whether ML or fallback rules were used
     """
     root_cause_confidence: float = Field(
         ..., ge=0, le=1,
@@ -45,6 +51,56 @@ class ConfidenceMetadata(BaseModel):
     calibration_applied: bool = Field(
         ...,
         description="Whether isotonic calibration was applied"
+    )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # v3.x INTELLIGENCE UPGRADE: Contextual Signal Enrichment (Optional/Additive)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    # Adjusted confidence incorporating contextual signals
+    adjusted_confidence: Optional[float] = Field(
+        default=None, ge=0, le=1,
+        description="Context-adjusted confidence (recurrence, regression boosts; cold start damping)"
+    )
+    
+    # Regression detection (REQUIREMENT 1)
+    regression_detected: Optional[bool] = Field(
+        default=None,
+        description="True if user's failure contradicts historical competence"
+    )
+    regression_severity: Optional[Literal["none", "low", "medium", "high"]] = Field(
+        default=None,
+        description="Severity of detected regression"
+    )
+    
+    # Pattern unblocking (REQUIREMENT 6)
+    pattern_unblocked: Optional[bool] = Field(
+        default=None,
+        description="True if pattern detection was contextually unblocked despite low confidence"
+    )
+    pattern_unblock_reason: Optional[str] = Field(
+        default=None,
+        description="Reason pattern detection was unblocked (regression_override, recurrence_override)"
+    )
+    
+    # Escalation eligibility (REQUIREMENT 5)
+    escalation_eligible: Optional[bool] = Field(
+        default=None,
+        description="True if adjusted confidence supports detailed/escalated feedback"
+    )
+    
+    # Execution mode annotation (REQUIREMENT 7)
+    execution_mode: Optional[Literal["ml_full", "ml_partial", "rules_fallback", "hybrid"]] = Field(
+        default=None,
+        description="How inference was executed (ml_full, rules_fallback, hybrid)"
+    )
+    cognitive_version: Optional[Literal["v2", "v3"]] = Field(
+        default=None,
+        description="Cognitive model version used (v2=fallback rules, v3=ML+rules)"
+    )
+    pipeline_version: Optional[str] = Field(
+        default=None,
+        description="Pipeline version (e.g., v3.x)"
     )
 
 

@@ -30,7 +30,7 @@ from datetime import datetime
 import numpy as np
 
 from app.mim.output_schemas.mim_input import MIMInput
-from app.mim.output_schemas.mim_output import MIMOutput
+from app.mim.output_schemas.mim_output import MIMOutput, ConfidenceMetadata
 from app.mim.output_schemas.correctness_feedback import CorrectnessFeedback
 from app.mim.output_schemas.performance_feedback import PerformanceFeedback
 from app.mim.output_schemas.reinforcement_feedback import ReinforcementFeedback
@@ -236,54 +236,111 @@ class MIMDecisionNode:
         - Accepted submissions → ReinforcementFeedback ONLY
         - Failed submissions → CorrectnessFeedback or PerformanceFeedback ONLY
         - Cross-contamination raises exception (fail-fast)
+        
+        v3.x HARDENED:
+        - Top-level exception handler preserves partial results
+        - On failure, returns degraded MIMOutput with execution_mode="degraded"
+        - Never loses pattern/regression signals that were computed before failure
         """
         
         start_time = time.time()
         
-        # ═══════════════════════════════════════════════════════════════════════
-        # MIM INPUT LOGGING (for debugging/tracing)
-        # ═══════════════════════════════════════════════════════════════════════
-        self._log_mim_input(mim_input)
+        # v3.x: Track partial results for graceful degradation
+        output: Optional[Dict[str, Any]] = None
+        confidence_metadata: Optional[Dict[str, Any]] = None
         
-        # ───────────────────────────────────────────────────────────────────────
-        # ROUTE: Accepted vs Failed (STRICT SEPARATION)
-        # ───────────────────────────────────────────────────────────────────────
-        
-        if mim_input.is_accepted():
-            output = self._handle_accepted(mim_input)
-            # ENFORCEMENT: Accepted must produce ReinforcementFeedback
-            self._enforce_verdict_gate(mim_input.verdict, output)
-        else:
-            output = self._handle_failed(mim_input)
-            # ENFORCEMENT: Failed must NOT produce ReinforcementFeedback
-            self._enforce_verdict_gate(mim_input.verdict, output)
-        
-        # Add latency
-        latency_ms = (time.time() - start_time) * 1000
-        
-        # Phase 2.1: Extract confidence metadata if present
-        confidence_metadata = output.get("confidence_metadata")
-        
-        mim_output = MIMOutput(
-            feedback_type=output["feedback_type"],
-            correctness_feedback=output.get("correctness_feedback"),
-            performance_feedback=output.get("performance_feedback"),
-            reinforcement_feedback=output.get("reinforcement_feedback"),
-            user_id=mim_input.user_id,
-            problem_id=mim_input.problem_id,
-            submission_id=mim_input.submission_id,
-            inference_latency_ms=latency_ms,
-            model_version=MODEL_VERSION,
-            timestamp=datetime.utcnow().isoformat(),
-            confidence_metadata=confidence_metadata,
-        )
-        
-        # ═══════════════════════════════════════════════════════════════════════
-        # MIM OUTPUT LOGGING (for debugging/tracing)
-        # ═══════════════════════════════════════════════════════════════════════
-        self._log_mim_output(mim_output, latency_ms)
-        
-        return mim_output
+        try:
+            # ═══════════════════════════════════════════════════════════════════════
+            # MIM INPUT LOGGING (for debugging/tracing)
+            # ═══════════════════════════════════════════════════════════════════════
+            self._log_mim_input(mim_input)
+            
+            # ───────────────────────────────────────────────────────────────────────
+            # ROUTE: Accepted vs Failed (STRICT SEPARATION)
+            # ───────────────────────────────────────────────────────────────────────
+            
+            if mim_input.is_accepted():
+                output = self._handle_accepted(mim_input)
+                # ENFORCEMENT: Accepted must produce ReinforcementFeedback
+                self._enforce_verdict_gate(mim_input.verdict, output)
+            else:
+                output = self._handle_failed(mim_input)
+                # ENFORCEMENT: Failed must NOT produce ReinforcementFeedback
+                self._enforce_verdict_gate(mim_input.verdict, output)
+            
+            # Add latency
+            latency_ms = (time.time() - start_time) * 1000
+            
+            # Phase 2.1: Extract confidence metadata if present
+            confidence_metadata = output.get("confidence_metadata")
+            
+            mim_output = MIMOutput(
+                feedback_type=output["feedback_type"],
+                correctness_feedback=output.get("correctness_feedback"),
+                performance_feedback=output.get("performance_feedback"),
+                reinforcement_feedback=output.get("reinforcement_feedback"),
+                user_id=mim_input.user_id,
+                problem_id=mim_input.problem_id,
+                submission_id=mim_input.submission_id,
+                inference_latency_ms=latency_ms,
+                model_version=MODEL_VERSION,
+                timestamp=datetime.utcnow().isoformat(),
+                confidence_metadata=confidence_metadata,
+            )
+            
+            # ═══════════════════════════════════════════════════════════════════════
+            # MIM OUTPUT LOGGING (for debugging/tracing)
+            # ═══════════════════════════════════════════════════════════════════════
+            self._log_mim_output(mim_output, latency_ms)
+            
+            return mim_output
+            
+        except Exception as e:
+            # ═══════════════════════════════════════════════════════════════════════
+            # v3.x HARDENED: Graceful degradation on failure
+            # ═══════════════════════════════════════════════════════════════════════
+            latency_ms = (time.time() - start_time) * 1000
+            logger.error(f"MIM inference failed: {e}", exc_info=True)
+            
+            # Preserve any partial confidence metadata that was computed
+            degraded_metadata = {
+                "execution_mode": "degraded",
+                "cognitive_version": "v3-fallback",
+                "pipeline_version": "v3.x",
+                "error": str(e),
+            }
+            
+            # If we got partial results before failure, preserve them
+            if output and output.get("confidence_metadata"):
+                partial = output["confidence_metadata"]
+                degraded_metadata.update({
+                    "root_cause_confidence": partial.get("root_cause_confidence"),
+                    "subtype_confidence": partial.get("subtype_confidence"),
+                    "regression_detected": partial.get("regression_detected"),
+                    "pattern_unblocked": partial.get("pattern_unblocked"),
+                })
+            
+            # Build degraded output
+            degraded_output = MIMOutput(
+                feedback_type="correctness" if not mim_input.is_accepted() else "reinforcement",
+                correctness_feedback=None,
+                performance_feedback=None,
+                reinforcement_feedback=None,
+                user_id=mim_input.user_id,
+                problem_id=mim_input.problem_id,
+                submission_id=mim_input.submission_id,
+                inference_latency_ms=latency_ms,
+                model_version=f"{MODEL_VERSION}-degraded",
+                timestamp=datetime.utcnow().isoformat(),
+                confidence_metadata=ConfidenceMetadata(**degraded_metadata) if isinstance(degraded_metadata, dict) else degraded_metadata,
+            )
+            
+            logger.warning(
+                f"🛡️ Returning degraded MIMOutput | submission={mim_input.submission_id} "
+                f"error={str(e)[:100]}"
+            )
+            
+            return degraded_output
     
     def _handle_accepted(self, mim_input: MIMInput) -> Dict[str, Any]:
         """
@@ -416,15 +473,80 @@ class MIMDecisionNode:
                 confidence, is_recurring, recurrence_count, snapshot
             )
         
-        # Phase 2.1: Attach confidence metadata for downstream consumers
-        result["confidence_metadata"] = {
-            "root_cause_confidence": root_cause_confidence,
-            "subtype_confidence": subtype_confidence,
-            "combined_confidence": confidence,
-            "confidence_level": confidence_level,
-            "conservative_mode": conservative_mode,
-            "calibration_applied": self.calibrator is not None,
-        }
+        # ───────────────────────────────────────────────────────────────────────
+        # v3.x INTELLIGENCE UPGRADE: Compute Contextual Signals
+        # ───────────────────────────────────────────────────────────────────────
+        # This ENHANCES confidence metadata without changing base predictions.
+        # All signals are ADDITIVE and backward compatible.
+        
+        try:
+            from app.mim.signals.integration import compute_contextual_signals
+            
+            delta_features = mim_input.delta_features or {}
+            is_cold_start = delta_features.get("is_cold_start", 0) == 1
+            models_loaded = self.root_cause_model is not None
+            
+            contextual_signals = compute_contextual_signals(
+                root_cause=root_cause,
+                subtype=subtype,
+                base_confidence=confidence,
+                user_state_snapshot=snapshot,
+                category=mim_input.category,
+                difficulty=mim_input.difficulty,
+                verdict=mim_input.verdict,
+                is_cold_start=is_cold_start,
+                recurrence_count=recurrence_count,
+                models_loaded=models_loaded,
+                problem_tags=mim_input.problem_tags,
+            )
+            
+            # Log enrichment for observability
+            if contextual_signals.get("regression", {}).get("regression_detected"):
+                logger.info(
+                    f"🔄 REGRESSION DETECTED | severity={contextual_signals['regression']['regression_severity']}"
+                )
+            if contextual_signals.get("pattern_detection_unblocked"):
+                logger.info(
+                    f"🔓 PATTERN UNBLOCKED | reason={contextual_signals['pattern_unblock_reason']}"
+                )
+            
+            # Phase 2.1 + v3.x: Attach ENRICHED confidence metadata
+            result["confidence_metadata"] = {
+                # Base Phase 2.1 fields (PRESERVED)
+                "root_cause_confidence": root_cause_confidence,
+                "subtype_confidence": subtype_confidence,
+                "combined_confidence": confidence,
+                "confidence_level": confidence_level,
+                "conservative_mode": conservative_mode,
+                "calibration_applied": self.calibrator is not None,
+                # v3.x ADDITIONS (all optional for backward compatibility)
+                "adjusted_confidence": contextual_signals.get("adjusted_confidence"),
+                "regression_detected": contextual_signals.get("regression", {}).get("regression_detected"),
+                "regression_severity": contextual_signals.get("regression", {}).get("regression_severity"),
+                "pattern_unblocked": contextual_signals.get("pattern_detection_unblocked"),
+                "pattern_unblock_reason": contextual_signals.get("pattern_unblock_reason"),
+                "escalation_eligible": contextual_signals.get("escalation_eligible"),
+                "execution_mode": contextual_signals.get("execution_mode"),
+                "cognitive_version": contextual_signals.get("cognitive_version"),
+                "pipeline_version": contextual_signals.get("pipeline_version"),
+            }
+            
+        except Exception as e:
+            # Fallback: If signal computation fails, use base confidence metadata
+            # This ensures the pipeline continues to work even if signals fail
+            logger.warning(f"Contextual signal computation failed: {e}. Using base metadata.")
+            result["confidence_metadata"] = {
+                "root_cause_confidence": root_cause_confidence,
+                "subtype_confidence": subtype_confidence,
+                "combined_confidence": confidence,
+                "confidence_level": confidence_level,
+                "conservative_mode": conservative_mode,
+                "calibration_applied": self.calibrator is not None,
+                # v3.x fallback annotation
+                "execution_mode": "rules_fallback" if self.root_cause_model is None else "ml_full",
+                "cognitive_version": "v2" if self.root_cause_model is None else "v3",
+                "pipeline_version": "v3.x",
+            }
         
         return result
     
@@ -870,6 +992,18 @@ class MIMDecisionNode:
             print(f"    └─ confidence_level:  {cm.confidence_level}")
             print(f"    └─ conservative_mode: {cm.conservative_mode}")
             print(f"    └─ calibration:       {'applied' if cm.calibration_applied else 'not applied'}")
+            
+            # v3.x Intelligence Upgrade: Show enriched signals
+            if cm.adjusted_confidence is not None:
+                print(f"  CONTEXTUAL ADJUSTMENT (v3.x):")
+                print(f"    └─ adjusted_conf:     {cm.adjusted_confidence:.3f}")
+                print(f"    └─ escalation_ok:     {cm.escalation_eligible}")
+                if cm.regression_detected:
+                    print(f"    └─ regression:        DETECTED ({cm.regression_severity})")
+                if cm.pattern_unblocked:
+                    print(f"    └─ pattern_unblock:   {cm.pattern_unblock_reason}")
+                print(f"    └─ execution_mode:    {cm.execution_mode}")
+                print(f"    └─ cognitive_version: {cm.cognitive_version}")
         
         print("=" * 70 + "\n")
         
