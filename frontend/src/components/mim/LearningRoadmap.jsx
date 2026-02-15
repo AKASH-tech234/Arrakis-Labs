@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getMIMRoadmap } from "../../services/ai/aiApi";
+import logger from "../../utils/logger";
 
 const roadmapRefreshListeners = new Set();
 
 export function emitRoadmapRefresh() {
-  console.log("[LearningRoadmap] Emitting refresh event");
+  logger.log("[LearningRoadmap] Emitting refresh event");
   roadmapRefreshListeners.forEach((listener) => {
     try {
       listener();
     } catch (e) {
-      console.error("[LearningRoadmap] Refresh listener error:", e);
+      logger.error("[LearningRoadmap] Refresh listener error:", e);
     }
   });
 }
@@ -299,12 +300,12 @@ export default function LearningRoadmap({ userId, compact = false }) {
     if (!userId) return;
 
     try {
-      console.log("[LearningRoadmap] Fetching roadmap for:", userId);
+      logger.log("[LearningRoadmap] Fetching roadmap for:", userId);
       const data = await getMIMRoadmap({ userId });
       setRoadmapData(data);
       setError(null);
     } catch (err) {
-      console.error("[LearningRoadmap] Error:", err);
+      logger.error("[LearningRoadmap] Error:", err);
       setError(err.message || "Failed to load roadmap");
     } finally {
       setLoading(false);
@@ -317,7 +318,7 @@ export default function LearningRoadmap({ userId, compact = false }) {
   }, [fetchRoadmap, refreshKey]);
 
   const handleRefresh = useCallback(() => {
-    console.log("[LearningRoadmap] Refresh triggered");
+    logger.log("[LearningRoadmap] Refresh triggered");
     setRefreshKey((k) => k + 1);
   }, []);
 

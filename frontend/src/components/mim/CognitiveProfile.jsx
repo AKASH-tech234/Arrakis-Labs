@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
+import logger from "../../utils/logger";
 
 const profileRefreshListeners = new Set();
 
 export function emitProfileRefresh() {
-  console.log("[CognitiveProfile] Emitting profile refresh event");
+  logger.log("[CognitiveProfile] Emitting profile refresh event");
   profileRefreshListeners.forEach((listener) => {
     try {
       listener();
     } catch (e) {
-      console.error("[CognitiveProfile] Refresh listener error:", e);
+      logger.error("[CognitiveProfile] Refresh listener error:", e);
     }
   });
 }
@@ -97,7 +98,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
 
   const fetchProfile = useCallback(async () => {
     if (!userId) {
-      console.log("[CognitiveProfile] No userId, skipping fetch");
+      logger.log("[CognitiveProfile] No userId, skipping fetch");
       return;
     }
 
@@ -105,12 +106,12 @@ export default function CognitiveProfile({ userId, compact = false }) {
     setError(null);
 
     try {
-      console.log("[CognitiveProfile] Fetching MIM profile for:", userId);
+      logger.log("[CognitiveProfile] Fetching MIM profile for:", userId);
       const data = await getMIMProfile({ userId });
-      console.log("[CognitiveProfile] Received data:", data);
+      logger.log("[CognitiveProfile] Received data:", data);
       setProfile(data);
     } catch (err) {
-      console.error("[CognitiveProfile] Error:", err);
+      logger.error("[CognitiveProfile] Error:", err);
       setError(err.message || "Failed to load cognitive profile");
     } finally {
       setLoading(false);
@@ -122,7 +123,7 @@ export default function CognitiveProfile({ userId, compact = false }) {
   }, [fetchProfile, refreshKey]);
 
   const handleRefresh = useCallback(() => {
-    console.log("[CognitiveProfile] Refresh triggered - reloading profile");
+    logger.log("[CognitiveProfile] Refresh triggered - reloading profile");
     setRefreshKey((k) => k + 1);
   }, []);
 

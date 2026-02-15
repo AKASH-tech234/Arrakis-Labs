@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import logger from "../../utils/logger";
 import {
   Trophy,
   ArrowLeft,
@@ -14,34 +15,34 @@ import {
   Settings,
   FileText,
   Calendar,
-} from 'lucide-react';
-import adminContestApi from '../../services/admin/adminContestApi';
+} from "lucide-react";
+import adminContestApi from "../../services/admin/adminContestApi";
 
 const EMPTY_CONTEST = {
-  title: '',
-  description: '',
-  startTime: '',
+  title: "",
+  description: "",
+  startTime: "",
   duration: 90,
-  visibility: 'public',
+  visibility: "public",
   registrationRequired: true,
-  registrationDeadline: '',
+  registrationDeadline: "",
   allowLateJoin: true,
-  lateJoinDeadline: '',
+  lateJoinDeadline: "",
   scoringRules: {
-    type: 'icpc',
+    type: "icpc",
     pointsPerProblem: 100,
     partialScoring: false,
   },
   penaltyRules: {
     wrongSubmissionPenalty: 20,
     timeBasedPenalty: true,
-    penaltyUnit: 'minutes',
+    penaltyUnit: "minutes",
   },
   problems: [],
 };
 
 function ProblemSelector({ selected, onChange }) {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -55,7 +56,7 @@ function ProblemSelector({ selected, onChange }) {
       const data = await response.json();
       setProblems(data.questions || []);
     } catch (err) {
-      console.error('Failed to search problems:', err);
+      logger.error("Failed to search problems:", err);
     } finally {
       setLoading(false);
     }
@@ -80,14 +81,16 @@ function ProblemSelector({ selected, onChange }) {
         difficulty: problem.difficulty,
       },
     ]);
-    setSearch('');
+    setSearch("");
     setProblems([]);
   };
 
   const removeProblem = (index) => {
     const updated = selected.filter((_, i) => i !== index);
 
-    onChange(updated.map((p, i) => ({ ...p, label: String.fromCharCode(65 + i) })));
+    onChange(
+      updated.map((p, i) => ({ ...p, label: String.fromCharCode(65 + i) })),
+    );
   };
 
   const updatePoints = (index, points) => {
@@ -98,19 +101,22 @@ function ProblemSelector({ selected, onChange }) {
 
   const getDifficultyStyle = (difficulty) => {
     switch (difficulty) {
-      case 'Easy':
-        return 'bg-[#78716C]/10 text-[#78716C] border-[#78716C]/20';
-      case 'Medium':
-        return 'bg-[#D97706]/10 text-[#D97706] border-[#D97706]/20';
-      case 'Hard':
-        return 'bg-[#92400E]/10 text-[#92400E] border-[#92400E]/20';
+      case "Easy":
+        return "bg-[#78716C]/10 text-[#78716C] border-[#78716C]/20";
+      case "Medium":
+        return "bg-[#D97706]/10 text-[#D97706] border-[#D97706]/20";
+      case "Hard":
+        return "bg-[#92400E]/10 text-[#92400E] border-[#92400E]/20";
       default:
-        return 'bg-[#78716C]/10 text-[#78716C] border-[#78716C]/20';
+        return "bg-[#78716C]/10 text-[#78716C] border-[#78716C]/20";
     }
   };
 
   return (
-    <div className="space-y-4" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+    <div
+      className="space-y-4"
+      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+    >
       <div className="flex items-center gap-2 mb-3">
         <div className="w-0.5 h-4 bg-gradient-to-b from-[#D97706]/50 to-transparent rounded-full" />
         <label className="text-xs font-medium text-[#78716C] uppercase tracking-widest">
@@ -140,7 +146,9 @@ function ProblemSelector({ selected, onChange }) {
                 disabled={selected.find((p) => p.questionId === problem._id)}
               >
                 <span className="font-medium">{problem.title}</span>
-                <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${getDifficultyStyle(problem.difficulty)}`}>
+                <span
+                  className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${getDifficultyStyle(problem.difficulty)}`}
+                >
                   {problem.difficulty}
                 </span>
               </button>
@@ -168,13 +176,19 @@ function ProblemSelector({ selected, onChange }) {
                 {problem.label}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-[#E8E4D9] font-medium truncate">{problem.title}</p>
-                <span className={`inline-block mt-1 px-2 py-0.5 rounded-lg text-xs font-medium border ${getDifficultyStyle(problem.difficulty)}`}>
+                <p className="text-[#E8E4D9] font-medium truncate">
+                  {problem.title}
+                </p>
+                <span
+                  className={`inline-block mt-1 px-2 py-0.5 rounded-lg text-xs font-medium border ${getDifficultyStyle(problem.difficulty)}`}
+                >
                   {problem.difficulty}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-xs text-[#78716C] uppercase tracking-wider">Points:</label>
+                <label className="text-xs text-[#78716C] uppercase tracking-wider">
+                  Points:
+                </label>
                 <input
                   type="number"
                   value={problem.points}
@@ -194,7 +208,9 @@ function ProblemSelector({ selected, onChange }) {
       ) : (
         <div className="text-center py-8 rounded-xl border border-dashed border-[#1A1814] bg-[#0A0A08]">
           <FileText className="h-8 w-8 text-[#78716C] mx-auto mb-2" />
-          <p className="text-[#78716C] text-sm">No problems added yet. Search and add problems above.</p>
+          <p className="text-[#78716C] text-sm">
+            No problems added yet. Search and add problems above.
+          </p>
         </div>
       )}
     </div>
@@ -212,7 +228,7 @@ export default function AdminContestEditor() {
   const [error, setError] = useState(null);
 
   const formatDateTimeLocal = (date) => {
-    if (!date) return '';
+    if (!date) return "";
     const d = new Date(date);
     return d.toISOString().slice(0, 16);
   };
@@ -232,7 +248,7 @@ export default function AdminContestEditor() {
         lateJoinDeadline: formatDateTimeLocal(data.lateJoinDeadline),
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load contest');
+      setError(err.response?.data?.message || "Failed to load contest");
     } finally {
       setLoading(false);
     }
@@ -245,19 +261,19 @@ export default function AdminContestEditor() {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
       setContest((prev) => ({
         ...prev,
         [parent]: {
           ...prev[parent],
-          [child]: type === 'checkbox' ? checked : value,
+          [child]: type === "checkbox" ? checked : value,
         },
       }));
     } else {
       setContest((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value,
+        [name]: type === "checkbox" ? checked : value,
       }));
     }
   };
@@ -266,15 +282,15 @@ export default function AdminContestEditor() {
     e.preventDefault();
 
     if (!contest.title.trim()) {
-      setError('Title is required');
+      setError("Title is required");
       return;
     }
     if (!contest.startTime) {
-      setError('Start time is required');
+      setError("Start time is required");
       return;
     }
     if (contest.problems.length === 0) {
-      setError('At least one problem is required');
+      setError("At least one problem is required");
       return;
     }
 
@@ -290,7 +306,9 @@ export default function AdminContestEditor() {
         },
         penaltyRules: {
           ...contest.penaltyRules,
-          wrongSubmissionPenalty: parseInt(contest.penaltyRules.wrongSubmissionPenalty),
+          wrongSubmissionPenalty: parseInt(
+            contest.penaltyRules.wrongSubmissionPenalty,
+          ),
         },
       };
 
@@ -300,9 +318,9 @@ export default function AdminContestEditor() {
         await adminContestApi.createContest(payload);
       }
 
-      navigate('/admin/contests');
+      navigate("/admin/contests");
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save contest');
+      setError(err.response?.data?.message || "Failed to save contest");
     } finally {
       setSaving(false);
     }
@@ -314,7 +332,10 @@ export default function AdminContestEditor() {
         <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
           <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
         </div>
-        <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+        <p
+          className="text-[#78716C] mt-4 text-sm uppercase tracking-wider"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
           Loading contest...
         </p>
       </div>
@@ -322,7 +343,10 @@ export default function AdminContestEditor() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+    <div
+      className="max-w-4xl mx-auto space-y-8"
+      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+    >
       {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -340,11 +364,11 @@ export default function AdminContestEditor() {
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
             <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">
-              {isEditing ? 'Edit Contest' : 'Create Contest'}
+              {isEditing ? "Edit Contest" : "Create Contest"}
             </h1>
           </div>
           <p className="text-[#78716C] text-sm uppercase tracking-widest ml-3">
-            {isEditing ? 'Update contest details' : 'Set up a new competition'}
+            {isEditing ? "Update contest details" : "Set up a new competition"}
           </p>
         </div>
       </motion.div>
@@ -362,7 +386,12 @@ export default function AdminContestEditor() {
             </div>
             <span className="text-red-400 text-sm">{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/10 rounded text-red-400 transition-colors">×</button>
+          <button
+            onClick={() => setError(null)}
+            className="p-1 hover:bg-red-500/10 rounded text-red-400 transition-colors"
+          >
+            ×
+          </button>
         </motion.div>
       )}
 
@@ -378,7 +407,9 @@ export default function AdminContestEditor() {
             <div className="p-2 rounded-lg bg-[#D97706]/10">
               <Trophy className="h-4 w-4 text-[#D97706]" />
             </div>
-            <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">Basic Information</h2>
+            <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">
+              Basic Information
+            </h2>
           </div>
 
           <div>
@@ -413,7 +444,8 @@ export default function AdminContestEditor() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
-                <Calendar className="inline h-3 w-3 mr-1" />Start Time *
+                <Calendar className="inline h-3 w-3 mr-1" />
+                Start Time *
               </label>
               <input
                 type="datetime-local"
@@ -426,7 +458,8 @@ export default function AdminContestEditor() {
             </div>
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
-                <Clock className="inline h-3 w-3 mr-1" />Duration (minutes) *
+                <Clock className="inline h-3 w-3 mr-1" />
+                Duration (minutes) *
               </label>
               <input
                 type="number"
@@ -444,7 +477,8 @@ export default function AdminContestEditor() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-xs font-medium text-[#78716C] uppercase tracking-widest mb-2">
-                <Users className="inline h-3 w-3 mr-1" />Visibility
+                <Users className="inline h-3 w-3 mr-1" />
+                Visibility
               </label>
               <select
                 name="visibility"
@@ -479,7 +513,9 @@ export default function AdminContestEditor() {
                 onChange={handleChange}
                 className="w-5 h-5 rounded border-2 border-[#1A1814] bg-[#0A0A08] text-[#D97706] focus:ring-[#D97706]/50 focus:ring-offset-0 cursor-pointer"
               />
-              <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">Require Registration</span>
+              <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">
+                Require Registration
+              </span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer group">
               <input
@@ -489,7 +525,9 @@ export default function AdminContestEditor() {
                 onChange={handleChange}
                 className="w-5 h-5 rounded border-2 border-[#1A1814] bg-[#0A0A08] text-[#D97706] focus:ring-[#D97706]/50 focus:ring-offset-0 cursor-pointer"
               />
-              <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">Allow Late Join</span>
+              <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">
+                Allow Late Join
+              </span>
             </label>
           </div>
         </motion.div>
@@ -505,7 +543,9 @@ export default function AdminContestEditor() {
             <div className="p-2 rounded-lg bg-[#D97706]/10">
               <Settings className="h-4 w-4 text-[#D97706]" />
             </div>
-            <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">Scoring Rules</h2>
+            <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">
+              Scoring Rules
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -547,7 +587,9 @@ export default function AdminContestEditor() {
               onChange={handleChange}
               className="w-5 h-5 rounded border-2 border-[#1A1814] bg-[#0A0A08] text-[#D97706] focus:ring-[#D97706]/50 focus:ring-offset-0 cursor-pointer"
             />
-            <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">Enable Partial Scoring</span>
+            <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">
+              Enable Partial Scoring
+            </span>
           </label>
         </motion.div>
 
@@ -562,7 +604,9 @@ export default function AdminContestEditor() {
             <div className="p-2 rounded-lg bg-[#92400E]/10">
               <AlertTriangle className="h-4 w-4 text-[#92400E]" />
             </div>
-            <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">Penalty Rules</h2>
+            <h2 className="text-sm font-medium text-[#E8E4D9] uppercase tracking-widest">
+              Penalty Rules
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -603,7 +647,9 @@ export default function AdminContestEditor() {
               onChange={handleChange}
               className="w-5 h-5 rounded border-2 border-[#1A1814] bg-[#0A0A08] text-[#D97706] focus:ring-[#D97706]/50 focus:ring-offset-0 cursor-pointer"
             />
-            <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">Enable Time-Based Penalty</span>
+            <span className="text-sm text-[#78716C] group-hover:text-[#E8E4D9] transition-colors">
+              Enable Time-Based Penalty
+            </span>
           </label>
         </motion.div>
 
@@ -616,7 +662,9 @@ export default function AdminContestEditor() {
         >
           <ProblemSelector
             selected={contest.problems}
-            onChange={(problems) => setContest((prev) => ({ ...prev, problems }))}
+            onChange={(problems) =>
+              setContest((prev) => ({ ...prev, problems }))
+            }
           />
         </motion.div>
 
@@ -629,7 +677,7 @@ export default function AdminContestEditor() {
         >
           <button
             type="button"
-            onClick={() => navigate('/admin/contests')}
+            onClick={() => navigate("/admin/contests")}
             className="px-6 py-3 rounded-xl border border-[#1A1814] bg-[#0F0F0D] hover:border-[#78716C]/50 text-[#E8E4D9] font-medium transition-all"
           >
             Cancel
@@ -647,7 +695,7 @@ export default function AdminContestEditor() {
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                {isEditing ? 'Update Contest' : 'Create Contest'}
+                {isEditing ? "Update Contest" : "Create Contest"}
               </>
             )}
           </button>

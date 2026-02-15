@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import logger from "../../utils/logger";
 import { useAuth } from "../../context/AuthContext";
 import { getMySubmissions } from "../../services/common/api";
 import { useAIFeedbackEnhanced } from "../../hooks/ai/useAIFeedbackEnhanced";
@@ -35,7 +36,7 @@ export default function AIFeedbackIntegration({
           setSubmissions(data || []);
         }
       } catch (err) {
-        console.error("Failed to load submissions:", err);
+        logger.error("Failed to load submissions:", err);
         if (!cancelled) {
           setSubmissions([]);
         }
@@ -177,7 +178,6 @@ export function useAIFeedbackFlow({
   );
 
   return {
-
     triggerAIFeedback,
 
     AIComponents,

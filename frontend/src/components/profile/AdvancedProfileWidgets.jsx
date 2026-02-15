@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getMIMProfile, getMIMRecommendations } from "../../services/ai/aiApi";
+import logger from "../../utils/logger";
 
 const COLORS = {
   bg: "#0A0A08",
@@ -24,7 +25,11 @@ const advancedWidgetListeners = new Set();
 
 export function emitAdvancedWidgetsRefresh() {
   advancedWidgetListeners.forEach((listener) => {
-    try { listener(); } catch (e) { console.error(e); }
+    try {
+      listener();
+    } catch (e) {
+      logger.error(e);
+    }
   });
 }
 
@@ -73,7 +78,9 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
     }
   }, [userId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   useAdvancedWidgetsRefresh(fetchData);
 
   const buildTopicMastery = () => {
@@ -83,7 +90,8 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
 
     const topicSuccessRates = data.topic_success_rates || {};
     Object.entries(topicSuccessRates).forEach(([topic, rate]) => {
-      const numericRate = typeof rate === 'number' ? rate : parseFloat(rate) || 0;
+      const numericRate =
+        typeof rate === "number" ? rate : parseFloat(rate) || 0;
       const level = getMasteryLevel(numericRate);
       topics.push({
         name: topic,
@@ -91,17 +99,20 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
         level: level.name,
         levelColor: level.color,
         problemsSolved: null,
-        isTopicBased: true
+        isTopicBased: true,
       });
     });
 
-    const categoryPerf = data.category_performance || data.learning_trajectory?.category_performance || {};
+    const categoryPerf =
+      data.category_performance ||
+      data.learning_trajectory?.category_performance ||
+      {};
     Object.entries(categoryPerf).forEach(([cat, perf]) => {
-
-      if (topics.some(t => t.name.toLowerCase() === cat.toLowerCase())) return;
+      if (topics.some((t) => t.name.toLowerCase() === cat.toLowerCase()))
+        return;
 
       let rate, total, passed;
-      if (typeof perf === 'object') {
+      if (typeof perf === "object") {
         total = perf.total || 0;
         passed = perf.passed || 0;
         rate = total > 0 ? passed / total : 0;
@@ -119,21 +130,22 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
         levelColor: level.color,
         problemsSolved: passed,
         totalProblems: total,
-        isTopicBased: true
+        isTopicBased: true,
       });
     });
 
     if (topics.length === 0) {
       const readiness = data.readiness_scores || {};
       Object.entries(readiness).forEach(([diff, score]) => {
-        const numericScore = typeof score === 'number' ? score : parseFloat(score) || 0;
+        const numericScore =
+          typeof score === "number" ? score : parseFloat(score) || 0;
         const level = getMasteryLevel(numericScore);
         topics.push({
           name: `${diff} Problems`,
           mastery: numericScore,
           level: level.name,
           levelColor: level.color,
-          isTopicBased: false
+          isTopicBased: false,
         });
       });
     }
@@ -145,13 +157,19 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border p-5" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+      >
         <div className="flex items-center justify-center py-8">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             className="w-5 h-5 border-2 border-t-transparent rounded-full"
-            style={{ borderColor: COLORS.accent, borderTopColor: 'transparent' }}
+            style={{
+              borderColor: COLORS.accent,
+              borderTopColor: "transparent",
+            }}
           />
         </div>
       </div>
@@ -160,7 +178,10 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
 
   if (error) {
     return (
-      <div className="rounded-xl border p-5" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+      >
         <p className="text-sm text-center" style={{ color: COLORS.textMuted }}>
           Unable to load topic mastery
         </p>
@@ -211,18 +232,31 @@ export function TopicMasteryGrid({ userId, showLevels = true }) {
       ) : (
         <div className="space-y-3">
           {topics.map((topic, index) => (
-            <TopicMasteryRow key={topic.name} topic={topic} index={index} showLevel={showLevels} />
+            <TopicMasteryRow
+              key={topic.name}
+              topic={topic}
+              index={index}
+              showLevel={showLevels}
+            />
           ))}
         </div>
       )}
 
       {}
       {topics.length > 0 && showLevels && (
-        <div className="mt-4 pt-3 border-t flex flex-wrap gap-3" style={{ borderColor: COLORS.border }}>
+        <div
+          className="mt-4 pt-3 border-t flex flex-wrap gap-3"
+          style={{ borderColor: COLORS.border }}
+        >
           {MASTERY_LEVELS.map((level) => (
             <div key={level.name} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: level.color }} />
-              <span className="text-[10px]" style={{ color: COLORS.textMuted }}>{level.name}</span>
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: level.color }}
+              />
+              <span className="text-[10px]" style={{ color: COLORS.textMuted }}>
+                {level.name}
+              </span>
             </div>
           ))}
         </div>
@@ -255,7 +289,7 @@ function TopicMasteryRow({ topic, index, showLevel }) {
               style={{
                 backgroundColor: `${topic.levelColor}20`,
                 color: topic.levelColor,
-                fontFamily
+                fontFamily,
               }}
             >
               {topic.level}
@@ -268,7 +302,10 @@ function TopicMasteryRow({ topic, index, showLevel }) {
               {topic.problemsSolved}/{topic.totalProblems}
             </span>
           )}
-          <span className="text-xs font-bold" style={{ color: topic.levelColor }}>
+          <span
+            className="text-xs font-bold"
+            style={{ color: topic.levelColor }}
+          >
             {percentage}%
           </span>
         </div>
@@ -300,17 +337,16 @@ export function NextProblemCard({ userId }) {
     setLoading(true);
     setError(null);
     try {
-      console.log("[NextProblemCard] Fetching recommendations for:", userId);
+      logger.log("[NextProblemCard] Fetching recommendations for:", userId);
       const data = await getMIMRecommendations({ userId, limit: 3 });
-      console.log("[NextProblemCard] Response:", data);
+      logger.log("[NextProblemCard] Response:", data);
 
       if (data && data.recommendations && data.recommendations.length > 0) {
-
         const seenIds = new Set();
         const seenTitles = new Set();
-        const uniqueRecs = data.recommendations.filter(rec => {
+        const uniqueRecs = data.recommendations.filter((rec) => {
           const id = rec.problem_id;
-          const title = (rec.title || '').toLowerCase().trim();
+          const title = (rec.title || "").toLowerCase().trim();
 
           if (seenIds.has(id) || seenTitles.has(title)) return false;
 
@@ -323,22 +359,28 @@ export function NextProblemCard({ userId }) {
         setRecommendation(null);
       }
     } catch (err) {
-      console.error("[NextProblemCard] Error:", err);
+      logger.error("[NextProblemCard] Error:", err);
       setError(err.message || "Failed to load recommendation");
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   useAdvancedWidgetsRefresh(fetchData);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty?.toLowerCase()) {
-      case "easy": return COLORS.success;
-      case "medium": return COLORS.warning;
-      case "hard": return COLORS.error;
-      default: return COLORS.accent;
+      case "easy":
+        return COLORS.success;
+      case "medium":
+        return COLORS.warning;
+      case "hard":
+        return COLORS.error;
+      default:
+        return COLORS.accent;
     }
   };
 
@@ -350,8 +392,14 @@ export function NextProblemCard({ userId }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border p-5" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
-        <h3 className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: COLORS.textSecondary, fontFamily }}>
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+      >
+        <h3
+          className="text-xs font-medium uppercase tracking-widest mb-4"
+          style={{ color: COLORS.textSecondary, fontFamily }}
+        >
           🎯 Your Next Challenge
         </h3>
         <div className="flex items-center justify-center py-6">
@@ -359,9 +407,14 @@ export function NextProblemCard({ userId }) {
             animate={{ rotate: 360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             className="w-5 h-5 border-2 border-t-transparent rounded-full"
-            style={{ borderColor: COLORS.accent, borderTopColor: 'transparent' }}
+            style={{
+              borderColor: COLORS.accent,
+              borderTopColor: "transparent",
+            }}
           />
-          <span className="ml-2 text-xs" style={{ color: COLORS.textMuted }}>Finding best problem...</span>
+          <span className="ml-2 text-xs" style={{ color: COLORS.textMuted }}>
+            Finding best problem...
+          </span>
         </div>
       </div>
     );
@@ -375,11 +428,16 @@ export function NextProblemCard({ userId }) {
         className="rounded-xl border p-5"
         style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
       >
-        <h3 className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: COLORS.textSecondary, fontFamily }}>
+        <h3
+          className="text-xs font-medium uppercase tracking-widest mb-4"
+          style={{ color: COLORS.textSecondary, fontFamily }}
+        >
           🎯 Your Next Challenge
         </h3>
         <div className="text-center py-4">
-          <p className="text-sm" style={{ color: COLORS.error }}>{error}</p>
+          <p className="text-sm" style={{ color: COLORS.error }}>
+            {error}
+          </p>
           <button
             onClick={fetchData}
             className="mt-2 text-xs px-3 py-1 rounded"
@@ -400,7 +458,10 @@ export function NextProblemCard({ userId }) {
         className="rounded-xl border p-5"
         style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
       >
-        <h3 className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: COLORS.textSecondary, fontFamily }}>
+        <h3
+          className="text-xs font-medium uppercase tracking-widest mb-4"
+          style={{ color: COLORS.textSecondary, fontFamily }}
+        >
           🎯 Your Next Challenge
         </h3>
         <div className="text-center py-4">
@@ -421,7 +482,7 @@ export function NextProblemCard({ userId }) {
       style={{
         backgroundColor: COLORS.bgCard,
         borderColor: COLORS.accent,
-        boxShadow: `0 0 20px ${COLORS.accent}20`
+        boxShadow: `0 0 20px ${COLORS.accent}20`,
       }}
     >
       {}
@@ -431,7 +492,10 @@ export function NextProblemCard({ userId }) {
       />
 
       <div className="flex items-start justify-between mb-3">
-        <h3 className="text-xs font-medium uppercase tracking-widest" style={{ color: COLORS.accent, fontFamily }}>
+        <h3
+          className="text-xs font-medium uppercase tracking-widest"
+          style={{ color: COLORS.accent, fontFamily }}
+        >
           🎯 Your Next Challenge
         </h3>
         <span
@@ -445,7 +509,10 @@ export function NextProblemCard({ userId }) {
         </span>
       </div>
 
-      <h4 className="text-lg font-bold mb-2 line-clamp-2" style={{ color: COLORS.textPrimary, fontFamily }}>
+      <h4
+        className="text-lg font-bold mb-2 line-clamp-2"
+        style={{ color: COLORS.textPrimary, fontFamily }}
+      >
         {recommendation.title}
       </h4>
 
@@ -456,7 +523,10 @@ export function NextProblemCard({ userId }) {
       <div className="flex items-center justify-between">
         <span
           className="text-xs px-2 py-1 rounded"
-          style={{ backgroundColor: COLORS.border, color: COLORS.textSecondary }}
+          style={{
+            backgroundColor: COLORS.border,
+            color: COLORS.textSecondary,
+          }}
         >
           {recommendation.category}
         </span>
@@ -466,14 +536,21 @@ export function NextProblemCard({ userId }) {
           whileTap={{ scale: 0.95 }}
           onClick={handleStartProblem}
           className="px-4 py-2 rounded-lg text-sm font-medium"
-          style={{ backgroundColor: COLORS.accent, color: COLORS.bg, fontFamily }}
+          style={{
+            backgroundColor: COLORS.accent,
+            color: COLORS.bg,
+            fontFamily,
+          }}
         >
           Start Now →
         </motion.button>
       </div>
 
       {recommendation.is_review && (
-        <div className="mt-3 pt-3 border-t text-xs" style={{ borderColor: COLORS.border, color: COLORS.warning }}>
+        <div
+          className="mt-3 pt-3 border-t text-xs"
+          style={{ borderColor: COLORS.border, color: COLORS.warning }}
+        >
           ⚠️ This is a problem you struggled with before. Give it another try!
         </div>
       )}
@@ -492,30 +569,37 @@ export function WeakAreaFocus({ userId }) {
     setLoading(true);
     setError(null);
     try {
-      console.log("[WeakAreaFocus] Fetching profile for:", userId);
+      logger.log("[WeakAreaFocus] Fetching profile for:", userId);
       const profile = await getMIMProfile({ userId });
-      console.log("[WeakAreaFocus] Response:", profile);
+      logger.log("[WeakAreaFocus] Response:", profile);
       setData(profile);
     } catch (err) {
-      console.error("[WeakAreaFocus] Error:", err);
+      logger.error("[WeakAreaFocus] Error:", err);
       setError(err.message || "Failed to load profile");
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   useAdvancedWidgetsRefresh(fetchData);
 
   const handlePractice = (topic) => {
-
     navigate(`/problems?tag=${encodeURIComponent(topic)}`);
   };
 
   if (loading) {
     return (
-      <div className="rounded-xl border p-5" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
-        <h3 className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: COLORS.textSecondary, fontFamily }}>
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+      >
+        <h3
+          className="text-xs font-medium uppercase tracking-widest mb-4"
+          style={{ color: COLORS.textSecondary, fontFamily }}
+        >
           Areas to Improve
         </h3>
         <div className="flex items-center justify-center py-6">
@@ -523,7 +607,10 @@ export function WeakAreaFocus({ userId }) {
             animate={{ rotate: 360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             className="w-5 h-5 border-2 border-t-transparent rounded-full"
-            style={{ borderColor: COLORS.accent, borderTopColor: 'transparent' }}
+            style={{
+              borderColor: COLORS.accent,
+              borderTopColor: "transparent",
+            }}
           />
         </div>
       </div>
@@ -532,12 +619,20 @@ export function WeakAreaFocus({ userId }) {
 
   if (error) {
     return (
-      <div className="rounded-xl border p-5" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
-        <h3 className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: COLORS.textSecondary, fontFamily }}>
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+      >
+        <h3
+          className="text-xs font-medium uppercase tracking-widest mb-4"
+          style={{ color: COLORS.textSecondary, fontFamily }}
+        >
           Areas to Improve
         </h3>
         <div className="text-center py-4">
-          <p className="text-sm" style={{ color: COLORS.error }}>{error}</p>
+          <p className="text-sm" style={{ color: COLORS.error }}>
+            {error}
+          </p>
           <button
             onClick={fetchData}
             className="mt-2 text-xs px-3 py-1 rounded"
@@ -561,7 +656,8 @@ export function WeakAreaFocus({ userId }) {
     });
   }
 
-  const displayAreas = weakAreas.length > 0 ? weakAreas : lowReadinessDifficulties;
+  const displayAreas =
+    weakAreas.length > 0 ? weakAreas : lowReadinessDifficulties;
 
   return (
     <motion.div
@@ -570,7 +666,10 @@ export function WeakAreaFocus({ userId }) {
       className="rounded-xl border p-5"
       style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
     >
-      <h3 className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: COLORS.textSecondary, fontFamily }}>
+      <h3
+        className="text-xs font-medium uppercase tracking-widest mb-4"
+        style={{ color: COLORS.textSecondary, fontFamily }}
+      >
         Areas to Improve
       </h3>
 
@@ -588,18 +687,24 @@ export function WeakAreaFocus({ userId }) {
         <div className="space-y-3">
           {displayAreas.slice(0, 4).map((area, index) => (
             <motion.div
-              key={typeof area === 'string' ? area : area.name || index}
+              key={typeof area === "string" ? area : area.name || index}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               className="flex items-center justify-between p-3 rounded-lg border"
-              style={{ backgroundColor: `${COLORS.error}10`, borderColor: `${COLORS.error}20` }}
+              style={{
+                backgroundColor: `${COLORS.error}10`,
+                borderColor: `${COLORS.error}20`,
+              }}
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg">⚠️</span>
                 <div>
-                  <span className="text-sm font-medium" style={{ color: COLORS.textPrimary, fontFamily }}>
-                    {typeof area === 'string' ? area : area.name || area.topic}
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: COLORS.textPrimary, fontFamily }}
+                  >
+                    {typeof area === "string" ? area : area.name || area.topic}
                   </span>
                   <p className="text-xs" style={{ color: COLORS.textMuted }}>
                     Needs more practice
@@ -609,9 +714,17 @@ export function WeakAreaFocus({ userId }) {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => handlePractice(typeof area === 'string' ? area : area.name || area.topic)}
+                onClick={() =>
+                  handlePractice(
+                    typeof area === "string" ? area : area.name || area.topic,
+                  )
+                }
                 className="px-3 py-1.5 rounded text-xs font-medium"
-                style={{ backgroundColor: COLORS.accent, color: COLORS.bg, fontFamily }}
+                style={{
+                  backgroundColor: COLORS.accent,
+                  color: COLORS.bg,
+                  fontFamily,
+                }}
               >
                 Practice
               </motion.button>
@@ -621,7 +734,10 @@ export function WeakAreaFocus({ userId }) {
       )}
 
       {displayAreas.length > 0 && (
-        <div className="mt-4 pt-3 border-t text-xs text-center" style={{ borderColor: COLORS.border, color: COLORS.textMuted }}>
+        <div
+          className="mt-4 pt-3 border-t text-xs text-center"
+          style={{ borderColor: COLORS.border, color: COLORS.textMuted }}
+        >
           💡 Focusing on weak areas helps you improve faster
         </div>
       )}

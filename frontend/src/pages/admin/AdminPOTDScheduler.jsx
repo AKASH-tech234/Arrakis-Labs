@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import logger from "../../utils/logger";
 import {
   Calendar,
   ChevronLeft,
@@ -57,7 +58,7 @@ export default function AdminPOTDScheduler() {
         setSchedules(response.data.schedules);
       }
     } catch (err) {
-      console.error("Failed to fetch schedules:", err);
+      logger.error("Failed to fetch schedules:", err);
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export default function AdminPOTDScheduler() {
         setSchedulerStatus(response.data);
       }
     } catch (err) {
-      console.error("Failed to fetch scheduler status:", err);
+      logger.error("Failed to fetch scheduler status:", err);
     }
   };
 
@@ -86,7 +87,7 @@ export default function AdminPOTDScheduler() {
         setProblems(response.data.problems);
       }
     } catch (err) {
-      console.error("Failed to fetch problems:", err);
+      logger.error("Failed to fetch problems:", err);
     } finally {
       setProblemsLoading(false);
     }
@@ -152,7 +153,7 @@ export default function AdminPOTDScheduler() {
       const response = await schedulePOTD(
         selectedProblem._id,
         selectedDate.toISOString(),
-        scheduleNotes
+        scheduleNotes,
       );
 
       if (response.success) {
@@ -165,13 +166,15 @@ export default function AdminPOTDScheduler() {
         schedDate.setUTCHours(0, 0, 0, 0);
 
         if (schedDate.getTime() === today.getTime()) {
-          alert("✅ POTD scheduled and published for today! It's now visible on the problems page.");
+          alert(
+            "✅ POTD scheduled and published for today! It's now visible on the problems page.",
+          );
         } else {
           alert("✅ POTD scheduled successfully!");
         }
       }
     } catch (err) {
-      console.error("Failed to schedule POTD:", err);
+      logger.error("Failed to schedule POTD:", err);
       alert(err.response?.data?.message || "Failed to schedule POTD");
     } finally {
       setSaving(false);
@@ -187,7 +190,7 @@ export default function AdminPOTDScheduler() {
       await deleteScheduledPOTD(scheduleId);
       fetchSchedules();
     } catch (err) {
-      console.error("Failed to delete schedule:", err);
+      logger.error("Failed to delete schedule:", err);
       alert(err.response?.data?.message || "Failed to delete schedule");
     }
   };
@@ -195,7 +198,7 @@ export default function AdminPOTDScheduler() {
   const handleForcePublish = async () => {
     if (
       !confirm(
-        "Are you sure you want to force publish today's POTD? This should only be used if the automatic cron job failed."
+        "Are you sure you want to force publish today's POTD? This should only be used if the automatic cron job failed.",
       )
     ) {
       return;
@@ -234,7 +237,8 @@ export default function AdminPOTDScheduler() {
     const isPast = cellDate < today;
     const isLocked = schedule?.isLocked;
 
-    let bgColor = "bg-[#0F0F0D] hover:bg-[#1A1814]/70 cursor-pointer border-[#1A1814]";
+    let bgColor =
+      "bg-[#0F0F0D] hover:bg-[#1A1814]/70 cursor-pointer border-[#1A1814]";
     let statusIcon = null;
 
     if (schedule) {
@@ -269,7 +273,9 @@ export default function AdminPOTDScheduler() {
         transition={{ delay: day * 0.01 }}
         onClick={() => handleDayClick(day)}
         className={`min-h-[100px] p-2 rounded-xl border ${bgColor} ${
-          isToday ? "ring-2 ring-[#D97706] ring-offset-1 ring-offset-[#0A0A08]" : ""
+          isToday
+            ? "ring-2 ring-[#D97706] ring-offset-1 ring-offset-[#0A0A08]"
+            : ""
         } transition-all duration-200`}
       >
         <div className="flex items-center justify-between mb-1">
@@ -293,7 +299,7 @@ export default function AdminPOTDScheduler() {
             </p>
             <span
               className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${getDifficultyColor(
-                schedule.problem?.difficulty
+                schedule.problem?.difficulty,
               )}`}
             >
               {schedule.problem?.difficulty}
@@ -316,14 +322,27 @@ export default function AdminPOTDScheduler() {
   };
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+    <div
+      className="space-y-8"
+      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+    >
       {}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -352,7 +371,9 @@ export default function AdminPOTDScheduler() {
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    schedulerStatus.cronJobActive ? "bg-[#F59E0B] animate-pulse" : "bg-red-400"
+                    schedulerStatus.cronJobActive
+                      ? "bg-[#F59E0B] animate-pulse"
+                      : "bg-red-400"
                   }`}
                 ></span>
                 Cron {schedulerStatus.cronJobActive ? "Active" : "Inactive"}
@@ -438,7 +459,7 @@ export default function AdminPOTDScheduler() {
               <div key={`empty-${index}`} className="min-h-[100px]"></div>
             ))}
             {Array.from({ length: daysInMonth }).map((_, index) =>
-              renderDay(index + 1)
+              renderDay(index + 1),
             )}
           </div>
         </div>
@@ -520,11 +541,13 @@ export default function AdminPOTDScheduler() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[#E8E4D9] font-medium">{problem.title}</p>
+                        <p className="text-[#E8E4D9] font-medium">
+                          {problem.title}
+                        </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`px-2 py-0.5 rounded-lg text-xs font-medium ${getDifficultyColor(
-                              problem.difficulty
+                              problem.difficulty,
                             )}`}
                           >
                             {problem.difficulty}
@@ -542,7 +565,9 @@ export default function AdminPOTDScheduler() {
                       {problem.lastUsedAsPOTD && (
                         <span className="text-xs text-[#78716C]">
                           Last used:{" "}
-                          {new Date(problem.lastUsedAsPOTD).toLocaleDateString()}
+                          {new Date(
+                            problem.lastUsedAsPOTD,
+                          ).toLocaleDateString()}
                         </span>
                       )}
                     </div>

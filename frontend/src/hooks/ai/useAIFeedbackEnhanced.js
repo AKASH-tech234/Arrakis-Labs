@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { getAIFeedback, getWeeklyReport } from "../../services/ai/aiApi";
 import { useConfidenceBadge } from "../common/useConfidenceBadge";
 import { useLearningTimeline } from "../profile/useLearningTimeline";
+import logger from "../../utils/logger";
 
 const submissionEventListeners = new Set();
 
@@ -10,7 +11,7 @@ export function emitSubmissionUpdate(data) {
     try {
       listener(data);
     } catch (e) {
-      console.error("[SubmissionEvent] Listener error:", e);
+      logger.error("[SubmissionEvent] Listener error:", e);
     }
   });
 }
@@ -59,7 +60,7 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
 
   const handleSubmissionUpdate = useCallback(
     (data) => {
-      console.log("[AIFeedback] Real-time submission update:", data);
+      logger.log("[AIFeedback] Real-time submission update:", data);
 
       setSubmissionHistory((prev) => [data, ...prev].slice(0, 20));
 
@@ -89,14 +90,13 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       verdict,
       errorType,
     }) => {
-
       const requestKey = `${questionId}-${code?.substring(0, 50)}-${verdict}`;
 
       if (
         lastRequestKeyRef.current === requestKey &&
         pendingRequestRef.current
       ) {
-        console.log("[AIFeedback] Deduped identical request:", questionId);
+        logger.log("[AIFeedback] Deduped identical request:", questionId);
         return pendingRequestRef.current;
       }
 
@@ -105,7 +105,7 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
         cachedFeedback &&
         cachedFeedback.code_hash === code?.substring(0, 50)
       ) {
-        console.log("[AIFeedback] Returning cached feedback:", questionId);
+        logger.log("[AIFeedback] Returning cached feedback:", questionId);
         setFeedback(cachedFeedback);
         return cachedFeedback;
       }
@@ -169,7 +169,7 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
             timestamp: Date.now(),
           });
 
-          console.error("AI feedback error:", err);
+          logger.error("AI feedback error:", err);
           return null;
         } finally {
           setLoading(false);
@@ -215,7 +215,7 @@ export function useAIFeedbackEnhanced({ userId, submissions = [] }) {
       }
       const message = err.message || "Failed to fetch weekly report";
       setWeeklyReportError(message);
-      console.error("Weekly report error:", err);
+      logger.error("Weekly report error:", err);
       return null;
     } finally {
       setLoadingWeeklyReport(false);

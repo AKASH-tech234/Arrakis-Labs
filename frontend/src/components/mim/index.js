@@ -15,7 +15,10 @@ export {
 export { default as SkillRadarChart } from "./SkillRadarChart";
 
 export function refreshAllMIMComponents() {
-  console.log("[MIM] Refreshing all profile components...");
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("[MIM] Refreshing all profile components...");
+  }
 
   import("./CognitiveProfile").then((m) => m.emitProfileRefresh?.());
   import("./ProblemRecommendations").then((m) =>
@@ -25,5 +28,7 @@ export function refreshAllMIMComponents() {
 
   import("../profile/InsightsPatterns").then((m) => m.emitInsightsRefresh?.());
 
-  import("../profile/AdvancedProfileWidgets").then((m) => m.emitAdvancedWidgetsRefresh?.());
+  import("../profile/AdvancedProfileWidgets").then((m) =>
+    m.emitAdvancedWidgetsRefresh?.(),
+  );
 }

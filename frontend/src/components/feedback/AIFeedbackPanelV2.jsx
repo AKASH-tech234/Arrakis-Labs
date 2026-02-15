@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import logger from "../../utils/logger";
 import MIMInsights from "../mim/MIMInsights";
 import MIMInsightsV3 from "../mim/MIMInsightsV3";
 
@@ -27,7 +28,7 @@ function CodeBlock({ code, language, onCopy }) {
       setTimeout(() => setCopied(false), 2000);
       if (onCopy) onCopy();
     } catch (err) {
-      console.error("Failed to copy code:", err);
+      logger.error("Failed to copy code:", err);
     }
   };
 
@@ -347,16 +348,22 @@ export default function AIFeedbackPanelV2({
             {!loading && !error && !feedback && submissionData && (
               <div className="space-y-4">
                 {}
-                <div className={`p-4 rounded-lg border ${
-                  isAccepted
-                    ? "border-[#22C55E]/30 bg-[#22C55E]/5"
-                    : "border-[#EF4444]/30 bg-[#EF4444]/5"
-                }`}>
+                <div
+                  className={`p-4 rounded-lg border ${
+                    isAccepted
+                      ? "border-[#22C55E]/30 bg-[#22C55E]/5"
+                      : "border-[#EF4444]/30 bg-[#EF4444]/5"
+                  }`}
+                >
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isAccepted ? "bg-[#22C55E]/20" : "bg-[#EF4444]/20"
-                    }`}>
-                      <span className={`text-xl ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isAccepted ? "bg-[#22C55E]/20" : "bg-[#EF4444]/20"
+                      }`}
+                    >
+                      <span
+                        className={`text-xl ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}
+                      >
                         {isAccepted ? "✓" : "✗"}
                       </span>
                     </div>
@@ -365,12 +372,23 @@ export default function AIFeedbackPanelV2({
                         className={`text-lg font-semibold uppercase tracking-wider ${
                           isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"
                         }`}
-                        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
                       >
-                        {isAccepted ? "Accepted" : submissionData.verdict?.replace(/_/g, " ") || "Wrong Answer"}
+                        {isAccepted
+                          ? "Accepted"
+                          : submissionData.verdict?.replace(/_/g, " ") ||
+                            "Wrong Answer"}
                       </h3>
-                      <p className="text-[#78716C] text-xs" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                        {submissionData.passedCount} / {submissionData.totalCount} test cases passed
+                      <p
+                        className="text-[#78716C] text-xs"
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
+                      >
+                        {submissionData.passedCount} /{" "}
+                        {submissionData.totalCount} test cases passed
                       </p>
                     </div>
                   </div>
@@ -379,15 +397,41 @@ export default function AIFeedbackPanelV2({
                 {}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: "Language", value: submissionData.language?.toUpperCase() || "N/A" },
-                    { label: "Runtime", value: submissionData.runtime ? `${submissionData.runtime}ms` : "—" },
-                    { label: "Memory", value: submissionData.memory ? `${submissionData.memory}MB` : "—" },
+                    {
+                      label: "Language",
+                      value: submissionData.language?.toUpperCase() || "N/A",
+                    },
+                    {
+                      label: "Runtime",
+                      value: submissionData.runtime
+                        ? `${submissionData.runtime}ms`
+                        : "—",
+                    },
+                    {
+                      label: "Memory",
+                      value: submissionData.memory
+                        ? `${submissionData.memory}MB`
+                        : "—",
+                    },
                   ].map((stat) => (
-                    <div key={stat.label} className="text-center p-2 border border-[#1A1814] rounded-lg bg-[#0D0D0B]">
-                      <div className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                    <div
+                      key={stat.label}
+                      className="text-center p-2 border border-[#1A1814] rounded-lg bg-[#0D0D0B]"
+                    >
+                      <div
+                        className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1"
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
+                      >
                         {stat.label}
                       </div>
-                      <div className="text-[#E8E4D9] text-sm font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                      <div
+                        className="text-[#E8E4D9] text-sm font-semibold"
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
+                      >
                         {stat.value}
                       </div>
                     </div>
@@ -398,37 +442,87 @@ export default function AIFeedbackPanelV2({
                 {!isAccepted && submissionData.results?.length > 0 && (
                   <div className="border border-[#EF4444]/20 rounded-lg overflow-hidden">
                     <div className="px-4 py-2 bg-[#EF4444]/10 border-b border-[#EF4444]/20">
-                      <span className="text-[#EF4444] text-xs uppercase tracking-wider font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                        ✗ Failed Test Case {(submissionData.firstFailingIndex ?? 0) + 1}
-                        {submissionData.results[submissionData.firstFailingIndex ?? 0]?.isHidden && " (Hidden)"}
+                      <span
+                        className="text-[#EF4444] text-xs uppercase tracking-wider font-semibold"
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
+                      >
+                        ✗ Failed Test Case{" "}
+                        {(submissionData.firstFailingIndex ?? 0) + 1}
+                        {submissionData.results[
+                          submissionData.firstFailingIndex ?? 0
+                        ]?.isHidden && " (Hidden)"}
                       </span>
                     </div>
                     <div className="p-4 space-y-3">
                       {(() => {
-                        const failedTest = submissionData.results[submissionData.firstFailingIndex ?? 0];
+                        const failedTest =
+                          submissionData.results[
+                            submissionData.firstFailingIndex ?? 0
+                          ];
                         if (!failedTest) return null;
                         return (
                           <>
                             <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Input:</div>
+                              <div
+                                className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1"
+                                style={{
+                                  fontFamily:
+                                    "'Rajdhani', system-ui, sans-serif",
+                                }}
+                              >
+                                Input:
+                              </div>
                               <div className="bg-[#1A1814] rounded p-2">
-                                <pre className="text-[#E8E4D9] text-xs whitespace-pre-wrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                <pre
+                                  className="text-[#E8E4D9] text-xs whitespace-pre-wrap"
+                                  style={{
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                  }}
+                                >
                                   {failedTest.stdin || "(hidden)"}
                                 </pre>
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Expected:</div>
+                              <div
+                                className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1"
+                                style={{
+                                  fontFamily:
+                                    "'Rajdhani', system-ui, sans-serif",
+                                }}
+                              >
+                                Expected:
+                              </div>
                               <div className="bg-[#1A1814] rounded p-2">
-                                <pre className="text-[#22C55E] text-xs whitespace-pre-wrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                <pre
+                                  className="text-[#22C55E] text-xs whitespace-pre-wrap"
+                                  style={{
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                  }}
+                                >
                                   {failedTest.expectedStdout || "(hidden)"}
                                 </pre>
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Your Output:</div>
+                              <div
+                                className="text-[10px] uppercase tracking-wider text-[#78716C] mb-1"
+                                style={{
+                                  fontFamily:
+                                    "'Rajdhani', system-ui, sans-serif",
+                                }}
+                              >
+                                Your Output:
+                              </div>
                               <div className="bg-[#EF4444]/5 border border-[#EF4444]/20 rounded p-2">
-                                <pre className="text-[#EF4444] text-xs whitespace-pre-wrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                <pre
+                                  className="text-[#EF4444] text-xs whitespace-pre-wrap"
+                                  style={{
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                  }}
+                                >
                                   {failedTest.actualStdout || "(empty)"}
                                 </pre>
                               </div>
@@ -444,11 +538,19 @@ export default function AIFeedbackPanelV2({
                 <div className="border border-[#3D3D3D]/30 rounded-lg p-4 bg-[#0D0D0B]">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[#D97706]">🤖</span>
-                    <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                    <span
+                      className="text-[#78716C] text-xs uppercase tracking-wider"
+                      style={{
+                        fontFamily: "'Rajdhani', system-ui, sans-serif",
+                      }}
+                    >
                       AI Analysis
                     </span>
                   </div>
-                  <p className="text-[#78716C] text-sm" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+                  <p
+                    className="text-[#78716C] text-sm"
+                    style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                  >
                     {!isAccepted
                       ? "AI suggestions are being prepared..."
                       : "Great job! Consider reviewing the solution for optimization opportunities."}
@@ -457,7 +559,9 @@ export default function AIFeedbackPanelV2({
                     <button
                       onClick={onRetry}
                       className="mt-3 text-[#D97706] text-xs uppercase tracking-wider hover:text-[#F59E0B] transition-colors"
-                      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                      style={{
+                        fontFamily: "'Rajdhani', system-ui, sans-serif",
+                      }}
                     >
                       → Request AI hints
                     </button>
@@ -496,25 +600,40 @@ export default function AIFeedbackPanelV2({
               <div className="space-y-4">
                 {}
                 {submissionData && (
-                  <div className={`p-3 rounded-lg border ${
-                    isAccepted
-                      ? "border-[#22C55E]/30 bg-[#22C55E]/5"
-                      : "border-[#EF4444]/30 bg-[#EF4444]/5"
-                  }`}>
+                  <div
+                    className={`p-3 rounded-lg border ${
+                      isAccepted
+                        ? "border-[#22C55E]/30 bg-[#22C55E]/5"
+                        : "border-[#EF4444]/30 bg-[#EF4444]/5"
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className={`text-lg ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                        <span
+                          className={`text-lg ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}
+                        >
                           {isAccepted ? "✓" : "✗"}
                         </span>
                         <span
                           className={`text-sm uppercase tracking-wider ${isAccepted ? "text-[#22C55E]" : "text-[#EF4444]"}`}
-                          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                          style={{
+                            fontFamily: "'Rajdhani', system-ui, sans-serif",
+                          }}
                         >
-                          {isAccepted ? "Accepted" : submissionData.verdict?.replace(/_/g, " ") || "Wrong Answer"}
+                          {isAccepted
+                            ? "Accepted"
+                            : submissionData.verdict?.replace(/_/g, " ") ||
+                              "Wrong Answer"}
                         </span>
                       </div>
-                      <span className="text-[#78716C] text-xs" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                        {submissionData.passedCount}/{submissionData.totalCount} tests
+                      <span
+                        className="text-[#78716C] text-xs"
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
+                      >
+                        {submissionData.passedCount}/{submissionData.totalCount}{" "}
+                        tests
                       </span>
                     </div>
                   </div>
@@ -538,37 +657,85 @@ export default function AIFeedbackPanelV2({
                 {!isAccepted && submissionData?.results?.length > 0 && (
                   <div className="border border-[#EF4444]/20 rounded-lg overflow-hidden">
                     <div className="px-3 py-2 bg-[#EF4444]/10 border-b border-[#EF4444]/20">
-                      <span className="text-[#EF4444] text-[10px] uppercase tracking-wider font-semibold" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                        Failed Test Case {(submissionData.firstFailingIndex ?? 0) + 1}
+                      <span
+                        className="text-[#EF4444] text-[10px] uppercase tracking-wider font-semibold"
+                        style={{
+                          fontFamily: "'Rajdhani', system-ui, sans-serif",
+                        }}
+                      >
+                        Failed Test Case{" "}
+                        {(submissionData.firstFailingIndex ?? 0) + 1}
                       </span>
                     </div>
                     <div className="p-3 space-y-2">
                       {(() => {
-                        const failedTest = submissionData.results[submissionData.firstFailingIndex ?? 0];
+                        const failedTest =
+                          submissionData.results[
+                            submissionData.firstFailingIndex ?? 0
+                          ];
                         if (!failedTest) return null;
                         return (
                           <>
                             <div>
-                              <div className="text-[9px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Input:</div>
+                              <div
+                                className="text-[9px] uppercase tracking-wider text-[#78716C] mb-1"
+                                style={{
+                                  fontFamily:
+                                    "'Rajdhani', system-ui, sans-serif",
+                                }}
+                              >
+                                Input:
+                              </div>
                               <div className="bg-[#1A1814] rounded p-2">
-                                <pre className="text-[#E8E4D9] text-[10px] whitespace-pre-wrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                <pre
+                                  className="text-[#E8E4D9] text-[10px] whitespace-pre-wrap"
+                                  style={{
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                  }}
+                                >
                                   {failedTest.stdin || "(hidden)"}
                                 </pre>
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <div className="text-[9px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Expected:</div>
+                                <div
+                                  className="text-[9px] uppercase tracking-wider text-[#78716C] mb-1"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  Expected:
+                                </div>
                                 <div className="bg-[#1A1814] rounded p-2">
-                                  <pre className="text-[#22C55E] text-[10px] whitespace-pre-wrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <pre
+                                    className="text-[#22C55E] text-[10px] whitespace-pre-wrap"
+                                    style={{
+                                      fontFamily: "'JetBrains Mono', monospace",
+                                    }}
+                                  >
                                     {failedTest.expectedStdout || "(hidden)"}
                                   </pre>
                                 </div>
                               </div>
                               <div>
-                                <div className="text-[9px] uppercase tracking-wider text-[#78716C] mb-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Yours:</div>
+                                <div
+                                  className="text-[9px] uppercase tracking-wider text-[#78716C] mb-1"
+                                  style={{
+                                    fontFamily:
+                                      "'Rajdhani', system-ui, sans-serif",
+                                  }}
+                                >
+                                  Yours:
+                                </div>
                                 <div className="bg-[#EF4444]/5 border border-[#EF4444]/20 rounded p-2">
-                                  <pre className="text-[#EF4444] text-[10px] whitespace-pre-wrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <pre
+                                    className="text-[#EF4444] text-[10px] whitespace-pre-wrap"
+                                    style={{
+                                      fontFamily: "'JetBrains Mono', monospace",
+                                    }}
+                                  >
                                     {failedTest.actualStdout || "(empty)"}
                                   </pre>
                                 </div>
@@ -637,7 +804,9 @@ export default function AIFeedbackPanelV2({
                   <div className="pt-4 flex items-center gap-2">
                     <span
                       className="text-[#78716C] text-[10px] uppercase tracking-wider"
-                      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                      style={{
+                        fontFamily: "'Rajdhani', system-ui, sans-serif",
+                      }}
                     >
                       Diagnosis confidence:
                     </span>

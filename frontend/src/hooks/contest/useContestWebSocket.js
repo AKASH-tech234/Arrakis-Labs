@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
+import logger from "../../utils/logger";
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000/ws/contest';
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000/ws/contest";
 
 export function useContestWebSocket(contestId, options = {}) {
   const [isConnected, setIsConnected] = useState(false);
@@ -24,22 +25,26 @@ export function useContestWebSocket(contestId, options = {}) {
       wsRef.current = new WebSocket(WS_URL);
 
       wsRef.current.onopen = () => {
-        console.log('[WS] Connected');
+        logger.log("[WS] Connected");
         setIsConnected(true);
         reconnectAttempts.current = 0;
 
         if (token) {
-          wsRef.current.send(JSON.stringify({
-            type: 'authenticate',
-            payload: { token }
-          }));
+          wsRef.current.send(
+            JSON.stringify({
+              type: "authenticate",
+              payload: { token },
+            }),
+          );
         }
 
         if (contestId) {
-          wsRef.current.send(JSON.stringify({
-            type: 'join_contest',
-            payload: { contestId }
-          }));
+          wsRef.current.send(
+            JSON.stringify({
+              type: "join_contest",
+              payload: { contestId },
+            }),
+          );
         }
       };
 
@@ -48,16 +53,19 @@ export function useContestWebSocket(contestId, options = {}) {
           const message = JSON.parse(event.data);
           handleMessage(message);
         } catch (err) {
-          console.error('[WS] Parse error:', err);
+          logger.error("[WS] Parse error:", err);
         }
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('[WS] Disconnected:', event.code);
+        logger.log("[WS] Disconnected:", event.code);
         setIsConnected(false);
 
         if (reconnectAttempts.current < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+          const delay = Math.min(
+            1000 * Math.pow(2, reconnectAttempts.current),
+            30000,
+          );
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connect();
@@ -66,78 +74,78 @@ export function useContestWebSocket(contestId, options = {}) {
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('[WS] Error:', error);
+        logger.error("[WS] Error:", error);
       };
     } catch (error) {
-      console.error('[WS] Connection error:', error);
+      logger.error("[WS] Connection error:", error);
     }
   }, [contestId, token]);
 
-  const handleMessage = useCallback((message) => {
-    const { type, ...data } = message;
+  const handleMessage = useCallback(
+    (message) => {
+      const { type, ...data } = message;
 
-    switch (type) {
-      case 'connected':
-      case 'authenticated':
+      switch (type) {
+        case "connected":
+        case "authenticated":
+          break;
 
-        break;
+        case "joined_contest":
+          setParticipantCount(data.participantCount || 0);
+          if (data.leaderboard) {
+            setLeaderboard(data.leaderboard);
+          }
+          break;
 
-      case 'joined_contest':
-        setParticipantCount(data.participantCount || 0);
-        if (data.leaderboard) {
-          setLeaderboard(data.leaderboard);
-        }
-        break;
+        case "participant_count":
+          setParticipantCount(data.count);
+          break;
 
-      case 'participant_count':
-        setParticipantCount(data.count);
-        break;
+        case "leaderboard_update":
+        case "leaderboard":
+          if (data.entries) {
+            setLeaderboard(data.entries);
+          }
+          setLastUpdate(Date.now());
+          break;
 
-      case 'leaderboard_update':
-      case 'leaderboard':
-        if (data.entries) {
-          setLeaderboard(data.entries);
-        }
-        setLastUpdate(Date.now());
-        break;
+        case "submission_result":
+          onSubmissionResult?.(data);
+          break;
 
-      case 'submission_result':
-        onSubmissionResult?.(data);
-        break;
+        case "solve_notification":
+          setLastUpdate(Date.now());
+          break;
 
-      case 'solve_notification':
+        case "contest_started":
+          setServerTime(data.serverTime);
+          onContestStart?.(data);
+          break;
 
-        setLastUpdate(Date.now());
-        break;
+        case "contest_ended":
+          onContestEnd?.(data);
+          break;
 
-      case 'contest_started':
-        setServerTime(data.serverTime);
-        onContestStart?.(data);
-        break;
+        case "announcement":
+          setAnnouncements((prev) => [
+            { id: Date.now(), ...data },
+            ...prev.slice(0, 9),
+          ]);
+          break;
 
-      case 'contest_ended':
-        onContestEnd?.(data);
-        break;
+        case "server_time":
+          setServerTime(data.timestamp);
+          break;
 
-      case 'announcement':
-        setAnnouncements(prev => [
-          { id: Date.now(), ...data },
-          ...prev.slice(0, 9)
-        ]);
-        break;
+        case "pong":
+          break;
 
-      case 'server_time':
-        setServerTime(data.timestamp);
-        break;
-
-      case 'pong':
-
-        break;
-
-      default:
-        console.log('[WS] Unknown message type:', type);
-    }
-  }, [onSubmissionResult, onContestStart, onContestEnd]);
+        default:
+          logger.log("[WS] Unknown message type:", type);
+      }
+    },
+    [onSubmissionResult, onContestStart, onContestEnd],
+  );
 
   const send = useCallback((type, payload = {}) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -145,12 +153,15 @@ export function useContestWebSocket(contestId, options = {}) {
     }
   }, []);
 
-  const refreshLeaderboard = useCallback((page = 1, pageSize = 50) => {
-    send('get_leaderboard', { page, pageSize });
-  }, [send]);
+  const refreshLeaderboard = useCallback(
+    (page = 1, pageSize = 50) => {
+      send("get_leaderboard", { page, pageSize });
+    },
+    [send],
+  );
 
   const syncTime = useCallback(() => {
-    send('get_time');
+    send("get_time");
   }, [send]);
 
   const disconnect = useCallback(() => {
@@ -178,7 +189,7 @@ export function useContestWebSocket(contestId, options = {}) {
     if (!isConnected) return;
 
     const heartbeat = setInterval(() => {
-      send('ping');
+      send("ping");
     }, 25000);
 
     return () => clearInterval(heartbeat);

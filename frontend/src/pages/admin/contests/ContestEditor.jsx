@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import adminApi from '../../../services/admin/adminApi';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import adminApi from "../../../services/admin/adminApi";
+import logger from "../../../utils/logger";
 import {
   ArrowLeft,
   Save,
@@ -13,7 +14,7 @@ import {
   Search,
   Trophy,
   AlertTriangle,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ContestEditor() {
   const { id } = useParams();
@@ -24,12 +25,12 @@ export default function ContestEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [availableProblems, setAvailableProblems] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    startTime: '',
+    name: "",
+    description: "",
+    startTime: "",
     duration: 90,
     problems: [],
     scoringRules: {
@@ -40,7 +41,7 @@ export default function ContestEditor() {
       wrongSubmissionPenalty: 5,
       penaltyOnlyAfterAC: true,
     },
-    rankingType: 'lcb',
+    rankingType: "lcb",
     isPublic: true,
     requiresRegistration: true,
     maxParticipants: 0,
@@ -64,7 +65,9 @@ export default function ContestEditor() {
       const contest = response.data.data;
 
       const startDate = new Date(contest.startTime);
-      const localDateTime = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000)
+      const localDateTime = new Date(
+        startDate.getTime() - startDate.getTimezoneOffset() * 60000,
+      )
         .toISOString()
         .slice(0, 16);
 
@@ -72,16 +75,17 @@ export default function ContestEditor() {
         ...formData,
         ...contest,
         startTime: localDateTime,
-        problems: contest.problems?.map(p => ({
-          problemId: p.problem._id || p.problem,
-          label: p.label,
-          points: p.points,
-          order: p.order,
-          title: p.problem.title || '',
-        })) || [],
+        problems:
+          contest.problems?.map((p) => ({
+            problemId: p.problem._id || p.problem,
+            label: p.label,
+            points: p.points,
+            order: p.order,
+            title: p.problem.title || "",
+          })) || [],
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch contest');
+      setError(err.response?.data?.message || "Failed to fetch contest");
     } finally {
       setLoading(false);
     }
@@ -89,42 +93,54 @@ export default function ContestEditor() {
 
   const fetchProblems = async () => {
     try {
-      const response = await adminApi.get('/questions', { params: { page: 1, limit: 500 } });
+      const response = await adminApi.get("/questions", {
+        params: { page: 1, limit: 500 },
+      });
       setAvailableProblems(response.data.data);
     } catch (err) {
-      console.error('Failed to fetch problems:', err);
+      logger.error("Failed to fetch problems:", err);
     }
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
         ...prev,
         [parent]: {
           ...prev[parent],
-          [child]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value,
+          [child]:
+            type === "checkbox"
+              ? checked
+              : type === "number"
+                ? Number(value)
+                : value,
         },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value,
+        [name]:
+          type === "checkbox"
+            ? checked
+            : type === "number"
+              ? Number(value)
+              : value,
       }));
     }
   };
 
   const addProblem = (problem) => {
-    if (formData.problems.find(p => p.problemId === problem._id)) {
+    if (formData.problems.find((p) => p.problemId === problem._id)) {
       return;
     }
 
     const order = formData.problems.length;
     const label = String.fromCharCode(65 + order);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       problems: [
         ...prev.problems,
@@ -140,9 +156,9 @@ export default function ContestEditor() {
   };
 
   const removeProblem = (problemId) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const newProblems = prev.problems
-        .filter(p => p.problemId !== problemId)
+        .filter((p) => p.problemId !== problemId)
         .map((p, idx) => ({
           ...p,
           order: idx,
@@ -153,10 +169,10 @@ export default function ContestEditor() {
   };
 
   const updateProblemPoints = (problemId, points) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      problems: prev.problems.map(p =>
-        p.problemId === problemId ? { ...p, points: Number(points) } : p
+      problems: prev.problems.map((p) =>
+        p.problemId === problemId ? { ...p, points: Number(points) } : p,
       ),
     }));
   };
@@ -165,9 +181,12 @@ export default function ContestEditor() {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= formData.problems.length) return;
 
-    setFormData(prev => {
+    setFormData((prev) => {
       const problems = [...prev.problems];
-      [problems[index], problems[newIndex]] = [problems[newIndex], problems[index]];
+      [problems[index], problems[newIndex]] = [
+        problems[newIndex],
+        problems[index],
+      ];
       return {
         ...prev,
         problems: problems.map((p, idx) => ({
@@ -183,12 +202,12 @@ export default function ContestEditor() {
     e.preventDefault();
 
     if (!formData.name || !formData.startTime || !formData.duration) {
-      setError('Name, start time, and duration are required');
+      setError("Name, start time, and duration are required");
       return;
     }
 
     if (formData.problems.length === 0) {
-      setError('Add at least one problem to the contest');
+      setError("Add at least one problem to the contest");
       return;
     }
 
@@ -199,7 +218,7 @@ export default function ContestEditor() {
       const payload = {
         ...formData,
         startTime: new Date(formData.startTime).toISOString(),
-        problems: formData.problems.map(p => ({
+        problems: formData.problems.map((p) => ({
           problemId: p.problemId,
           label: p.label,
           points: p.points,
@@ -210,20 +229,21 @@ export default function ContestEditor() {
       if (isEditing) {
         await adminApi.put(`/contests/${id}`, payload);
       } else {
-        await adminApi.post('/contests', payload);
+        await adminApi.post("/contests", payload);
       }
 
-      navigate('/admin/contests');
+      navigate("/admin/contests");
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save contest');
+      setError(err.response?.data?.message || "Failed to save contest");
     } finally {
       setSaving(false);
     }
   };
 
-  const filteredProblems = availableProblems.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    !formData.problems.find(fp => fp.problemId === p._id)
+  const filteredProblems = availableProblems.filter(
+    (p) =>
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !formData.problems.find((fp) => fp.problemId === p._id),
   );
 
   if (loading) {
@@ -232,7 +252,10 @@ export default function ContestEditor() {
         <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
           <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
         </div>
-        <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+        <p
+          className="text-[#78716C] mt-4 text-sm uppercase tracking-wider"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
           Loading contest...
         </p>
       </div>
@@ -240,7 +263,10 @@ export default function ContestEditor() {
   }
 
   return (
-    <div className="max-w-5xl space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+    <div
+      className="max-w-5xl space-y-8"
+      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+    >
       {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -258,11 +284,13 @@ export default function ContestEditor() {
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
             <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">
-              {isEditing ? 'Edit Contest' : 'Create Contest'}
+              {isEditing ? "Edit Contest" : "Create Contest"}
             </h1>
           </div>
           <p className="text-[#78716C] text-sm uppercase tracking-widest ml-3">
-            {isEditing ? 'Update contest settings' : 'Set up a new coding contest'}
+            {isEditing
+              ? "Update contest settings"
+              : "Set up a new coding contest"}
           </p>
         </div>
       </motion.div>
@@ -287,7 +315,9 @@ export default function ContestEditor() {
           className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
         >
           <div className="p-4 border-b border-[#1A1814] bg-[#0F0F0D]/50">
-            <h2 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-widest">Basic Information</h2>
+            <h2 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-widest">
+              Basic Information
+            </h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -365,15 +395,21 @@ export default function ContestEditor() {
               <div className="p-2 rounded-lg bg-[#D97706]/10">
                 <Trophy className="w-4 h-4 text-[#D97706]" />
               </div>
-              <h2 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-widest">Problems</h2>
+              <h2 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-widest">
+                Problems
+              </h2>
             </div>
-            <span className="text-[#78716C] text-sm">{formData.problems.length} selected</span>
+            <span className="text-[#78716C] text-sm">
+              {formData.problems.length} selected
+            </span>
           </div>
           <div className="p-6">
             {}
             {formData.problems.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-xs font-medium text-[#78716C] uppercase tracking-widest mb-3">Selected Problems</h3>
+                <h3 className="text-xs font-medium text-[#78716C] uppercase tracking-widest mb-3">
+                  Selected Problems
+                </h3>
                 <div className="space-y-2">
                   {formData.problems.map((problem, index) => (
                     <div
@@ -390,7 +426,12 @@ export default function ContestEditor() {
                         <input
                           type="number"
                           value={problem.points}
-                          onChange={(e) => updateProblemPoints(problem.problemId, e.target.value)}
+                          onChange={(e) =>
+                            updateProblemPoints(
+                              problem.problemId,
+                              e.target.value,
+                            )
+                          }
                           className="w-20 px-2 py-1 rounded-lg border border-[#1A1814] bg-[#0A0A08] text-[#E8E4D9] text-sm focus:outline-none focus:border-[#D97706]/50"
                           min={1}
                         />
@@ -427,7 +468,9 @@ export default function ContestEditor() {
 
             {}
             <div>
-              <h3 className="text-xs font-medium text-[#78716C] uppercase tracking-widest mb-3">Add Problems</h3>
+              <h3 className="text-xs font-medium text-[#78716C] uppercase tracking-widest mb-3">
+                Add Problems
+              </h3>
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" />
                 <input
@@ -448,10 +491,15 @@ export default function ContestEditor() {
                   >
                     <div>
                       <span className="text-[#E8E4D9]">{problem.title}</span>
-                      <span className={`ml-2 text-sm ${
-                        problem.difficulty === 'Easy' ? 'text-[#78716C]' :
-                        problem.difficulty === 'Medium' ? 'text-[#D97706]' : 'text-[#92400E]'
-                      }`}>
+                      <span
+                        className={`ml-2 text-sm ${
+                          problem.difficulty === "Easy"
+                            ? "text-[#78716C]"
+                            : problem.difficulty === "Medium"
+                              ? "text-[#D97706]"
+                              : "text-[#92400E]"
+                        }`}
+                      >
                         {problem.difficulty}
                       </span>
                     </div>
@@ -461,7 +509,9 @@ export default function ContestEditor() {
                   </button>
                 ))}
                 {filteredProblems.length === 0 && (
-                  <p className="text-[#78716C] text-center py-4">No problems found</p>
+                  <p className="text-[#78716C] text-center py-4">
+                    No problems found
+                  </p>
                 )}
               </div>
             </div>
@@ -476,7 +526,9 @@ export default function ContestEditor() {
           className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden"
         >
           <div className="p-4 border-b border-[#1A1814] bg-[#0F0F0D]/50">
-            <h2 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-widest">Scoring & Rules</h2>
+            <h2 className="text-sm font-semibold text-[#E8E4D9] uppercase tracking-widest">
+              Scoring & Rules
+            </h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -556,7 +608,9 @@ export default function ContestEditor() {
                   onChange={handleChange}
                   className="w-4 h-4 rounded border-[#1A1814] text-[#D97706] focus:ring-[#D97706] bg-[#0A0A08]"
                 />
-                <span className="text-[#E8E4D9] text-sm">Require Registration</span>
+                <span className="text-[#E8E4D9] text-sm">
+                  Require Registration
+                </span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-[#0F0F0D] border border-[#1A1814] hover:border-[#D97706]/40 transition-all">
@@ -604,7 +658,7 @@ export default function ContestEditor() {
           >
             {saving && <Loader2 className="animate-spin h-5 w-5" />}
             <Save className="w-5 h-5" />
-            {isEditing ? 'Save Changes' : 'Create Contest'}
+            {isEditing ? "Save Changes" : "Create Contest"}
           </button>
         </motion.div>
       </form>

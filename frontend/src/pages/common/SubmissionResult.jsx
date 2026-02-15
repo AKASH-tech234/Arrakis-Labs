@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmission } from "../../context/SubmissionContext";
+import logger from "../../utils/logger";
 import AppHeader from "../../components/layout/AppHeader";
 import MIMInsightsV3 from "../../components/mim/MIMInsightsV3";
 
@@ -846,33 +847,6 @@ export default function SubmissionResult() {
   const isAccepted = submission?.verdict === "accepted";
 
   useEffect(() => {
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("🎯 [SubmissionResult] STATE DEBUG");
-    console.log("═══════════════════════════════════════════════════════════");
-    console.log("📋 submission:", submission);
-    console.log("🤖 aiFeedback:", aiFeedback);
-    console.log("📊 aiStatus:", aiStatus);
-    console.log("❌ aiError:", aiError);
-    console.log("🔄 isAILoading:", isAILoading);
-    console.log("✅ hasAIFeedback:", hasAIFeedback);
-    console.log("👁️  currentView:", currentView);
-    console.log("🏆 isAccepted:", isAccepted);
-    if (aiFeedback) {
-      console.log("─────────────────────────────────────────────────────────");
-      console.log("📦 [aiFeedback CONTENTS]");
-      console.log("   └─ hints:", aiFeedback.hints);
-      console.log("   └─ hints count:", aiFeedback.hints?.length);
-      console.log("   └─ explanation:", aiFeedback.explanation);
-      console.log("   └─ detectedPattern:", aiFeedback.detectedPattern);
-      console.log("   └─ complexityAnalysis:", aiFeedback.complexityAnalysis);
-      console.log("   └─ optimizationTips:", aiFeedback.optimizationTips);
-      console.log("   └─ edgeCases:", aiFeedback.edgeCases);
-      console.log("   └─ improvementHint:", aiFeedback.improvementHint);
-      console.log("   └─ mimInsights:", aiFeedback.mimInsights);
-      console.log("   └─ feedbackType:", aiFeedback.feedbackType);
-    }
-    console.log("═══════════════════════════════════════════════════════════");
-  }, [
     submission,
     aiFeedback,
     aiStatus,
@@ -886,25 +860,25 @@ export default function SubmissionResult() {
   useEffect(() => {
     if (hasSubmission && aiStatus === "idle" && !hasAIFeedback) {
 
-      console.log(
+      logger.log(
         "[SubmissionResult] No aiFeedback from backend, requesting...",
       );
       requestAIFeedback();
     } else if (hasAIFeedback) {
-      console.log(
+      logger.log(
         "[SubmissionResult] aiFeedback already present, skipping duplicate request",
       );
     }
   }, [hasSubmission, aiStatus, hasAIFeedback, requestAIFeedback]);
 
   useEffect(() => {
-    console.log(
+    logger.log(
       `[SubmissionResult] View transition check: hasAIFeedback=${hasAIFeedback}, currentView=${currentView}, isAccepted=${isAccepted}`,
     );
     if (hasAIFeedback && currentView === "initial") {
 
       const newView = isAccepted ? "summary" : "hints";
-      console.log(
+      logger.log(
         `[SubmissionResult] 🔀 Transitioning view: ${currentView} → ${newView}`,
       );
       setCurrentView(newView);

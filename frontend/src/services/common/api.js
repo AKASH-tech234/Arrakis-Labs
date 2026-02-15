@@ -1,5 +1,6 @@
 import axios from "axios";
 import { leetCodeConstraints } from "../../lib/leetcodeConstraints";
+import logger from "../../utils/logger";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -86,7 +87,7 @@ export async function getPublicQuestions({
         constraintsOut = leetCodeConstraints([q.constraints]);
       }
     } catch (err) {
-      console.error("Constraint parsing failed for question:", q.id, err);
+      logger.error("Constraint parsing failed for question:", q.id, err);
       constraintsOut = q.constraints || [];
     }
 
@@ -115,7 +116,11 @@ export async function getPublicQuestion(questionId) {
       constraintsOut = leetCodeConstraints([data.data.constraints]);
     }
   } catch (err) {
-    console.error("Constraint parsing failed for question detail:", data.data?.id, err);
+    logger.error(
+      "Constraint parsing failed for question detail:",
+      data.data?.id,
+      err,
+    );
     constraintsOut = data.data?.constraints || [];
   }
 

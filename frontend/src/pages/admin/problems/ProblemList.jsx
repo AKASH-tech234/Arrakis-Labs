@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import logger from "../../../utils/logger";
 import DataTable from "../../../components/admin/common/DataTable";
 import StatusBadge, {
   DifficultyBadge,
@@ -192,13 +193,12 @@ export default function ProblemList() {
   };
 
   const handleDelete = () => {
-
-    console.log("Deleting problem:", deleteModal.problem?.slug);
+    logger.log("Deleting problem:", deleteModal.problem?.slug);
     setDeleteModal({ open: false, problem: null });
   };
 
   const handleBulkDelete = () => {
-    console.log("Bulk delete:", selectedIds);
+    logger.log("Bulk delete:", selectedIds);
     setSelectedIds([]);
   };
 

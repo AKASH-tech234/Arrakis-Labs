@@ -11,6 +11,7 @@ import {
 import { emitSubmissionUpdate } from "../hooks/ai/useAIFeedbackEnhanced";
 
 import { refreshAllMIMComponents } from "../components/mim";
+import logger from "../utils/logger";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -204,7 +205,7 @@ export function SubmissionProvider({ children }) {
     });
 
     if (submissionData.aiFeedback) {
-      console.log(
+      logger.log(
         "[SubmissionContext] AI feedback already included from backend - skipping duplicate call",
       );
       const processedFeedback = {
@@ -253,7 +254,7 @@ export function SubmissionProvider({ children }) {
         timestamp: Date.now(),
       });
 
-      console.log(
+      logger.log(
         "[SubmissionContext] Triggering MIM profile refresh after submission",
       );
       setTimeout(() => refreshAllMIMComponents(), 1000);
@@ -271,7 +272,7 @@ export function SubmissionProvider({ children }) {
       const submission = submissionData || state.currentSubmission;
 
       if (!submission) {
-        console.error("[SubmissionContext] No submission to analyze");
+        logger.error("[SubmissionContext] No submission to analyze");
         return null;
       }
 
@@ -279,7 +280,7 @@ export function SubmissionProvider({ children }) {
         state.aiRequestedForSubmissionId === submission.id &&
         state.aiStatus === "loading"
       ) {
-        console.log(
+        logger.log(
           "[SubmissionContext] AI request already in progress for this submission",
         );
         return null;
@@ -289,7 +290,7 @@ export function SubmissionProvider({ children }) {
         state.aiRequestedForSubmissionId === submission.id &&
         state.aiFeedback
       ) {
-        console.log("[SubmissionContext] Returning cached AI feedback");
+        logger.log("[SubmissionContext] Returning cached AI feedback");
         return state.aiFeedback;
       }
 
@@ -362,7 +363,7 @@ export function SubmissionProvider({ children }) {
             timestamp: Date.now(),
           });
 
-          console.log(
+          logger.log(
             "[SubmissionContext] Triggering MIM profile refresh after AI feedback",
           );
           setTimeout(() => refreshAllMIMComponents(), 1000);
@@ -373,11 +374,11 @@ export function SubmissionProvider({ children }) {
         }
       } catch (err) {
         if (err.name === "AbortError") {
-          console.log("[SubmissionContext] AI request aborted");
+          logger.log("[SubmissionContext] AI request aborted");
           return null;
         }
 
-        console.error("[SubmissionContext] AI request failed:", err.message);
+        logger.error("[SubmissionContext] AI request failed:", err.message);
         dispatch({
           type: ActionTypes.AI_REQUEST_ERROR,
           payload: { error: err.message },

@@ -1,18 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
-import { ARRAKIS_MONACO_THEME, defineArrakisMonacoTheme } from "../../components/editor/arrakisMonacoTheme";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import Editor from "@monaco-editor/react";
+import {
+  ARRAKIS_MONACO_THEME,
+  defineArrakisMonacoTheme,
+} from "../../components/editor/arrakisMonacoTheme";
 import { Badge, Button } from "../../components/ui/ds";
-import contestApi from '../../services/contest/contestApi';
-import { useAuth } from '../../context/AuthContext';
-import { useContestTimer } from '../../hooks/contest/useContestTimer';
-import useContestWebSocket from '../../hooks/contest/useContestWebSocket';
+import contestApi from "../../services/contest/contestApi";
+import { useAuth } from "../../context/AuthContext";
+import { useContestTimer } from "../../hooks/contest/useContestTimer";
+import useContestWebSocket from "../../hooks/contest/useContestWebSocket";
+import logger from "../../utils/logger";
 
 const LANGUAGES = [
-  { id: 'python', name: 'Python 3', extension: 'py' },
-  { id: 'javascript', name: 'JavaScript', extension: 'js' },
-  { id: 'cpp', name: 'C++', extension: 'cpp' },
-  { id: 'java', name: 'Java', extension: 'java' },
+  { id: "python", name: "Python 3", extension: "py" },
+  { id: "javascript", name: "JavaScript", extension: "js" },
+  { id: "cpp", name: "C++", extension: "cpp" },
+  { id: "java", name: "Java", extension: "java" },
 ];
 
 const DEFAULT_CODE = {
@@ -73,9 +77,9 @@ function TestCasePanel({ testCases, results, isRunning }) {
       <div className="flex border-b border-gray-700 overflow-x-auto">
         {testCases.map((tc, idx) => {
           const result = results?.[idx];
-          let statusColor = 'text-gray-400';
-          if (result?.passed) statusColor = 'text-green-400';
-          else if (result && !result.passed) statusColor = 'text-red-400';
+          let statusColor = "text-gray-400";
+          if (result?.passed) statusColor = "text-green-400";
+          else if (result && !result.passed) statusColor = "text-red-400";
 
           return (
             <button
@@ -83,14 +87,14 @@ function TestCasePanel({ testCases, results, isRunning }) {
               onClick={() => setActiveTab(idx)}
               className={`px-4 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === idx
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-300'
+                  ? "border-blue-500 text-blue-400"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
               }`}
             >
               <span className={statusColor}>
                 {tc.label || `Case ${idx + 1}`}
-                {result?.passed && ' ✓'}
-                {result && !result.passed && ' ✗'}
+                {result?.passed && " ✓"}
+                {result && !result.passed && " ✗"}
               </span>
             </button>
           );
@@ -106,33 +110,45 @@ function TestCasePanel({ testCases, results, isRunning }) {
         ) : (
           <>
             <div>
-              <label className="text-xs text-gray-500 uppercase mb-1 block">Input</label>
+              <label className="text-xs text-gray-500 uppercase mb-1 block">
+                Input
+              </label>
               <pre className="bg-gray-900 rounded p-3 text-sm text-gray-300 font-mono overflow-x-auto">
-                {testCases[activeTab]?.input || '(empty)'}
+                {testCases[activeTab]?.input || "(empty)"}
               </pre>
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 uppercase mb-1 block">Expected Output</label>
+              <label className="text-xs text-gray-500 uppercase mb-1 block">
+                Expected Output
+              </label>
               <pre className="bg-gray-900 rounded p-3 text-sm text-gray-300 font-mono overflow-x-auto">
-                {testCases[activeTab]?.expectedOutput || '(empty)'}
+                {testCases[activeTab]?.expectedOutput || "(empty)"}
               </pre>
             </div>
 
             {activeResult && (
               <div>
-                <label className="text-xs text-gray-500 uppercase mb-1 block">Your Output</label>
-                <pre className={`rounded p-3 text-sm font-mono overflow-x-auto ${
-                  activeResult.passed ? 'bg-green-900/20 text-green-300' : 'bg-red-900/20 text-red-300'
-                }`}>
-                  {activeResult.actualOutput || '(empty)'}
+                <label className="text-xs text-gray-500 uppercase mb-1 block">
+                  Your Output
+                </label>
+                <pre
+                  className={`rounded p-3 text-sm font-mono overflow-x-auto ${
+                    activeResult.passed
+                      ? "bg-green-900/20 text-green-300"
+                      : "bg-red-900/20 text-red-300"
+                  }`}
+                >
+                  {activeResult.actualOutput || "(empty)"}
                 </pre>
               </div>
             )}
 
             {activeResult?.stderr && (
               <div>
-                <label className="text-xs text-red-500 uppercase mb-1 block">Error</label>
+                <label className="text-xs text-red-500 uppercase mb-1 block">
+                  Error
+                </label>
                 <pre className="bg-red-900/20 rounded p-3 text-sm text-red-300 font-mono overflow-x-auto">
                   {activeResult.stderr}
                 </pre>
@@ -150,23 +166,31 @@ function SubmissionResult({ result }) {
 
   const getVerdictColor = (verdict) => {
     switch (verdict) {
-      case 'accepted': return 'text-green-400 bg-green-500/20';
-      case 'wrong_answer': return 'text-red-400 bg-red-500/20';
-      case 'time_limit_exceeded': return 'text-yellow-400 bg-yellow-500/20';
-      case 'runtime_error': return 'text-orange-400 bg-orange-500/20';
-      case 'compile_error': return 'text-purple-400 bg-purple-500/20';
-      default: return 'text-gray-400 bg-gray-500/20';
+      case "accepted":
+        return "text-green-400 bg-green-500/20";
+      case "wrong_answer":
+        return "text-red-400 bg-red-500/20";
+      case "time_limit_exceeded":
+        return "text-yellow-400 bg-yellow-500/20";
+      case "runtime_error":
+        return "text-orange-400 bg-orange-500/20";
+      case "compile_error":
+        return "text-purple-400 bg-purple-500/20";
+      default:
+        return "text-gray-400 bg-gray-500/20";
     }
   };
 
   const getVerdictText = (verdict) => {
-    return verdict?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return verdict?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   return (
     <div className="p-4 border-t border-gray-700">
       <div className="flex items-center justify-between mb-3">
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getVerdictColor(result.verdict)}`}>
+        <span
+          className={`px-3 py-1 rounded-full text-sm font-medium ${getVerdictColor(result.verdict)}`}
+        >
           {getVerdictText(result.verdict)}
         </span>
         <span className="text-gray-500 text-sm">
@@ -174,13 +198,13 @@ function SubmissionResult({ result }) {
         </span>
       </div>
 
-      {result.verdict === 'accepted' && (
+      {result.verdict === "accepted" && (
         <div className="text-green-400 text-center py-4">
           🎉 All test cases passed!
         </div>
       )}
 
-      {result.firstFailedTest && result.verdict !== 'accepted' && (
+      {result.firstFailedTest && result.verdict !== "accepted" && (
         <p className="text-gray-400 text-sm">
           Failed on test case #{result.firstFailedTest}
         </p>
@@ -198,21 +222,19 @@ function SubmissionResult({ result }) {
 function SubmissionHistory({ submissions, onSelect }) {
   if (!submissions || submissions.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
-        No submissions yet
-      </div>
+      <div className="p-4 text-center text-gray-500">No submissions yet</div>
     );
   }
 
   const getVerdictBadge = (verdict) => {
     const colors = {
-      accepted: 'bg-green-500/20 text-green-400',
-      wrong_answer: 'bg-red-500/20 text-red-400',
-      time_limit_exceeded: 'bg-yellow-500/20 text-yellow-400',
-      runtime_error: 'bg-orange-500/20 text-orange-400',
-      compile_error: 'bg-purple-500/20 text-purple-400',
+      accepted: "bg-green-500/20 text-green-400",
+      wrong_answer: "bg-red-500/20 text-red-400",
+      time_limit_exceeded: "bg-yellow-500/20 text-yellow-400",
+      runtime_error: "bg-orange-500/20 text-orange-400",
+      compile_error: "bg-purple-500/20 text-purple-400",
     };
-    return colors[verdict] || 'bg-gray-500/20 text-gray-400';
+    return colors[verdict] || "bg-gray-500/20 text-gray-400";
   };
 
   return (
@@ -224,8 +246,10 @@ function SubmissionHistory({ submissions, onSelect }) {
           className="p-3 border-b border-gray-700 hover:bg-gray-700/50 cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <span className={`px-2 py-1 rounded text-xs ${getVerdictBadge(sub.verdict)}`}>
-              {sub.verdict?.replace(/_/g, ' ')}
+            <span
+              className={`px-2 py-1 rounded text-xs ${getVerdictBadge(sub.verdict)}`}
+            >
+              {sub.verdict?.replace(/_/g, " ")}
             </span>
             <span className="text-gray-500 text-xs">
               {sub.testsPassed}/{sub.testsTotal}
@@ -251,14 +275,14 @@ export default function ContestProblem() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [code, setCode] = useState('');
-  const [language, setLanguage] = useState('python');
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("python");
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [runResults, setRunResults] = useState(null);
   const [submitResult, setSubmitResult] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [activePanel, setActivePanel] = useState('testcases');
+  const [activePanel, setActivePanel] = useState("testcases");
 
   const editorRef = useRef(null);
 
@@ -276,10 +300,9 @@ export default function ContestProblem() {
     {
       serverTime,
       onEnd: () => {
-
-        setError('Contest has ended. Submissions are no longer accepted.');
+        setError("Contest has ended. Submissions are no longer accepted.");
       },
-    }
+    },
   );
 
   const fetchProblem = useCallback(async () => {
@@ -292,7 +315,7 @@ export default function ContestProblem() {
       setProblem(problemRes);
       setContest(contestRes.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load problem');
+      setError(err.response?.data?.message || "Failed to load problem");
     } finally {
       setLoading(false);
     }
@@ -303,7 +326,7 @@ export default function ContestProblem() {
       const response = await contestApi.getSubmissions(contestId, problemId);
       setSubmissions(response.data || []);
     } catch (err) {
-      console.error('Failed to fetch submissions:', err);
+      logger.error("Failed to fetch submissions:", err);
     }
   }, [contestId, problemId]);
 
@@ -313,14 +336,18 @@ export default function ContestProblem() {
   }, [fetchProblem, fetchSubmissions]);
 
   useEffect(() => {
-    if (!code || code === DEFAULT_CODE[Object.keys(DEFAULT_CODE).find(k => k !== language)]) {
-      setCode(DEFAULT_CODE[language] || '');
+    if (
+      !code ||
+      code ===
+        DEFAULT_CODE[Object.keys(DEFAULT_CODE).find((k) => k !== language)]
+    ) {
+      setCode(DEFAULT_CODE[language] || "");
     }
   }, [language]);
 
   const handleRun = async () => {
     if (!code.trim()) {
-      setError('Please write some code first');
+      setError("Please write some code first");
       return;
     }
 
@@ -328,7 +355,7 @@ export default function ContestProblem() {
       setIsRunning(true);
       setRunResults(null);
       setSubmitResult(null);
-      setActivePanel('testcases');
+      setActivePanel("testcases");
 
       const response = await contestApi.runCode(contestId, {
         problemId,
@@ -338,7 +365,7 @@ export default function ContestProblem() {
 
       setRunResults(response.data.results);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to run code');
+      setError(err.response?.data?.message || "Failed to run code");
     } finally {
       setIsRunning(false);
     }
@@ -346,19 +373,19 @@ export default function ContestProblem() {
 
   const handleSubmit = async () => {
     if (!code.trim()) {
-      setError('Please write some code first');
+      setError("Please write some code first");
       return;
     }
 
     if (isEnded) {
-      setError('Contest has ended. Submissions are no longer accepted.');
+      setError("Contest has ended. Submissions are no longer accepted.");
       return;
     }
 
     try {
       setIsSubmitting(true);
       setSubmitResult(null);
-      setActivePanel('result');
+      setActivePanel("result");
 
       const response = await contestApi.submitCode(contestId, {
         problemId,
@@ -369,7 +396,7 @@ export default function ContestProblem() {
       setSubmitResult(response.data);
       fetchSubmissions();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit code');
+      setError(err.response?.data?.message || "Failed to submit code");
     } finally {
       setIsSubmitting(false);
     }
@@ -381,7 +408,10 @@ export default function ContestProblem() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#0A0A08" }}
+      >
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
       </div>
     );
@@ -389,7 +419,10 @@ export default function ContestProblem() {
 
   if (error && !problem) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0A08" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#0A0A08" }}
+      >
         <div className="text-center">
           <div className="text-[#FCA5A5] text-6xl mb-4">⚠️</div>
           <h2
@@ -404,7 +437,13 @@ export default function ContestProblem() {
           >
             {error}
           </p>
-          <Button as={Link} to={`/contests/${contestId}`} variant="secondary" size="md" className="mt-6">
+          <Button
+            as={Link}
+            to={`/contests/${contestId}`}
+            variant="secondary"
+            size="md"
+            className="mt-6"
+          >
             ← Back to contest
           </Button>
         </div>
@@ -413,13 +452,16 @@ export default function ContestProblem() {
   }
 
   const getTimerColor = () => {
-    if (timeLeft <= 300) return 'text-red-400';
-    if (timeLeft <= 900) return 'text-yellow-400';
-    return 'text-white';
+    if (timeLeft <= 300) return "text-red-400";
+    if (timeLeft <= 900) return "text-yellow-400";
+    return "text-white";
   };
 
   return (
-    <div className="h-screen flex flex-col" style={{ backgroundColor: "#0A0A08" }}>
+    <div
+      className="h-screen flex flex-col"
+      style={{ backgroundColor: "#0A0A08" }}
+    >
       {}
       <header className="bg-[#121210] border-b border-[#1A1814] px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -471,10 +513,10 @@ export default function ContestProblem() {
                     to={`/contests/${contestId}/problems/${p.id}`}
                     className={`w-8 h-8 flex items-center justify-center rounded text-sm font-mono ${
                       isCurrent
-                        ? 'bg-[#92400E] text-[#E8E4D9]'
+                        ? "bg-[#92400E] text-[#E8E4D9]"
                         : isSolved
-                        ? 'bg-[#1A2A16] text-[#86EFAC]'
-                        : 'bg-[#1A1814] text-[#E8E4D9] hover:bg-[#3D3D3D]'
+                          ? "bg-[#1A2A16] text-[#86EFAC]"
+                          : "bg-[#1A1814] text-[#E8E4D9] hover:bg-[#3D3D3D]"
                     }`}
                   >
                     {p.label}
@@ -526,10 +568,15 @@ export default function ContestProblem() {
                   Input Format
                 </h3>
                 <pre className="bg-[#121210] border border-[#1A1814] rounded-none p-3 text-sm text-[#E8E4D9] whitespace-pre-wrap">
-                {problem?.inputFormat || "The input consists of one or more lines. Each line represents one input parameter."}
+                  {problem?.inputFormat ||
+                    "The input consists of one or more lines. Each line represents one input parameter."}
                 </pre>
-                <div className="mt-2 text-xs text-[#78716C]" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
-                  CP format required (Codeforces-style): whitespace-separated values via stdin. No JSON, no brackets, no commas.
+                <div
+                  className="mt-2 text-xs text-[#78716C]"
+                  style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+                >
+                  CP format required (Codeforces-style): whitespace-separated
+                  values via stdin. No JSON, no brackets, no commas.
                 </div>
               </div>
 
@@ -541,7 +588,8 @@ export default function ContestProblem() {
                   Output Format
                 </h3>
                 <pre className="bg-[#121210] border border-[#1A1814] rounded-none p-3 text-sm text-[#E8E4D9] whitespace-pre-wrap">
-                {problem?.outputFormat || "Print the required result to standard output."}
+                  {problem?.outputFormat ||
+                    "Print the required result to standard output."}
                 </pre>
               </div>
 
@@ -568,19 +616,50 @@ export default function ContestProblem() {
                     Examples
                   </h3>
                   {problem.examples.map((ex, idx) => (
-                    <div key={idx} className="mb-4 bg-[#121210] border border-[#1A1814] rounded-none p-4">
+                    <div
+                      key={idx}
+                      className="mb-4 bg-[#121210] border border-[#1A1814] rounded-none p-4"
+                    >
                       <div className="mb-2">
-                        <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Input:</span>
+                        <span
+                          className="text-[#78716C] text-xs uppercase tracking-wider"
+                          style={{
+                            fontFamily: "'Rajdhani', system-ui, sans-serif",
+                          }}
+                        >
+                          Input:
+                        </span>
                         <pre className="text-[#E8E4D9] mt-1">{ex.input}</pre>
                       </div>
                       <div className="mb-2">
-                        <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Output:</span>
+                        <span
+                          className="text-[#78716C] text-xs uppercase tracking-wider"
+                          style={{
+                            fontFamily: "'Rajdhani', system-ui, sans-serif",
+                          }}
+                        >
+                          Output:
+                        </span>
                         <pre className="text-[#E8E4D9] mt-1">{ex.output}</pre>
                       </div>
                       {ex.explanation && (
                         <div>
-                          <span className="text-[#78716C] text-xs uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>Explanation:</span>
-                          <p className="text-[#A29A8C] mt-1" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>{ex.explanation}</p>
+                          <span
+                            className="text-[#78716C] text-xs uppercase tracking-wider"
+                            style={{
+                              fontFamily: "'Rajdhani', system-ui, sans-serif",
+                            }}
+                          >
+                            Explanation:
+                          </span>
+                          <p
+                            className="text-[#A29A8C] mt-1"
+                            style={{
+                              fontFamily: "'Rajdhani', system-ui, sans-serif",
+                            }}
+                          >
+                            {ex.explanation}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -608,10 +687,20 @@ export default function ContestProblem() {
             </select>
 
             <div className="flex gap-2">
-              <Button onClick={handleRun} disabled={isRunning || isSubmitting} variant="secondary" size="sm">
+              <Button
+                onClick={handleRun}
+                disabled={isRunning || isSubmitting}
+                variant="secondary"
+                size="sm"
+              >
                 {isRunning ? "Running..." : "Run"}
               </Button>
-              <Button onClick={handleSubmit} disabled={isRunning || isSubmitting || isEnded} variant="primary" size="sm">
+              <Button
+                onClick={handleSubmit}
+                disabled={isRunning || isSubmitting || isEnded}
+                variant="primary"
+                size="sm"
+              >
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             </div>
@@ -621,22 +710,23 @@ export default function ContestProblem() {
           <div className="flex-1 min-h-0">
             <Editor
               height="100%"
-              language={language === 'cpp' ? 'cpp' : language}
+              language={language === "cpp" ? "cpp" : language}
               value={code}
-              onChange={(value) => setCode(value || '')}
+              onChange={(value) => setCode(value || "")}
               onMount={handleEditorMount}
               beforeMount={defineArrakisMonacoTheme}
               theme={ARRAKIS_MONACO_THEME}
               options={{
                 minimap: { enabled: false },
-                fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                fontFamily:
+                  "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
                 fontSize: 14,
-                lineNumbers: 'on',
+                lineNumbers: "on",
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
                 tabSize: 4,
                 insertSpaces: true,
-                wordWrap: 'on',
+                wordWrap: "on",
                 readOnly: isEnded,
               }}
             />
@@ -646,24 +736,24 @@ export default function ContestProblem() {
           <div className="h-64 border-t border-[#1A1814] bg-[#121210] flex flex-col">
             {}
             <div className="flex border-b border-[#1A1814]">
-              {['testcases', 'result', 'submissions'].map((tab) => (
+              {["testcases", "result", "submissions"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActivePanel(tab)}
                   className={`px-4 py-2 text-sm capitalize ${
                     activePanel === tab
-                      ? 'text-[#F59E0B] border-b-2 border-[#D97706]'
-                      : 'text-[#A29A8C] hover:text-[#E8E4D9]'
+                      ? "text-[#F59E0B] border-b-2 border-[#D97706]"
+                      : "text-[#A29A8C] hover:text-[#E8E4D9]"
                   }`}
                 >
-                  {tab === 'testcases' ? 'Test Cases' : tab}
+                  {tab === "testcases" ? "Test Cases" : tab}
                 </button>
               ))}
             </div>
 
             {}
             <div className="flex-1 overflow-hidden">
-              {activePanel === 'testcases' && (
+              {activePanel === "testcases" && (
                 <TestCasePanel
                   testCases={problem?.sampleTestCases}
                   results={runResults}
@@ -671,8 +761,8 @@ export default function ContestProblem() {
                 />
               )}
 
-              {activePanel === 'result' && (
-                isSubmitting ? (
+              {activePanel === "result" &&
+                (isSubmitting ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
@@ -681,15 +771,12 @@ export default function ContestProblem() {
                   </div>
                 ) : (
                   <SubmissionResult result={submitResult} />
-                )
-              )}
+                ))}
 
-              {activePanel === 'submissions' && (
+              {activePanel === "submissions" && (
                 <SubmissionHistory
                   submissions={submissions}
-                  onSelect={(sub) => {
-
-                  }}
+                  onSelect={(sub) => {}}
                 />
               )}
             </div>
@@ -702,7 +789,10 @@ export default function ContestProblem() {
         <div className="fixed bottom-4 right-4 bg-[#2A0F0F] text-[#FCA5A5] px-4 py-3 border border-[#7F1D1D] rounded-none shadow-lg max-w-md">
           <div className="flex items-center justify-between">
             <p>{error}</p>
-            <button onClick={() => setError(null)} className="ml-4 text-white/80 hover:text-white">
+            <button
+              onClick={() => setError(null)}
+              className="ml-4 text-white/80 hover:text-white"
+            >
               ✕
             </button>
           </div>

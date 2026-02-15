@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Flame, Trophy, TrendingUp, Calendar } from "lucide-react";
 import { getUserStreak } from "../../services/potd/potdApi";
+import logger from "../../utils/logger";
 
 export default function StreakWidget({ compact = false }) {
   const [streakData, setStreakData] = useState(null);
@@ -17,7 +18,7 @@ export default function StreakWidget({ compact = false }) {
         setStreakData(response.data);
       }
     } catch (err) {
-      console.error("Failed to fetch streak:", err);
+      logger.error("Failed to fetch streak:", err);
     } finally {
       setLoading(false);
     }
@@ -25,7 +26,9 @@ export default function StreakWidget({ compact = false }) {
 
   if (loading) {
     return (
-      <div className={`rounded-xl border border-[#1A1814] bg-[#0F0F0D] ${compact ? "p-3" : "p-4"} animate-pulse`}>
+      <div
+        className={`rounded-xl border border-[#1A1814] bg-[#0F0F0D] ${compact ? "p-3" : "p-4"} animate-pulse`}
+      >
         <div className="h-16 bg-[#1A1814] rounded"></div>
       </div>
     );
@@ -35,7 +38,8 @@ export default function StreakWidget({ compact = false }) {
     return null;
   }
 
-  const { currentStreak, maxStreak, totalPOTDsSolved, lastSolvedDate } = streakData;
+  const { currentStreak, maxStreak, totalPOTDsSolved, lastSolvedDate } =
+    streakData;
 
   const getFlameColor = (streak) => {
     if (streak >= 30) return "text-purple-400";
@@ -70,7 +74,9 @@ export default function StreakWidget({ compact = false }) {
               Streak
             </span>
           </div>
-          <span className="text-[10px] text-[#78716C]">{getStreakMessage(currentStreak)}</span>
+          <span className="text-[10px] text-[#78716C]">
+            {getStreakMessage(currentStreak)}
+          </span>
         </div>
 
         {}
@@ -93,14 +99,19 @@ export default function StreakWidget({ compact = false }) {
           </div>
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
             <TrendingUp className="w-3 h-3 text-green-400 mx-auto mb-0.5" />
-            <div className="text-sm font-bold text-[#E8E4D9]">{totalPOTDsSolved}</div>
+            <div className="text-sm font-bold text-[#E8E4D9]">
+              {totalPOTDsSolved}
+            </div>
             <div className="text-[8px] text-[#78716C] uppercase">Total</div>
           </div>
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
             <Calendar className="w-3 h-3 text-blue-400 mx-auto mb-0.5" />
             <div className="text-sm font-bold text-[#E8E4D9]">
               {lastSolvedDate
-                ? new Date(lastSolvedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                ? new Date(lastSolvedDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
                 : "—"}
             </div>
             <div className="text-[8px] text-[#78716C] uppercase">Last</div>
@@ -121,7 +132,9 @@ export default function StreakWidget({ compact = false }) {
           <Flame className={`w-4 h-4 ${getFlameColor(currentStreak)}`} />
           Your Streak
         </h3>
-        <span className="text-[10px] text-[#78716C]">{getStreakMessage(currentStreak)}</span>
+        <span className="text-[10px] text-[#78716C]">
+          {getStreakMessage(currentStreak)}
+        </span>
       </div>
 
       {}
@@ -163,7 +176,9 @@ export default function StreakWidget({ compact = false }) {
         </div>
         <div className="text-center p-2 bg-[#0A0A08] rounded-lg">
           <TrendingUp className="w-3.5 h-3.5 text-green-400 mx-auto mb-1" />
-          <div className="text-base font-bold text-[#E8E4D9]">{totalPOTDsSolved}</div>
+          <div className="text-base font-bold text-[#E8E4D9]">
+            {totalPOTDsSolved}
+          </div>
           <div className="text-[9px] text-[#78716C] uppercase">Total</div>
         </div>
         <div className="text-center p-2 bg-[#0A0A08] rounded-lg">
@@ -192,7 +207,8 @@ export default function StreakWidget({ compact = false }) {
       {currentStreak > 0 && currentStreak < 7 && (
         <div className="mt-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
           <p className="text-xs text-blue-300">
-            🎯 {7 - currentStreak} more day{7 - currentStreak !== 1 ? "s" : ""} to reach a 7-day streak!
+            🎯 {7 - currentStreak} more day{7 - currentStreak !== 1 ? "s" : ""}{" "}
+            to reach a 7-day streak!
           </p>
         </div>
       )}

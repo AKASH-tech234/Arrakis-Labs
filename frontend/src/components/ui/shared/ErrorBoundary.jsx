@@ -1,4 +1,5 @@
 import { Component } from "react";
+import logger from "../../../utils/logger";
 
 export function ErrorFallback({ error, resetError, sectionName }) {
   return (
@@ -53,8 +54,8 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("[ErrorBoundary] Caught error:", error);
-    console.error("[ErrorBoundary] Error info:", errorInfo);
+    logger.error("[ErrorBoundary] Caught error:", error);
+    logger.error("[ErrorBoundary] Error info:", errorInfo);
 
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -67,7 +68,6 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-
       if (this.props.fallback) {
         if (typeof this.props.fallback === "function") {
           return this.props.fallback({

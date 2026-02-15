@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMProfile } from "../../services/ai/aiApi";
+import logger from "../../utils/logger";
 
 const insightsRefreshListeners = new Set();
 
 export function emitInsightsRefresh() {
-  console.log("[InsightsPatterns] Emitting refresh event");
+  logger.log("[InsightsPatterns] Emitting refresh event");
   insightsRefreshListeners.forEach((listener) => {
     try {
       listener();
     } catch (e) {
-      console.error("[InsightsPatterns] Refresh listener error:", e);
+      logger.error("[InsightsPatterns] Refresh listener error:", e);
     }
   });
 }
@@ -44,7 +45,7 @@ const fontFamily = "'Rajdhani', system-ui, sans-serif";
 const MistakePatternCloud = ({ patterns = [] }) => {
   const [hoveredPattern, setHoveredPattern] = useState(null);
 
-  const maxCount = Math.max(...patterns.map(p => p.count || 1), 1);
+  const maxCount = Math.max(...patterns.map((p) => p.count || 1), 1);
 
   const getSize = (count) => {
     const normalized = count / maxCount;
@@ -89,7 +90,9 @@ const MistakePatternCloud = ({ patterns = [] }) => {
               onMouseLeave={() => setHoveredPattern(null)}
               className={`rounded-lg cursor-pointer transition-colors ${sizeStyles[size]}`}
               style={{
-                backgroundColor: isHovered ? `${COLORS.accent}30` : `${COLORS.error}15`,
+                backgroundColor: isHovered
+                  ? `${COLORS.accent}30`
+                  : `${COLORS.error}15`,
                 color: isHovered ? COLORS.accent : COLORS.error,
                 borderWidth: 1,
                 borderColor: isHovered ? COLORS.accent : `${COLORS.error}40`,
@@ -152,7 +155,10 @@ const AccuracyByTimeChart = ({ data = {} }) => {
             <div className="text-xl mb-1">{slot.icon}</div>
             <div
               className="text-lg font-bold"
-              style={{ color: isBest ? COLORS.accent : COLORS.textPrimary, fontFamily }}
+              style={{
+                color: isBest ? COLORS.accent : COLORS.textPrimary,
+                fontFamily,
+              }}
             >
               {Math.round(accuracy)}%
             </div>
@@ -163,7 +169,10 @@ const AccuracyByTimeChart = ({ data = {} }) => {
               {attempts} attempts
             </div>
             {isBest && (
-              <div className="text-[10px] mt-1" style={{ color: COLORS.accent }}>
+              <div
+                className="text-[10px] mt-1"
+                style={{ color: COLORS.accent }}
+              >
                 ⭐ Peak Time
               </div>
             )}
@@ -209,7 +218,9 @@ const SkillEvolutionTimeline = ({ milestones = [] }) => {
               className="absolute left-1.5 w-3 h-3 rounded-full border-2"
               style={{
                 backgroundColor: COLORS.bgCard,
-                borderColor: milestone.achievedAt ? COLORS.success : COLORS.accent,
+                borderColor: milestone.achievedAt
+                  ? COLORS.success
+                  : COLORS.accent,
               }}
             />
 
@@ -269,8 +280,11 @@ const FocusAreas = ({ areas = [] }) => {
           style={{ backgroundColor: `${COLORS.accent}10` }}
         >
           <span className="text-lg">🎯</span>
-          <span className="text-sm" style={{ color: COLORS.textPrimary, fontFamily }}>
-            {typeof area === 'string' ? area : area.topic || area.name}
+          <span
+            className="text-sm"
+            style={{ color: COLORS.textPrimary, fontFamily }}
+          >
+            {typeof area === "string" ? area : area.topic || area.name}
           </span>
         </motion.div>
       ))}
@@ -286,7 +300,7 @@ export default function InsightsPatterns({ userId }) {
 
   const fetchData = useCallback(async () => {
     if (!userId) {
-      console.log("[InsightsPatterns] No userId, skipping fetch");
+      logger.log("[InsightsPatterns] No userId, skipping fetch");
       return;
     }
 
@@ -294,12 +308,12 @@ export default function InsightsPatterns({ userId }) {
     setError(null);
 
     try {
-      console.log("[InsightsPatterns] Fetching data for:", userId);
+      logger.log("[InsightsPatterns] Fetching data for:", userId);
       const profile = await getMIMProfile({ userId });
-      console.log("[InsightsPatterns] Received data:", profile);
+      logger.log("[InsightsPatterns] Received data:", profile);
       setData(profile);
     } catch (err) {
-      console.error("[InsightsPatterns] Error:", err);
+      logger.error("[InsightsPatterns] Error:", err);
       setError(err.message || "Failed to load insights");
     } finally {
       setLoading(false);
@@ -311,7 +325,7 @@ export default function InsightsPatterns({ userId }) {
   }, [fetchData, refreshKey]);
 
   const handleRefresh = useCallback(() => {
-    console.log("[InsightsPatterns] Refresh triggered");
+    logger.log("[InsightsPatterns] Refresh triggered");
     setRefreshKey((k) => k + 1);
   }, []);
 
@@ -319,13 +333,19 @@ export default function InsightsPatterns({ userId }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border p-6" style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}>
+      <div
+        className="rounded-xl border p-6"
+        style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+      >
         <div className="flex items-center justify-center py-8">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             className="w-6 h-6 border-2 border-t-transparent rounded-full"
-            style={{ borderColor: COLORS.accent, borderTopColor: 'transparent' }}
+            style={{
+              borderColor: COLORS.accent,
+              borderTopColor: "transparent",
+            }}
           />
           <span className="ml-3 text-sm" style={{ color: COLORS.textMuted }}>
             Loading insights...
@@ -337,10 +357,18 @@ export default function InsightsPatterns({ userId }) {
 
   if (error) {
     return (
-      <div className="rounded-xl border p-6" style={{ backgroundColor: `${COLORS.error}10`, borderColor: `${COLORS.error}30` }}>
-        <p className="text-sm" style={{ color: COLORS.error }}>{error}</p>
+      <div
+        className="rounded-xl border p-6"
+        style={{
+          backgroundColor: `${COLORS.error}10`,
+          borderColor: `${COLORS.error}30`,
+        }}
+      >
+        <p className="text-sm" style={{ color: COLORS.error }}>
+          {error}
+        </p>
         <button
-          onClick={() => setRefreshKey(k => k + 1)}
+          onClick={() => setRefreshKey((k) => k + 1)}
           className="mt-2 text-xs px-3 py-1 rounded"
           style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
         >
@@ -350,10 +378,11 @@ export default function InsightsPatterns({ userId }) {
     );
   }
 
-  const mistakePatterns = data?.mistake_analysis?.top_mistakes?.map(m => ({
-    name: typeof m === 'string' ? m : m.cause || m.name,
-    count: typeof m === 'object' ? m.count || 1 : 1
-  })) || [];
+  const mistakePatterns =
+    data?.mistake_analysis?.top_mistakes?.map((m) => ({
+      name: typeof m === "string" ? m : m.cause || m.name,
+      count: typeof m === "object" ? m.count || 1 : 1,
+    })) || [];
 
   const accuracyByTime = data?.accuracy_by_time || {};
   const milestones = data?.milestones || [];

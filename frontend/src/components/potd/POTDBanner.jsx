@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Flame, Clock, ChevronRight, Trophy } from "lucide-react";
 import { getTodaysPOTD } from "../../services/potd/potdApi";
+import logger from "../../utils/logger";
 
 export default function POTDBanner() {
   const [potd, setPotd] = useState(null);
@@ -23,7 +24,7 @@ export default function POTDBanner() {
     const initial = Math.max(0, end - now);
     setTimeRemaining(initial);
 
-    console.log("POTD Timer Debug:", {
+    logger.log("POTD Timer Debug:", {
       currentTime: now.toISOString(),
       endTime: end.toISOString(),
       remainingMs: initial,
@@ -53,7 +54,7 @@ export default function POTDBanner() {
         setPotd(response.data);
       }
     } catch (err) {
-      console.error("Failed to fetch POTD:", err);
+      logger.error("Failed to fetch POTD:", err);
     } finally {
       setLoading(false);
     }

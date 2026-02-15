@@ -1,5 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getMe, signin, signup, signout, googleAuth } from "../services/common/api";
+import {
+  getMe,
+  signin,
+  signup,
+  signout,
+  googleAuth,
+} from "../services/common/api";
+import logger from "../utils/logger";
 
 const AuthContext = createContext(null);
 
@@ -15,18 +22,6 @@ export function AuthProvider({ children }) {
         const me = await getMe();
         if (!cancelled) {
           setUser(me);
-
-          if (me && me.id) {
-            console.log(
-              "═══════════════════════════════════════════════════════════════",
-            );
-            console.log("🔑 USER_ID:", me.id);
-            console.log("📋 Copy this ID to seed test data:");
-            console.log(`   python scripts/test_user_flow.py ${me.id}`);
-            console.log(
-              "═══════════════════════════════════════════════════════════════",
-            );
-          }
         }
       } catch {
         if (!cancelled) setUser(null);
@@ -56,51 +51,18 @@ export function AuthProvider({ children }) {
         const result = await signin({ email, password });
         setUser(result.user);
 
-        if (result.user && result.user.id) {
-          console.log(
-            "═══════════════════════════════════════════════════════════════",
-          );
-          console.log("🔑 USER_ID (after login):", result.user.id);
-          console.log("📋 Copy this ID to seed test data:");
-          console.log(`   python scripts/test_user_flow.py ${result.user.id}`);
-          console.log(
-            "═══════════════════════════════════════════════════════════════",
-          );
-        }
         return result;
       },
       async register({ name, email, password, passwordConfirm }) {
         const result = await signup({ name, email, password, passwordConfirm });
         setUser(result.user);
 
-        if (result.user && result.user.id) {
-          console.log(
-            "═══════════════════════════════════════════════════════════════",
-          );
-          console.log("🔑 USER_ID (after register):", result.user.id);
-          console.log("📋 Copy this ID to seed test data:");
-          console.log(`   python scripts/test_user_flow.py ${result.user.id}`);
-          console.log(
-            "═══════════════════════════════════════════════════════════════",
-          );
-        }
         return result;
       },
       async loginWithGoogle(token) {
         const result = await googleAuth(token);
         setUser(result.user);
 
-        if (result.user && result.user.id) {
-          console.log(
-            "═══════════════════════════════════════════════════════════════",
-          );
-          console.log("🔑 USER_ID (after Google login):", result.user.id);
-          console.log("📋 Copy this ID to seed test data:");
-          console.log(`   python scripts/test_user_flow.py ${result.user.id}`);
-          console.log(
-            "═══════════════════════════════════════════════════════════════",
-          );
-        }
         return result;
       },
       async logout() {

@@ -1,3 +1,5 @@
+import logger from "../../utils/logger";
+
 const AI_SERVICE_URL =
   import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
 
@@ -17,7 +19,7 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
   }
 
   const url = `${AI_SERVICE_URL}${path}`;
-  console.log(`[AI API] ${method} ${url}`, body ? { body } : "");
+  logger.log(`[AI API] ${method} ${url}`, body ? { body } : "");
 
   const response = await fetch(url, {
     method,
@@ -28,7 +30,7 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error(`[AI API] Error ${response.status}:`, errorData);
+    logger.error(`[AI API] Error ${response.status}:`, errorData);
     const error = new Error(
       errorData.detail || `AI request failed (${response.status})`,
     );
@@ -37,7 +39,7 @@ async function aiRequest(path, { method = "POST", body, signal } = {}) {
   }
 
   const data = await response.json();
-  console.log(`[AI API] Response from ${path}:`, data);
+  logger.log(`[AI API] Response from ${path}:`, data);
   return data;
 }
 
@@ -52,7 +54,6 @@ export async function getAIFeedback({
   errorType = null,
   signal,
 }) {
-
   if (!userId) throw new Error("userId is required");
   if (!problemId) throw new Error("problemId is required");
   if (!code) throw new Error("code is required");

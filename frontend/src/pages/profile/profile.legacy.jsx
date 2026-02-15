@@ -10,15 +10,14 @@ import SubmissionSummary from "../../components/charts/SubmissionSummary";
 import contestApi from "../../services/contest/contestApi";
 import apiClient from "../../services/common/api";
 import useProfileAnalytics from "../../hooks/profile/useProfileAnalytics";
+import logger from "../../utils/logger";
 import {
   CognitiveProfile,
   ProblemRecommendations,
   LearningRoadmap,
   SkillRadarChart,
 } from "../../components/mim";
-import {
-  DifficultyProgressBars,
-} from "../../components/profile/ProfileWidgets";
+import { DifficultyProgressBars } from "../../components/profile/ProfileWidgets";
 import InsightsPatterns from "../../components/profile/InsightsPatterns";
 import {
   TopicMasteryGrid,
@@ -61,8 +60,8 @@ export default function Profile({ username, readOnly = false } = {}) {
   const { data: analytics } = useProfileAnalytics({ username });
 
   useEffect(() => {
-    console.log("[Profile] Analytics data:", analytics);
-    console.log("[Profile] User ID:", analytics?.user?._id);
+    logger.log("[Profile] Analytics data:", analytics);
+    logger.log("[Profile] User ID:", analytics?.user?._id);
   }, [analytics]);
 
   const clearActionMessageSoon = () => {
@@ -95,18 +94,22 @@ export default function Profile({ username, readOnly = false } = {}) {
     try {
       setExportingPdf(true);
 
-      const response = await apiClient.post("/export/pdf", {
-        format: "two_page",
-        includeQr: true,
-      }, {
-        responseType: 'blob'
-      });
+      const response = await apiClient.post(
+        "/export/pdf",
+        {
+          format: "two_page",
+          includeQr: true,
+        },
+        {
+          responseType: "blob",
+        },
+      );
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `arrakis_profile_${analytics?.user?.name || 'user'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `arrakis_profile_${analytics?.user?.name || "user"}_${new Date().toISOString().split("T")[0]}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -115,7 +118,7 @@ export default function Profile({ username, readOnly = false } = {}) {
       setActionMessage("PDF downloaded");
       clearActionMessageSoon();
     } catch (err) {
-      console.error("PDF export error:", err);
+      logger.error("PDF export error:", err);
       alert(
         err?.response?.data?.message || err?.message || "Failed to export PDF",
       );
@@ -211,10 +214,7 @@ export default function Profile({ username, readOnly = false } = {}) {
   };
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "#0A0A08" }}
-    >
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A08" }}>
       <AppHeader />
 
       <main className="pt-16">
@@ -245,7 +245,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                 </button>
               )}
               {actionMessage && (
-                <span className="text-[10px] text-[#78716C]">{actionMessage}</span>
+                <span className="text-[10px] text-[#78716C]">
+                  {actionMessage}
+                </span>
               )}
             </div>
             <ProfileHeader user={analytics?.user} />
@@ -368,7 +370,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                   {}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-[#E8E4D9] text-sm font-semibold">Live now</h3>
+                      <h3 className="text-[#E8E4D9] text-sm font-semibold">
+                        Live now
+                      </h3>
                       <span className="text-[10px] text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded">
                         LIVE
                       </span>
@@ -415,7 +419,9 @@ export default function Profile({ username, readOnly = false } = {}) {
                   {}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-[#E8E4D9] text-sm font-semibold">Upcoming</h3>
+                      <h3 className="text-[#E8E4D9] text-sm font-semibold">
+                        Upcoming
+                      </h3>
                       <span className="text-[10px] text-blue-300 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
                         SOON
                       </span>
@@ -544,9 +550,7 @@ export default function Profile({ username, readOnly = false } = {}) {
                 </h2>
               </div>
               <div className="rounded-xl border border-[#1A1814] bg-[#0F0F0D] p-4 hover:border-[#D97706]/40 transition-colors">
-                <SubmissionSummary
-                  submissions={analytics?.recentSubmissions}
-                />
+                <SubmissionSummary submissions={analytics?.recentSubmissions} />
               </div>
             </motion.section>
           </motion.div>
@@ -648,7 +652,12 @@ export default function Profile({ username, readOnly = false } = {}) {
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.65, type: "spring", stiffness: 100 }}
+              transition={{
+                duration: 0.5,
+                delay: 0.65,
+                type: "spring",
+                stiffness: 100,
+              }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <motion.div
@@ -675,7 +684,12 @@ export default function Profile({ username, readOnly = false } = {}) {
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.75, type: "spring", stiffness: 100 }}
+              transition={{
+                duration: 0.5,
+                delay: 0.75,
+                type: "spring",
+                stiffness: 100,
+              }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <motion.div

@@ -5,6 +5,7 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { getUserPOTDCalendar } from "../../services/potd/potdApi";
+import logger from "../../utils/logger";
 
 export default function POTDCalendar({ compact = false }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -22,8 +23,12 @@ export default function POTDCalendar({ compact = false }) {
   const fetchCalendarData = async () => {
     try {
       setLoading(true);
-      const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)).toISOString();
-      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)).toISOString();
+      const startDate = new Date(
+        Date.UTC(year, month, 1, 0, 0, 0, 0),
+      ).toISOString();
+      const endDate = new Date(
+        Date.UTC(year, month + 1, 0, 23, 59, 59, 999),
+      ).toISOString();
 
       const response = await getUserPOTDCalendar(startDate, endDate);
       if (response.success) {
@@ -31,7 +36,7 @@ export default function POTDCalendar({ compact = false }) {
         setSummary(response.data.summary);
       }
     } catch (err) {
-      console.error("Failed to fetch calendar:", err);
+      logger.error("Failed to fetch calendar:", err);
     } finally {
       setLoading(false);
     }
@@ -84,15 +89,21 @@ export default function POTDCalendar({ compact = false }) {
     if (status === "solved") {
       cellBg = "bg-green-500/15";
       textColor = "text-green-400";
-      indicator = <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400"></div>;
+      indicator = (
+        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400"></div>
+      );
     } else if (status === "missed") {
       cellBg = "bg-red-500/10";
       textColor = "text-red-400/70";
-      indicator = <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red-400"></div>;
+      indicator = (
+        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red-400"></div>
+      );
     } else if (status === "active") {
       cellBg = "bg-[#D97706]/20";
       textColor = "text-[#D97706]";
-      indicator = <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse"></div>;
+      indicator = (
+        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse"></div>
+      );
     }
 
     const todayRing = isToday ? "ring-1 ring-[#D97706]" : "";
@@ -103,7 +114,11 @@ export default function POTDCalendar({ compact = false }) {
       <div
         key={day}
         className={`relative ${cellSize} flex items-center justify-center rounded-lg ${cellBg} ${todayRing} hover:bg-[#1A1814] transition-colors cursor-pointer`}
-        title={status ? `${status.charAt(0).toUpperCase() + status.slice(1)}` : "No POTD"}
+        title={
+          status
+            ? `${status.charAt(0).toUpperCase() + status.slice(1)}`
+            : "No POTD"
+        }
       >
         <span className={`${fontSize} font-medium ${textColor}`}>{day}</span>
         {indicator}
@@ -112,8 +127,18 @@ export default function POTDCalendar({ compact = false }) {
   };
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -173,11 +198,16 @@ export default function POTDCalendar({ compact = false }) {
           <div className="grid grid-cols-7 gap-1">
             {}
             {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-              <div key={`empty-${index}`} className={compact ? "w-7 h-7" : "w-8 h-8"}></div>
+              <div
+                key={`empty-${index}`}
+                className={compact ? "w-7 h-7" : "w-8 h-8"}
+              ></div>
             ))}
 
             {}
-            {Array.from({ length: daysInMonth }).map((_, index) => renderDay(index + 1))}
+            {Array.from({ length: daysInMonth }).map((_, index) =>
+              renderDay(index + 1),
+            )}
           </div>
         </div>
       )}
@@ -202,15 +232,21 @@ export default function POTDCalendar({ compact = false }) {
       {summary && !compact && (
         <div className="grid grid-cols-3 gap-2 mt-3">
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-green-400">{summary.solvedDays}</div>
+            <div className="text-base font-bold text-green-400">
+              {summary.solvedDays}
+            </div>
             <div className="text-[9px] text-[#78716C] uppercase">Solved</div>
           </div>
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-red-400">{summary.missedDays}</div>
+            <div className="text-base font-bold text-red-400">
+              {summary.missedDays}
+            </div>
             <div className="text-[9px] text-[#78716C] uppercase">Missed</div>
           </div>
           <div className="bg-[#0A0A08] rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-[#E8E4D9]">{summary.totalDays}</div>
+            <div className="text-base font-bold text-[#E8E4D9]">
+              {summary.totalDays}
+            </div>
             <div className="text-[9px] text-[#78716C] uppercase">Total</div>
           </div>
         </div>

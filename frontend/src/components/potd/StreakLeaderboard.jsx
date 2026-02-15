@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Flame, User } from "lucide-react";
 import { getStreakLeaderboard } from "../../services/potd/potdApi";
+import logger from "../../utils/logger";
 
 export default function StreakLeaderboard({ limit = 10 }) {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -17,7 +18,7 @@ export default function StreakLeaderboard({ limit = 10 }) {
         setLeaderboard(response.data.leaderboard);
       }
     } catch (err) {
-      console.error("Failed to fetch leaderboard:", err);
+      logger.error("Failed to fetch leaderboard:", err);
     } finally {
       setLoading(false);
     }
@@ -32,7 +33,11 @@ export default function StreakLeaderboard({ limit = 10 }) {
       case 3:
         return <Medal className="w-5 h-5 text-amber-600" />;
       default:
-        return <span className="w-5 h-5 flex items-center justify-center text-gray-400 text-sm">{rank}</span>;
+        return (
+          <span className="w-5 h-5 flex items-center justify-center text-gray-400 text-sm">
+            {rank}
+          </span>
+        );
     }
   };
 
@@ -82,7 +87,7 @@ export default function StreakLeaderboard({ limit = 10 }) {
             <div
               key={entry.user._id}
               className={`flex items-center gap-4 p-3 rounded-lg border ${getRankBg(
-                entry.rank
+                entry.rank,
               )} transition-all duration-200 hover:scale-[1.02]`}
             >
               {}
@@ -113,10 +118,10 @@ export default function StreakLeaderboard({ limit = 10 }) {
                     entry.currentStreak >= 30
                       ? "text-purple-500"
                       : entry.currentStreak >= 14
-                      ? "text-orange-500"
-                      : entry.currentStreak >= 7
-                      ? "text-yellow-500"
-                      : "text-red-500"
+                        ? "text-orange-500"
+                        : entry.currentStreak >= 7
+                          ? "text-yellow-500"
+                          : "text-red-500"
                   }`}
                 />
                 <span className="text-lg font-bold text-white">
@@ -126,13 +131,14 @@ export default function StreakLeaderboard({ limit = 10 }) {
               </div>
 
               {}
-              {entry.currentStreak === entry.maxStreak && entry.maxStreak >= 7 && (
-                <div className="flex-shrink-0">
-                  <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
-                    Personal Best!
-                  </span>
-                </div>
-              )}
+              {entry.currentStreak === entry.maxStreak &&
+                entry.maxStreak >= 7 && (
+                  <div className="flex-shrink-0">
+                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                      Personal Best!
+                    </span>
+                  </div>
+                )}
             </div>
           ))}
         </div>

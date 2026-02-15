@@ -1,4 +1,5 @@
 import axios from "axios";
+import logger from "../../utils/logger";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -13,7 +14,6 @@ const adminApi = axios.create({
 
 adminApi.interceptors.request.use(
   (config) => {
-
     if (config.data instanceof FormData) {
       if (typeof config.headers?.delete === "function") {
         config.headers.delete("Content-Type");
@@ -36,13 +36,11 @@ adminApi.interceptors.request.use(
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
-
     if (error.response?.status === 401) {
-      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      const isAdminRoute = window.location.pathname.startsWith("/admin");
       if (isAdminRoute) {
-        console.warn("[AdminAPI] 401 Unauthorized - auth required");
+        logger.warn("[AdminAPI] 401 Unauthorized - auth required");
       }
-
     }
     return Promise.reject(error);
   },
@@ -57,7 +55,6 @@ export const adminLogout = async () => {
   try {
     await adminApi.post("/logout");
   } finally {
-
   }
 };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import oaService from "../services/oaService";
+import logger from "../utils/logger";
 
 export function useOASession(sessionId) {
   const [session, setSession] = useState(null);
@@ -35,11 +36,14 @@ export function useOASession(sessionId) {
     fetchSession();
   }, [fetchSession]);
 
-  const goToQuestion = useCallback((index) => {
-    if (index >= 0 && index < questions.length) {
-      setCurrentQuestionIndex(index);
-    }
-  }, [questions.length]);
+  const goToQuestion = useCallback(
+    (index) => {
+      if (index >= 0 && index < questions.length) {
+        setCurrentQuestionIndex(index);
+      }
+    },
+    [questions.length],
+  );
 
   const submitOA = useCallback(async () => {
     if (!sessionId) return null;
@@ -65,26 +69,29 @@ export function useOASession(sessionId) {
     }
   }, [sessionId]);
 
-  const terminateOA = useCallback(async (reason) => {
-    if (!sessionId) return null;
+  const terminateOA = useCallback(
+    async (reason) => {
+      if (!sessionId) return null;
 
-    try {
-      const response = await oaService.terminateSession(sessionId, reason);
+      try {
+        const response = await oaService.terminateSession(sessionId, reason);
 
-      if (response.success) {
-        setSession((prev) => ({
-          ...prev,
-          status: "terminated",
-          terminatedReason: reason,
-        }));
+        if (response.success) {
+          setSession((prev) => ({
+            ...prev,
+            status: "terminated",
+            terminatedReason: reason,
+          }));
+        }
+
+        return response;
+      } catch (err) {
+        setError(err.message);
+        throw err;
       }
-
-      return response;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, [sessionId]);
+    },
+    [sessionId],
+  );
 
   return {
     session,
@@ -133,7 +140,6 @@ export function useOATimer(sessionId, endAt, onTimeUp) {
         }
       }
     } catch (err) {
-
       setRemainingMs(calculateRemaining());
     }
   }, [sessionId, isExpired, calculateRemaining]);
@@ -242,7 +248,7 @@ export function useAutosave(sessionId, questionId, delay = 500) {
         }
       }, delay);
     },
-    [sessionId, questionId, delay]
+    [sessionId, questionId, delay],
   );
 
   const saveNow = useCallback(
@@ -277,7 +283,7 @@ export function useAutosave(sessionId, questionId, delay = 500) {
         setIsSaving(false);
       }
     },
-    [sessionId, questionId]
+    [sessionId, questionId],
   );
 
   useEffect(() => {
@@ -303,7 +309,8 @@ export function useBeforeUnload(isActive = true) {
 
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = "You have an active OA session. Are you sure you want to leave?";
+      e.returnValue =
+        "You have an active OA session. Are you sure you want to leave?";
       return e.returnValue;
     };
 
@@ -337,7 +344,7 @@ export function useTabVisibility(sessionId, enabled = true, onViolation) {
             {
               url: window.location.href,
               timestamp: new Date().toISOString(),
-            }
+            },
           );
 
           if (response.success && response.data.recorded) {
@@ -357,7 +364,7 @@ export function useTabVisibility(sessionId, enabled = true, onViolation) {
             onViolationRef.current?.(violation, response.data);
           }
         } catch (err) {
-          console.error("Failed to record violation:", err);
+          logger.error("Failed to record violation:", err);
         }
       }
     };
@@ -369,7 +376,7 @@ export function useTabVisibility(sessionId, enabled = true, onViolation) {
           "tab_blur",
           {
             timestamp: new Date().toISOString(),
-          }
+          },
         );
 
         if (response.success && response.data.recorded) {
@@ -389,7 +396,7 @@ export function useTabVisibility(sessionId, enabled = true, onViolation) {
           onViolationRef.current?.(violation, response.data);
         }
       } catch (err) {
-        console.error("Failed to record blur violation:", err);
+        logger.error("Failed to record blur violation:", err);
       }
     };
 

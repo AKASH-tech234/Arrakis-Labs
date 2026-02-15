@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from "react";
+import logger from "../../utils/logger";
 import {
   CONFIDENCE_COLORS,
   CONFIDENCE_LABELS,
@@ -108,7 +109,7 @@ export function useAIFeedback() {
         }
         const message = err.message || "Failed to fetch AI feedback";
         setError(message);
-        console.error("AI Feedback Error:", err);
+        logger.error("AI Feedback Error:", err);
         return null;
       } finally {
         setLoading(false);
@@ -194,7 +195,10 @@ export function useAIFeedback() {
 
     const difficultyAction = difficulty?.action || "maintain";
     const difficultyReason = difficulty?.reason || "default";
-    const difficultyMessage = getDifficultyMessage(difficultyAction, difficultyReason);
+    const difficultyMessage = getDifficultyMessage(
+      difficultyAction,
+      difficultyReason,
+    );
     const difficultyChanged = difficultyAction !== "maintain";
 
     const ragUsed = rag?.used || false;
@@ -224,8 +228,10 @@ export function useAIFeedback() {
 
       confidence,
       confidenceLevel,
-      confidenceColor: CONFIDENCE_COLORS[confidenceLevel] || CONFIDENCE_COLORS.medium,
-      confidenceLabel: CONFIDENCE_LABELS[confidenceLevel] || CONFIDENCE_LABELS.medium,
+      confidenceColor:
+        CONFIDENCE_COLORS[confidenceLevel] || CONFIDENCE_COLORS.medium,
+      confidenceLabel:
+        CONFIDENCE_LABELS[confidenceLevel] || CONFIDENCE_LABELS.medium,
       isHighConfidence,
       isLowConfidence,
       useHedgingLanguage,

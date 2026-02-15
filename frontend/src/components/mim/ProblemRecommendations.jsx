@@ -2,16 +2,17 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMIMRecommendations } from "../../services/ai/aiApi";
+import logger from "../../utils/logger";
 
 const recommendationsRefreshListeners = new Set();
 
 export function emitRecommendationsRefresh() {
-  console.log("[ProblemRecommendations] Emitting refresh event");
+  logger.log("[ProblemRecommendations] Emitting refresh event");
   recommendationsRefreshListeners.forEach((listener) => {
     try {
       listener();
     } catch (e) {
-      console.error("[ProblemRecommendations] Refresh listener error:", e);
+      logger.error("[ProblemRecommendations] Refresh listener error:", e);
     }
   });
 }
@@ -162,22 +163,24 @@ export default function ProblemRecommendations({
     setError(null);
 
     try {
-      console.log("[ProblemRecommendations] Fetching for user:", userId);
+      logger.log("[ProblemRecommendations] Fetching for user:", userId);
       const data = await getMIMRecommendations({ userId, limit });
 
       if (data?.is_static) {
-        console.log("[ProblemRecommendations] Received static recommendations");
+        logger.log("[ProblemRecommendations] Received static recommendations");
       }
 
       const rawRecommendations = data?.recommendations || [];
       const seenIds = new Set();
       const seenTitles = new Set();
-      const uniqueRecommendations = rawRecommendations.filter(rec => {
+      const uniqueRecommendations = rawRecommendations.filter((rec) => {
         const id = rec.problem_id;
-        const title = (rec.title || '').toLowerCase().trim();
+        const title = (rec.title || "").toLowerCase().trim();
 
         if (seenIds.has(id) || seenTitles.has(title)) {
-          console.log(`[ProblemRecommendations] Filtering duplicate: ${title} (id: ${id})`);
+          logger.log(
+            `[ProblemRecommendations] Filtering duplicate: ${title} (id: ${id})`,
+          );
           return false;
         }
 
@@ -186,10 +189,12 @@ export default function ProblemRecommendations({
         return true;
       });
 
-      console.log(`[ProblemRecommendations] Got ${rawRecommendations.length} recs, ${uniqueRecommendations.length} unique`);
+      logger.log(
+        `[ProblemRecommendations] Got ${rawRecommendations.length} recs, ${uniqueRecommendations.length} unique`,
+      );
       setRecommendations(uniqueRecommendations);
     } catch (err) {
-      console.error("[ProblemRecommendations] Error:", err);
+      logger.error("[ProblemRecommendations] Error:", err);
       setError(err.message || "Failed to load recommendations");
     } finally {
       setLoading(false);
@@ -201,7 +206,7 @@ export default function ProblemRecommendations({
   }, [fetchRecommendations, refreshKey]);
 
   const handleRefresh = useCallback(() => {
-    console.log("[ProblemRecommendations] Refresh triggered");
+    logger.log("[ProblemRecommendations] Refresh triggered");
     setRefreshKey((k) => k + 1);
   }, []);
 

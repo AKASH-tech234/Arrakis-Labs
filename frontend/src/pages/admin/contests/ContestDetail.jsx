@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import adminApi from '../../../services/admin/adminApi';
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import adminApi from "../../../services/admin/adminApi";
+import logger from "../../../utils/logger";
 import {
   ArrowLeft,
   Users,
@@ -13,7 +14,7 @@ import {
   Send,
   Trophy,
   AlertTriangle,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ContestDetail() {
   const { id } = useParams();
@@ -22,8 +23,8 @@ export default function ContestDetail() {
   const [submissions, setSubmissions] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [announcement, setAnnouncement] = useState('');
+  const [activeTab, setActiveTab] = useState("overview");
+  const [announcement, setAnnouncement] = useState("");
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
 
   useEffect(() => {
@@ -40,9 +41,11 @@ export default function ContestDetail() {
 
       setContest(contestRes.data.data);
       setParticipants(participantsRes.data.data || []);
-      setLeaderboard(participantsRes.data.data?.filter(p => p.totalScore > 0) || []);
+      setLeaderboard(
+        participantsRes.data.data?.filter((p) => p.totalScore > 0) || [],
+      );
     } catch (err) {
-      console.error('Failed to fetch contest:', err);
+      logger.error("Failed to fetch contest:", err);
     } finally {
       setLoading(false);
     }
@@ -53,18 +56,27 @@ export default function ContestDetail() {
 
     try {
       setSendingAnnouncement(true);
-      await adminApi.post(`/contests/${id}/announce`, { message: announcement });
-      setAnnouncement('');
-      alert('Announcement sent successfully!');
+      await adminApi.post(`/contests/${id}/announce`, {
+        message: announcement,
+      });
+      setAnnouncement("");
+      alert("Announcement sent successfully!");
     } catch (err) {
-      alert('Failed to send announcement: ' + (err.response?.data?.message || err.message));
+      alert(
+        "Failed to send announcement: " +
+          (err.response?.data?.message || err.message),
+      );
     } finally {
       setSendingAnnouncement(false);
     }
   };
 
   const handleForceEnd = async () => {
-    if (!confirm('Are you sure you want to force end this contest? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to force end this contest? This action cannot be undone.",
+      )
+    ) {
       return;
     }
 
@@ -72,33 +84,42 @@ export default function ContestDetail() {
       await adminApi.post(`/contests/${id}/end`);
       fetchContestData();
     } catch (err) {
-      alert('Failed to end contest: ' + (err.response?.data?.message || err.message));
+      alert(
+        "Failed to end contest: " +
+          (err.response?.data?.message || err.message),
+      );
     }
   };
 
   const handleExtendTime = async () => {
-    const minutes = prompt('Enter additional minutes to extend:');
+    const minutes = prompt("Enter additional minutes to extend:");
     if (!minutes || isNaN(minutes)) return;
 
     try {
-      await adminApi.put(`/contests/${id}` , {
+      await adminApi.put(`/contests/${id}`, {
         duration: contest.duration + parseInt(minutes),
       });
       fetchContestData();
     } catch (err) {
-      alert('Failed to extend time: ' + (err.response?.data?.message || err.message));
+      alert(
+        "Failed to extend time: " +
+          (err.response?.data?.message || err.message),
+      );
     }
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      draft: 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20',
-      scheduled: 'bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20',
-      live: 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20',
-      ended: 'bg-[#1A1814] text-[#78716C] border border-[#1A1814]/60',
-      cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
+      draft: "bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20",
+      scheduled: "bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20",
+      live: "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20",
+      ended: "bg-[#1A1814] text-[#78716C] border border-[#1A1814]/60",
+      cancelled: "bg-red-500/10 text-red-400 border border-red-500/20",
     };
-    return colors[status] || 'bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20';
+    return (
+      colors[status] ||
+      "bg-[#78716C]/10 text-[#78716C] border border-[#78716C]/20"
+    );
   };
 
   const formatDateTime = (date) => {
@@ -117,7 +138,10 @@ export default function ContestDetail() {
         <div className="p-4 rounded-xl bg-[#0F0F0D] border border-[#1A1814]">
           <Loader2 className="h-8 w-8 animate-spin text-[#D97706]" />
         </div>
-        <p className="text-[#78716C] mt-4 text-sm uppercase tracking-wider" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+        <p
+          className="text-[#78716C] mt-4 text-sm uppercase tracking-wider"
+          style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+        >
           Loading contest...
         </p>
       </div>
@@ -126,9 +150,15 @@ export default function ContestDetail() {
 
   if (!contest) {
     return (
-      <div className="py-12 text-center" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+      <div
+        className="py-12 text-center"
+        style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+      >
         <p className="text-[#78716C]">Contest not found</p>
-        <Link to="/admin/contests" className="text-[#D97706] hover:text-[#F59E0B] mt-2 inline-block">
+        <Link
+          to="/admin/contests"
+          className="text-[#D97706] hover:text-[#F59E0B] mt-2 inline-block"
+        >
           Back to contests
         </Link>
       </div>
@@ -136,7 +166,10 @@ export default function ContestDetail() {
   }
 
   return (
-    <div className="space-y-8" style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}>
+    <div
+      className="space-y-8"
+      style={{ fontFamily: "'Rajdhani', system-ui, sans-serif" }}
+    >
       {}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -154,18 +187,26 @@ export default function ContestDetail() {
           <div>
             <div className="flex items-center gap-3">
               <div className="w-1 h-6 bg-gradient-to-b from-[#D97706] to-transparent rounded-full" />
-              <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">{contest.name}</h1>
-              <span className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${getStatusColor(contest.status)}`}>
-                {contest.status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F59E0B] mr-1.5 animate-pulse" />}
+              <h1 className="text-2xl font-bold text-[#E8E4D9] tracking-wide">
+                {contest.name}
+              </h1>
+              <span
+                className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${getStatusColor(contest.status)}`}
+              >
+                {contest.status === "live" && (
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F59E0B] mr-1.5 animate-pulse" />
+                )}
                 {contest.status}
               </span>
             </div>
-            <p className="text-[#78716C] mt-1 ml-3 text-sm">{contest.description || 'No description'}</p>
+            <p className="text-[#78716C] mt-1 ml-3 text-sm">
+              {contest.description || "No description"}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {contest.status === 'live' && (
+          {contest.status === "live" && (
             <>
               <button
                 onClick={handleExtendTime}
@@ -203,36 +244,52 @@ export default function ContestDetail() {
             <div className="p-2 rounded-lg bg-[#D97706]/10">
               <Users className="w-4 h-4 text-[#D97706]" />
             </div>
-            <p className="text-[#78716C] text-xs uppercase tracking-widest">Participants</p>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">
+              Participants
+            </p>
           </div>
-          <p className="text-2xl font-bold text-[#E8E4D9]">{participants.length}</p>
+          <p className="text-2xl font-bold text-[#E8E4D9]">
+            {participants.length}
+          </p>
         </div>
         <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-[#D97706]/10">
               <Award className="w-4 h-4 text-[#D97706]" />
             </div>
-            <p className="text-[#78716C] text-xs uppercase tracking-widest">Problems</p>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">
+              Problems
+            </p>
           </div>
-          <p className="text-2xl font-bold text-[#E8E4D9]">{contest.problems?.length || 0}</p>
+          <p className="text-2xl font-bold text-[#E8E4D9]">
+            {contest.problems?.length || 0}
+          </p>
         </div>
         <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-[#D97706]/10">
               <Clock className="w-4 h-4 text-[#D97706]" />
             </div>
-            <p className="text-[#78716C] text-xs uppercase tracking-widest">Duration</p>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">
+              Duration
+            </p>
           </div>
-          <p className="text-2xl font-bold text-[#E8E4D9]">{formatDuration(contest.duration)}</p>
+          <p className="text-2xl font-bold text-[#E8E4D9]">
+            {formatDuration(contest.duration)}
+          </p>
         </div>
         <div className="p-5 rounded-xl bg-[#0A0A08] border border-[#1A1814]">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-[#D97706]/10">
               <Calendar className="w-4 h-4 text-[#D97706]" />
             </div>
-            <p className="text-[#78716C] text-xs uppercase tracking-widest">Start Time</p>
+            <p className="text-[#78716C] text-xs uppercase tracking-widest">
+              Start Time
+            </p>
           </div>
-          <p className="text-lg font-semibold text-[#E8E4D9]">{formatDateTime(contest.startTime)}</p>
+          <p className="text-lg font-semibold text-[#E8E4D9]">
+            {formatDateTime(contest.startTime)}
+          </p>
         </div>
       </motion.div>
 
@@ -244,65 +301,88 @@ export default function ContestDetail() {
         className="border-b border-[#1A1814]"
       >
         <div className="flex gap-4">
-          {['overview', 'participants', 'leaderboard', 'announcements'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 font-semibold text-sm uppercase tracking-wider border-b-2 -mb-px transition-colors ${
-                activeTab === tab
-                  ? 'border-[#D97706] text-[#D97706]'
-                  : 'border-transparent text-[#78716C] hover:text-[#E8E4D9]'
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+          {["overview", "participants", "leaderboard", "announcements"].map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-3 font-semibold text-sm uppercase tracking-wider border-b-2 -mb-px transition-colors ${
+                  activeTab === tab
+                    ? "border-[#D97706] text-[#D97706]"
+                    : "border-transparent text-[#78716C] hover:text-[#E8E4D9]"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ),
+          )}
         </div>
       </motion.div>
 
       {}
-      {activeTab === 'overview' && (
+      {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {}
           <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
-            <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">Contest Settings</h3>
+            <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">
+              Contest Settings
+            </h3>
             <dl className="space-y-3">
               <div className="flex justify-between">
                 <dt className="text-[#78716C]">Ranking Type</dt>
-                <dd className="text-[#E8E4D9]">{contest.rankingType?.toUpperCase()}</dd>
+                <dd className="text-[#E8E4D9]">
+                  {contest.rankingType?.toUpperCase()}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-[#78716C]">Wrong Submission Penalty</dt>
-                <dd className="text-[#E8E4D9]">{contest.penaltyRules?.wrongSubmissionPenalty} min</dd>
+                <dd className="text-[#E8E4D9]">
+                  {contest.penaltyRules?.wrongSubmissionPenalty} min
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-[#78716C]">Public</dt>
-                <dd className="text-[#E8E4D9]">{contest.isPublic ? 'Yes' : 'No'}</dd>
+                <dd className="text-[#E8E4D9]">
+                  {contest.isPublic ? "Yes" : "No"}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-[#78716C]">Registration Required</dt>
-                <dd className="text-[#E8E4D9]">{contest.requiresRegistration ? 'Yes' : 'No'}</dd>
+                <dd className="text-[#E8E4D9]">
+                  {contest.requiresRegistration ? "Yes" : "No"}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-[#78716C]">Late Join Allowed</dt>
-                <dd className="text-[#E8E4D9]">{contest.allowLateJoin ? 'Yes' : 'No'}</dd>
+                <dd className="text-[#E8E4D9]">
+                  {contest.allowLateJoin ? "Yes" : "No"}
+                </dd>
               </div>
             </dl>
           </div>
 
           {}
           <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
-            <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">Problems</h3>
+            <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-4">
+              Problems
+            </h3>
             <div className="space-y-2">
               {contest.problems?.map((p) => (
-                <div key={p._id} className="flex items-center justify-between p-3 bg-[#0F0F0D] border border-[#1A1814] rounded-lg">
+                <div
+                  key={p._id}
+                  className="flex items-center justify-between p-3 bg-[#0F0F0D] border border-[#1A1814] rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 flex items-center justify-center bg-[#D97706] rounded-lg text-white font-bold text-sm">
                       {p.label}
                     </span>
-                    <span className="text-[#E8E4D9]">{p.problem?.title || 'Unknown'}</span>
+                    <span className="text-[#E8E4D9]">
+                      {p.problem?.title || "Unknown"}
+                    </span>
                   </div>
-                  <span className="text-[#D97706] font-semibold">{p.points} pts</span>
+                  <span className="text-[#D97706] font-semibold">
+                    {p.points} pts
+                  </span>
                 </div>
               ))}
             </div>
@@ -310,35 +390,59 @@ export default function ContestDetail() {
         </div>
       )}
 
-      {activeTab === 'participants' && (
+      {activeTab === "participants" && (
         <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden">
           <table className="w-full">
             <thead className="bg-[#0F0F0D] border-b border-[#1A1814]">
               <tr>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">#</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">User</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Registered</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Joined</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Score</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Rank</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  #
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  User
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Registered
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Joined
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Score
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Rank
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1A1814]">
               {participants.map((p, idx) => (
-                <tr key={p._id} className="hover:bg-[#0F0F0D] transition-colors">
+                <tr
+                  key={p._id}
+                  className="hover:bg-[#0F0F0D] transition-colors"
+                >
                   <td className="px-4 py-3 text-[#78716C]">{idx + 1}</td>
-                  <td className="px-4 py-3 text-[#E8E4D9]">{p.user?.username || 'Unknown'}</td>
-                  <td className="px-4 py-3 text-[#78716C]">{formatDateTime(p.registeredAt)}</td>
+                  <td className="px-4 py-3 text-[#E8E4D9]">
+                    {p.user?.username || "Unknown"}
+                  </td>
                   <td className="px-4 py-3 text-[#78716C]">
-                    {p.joinedAt ? formatDateTime(p.joinedAt) : '-'}
+                    {formatDateTime(p.registeredAt)}
+                  </td>
+                  <td className="px-4 py-3 text-[#78716C]">
+                    {p.joinedAt ? formatDateTime(p.joinedAt) : "-"}
                   </td>
                   <td className="px-4 py-3 text-[#E8E4D9]">{p.totalScore}</td>
-                  <td className="px-4 py-3 text-[#E8E4D9]">{p.finalRank || '-'}</td>
+                  <td className="px-4 py-3 text-[#E8E4D9]">
+                    {p.finalRank || "-"}
+                  </td>
                 </tr>
               ))}
               {participants.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-[#78716C]">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-[#78716C]"
+                  >
                     No participants yet
                   </td>
                 </tr>
@@ -348,32 +452,55 @@ export default function ContestDetail() {
         </div>
       )}
 
-      {activeTab === 'leaderboard' && (
+      {activeTab === "leaderboard" && (
         <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] overflow-hidden">
           <table className="w-full">
             <thead className="bg-[#0F0F0D] border-b border-[#1A1814]">
               <tr>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Rank</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">User</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Score</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Penalty</th>
-                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">Problems</th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Rank
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  User
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Score
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Penalty
+                </th>
+                <th className="px-4 py-3 text-left text-[#78716C] font-semibold text-xs uppercase tracking-widest">
+                  Problems
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1A1814]">
               {leaderboard
-                .sort((a, b) => b.totalScore - a.totalScore || a.totalPenalty - b.totalPenalty)
+                .sort(
+                  (a, b) =>
+                    b.totalScore - a.totalScore ||
+                    a.totalPenalty - b.totalPenalty,
+                )
                 .map((p, idx) => (
-                  <tr key={p._id} className="hover:bg-[#0F0F0D] transition-colors">
+                  <tr
+                    key={p._id}
+                    className="hover:bg-[#0F0F0D] transition-colors"
+                  >
                     <td className="px-4 py-3 text-[#E8E4D9] font-medium">
                       {idx + 1}
                       {idx === 0 && <span className="ml-1">🥇</span>}
                       {idx === 1 && <span className="ml-1">🥈</span>}
                       {idx === 2 && <span className="ml-1">🥉</span>}
                     </td>
-                    <td className="px-4 py-3 text-[#E8E4D9]">{p.user?.username || 'Unknown'}</td>
-                    <td className="px-4 py-3 text-[#F59E0B] font-semibold">{p.totalScore}</td>
-                    <td className="px-4 py-3 text-[#92400E]">{p.totalPenalty} min</td>
+                    <td className="px-4 py-3 text-[#E8E4D9]">
+                      {p.user?.username || "Unknown"}
+                    </td>
+                    <td className="px-4 py-3 text-[#F59E0B] font-semibold">
+                      {p.totalScore}
+                    </td>
+                    <td className="px-4 py-3 text-[#92400E]">
+                      {p.totalPenalty} min
+                    </td>
                     <td className="px-4 py-3 text-[#78716C]">
                       {p.problemsAttempted?.size || 0} solved
                     </td>
@@ -381,7 +508,10 @@ export default function ContestDetail() {
                 ))}
               {leaderboard.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-[#78716C]">
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-[#78716C]"
+                  >
                     No scores yet
                   </td>
                 </tr>
@@ -391,9 +521,11 @@ export default function ContestDetail() {
         </div>
       )}
 
-      {activeTab === 'announcements' && (
+      {activeTab === "announcements" && (
         <div className="rounded-xl border border-[#1A1814] bg-[#0A0A08] p-6">
-          <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-2">Send Announcement</h3>
+          <h3 className="text-lg font-semibold text-[#E8E4D9] uppercase tracking-wider mb-2">
+            Send Announcement
+          </h3>
           <p className="text-[#78716C] text-sm mb-4">
             Send a real-time announcement to all participants in this contest.
           </p>
@@ -410,7 +542,7 @@ export default function ContestDetail() {
             className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#D97706] text-white font-semibold uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <Send className="w-4 h-4" />
-            {sendingAnnouncement ? 'Sending...' : 'Send Announcement'}
+            {sendingAnnouncement ? "Sending..." : "Send Announcement"}
           </button>
         </div>
       )}

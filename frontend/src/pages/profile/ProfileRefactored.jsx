@@ -4,6 +4,7 @@ import AppHeader from "../../components/layout/AppHeader";
 import contestApi from "../../services/contest/contestApi";
 import apiClient from "../../services/common/api";
 import useProfileAnalytics from "../../hooks/profile/useProfileAnalytics";
+import logger from "../../utils/logger";
 import { ErrorBoundary, SectionLoading } from "../../components/ui/shared";
 import {
   OverviewSection,
@@ -58,7 +59,6 @@ function SectionRenderer({
   onRegister,
   busy,
 }) {
-
   switch (activeSection) {
     case "overview":
       return (
@@ -118,7 +118,6 @@ function SectionRenderer({
 }
 
 export default function Profile({ username, readOnly = false } = {}) {
-
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get("section") || DEFAULT_SECTION;
 
@@ -194,7 +193,7 @@ export default function Profile({ username, readOnly = false } = {}) {
       setActionMessage("PDF downloaded");
       clearActionMessageSoon();
     } catch (err) {
-      console.error("PDF export error:", err);
+      logger.error("PDF export error:", err);
       alert(
         err?.response?.data?.message || err?.message || "Failed to export PDF",
       );
@@ -313,12 +312,10 @@ export default function Profile({ username, readOnly = false } = {}) {
               analytics={analytics}
               userId={userId}
               readOnly={readOnly}
-
               onCopyLink={handleCopyProfileLink}
               onExportPdf={handleExportPdf}
               exportingPdf={exportingPdf}
               actionMessage={actionMessage}
-
               contests={contests}
               contestsLoading={contestsLoading}
               contestsError={contestsError}
