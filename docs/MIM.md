@@ -1,8 +1,8 @@
 # MIM (Machine Intelligence Model) Specification
 
 > **Authoritative documentation for the MIM diagnostic engine.**
-> 
-> MIM is the deterministic brain of the AI feedback system. It performs root cause classification, pattern detection, and difficulty decisions using ML models. LLM agents receive MIM decisions and cannot override them.
+>
+> MIM is the deterministic brain of the AI feedback system. It performs root cause classification, pattern detection, and difficulty decisions using structured heuristic classifiers and rule engines. LLM agents receive MIM decisions and cannot override them.
 
 ---
 
@@ -12,12 +12,12 @@ MIM (Machine Intelligence Model) is a **deterministic diagnostic engine** that a
 
 ### Key Characteristics
 
-| Aspect | Description |
-|--------|-------------|
-| **Type** | Machine Learning classifier (LightGBM) |
-| **NOT** | An LLM, heuristic system, or rule engine |
-| **Role** | The "brain" that makes diagnostic decisions |
-| **Output** | Structured, deterministic classifications |
+| Aspect     | Description                                          |
+| ---------- | ---------------------------------------------------- |
+| **Type**   | Deterministic heuristic classifier with rule engines |
+| **NOT**    | An LLM or guessing system                            |
+| **Role**   | The "brain" that makes diagnostic decisions          |
+| **Output** | Structured, deterministic classifications            |
 
 ### Design Philosophy
 
@@ -41,51 +41,51 @@ MIM receives the following inputs for each submission analysis:
 
 ### 2.1 Submission Context
 
-| Input | Description | Example |
-|-------|-------------|---------|
-| `verdict` | Judge result | `wrong_answer`, `time_limit_exceeded` |
-| `code` | Submitted source code | Python/JS/Java/C++ code |
-| `language` | Programming language | `python`, `javascript` |
-| `problem_id` | Problem identifier | `prob_abc123` |
-| `user_id` | User identifier | `user_xyz789` |
+| Input        | Description           | Example                               |
+| ------------ | --------------------- | ------------------------------------- |
+| `verdict`    | Judge result          | `wrong_answer`, `time_limit_exceeded` |
+| `code`       | Submitted source code | Python/JS/Java/C++ code               |
+| `language`   | Programming language  | `python`, `javascript`                |
+| `problem_id` | Problem identifier    | `prob_abc123`                         |
+| `user_id`    | User identifier       | `user_xyz789`                         |
 
 ### 2.2 Delta Features
 
 Changes between current and previous attempts:
 
-| Feature | Description |
-|---------|-------------|
-| `attempt_number` | Which attempt this is (1, 2, 3...) |
-| `time_since_last_attempt` | Seconds since previous submission |
-| `code_change_ratio` | How much code changed (0.0 - 1.0) |
-| `lines_added` | Number of lines added |
-| `lines_removed` | Number of lines removed |
+| Feature                   | Description                        |
+| ------------------------- | ---------------------------------- |
+| `attempt_number`          | Which attempt this is (1, 2, 3...) |
+| `time_since_last_attempt` | Seconds since previous submission  |
+| `code_change_ratio`       | How much code changed (0.0 - 1.0)  |
+| `lines_added`             | Number of lines added              |
+| `lines_removed`           | Number of lines removed            |
 
 ### 2.3 Code Signals (AST Analysis)
 
 Extracted from static analysis of the submitted code:
 
-| Signal | Description |
-|--------|-------------|
-| `loop_count` | Number of loops |
-| `nested_loop_depth` | Maximum nesting depth |
-| `conditional_count` | Number of if/else statements |
-| `function_count` | Number of function definitions |
-| `estimated_complexity` | Big-O estimate |
-| `uses_recursion` | Boolean |
-| `uses_memoization` | Boolean |
+| Signal                 | Description                    |
+| ---------------------- | ------------------------------ |
+| `loop_count`           | Number of loops                |
+| `nested_loop_depth`    | Maximum nesting depth          |
+| `conditional_count`    | Number of if/else statements   |
+| `function_count`       | Number of function definitions |
+| `estimated_complexity` | Big-O estimate                 |
+| `uses_recursion`       | Boolean                        |
+| `uses_memoization`     | Boolean                        |
 
 ### 2.4 User History (Aggregated)
 
 Historical performance data (no PII):
 
-| Feature | Description |
-|---------|-------------|
-| `total_submissions` | Lifetime submission count |
-| `acceptance_rate` | Overall success rate |
-| `category_accuracy` | Accuracy per problem category |
-| `dominant_root_causes` | Most common failure types |
-| `current_streak` | Consecutive accepted/failed |
+| Feature                | Description                   |
+| ---------------------- | ----------------------------- |
+| `total_submissions`    | Lifetime submission count     |
+| `acceptance_rate`      | Overall success rate          |
+| `category_accuracy`    | Accuracy per problem category |
+| `dominant_root_causes` | Most common failure types     |
+| `current_streak`       | Consecutive accepted/failed   |
 
 ---
 
@@ -113,6 +113,7 @@ MIM produces a structured output with the following components:
 Each root cause has granular subtypes:
 
 **Correctness Subtypes:**
+
 - `off_by_one` - Loop boundary errors
 - `boundary_condition` - Edge case handling
 - `comparison_error` - Wrong comparison operators
@@ -120,18 +121,21 @@ Each root cause has granular subtypes:
 - `partial_case_handling` - Missing cases
 
 **Efficiency Subtypes:**
+
 - `wrong_complexity` - Algorithm too slow for constraints
 - `suboptimal_data_structure` - Better DS available
 - `redundant_operations` - Unnecessary repeated work
 - `missing_memoization` - Recomputing same values
 
 **Implementation Subtypes:**
+
 - `null_reference` - Null/undefined access
 - `type_mismatch` - Type conversion errors
 - `state_mutation` - Unintended state changes
 - `resource_leak` - Unclosed resources
 
 **Understanding Gap Subtypes:**
+
 - `misread_constraints` - Wrong constraint interpretation
 - `wrong_problem_entirely` - Solving different problem
 - `missing_requirements` - Incomplete solution
@@ -140,20 +144,20 @@ Each root cause has granular subtypes:
 
 ```javascript
 {
-  "combined_confidence": 0.82,      // 0.0 - 1.0, calibrated via isotonic regression
+  "combined_confidence": 0.82,      // 0.0 - 1.0, calibrated
   "confidence_level": "high",       // "high" (≥0.80), "medium" (≥0.65), "low" (<0.65)
   "conservative_mode": false,       // True if confidence too low for aggressive actions
-  "calibration_applied": true       // Whether isotonic calibration was applied
+  "calibration_applied": true       // Whether calibration was applied
 }
 ```
 
 **Confidence Tiers:**
 
-| Tier | Threshold | Behavior |
-|------|-----------|----------|
-| HIGH | ≥ 0.80 | Trust fully, allow pattern confirmation |
-| MEDIUM | ≥ 0.65 | Trust with caution, suspected patterns only |
-| LOW | < 0.65 | Conservative mode, no pattern claims |
+| Tier   | Threshold | Behavior                                    |
+| ------ | --------- | ------------------------------------------- |
+| HIGH   | ≥ 0.80    | Trust fully, allow pattern confirmation     |
+| MEDIUM | ≥ 0.65    | Trust with caution, suspected patterns only |
+| LOW    | < 0.65    | Conservative mode, no pattern claims        |
 
 ### 3.4 Pattern State (Phase 2.2)
 
@@ -175,12 +179,12 @@ Each root cause has granular subtypes:
             NONE       SUSPECTED
 ```
 
-| State | Meaning | UI Treatment |
-|-------|---------|--------------|
-| `none` | No pattern detected | Don't show pattern UI |
-| `suspected` | Pattern emerging | "This may be a recurring pattern" |
-| `confirmed` | Pattern verified | "This is a confirmed recurring issue" |
-| `stable` | Long-standing, improved | "You've improved on this pattern" |
+| State       | Meaning                 | UI Treatment                          |
+| ----------- | ----------------------- | ------------------------------------- |
+| `none`      | No pattern detected     | Don't show pattern UI                 |
+| `suspected` | Pattern emerging        | "This may be a recurring pattern"     |
+| `confirmed` | Pattern verified        | "This is a confirmed recurring issue" |
+| `stable`    | Long-standing, improved | "You've improved on this pattern"     |
 
 ### 3.5 Difficulty Decision (Phase 2.3)
 
@@ -194,12 +198,12 @@ Each root cause has granular subtypes:
 
 **Difficulty Policy Rules:**
 
-| Condition | Action | Reason |
-|-----------|--------|--------|
-| LOW confidence | MAINTAIN | Cannot trust diagnosis for changes |
-| SUSPECTED/CONFIRMED pattern | MAINTAIN | Hold for remediation |
-| Consistent success + HIGH conf | INCREASE | User ready for harder problems |
-| Struggling + HIGH conf | DECREASE | Support fundamentals |
+| Condition                      | Action   | Reason                             |
+| ------------------------------ | -------- | ---------------------------------- |
+| LOW confidence                 | MAINTAIN | Cannot trust diagnosis for changes |
+| SUSPECTED/CONFIRMED pattern    | MAINTAIN | Hold for remediation               |
+| Consistent success + HIGH conf | INCREASE | User ready for harder problems     |
+| Struggling + HIGH conf         | DECREASE | Support fundamentals               |
 
 ---
 
@@ -219,9 +223,9 @@ Same inputs → Same outputs (always)
 
 ### 4.2 Confidence Calibration
 
-Confidence scores are **calibrated** using isotonic regression:
+Confidence scores are **calibrated** post-hoc:
 
-- Raw model probabilities are transformed
+- Raw classifier outputs are transformed
 - Calibrated scores reflect true accuracy
 - A prediction with 80% confidence is correct ~80% of the time
 
@@ -229,10 +233,10 @@ Confidence scores are **calibrated** using isotonic regression:
 
 MIM does **not learn in real-time**:
 
-- Model weights are fixed after training
-- Updates require offline retraining
+- Classifier weights are fixed after initial setup
+- Updates require offline reconfiguration
 - Prevents feedback loops and instability
-- Version bumps for model changes
+- Version bumps for classifier changes
 
 ### 4.4 Stable Taxonomy
 
@@ -316,11 +320,11 @@ Frontend receives MIM output via these fields:
   "confidence": { "confidenceLevel": "high", "combinedConfidence": 0.85, ... },
   "pattern": { "state": "confirmed", "evidenceCount": 3, ... },
   "difficulty": { "action": "maintain", "reason": "pattern_unresolved", ... },
-  
+
   // LLM-generated content (explanations)
   "feedback": { "explanation": "...", "correctCode": "...", ... },
   "hint": { "text": "..." },
-  
+
   // RAG metadata
   "rag": { "used": true, "relevance": 0.67 }
 }
@@ -347,30 +351,30 @@ Agents receive MIM decisions as instructions they **cannot override**:
 
 ### 7.1 Training Data
 
-MIM is trained on labeled submission data:
+MIM classifiers are configured from labeled submission data:
 
-| Feature | Source |
-|---------|--------|
-| Code features | Static analysis |
-| User features | Aggregated history |
-| Problem features | Problem metadata |
-| Labels | Human-verified root causes |
+| Feature          | Source                     |
+| ---------------- | -------------------------- |
+| Code features    | Static analysis            |
+| User features    | Aggregated history         |
+| Problem features | Problem metadata           |
+| Labels           | Human-verified root causes |
 
-### 7.2 Model Architecture
+### 7.2 Classifier Architecture
 
 ```
-Features → LightGBM Root Cause Classifier → CalibratedClassifierCV
+Features → Root Cause Heuristic Classifier → Calibration Layer
                         ↓
-         LightGBM Subtype Classifiers (per root cause)
+         Per-Root-Cause Subtype Classifiers
 ```
 
 ### 7.3 Evaluation Metrics
 
-| Metric | Target |
-|--------|--------|
-| Root Cause Accuracy | > 75% |
-| Subtype Accuracy | > 65% |
-| Calibration Error | < 0.05 |
+| Metric              | Target |
+| ------------------- | ------ |
+| Root Cause Accuracy | > 75%  |
+| Subtype Accuracy    | > 65%  |
+| Calibration Error   | < 0.05 |
 
 ---
 
@@ -378,12 +382,12 @@ Features → LightGBM Root Cause Classifier → CalibratedClassifierCV
 
 MIM follows semantic versioning:
 
-| Version | Description |
-|---------|-------------|
+| Version    | Description                      |
+| ---------- | -------------------------------- |
 | `mim-v3.0` | Base V3 with polymorphic outputs |
-| `mim-v3.1` | Added pattern state machine |
-| `mim-v3.2` | Added calibrated confidence |
-| `mim-v3.3` | Added difficulty policy |
+| `mim-v3.1` | Added pattern state machine      |
+| `mim-v3.2` | Added calibrated confidence      |
+| `mim-v3.3` | Added difficulty policy          |
 
 Current production version: **mim-v3.3**
 

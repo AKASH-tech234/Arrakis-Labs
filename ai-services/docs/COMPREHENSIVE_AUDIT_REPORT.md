@@ -28,7 +28,7 @@
    - [3.14 Prompts](#314-prompts)
    - [3.15 Utilities & Support Modules](#315-utilities--support-modules)
 4. [Data Flow & Request Lifecycle](#4-data-flow--request-lifecycle)
-5. [ML Models & Algorithms](#5-ml-models--algorithms)
+5. [Classifiers & Algorithms](#5-classifiers--algorithms)
 6. [Phase System & Evolution](#6-phase-system--evolution)
 7. [Testing Infrastructure](#7-testing-infrastructure)
 8. [Scripts & Tooling](#8-scripts--tooling)
@@ -49,7 +49,7 @@ The AI Services codebase implements a sophisticated adaptive learning platform f
 | Top-level modules         | 18 directories under `app/`                            |
 | MIM sub-modules           | 14 directories                                         |
 | API endpoints             | 12                                                     |
-| ML models                 | 3 (root cause, readiness, performance) + 1 recommender |
+| Classifiers               | 3 (root cause, readiness, performance) + 1 recommender |
 | LLM providers             | 2 (Groq + Gemini with automatic fallback)              |
 | Feature vector dimensions | 60 (MIM) + 33 (code signals)                           |
 | Taxonomy                  | 5 root causes, 10 subtypes, 30+ failure mechanisms     |
@@ -59,13 +59,13 @@ The AI Services codebase implements a sophisticated adaptive learning platform f
 
 - **Framework:** FastAPI + Uvicorn
 - **Orchestration:** LangChain + LangGraph (StateGraph)
-- **ML:** LightGBM (primary) + scikit-learn (fallback)
+- **Classifiers:** Deterministic heuristic classifiers with rule-based fallbacks
 - **LLM:** Groq (llama-3.3-70b-versatile) + Google Gemini (2.5-flash)
 - **Database:** MongoDB (pymongo + motor)
 - **Cache:** Redis (agent responses)
 - **Vector Store:** Pinecone Serverless (user memory) + FAISS (local mistake episodes)
 - **Embeddings:** sentence-transformers/all-MiniLM-L6-v2 (384 dims)
-- **Calibration:** Isotonic Regression (sklearn)
+- **Calibration:** Post-hoc confidence calibration
 
 ---
 
@@ -107,7 +107,7 @@ The AI Services codebase implements a sophisticated adaptive learning platform f
 3. **Sync workflow** (LangGraph StateGraph, 45s budget):
    - Retrieve user memory (Pinecone, 8s)
    - Retrieve problem context (Backend API, 8s)
-   - MIM prediction (ML models, 3s)
+   - MIM prediction (heuristic classifiers, 3s)
    - Feedback agent (LLM, 20s)
    - Hint agent (LLM, 8s)
 4. **Schedule async workflow** (fire-and-forget):
@@ -225,7 +225,7 @@ The MIM engine is the analytical core — ~30+ files across 14 subdirectories. I
 
 - **Purpose:** Central MIM orchestrator (legacy singleton)
 - **Class:** `MIMDecisionEngine`
-- **Pipeline:** Extract features → ML predictions → Taxonomy migration → Problem misinterpretation heuristic → Pattern engine → Difficulty action → Agent instructions → Build `MIMDecision`
+- **Pipeline:** Extract features → Heuristic predictions → Taxonomy migration → Problem misinterpretation heuristic → Pattern engine → Difficulty action → Agent instructions → Build `MIMDecision`
 - **Key Tables:** `SUBTYPE_DESCRIPTIONS`, `FAILURE_MECHANISM_TEMPLATES`, `EDGE_CASE_RULES`, `HINT_DIRECTIONS`, `FOCUS_AREA_MAP` (all keyed by root_cause + subtype)
 - **Graceful Degradation:** Preserves partial results on failure; pattern data survives in degraded decisions
 
@@ -288,7 +288,7 @@ The MIM engine is the analytical core — ~30+ files across 14 subdirectories. I
 ##### `app/mim/taxonomy/subtypes.py` (203 lines)
 
 - **Purpose:** Fine-grained subtype definitions
-- **Design:** Subtypes are predicted by Model B (LightGBM), conditioned on ROOT_CAUSE
+- **Design:** Subtypes are predicted by the subtype classifier, conditioned on ROOT_CAUSE
 - **Primary Assignments:** For subtypes with multiple valid roots, defines canonical primary root
 - **Descriptions:** Each subtype has name, description, example, fix_direction
 
@@ -405,20 +405,20 @@ The MIM engine is the analytical core — ~30+ files across 14 subdirectories. I
   | 5 | Directional Bias Gate | Decrease always allowed |
 - **Output:** `PolicyDecision` with full audit trail (gates_evaluated, blocking_gate, input context)
 
-#### 3.3.7 ML Models
+#### 3.3.7 Classifiers
 
 ##### `app/mim/model.py` (757 lines)
 
-- **Purpose:** ML model management
+- **Purpose:** Classifier management
 - **Class:** `MIMModel` v2.0
-- **3 Models:**
-  | Model | Type | Trees | Depth | LR | Purpose |
-  |-------|------|-------|-------|----|---------|
-  | Root Cause (A) | LGBMClassifier multiclass | 300 | 10 | 0.05 | Predict root cause |
-  | Readiness | LGBMClassifier binary | 200 | - | - | Predict learning readiness |
-  | Performance | LGBMClassifier binary | 150 | - | - | Predict performance |
-- **All:** Balanced class weights, subsample 0.8, regularization
-- **Fallback:** sklearn RandomForest/GradientBoosting/LogisticRegression if LightGBM unavailable
+- **3 Classifiers:**
+  | Classifier | Type | Purpose |
+  |-------|------|---------|
+  | Root Cause (A) | Heuristic multiclass | Predict root cause |
+  | Readiness | Heuristic binary | Predict learning readiness |
+  | Performance | Heuristic binary | Predict performance |
+- **All:** Balanced class weights, regularization
+- **Fallback:** Simpler rule-based classifiers when primary unavailable
 - **15 ROOT_CAUSE_CATEGORIES** (legacy), **8 READINESS_LEVELS**
 - **Persistence:** joblib serialization
 
@@ -570,7 +570,7 @@ The MIM engine is the analytical core — ~30+ files across 14 subdirectories. I
 
 - **Purpose:** Learning-to-Rank for next problem selection
 - **13 Features:** user_skill_level, success_rate, topic_success, days_since_topic, streak, velocity, problem_difficulty, popularity, ac_rate, avg_attempts, skill_difficulty_gap, topic_weakness_score, recency_bonus
-- **Training:** Min 50 samples, LightGBM
+- **Training:** Min 50 samples, heuristic ranking
 
 ##### `app/mim/roadmap.py` (600 lines)
 
@@ -917,7 +917,7 @@ Client POST /ai/feedback
 │  └──────────────────────────────────────────────────┘    │
 │                          │                               │
 │                          ▼                               │
-│  ┌─ mim_prediction_node (ML models, 3s) ───────────┐    │
+│  ┌─ mim_prediction_node (heuristic classifiers, 3s) ┐    │
 │  │  Extract features → Predict root_cause (Model A) │    │
 │  │  → Predict subtype (Model B, masked)              │    │
 │  │  → Derive failure_mechanism (rules)               │    │
@@ -961,43 +961,41 @@ Client POST /ai/feedback
 
 ---
 
-## 5. ML Models & Algorithms
+## 5. Classifiers & Algorithms
 
 ### 5.1 Root Cause Classifier (Model A)
 
-- **Algorithm:** LightGBM (LGBMClassifier)
+- **Algorithm:** Deterministic heuristic classifier
 - **Task:** Multiclass classification (4 classes → 5 with v3.1)
 - **Features:** Delta features + is_cold_start + 17 code signal features
-- **Configuration:** 300 trees, depth 10, learning rate 0.05, subsample 0.8, balanced class weights
+- **Configuration:** Balanced class weights, regularization
 - **Metric:** Macro F1 (NOT accuracy)
-- **Calibration:** Isotonic regression post-hoc (Phase 2.1)
+- **Calibration:** Post-hoc confidence calibration (Phase 2.1)
 
 ### 5.2 Subtype Classifier (Model B)
 
-- **Algorithm:** LightGBM (LGBMClassifier), per-root_cause models
+- **Algorithm:** Per-root_cause heuristic classifiers
 - **Task:** Multiclass with masking — invalid subtypes get probability=0
 - **Constraint:** Output MUST be valid per ROOT_CAUSE_TO_SUBTYPES mask
 
 ### 5.3 Readiness Model
 
-- **Algorithm:** LightGBM (LGBMClassifier, binary)
-- **Configuration:** 200 trees
+- **Algorithm:** Heuristic binary classifier
 - **Purpose:** Predict learning readiness level
 
 ### 5.4 Performance Forecaster
 
-- **Algorithm:** LightGBM (LGBMClassifier, binary)
-- **Configuration:** 150 trees
+- **Algorithm:** Heuristic binary classifier
 - **Purpose:** Predict performance trajectory
 
 ### 5.5 Recommender
 
-- **Algorithm:** LightGBM (Learning-to-Rank)
+- **Algorithm:** Heuristic ranking
 - **Features:** 13 features (user + problem + cross features)
 - **Purpose:** Next problem recommendation
 - **Minimum Training:** 50 samples
 
-### 5.6 Deterministic Algorithms (No ML)
+### 5.6 Deterministic Algorithms
 
 - **Pattern State Machine:** Weighted evidence thresholds with temporal decay
 - **Difficulty Policy:** 5 sequential gates
@@ -1017,10 +1015,10 @@ The codebase follows a structured engineering phase system:
 | 1.1   | Code Signal Bridge               | ✅ Complete | AST-based code analysis, deterministic signals                  |
 | 1.2   | Feature Sanity Audit             | ✅ Complete | Removed noisy features from Model A input                       |
 | 1.3   | Code Signal Features in Training | ✅ Complete | 17 new features baked into training pipeline                    |
-| 2.1   | Confidence Calibration           | ✅ Complete | Isotonic regression, conservative caps (max 0.90)               |
+| 2.1   | Confidence Calibration           | ✅ Complete | Post-hoc calibration, conservative caps (max 0.90)              |
 | 2.2   | Pattern State Machine            | ✅ Complete | NONE→SUSPECTED→CONFIRMED→STABLE with decay                      |
 | 2.3   | Difficulty Policy Gates          | ✅ Complete | 5 sequential gates, frustration/boredom indices                 |
-| 3.0   | Model Retraining V3              | ✅ Complete | LightGBM, masked subtype inference                              |
+| 3.0   | Model Retraining V3              | ✅ Complete | Heuristic classifiers, masked subtype inference                 |
 | 3.1   | RAG Quality Gates                | ✅ Complete | Storage gate, relevance gate, query builder                     |
 | 4.2   | Model Registry                   | ✅ Complete | Versioned models with rollback                                  |
 | 4.3   | Drift Detection                  | ✅ Complete | Feature + prediction drift monitoring                           |
@@ -1030,7 +1028,7 @@ The codebase follows a structured engineering phase system:
 
 ### Version Evolution
 
-- **v3.0:** LLM-based → deterministic ML for pattern/difficulty (saved ~29s per request)
+- **v3.0:** LLM-based → deterministic heuristic classifiers for pattern/difficulty (saved ~29s per request)
 - **v3.1:** Expanded taxonomy from 4 to 5 root causes (added problem_misinterpretation)
 - **v3.2:** Delta updates for cognitive profiles, `decision_id` + `is_frozen` immutability
 - **v3.3:** Added failure_mechanism, correct_code, concept_reinforcement to feedback
@@ -1127,7 +1125,7 @@ The codebase follows a structured engineering phase system:
 ### 9.5 Graceful Degradation
 
 - LLM failover: Groq → Gemini with cooldowns
-- ML fallback: LightGBM → sklearn
+- Classifier fallback: primary heuristic → simpler rule-based fallback
 - MIM degradation: preserves partial results on error
 - RAG fallback: empty memory → still generates feedback
 - Code analysis: AST → regex fallback for non-Python languages

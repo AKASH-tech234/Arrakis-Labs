@@ -1,6 +1,6 @@
 # AI Services Documentation
 
-> **Mentat Trials AI Engine** - FastAPI-based ML/LLM service providing intelligent feedback, root cause analysis, pattern detection, and personalized learning recommendations.
+> **Mentat Trials AI Engine** - FastAPI-based AI/LLM service providing intelligent feedback, root cause analysis, pattern detection, and personalized learning recommendations.
 
 ## 📋 Quick Links
 
@@ -13,26 +13,31 @@
 ## 🆕 Phase 2.x Upgrades
 
 ### Phase 2.1: Confidence Calibration
-- Isotonic regression calibration for prediction confidence
+
+- Post-hoc calibration for prediction confidence
 - Three-tier confidence levels: HIGH (≥0.80), MEDIUM (≥0.65), LOW (<0.65)
 - Conservative mode for low-confidence predictions
 
-### Phase 2.2: Pattern State Machine  
+### Phase 2.2: Pattern State Machine
+
 - Explicit pattern states: NONE → SUSPECTED → CONFIRMED → STABLE
 - Confidence-gated state transitions
 - Temporal decay for pattern demotion
 
 ### Phase 2.3: Difficulty Policy
+
 - Safety-first difficulty adjustments
 - Pattern-aware blocking (no increase with unresolved patterns)
 - Hysteresis for stability (requires consecutive eligible events)
 
 ### Agent Explain-Only Rule
+
 - **CRITICAL**: LLM agents receive MIM decisions and CANNOT override them
 - Agents only add natural language explanations to MIM facts
 - This prevents hallucinated diagnoses and ensures consistency
 
 ### RAG Quality Gates
+
 - Relevance threshold filtering for retrieved content
 - User memory isolation (per-user vector store partitions)
 - Staleness detection for old memories
@@ -80,7 +85,7 @@ ai-services/
 │   │
 │   ├── mim/                    # Machine Intelligence Model
 │   │   ├── __init__.py
-│   │   ├── model.py            # LightGBM classifier
+│   │   ├── model.py            # Heuristic classifier
 │   │   ├── mim_decision.py     # Decision schema
 │   │   ├── decision_engine.py  # Orchestrates predictions
 │   │   ├── difficulty_engine.py
@@ -113,7 +118,7 @@ ai-services/
 │   │   │   ├── subtype_masks.py    # Valid combinations
 │   │   │   └── failure_mechanism_rules.py
 │   │   │
-│   │   ├── training/           # Model training
+│   │   ├── training/           # Classifier configuration
 │   │   │   ├── dataset_builder.py
 │   │   │   ├── train_models.py
 │   │   │   ├── train_root_cause_model.py
@@ -172,7 +177,7 @@ ai-services/
 │       └── reinforcement_events.parquet
 │
 ├── scripts/                    # Utility scripts
-│   ├── train_mim_models.py
+│   ├── configure_mim_classifiers.py
 │   ├── retrain_all_models.py
 │   ├── validate_production.py
 │   └── ...
@@ -213,12 +218,12 @@ ai-services/
                                        │
                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         ML PREDICTION LAYER                                   │
+│                         DIAGNOSTIC LAYER                                      │
 │                                                                               │
 │   ┌─────────────────────┐      ┌─────────────────────┐                       │
 │   │   Root Cause        │      │    Subtype          │                       │
 │   │   Classifier        │ ───▶ │    Classifier       │                       │
-│   │   (LightGBM)        │      │    (LightGBM)       │                       │
+│   │   (Heuristic)       │      │    (Heuristic)      │                       │
 │   └─────────────────────┘      └─────────────────────┘                       │
 │                                                                               │
 │   4 Root Causes:                 Subtypes per root cause:                    │
@@ -306,38 +311,38 @@ class MIMDecision(BaseModel):
     Central decision object from MIM.
     Contains ALL analytical decisions - agents only add linguistic polish.
     """
-    
+
     # === CORE PREDICTIONS ===
     root_cause: str                    # correctness, efficiency, etc.
     root_cause_confidence: float       # 0.0 - 1.0
     root_cause_alternatives: List[Dict] # Other possible causes
-    
+
     # === SUBTYPE (granular diagnosis) ===
     subtype: Optional[str]             # e.g., "off_by_one", "wrong_complexity"
     subtype_confidence: float
     failure_mechanism: Optional[str]   # Human-readable explanation
-    
+
     # === PATTERN DETECTION ===
     pattern_instruction: PatternInstruction
     # - pattern_name: str
     # - is_recurring: bool
     # - recurrence_count: int
     # - severity: str
-    
+
     # === DIFFICULTY RECOMMENDATION ===
     difficulty_instruction: DifficultyInstruction
     # - action: "increase" | "decrease" | "maintain" | "stretch"
     # - target_difficulty: str
     # - rationale: str
-    
+
     # === AGENT INSTRUCTIONS ===
     feedback_instruction: FeedbackInstruction
     hint_instruction: HintInstruction
-    
+
     # === USER CONTEXT ===
     user_state: Dict                   # From state tracker
     is_cold_start: bool                # New user flag
-    
+
     # === METADATA ===
     model_version: str
     inference_latency_ms: float
@@ -354,6 +359,7 @@ POST /ai/feedback
 ```
 
 **Request:**
+
 ```json
 {
   "submission_id": "sub_abc123",
@@ -372,31 +378,38 @@ POST /ai/feedback
   },
   "problem_category": "Array",
   "user_history": "Solved 45 problems, 60% acceptance rate...",
-  "previous_attempts": [
-    {"verdict": "wrong_answer", "timestamp": "..."}
-  ]
+  "previous_attempts": [{ "verdict": "wrong_answer", "timestamp": "..." }]
 }
 ```
 
 **Response (V3.0 Polymorphic):**
+
 ```json
 {
   "success": true,
   "verdict": "wrong_answer",
   "submission_id": "sub_abc123",
-  
+
   "hints": [
-    {"level": 1, "content": "Think about edge cases...", "hint_type": "conceptual"},
-    {"level": 2, "content": "What happens when array is empty?", "hint_type": "specific"},
-    {"level": 3, "content": "Check your loop bounds", "hint_type": "approach"}
+    {
+      "level": 1,
+      "content": "Think about edge cases...",
+      "hint_type": "conceptual"
+    },
+    {
+      "level": 2,
+      "content": "What happens when array is empty?",
+      "hint_type": "specific"
+    },
+    { "level": 3, "content": "Check your loop bounds", "hint_type": "approach" }
   ],
-  
+
   "explanation": "Your solution fails because...",
   "detected_pattern": "Off-by-one error in array iteration",
-  
+
   "mim_insights": {
     "feedback_type": "correctness",
-    
+
     "correctness_feedback": {
       "root_cause": "correctness",
       "subtype": "off_by_one",
@@ -407,7 +420,7 @@ POST /ai/feedback
       "fix_direction": "Change < to <= in loop condition",
       "related_problems": ["prob_123", "prob_456"]
     },
-    
+
     "root_cause": {
       "failure_cause": "off_by_one",
       "confidence": 0.87
@@ -421,23 +434,23 @@ POST /ai/feedback
     "is_cold_start": false,
     "model_version": "mim-v3.2"
   },
-  
+
   "feedback_type": "error_feedback"
 }
 ```
 
 ### Other Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Service health check |
-| GET | `/health/llm` | LLM provider status |
-| GET | `/ai/rag-stats/{user_id}` | RAG usage statistics |
-| GET | `/ai/profile/{user_id}` | Get cognitive profile |
-| GET | `/ai/recommendations/{user_id}` | Problem recommendations |
-| POST | `/ai/report/weekly` | Generate weekly report |
-| GET | `/mim/status` | MIM model status |
-| POST | `/mim/predict` | Direct MIM prediction |
+| Method | Endpoint                        | Description             |
+| ------ | ------------------------------- | ----------------------- |
+| GET    | `/health`                       | Service health check    |
+| GET    | `/health/llm`                   | LLM provider status     |
+| GET    | `/ai/rag-stats/{user_id}`       | RAG usage statistics    |
+| GET    | `/ai/profile/{user_id}`         | Get cognitive profile   |
+| GET    | `/ai/recommendations/{user_id}` | Problem recommendations |
+| POST   | `/ai/report/weekly`             | Generate weekly report  |
+| GET    | `/mim/status`                   | MIM model status        |
+| POST   | `/mim/predict`                  | Direct MIM prediction   |
 
 ---
 
@@ -453,29 +466,29 @@ SYNC_TOTAL_BUDGET_SECONDS = 60  # Quality-first, no skipping
 def create_sync_workflow():
     """
     Synchronous workflow for immediate user feedback.
-    
+
     Pipeline:
-    1. MIM Decision Node (ML predictions)
+    1. MIM Decision Node (diagnostic predictions)
     2. RAG Retrieval (user memory)
     3. Feedback Agent (LLM explanation)
     4. Hint Agent (progressive hints)
     """
-    
+
     workflow = StateGraph(WorkflowState)
-    
+
     # Add nodes
     workflow.add_node("mim_decision", mim_decision_node)
     workflow.add_node("rag_retrieval", rag_retrieval_node)
     workflow.add_node("feedback_agent", feedback_agent_node)
     workflow.add_node("hint_agent", hint_agent_node)
-    
+
     # Define edges
     workflow.add_edge(START, "mim_decision")
     workflow.add_edge("mim_decision", "rag_retrieval")
     workflow.add_edge("rag_retrieval", "feedback_agent")
     workflow.add_edge("feedback_agent", "hint_agent")
     workflow.add_edge("hint_agent", END)
-    
+
     return workflow.compile()
 ```
 
@@ -487,21 +500,21 @@ def create_sync_workflow():
 def create_async_workflow():
     """
     Background workflow for non-blocking updates.
-    
+
     Tasks:
     1. Store feedback in RAG memory
     2. Update user cognitive profile
     3. Compute difficulty adjustments
     4. Generate pattern insights
     """
-    
+
     workflow = StateGraph(AsyncWorkflowState)
-    
+
     workflow.add_node("store_memory", store_user_memory_node)
     workflow.add_node("update_profile", update_cognitive_profile_node)
     workflow.add_node("compute_difficulty", compute_difficulty_node)
     workflow.add_node("detect_patterns", detect_patterns_node)
-    
+
     # Parallel execution where possible
     workflow.add_edge(START, "store_memory")
     workflow.add_edge(START, "update_profile")
@@ -509,7 +522,7 @@ def create_async_workflow():
     workflow.add_edge("compute_difficulty", "detect_patterns")
     workflow.add_edge("store_memory", END)
     workflow.add_edge("detect_patterns", END)
-    
+
     return workflow.compile()
 ```
 
@@ -522,10 +535,10 @@ class VerdictGuard:
     """
     Optimizes pipeline based on verdict type.
     """
-    
+
     @staticmethod
     def check(verdict: str, difficulty: str, has_user_history: bool) -> VerdictCheck:
-        
+
         if verdict == "accepted":
             return VerdictCheck(
                 skip_mim=False,          # Still analyze for reinforcement
@@ -534,16 +547,16 @@ class VerdictGuard:
                 use_success_path=True,   # Optimization feedback
                 create_reinforcement=True
             )
-        
+
         elif verdict in ("compile_error", "runtime_error"):
             return VerdictCheck(
-                skip_mim=True,           # Obvious error, no ML needed
+                skip_mim=True,           # Obvious error, no diagnosis needed
                 skip_rag=True,
                 skip_hint=False,
                 use_success_path=False,
                 create_reinforcement=False
             )
-        
+
         else:  # wrong_answer, tle, mle
             return VerdictCheck(
                 skip_mim=False,
@@ -568,15 +581,15 @@ class BaseJSONAgent:
     Base class for all LLM agents.
     Enforces JSON output and MIM instruction compliance.
     """
-    
+
     def __init__(self, llm_provider: str = "groq"):
         self.llm = get_llm(provider=llm_provider)
         self.parser = JsonOutputParser()
-    
+
     def invoke(self, mim_decision: MIMDecision, context: Dict) -> Dict:
         """
         Generate response based on MIM instructions.
-        
+
         IMPORTANT: Agent CANNOT override MIM decisions.
         It only adds natural language polish.
         """
@@ -587,50 +600,50 @@ class BaseJSONAgent:
 
 ### Feedback Agent
 
-```python
+````python
 # agents/feedback_agent.py
 
 class FeedbackAgent(BaseJSONAgent):
     """
     Generates detailed explanations for submission feedback.
-    
+
     Receives from MIM:
     - root_cause (MUST use, cannot guess different)
     - root_cause_subtype
     - failure_mechanism
     - fix_direction
-    
+
     Adds:
     - Natural language explanation
     - Code-specific examples
     - Learning suggestions
     """
-    
+
     def build_prompt(self, mim_decision: MIMDecision, context: Dict) -> str:
         return f"""
         You are an expert programming tutor. Generate feedback for this submission.
-        
+
         CRITICAL INSTRUCTION FROM MIM (DO NOT OVERRIDE):
         - Root Cause: {mim_decision.root_cause}
         - Subtype: {mim_decision.feedback_instruction.root_cause_subtype}
         - Confidence: {mim_decision.root_cause_confidence:.0%}
-        
+
         PROBLEM: {context['problem']['title']}
         VERDICT: {context['verdict']}
         CODE:
         ```{context['language']}
         {context['code']}
         ```
-        
+
         USER HISTORY:
         {context.get('user_history', 'No history available')}
-        
+
         Generate a helpful explanation that:
         1. Uses the MIM-identified root cause (DO NOT guess a different cause)
         2. Points to specific code issues
         3. Suggests how to fix without giving the solution
         """
-```
+````
 
 ### Hint Agent
 
@@ -641,12 +654,12 @@ class HintAgent(BaseJSONAgent):
     """
     Generates progressive hints (conceptual → specific → solution).
     """
-    
+
     HINT_TYPES = ["conceptual", "specific", "approach", "solution"]
-    
+
     def generate_hints(self, mim_decision: MIMDecision, context: Dict) -> List[Dict]:
         hints = []
-        
+
         for level, hint_type in enumerate(self.HINT_TYPES, 1):
             hint = self.generate_single_hint(
                 level=level,
@@ -659,13 +672,13 @@ class HintAgent(BaseJSONAgent):
                 "content": hint,
                 "hint_type": hint_type
             })
-        
+
         return hints
 ```
 
 ---
 
-## 📊 MIM Model Training
+## 📊 MIM Classifier Configuration
 
 ### Feature Engineering
 
@@ -675,16 +688,16 @@ class HintAgent(BaseJSONAgent):
 def extract_features(submission: Dict, user_state: Dict, problem: Dict) -> np.ndarray:
     """
     Extract features for MIM prediction.
-    
+
     Features:
     - Code complexity metrics (LOC, cyclomatic complexity)
     - User performance history
     - Problem characteristics
     - Submission patterns
     """
-    
+
     features = []
-    
+
     # Code features
     features.extend([
         len(submission['code'].split('\n')),        # Lines of code
@@ -692,7 +705,7 @@ def extract_features(submission: Dict, user_state: Dict, problem: Dict) -> np.nd
         count_conditionals(submission['code']),     # If/else count
         estimate_complexity(submission['code']),    # Big-O estimate
     ])
-    
+
     # User features
     features.extend([
         user_state.get('total_submissions', 0),
@@ -700,21 +713,21 @@ def extract_features(submission: Dict, user_state: Dict, problem: Dict) -> np.nd
         user_state.get('avg_attempts_per_problem', 2),
         user_state.get('category_accuracy', {}).get(problem['category'], 0.5),
     ])
-    
+
     # Problem features
     features.extend([
         {'Easy': 0, 'Medium': 1, 'Hard': 2}[problem['difficulty']],
         len(problem.get('tags', [])),
         problem.get('acceptance_rate', 50) / 100,
     ])
-    
+
     # Delta features (vs previous attempts)
     features.extend([
         submission.get('attempt_number', 1),
         submission.get('time_since_last_attempt', 0),
         submission.get('code_change_ratio', 1.0),
     ])
-    
+
     return np.array(features).reshape(1, -1)
 ```
 
@@ -723,43 +736,38 @@ def extract_features(submission: Dict, user_state: Dict, problem: Dict) -> np.nd
 ```python
 # mim/training/train_models.py
 
-def train_mim_models(training_data: pd.DataFrame):
+def configure_mim_classifiers(training_data: pd.DataFrame):
     """
-    Train MIM classifiers on labeled submission data.
+    Configure MIM classifiers from labeled submission data.
     """
-    
+
     # 1. Prepare features and labels
     X = extract_all_features(training_data)
     y_root_cause = training_data['root_cause_label'].values
     y_subtype = training_data['subtype_label'].values
-    
-    # 2. Train root cause classifier
-    root_cause_model = CalibratedClassifierCV(
-        LGBMClassifier(
-            n_estimators=200,
-            max_depth=8,
-            learning_rate=0.05,
-            class_weight='balanced'
-        ),
-        cv=5
+
+    # 2. Configure root cause classifier
+    root_cause_model = build_root_cause_classifier(
+        features=X,
+        labels=y_root_cause,
+        class_weight='balanced'
     )
-    root_cause_model.fit(X, y_root_cause)
-    
-    # 3. Train subtype classifiers (one per root cause)
+
+    # 3. Configure subtype classifiers (one per root cause)
     subtype_models = {}
     for root_cause in ROOT_CAUSES:
         mask = y_root_cause == root_cause
         if mask.sum() > 100:  # Enough samples
-            subtype_models[root_cause] = train_subtype_model(
+            subtype_models[root_cause] = build_subtype_classifier(
                 X[mask], y_subtype[mask]
             )
-    
+
     # 4. Evaluate
     metrics = evaluate_models(root_cause_model, subtype_models, X, y_root_cause, y_subtype)
-    
-    # 5. Save models
+
+    # 5. Save classifiers
     save_models(root_cause_model, subtype_models, metrics)
-    
+
     return metrics
 ```
 
@@ -797,16 +805,16 @@ def retrieve_user_memory(user_id: str, query: str, k: int = 3) -> List[str]:
     """
     Retrieve relevant past mistakes for context.
     """
-    
+
     results = user_memory_store.similarity_search_with_relevance_scores(
         query=query,
         k=k,
         filter={"user_id": user_id}
     )
-    
+
     # Filter by relevance threshold
     relevant = [(doc, score) for doc, score in results if score > 0.5]
-    
+
     return [doc.page_content for doc, _ in relevant]
 
 
@@ -814,7 +822,7 @@ def store_user_feedback(user_id: str, problem_id: str, category: str, mistake_su
     """
     Store mistake in vector store for future retrieval.
     """
-    
+
     doc = Document(
         page_content=f"[{category}] Problem {problem_id}: {mistake_summary}",
         metadata={
@@ -824,7 +832,7 @@ def store_user_feedback(user_id: str, problem_id: str, category: str, mistake_su
             "timestamp": int(time.time())
         }
     )
-    
+
     user_memory_store.add_documents([doc])
 ```
 
@@ -839,16 +847,16 @@ class UserStateTracker:
     """
     Tracks user learning state across submissions.
     """
-    
+
     def __init__(self, mongodb_client):
         self.db = mongodb_client
-    
+
     def get_user_state(self, user_id: str) -> Dict:
         """
         Get current user state from submission history.
         """
         history = self.db.get_user_submissions(user_id, limit=100)
-        
+
         state = {
             "total_submissions": len(history),
             "acceptance_rate": self._calc_acceptance_rate(history),
@@ -859,9 +867,9 @@ class UserStateTracker:
             "current_streak": self._calc_streak(history),
             "skill_levels": self._estimate_skill_levels(history),
         }
-        
+
         return state
-    
+
     def update_state(self, user_id: str, submission: Dict, mim_decision: MIMDecision):
         """
         Update user state after submission.
@@ -893,13 +901,13 @@ _gemini_rate_limited_until = 0
 def get_llm(provider: str = None):
     """
     Get LLM instance with automatic fallback.
-    
+
     Priority: Groq (fast) → Gemini (backup)
     """
-    
+
     if provider is None:
         provider = get_current_provider()
-    
+
     if provider == "groq":
         return ChatGroq(
             model="llama-3.3-70b-versatile",
@@ -919,7 +927,7 @@ def get_current_provider() -> str:
     Determine which provider to use based on rate limits.
     """
     now = time.time()
-    
+
     if now > _groq_rate_limited_until:
         return "groq"
     elif now > _gemini_rate_limited_until:

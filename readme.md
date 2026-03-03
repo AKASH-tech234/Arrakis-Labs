@@ -1,11 +1,10 @@
 # Arrakis Lab 🪐
 
-> _"Failures shouldn't just return a verdict. They should return direction."_ 
+> _"Failures shouldn't just return a verdict. They should return direction."_
 
 Arrakis Lab is a next-generation **full-stack competitive programming ecosystem** designed to transform the traditional "Submit and Fail" cycle into a **continuous learning loop**. While traditional judges stop at a "Wrong Answer" verdict, Arrakis Lab utilizes a deterministic AI engine to provide context-aware guidance, mistake-pattern tracking, and structured improvement paths.
 
-The platform pairs a sandboxed code execution pipeline with a machine learning diagnostic layer (MIM) and LLM-powered explanation agents. Every analytical decision (root cause, pattern, difficulty) is made deterministically by trained ML models. LLM agents receive those decisions as structured instructions and produce natural language — they never override the diagnostic layer.
-
+The platform pairs a sandboxed code execution pipeline with a deterministic diagnostic engine (MIM) and LLM-powered explanation agents. Every analytical decision (root cause, pattern, difficulty) is made deterministically by structured heuristic classifiers and rule engines. LLM agents receive those decisions as structured instructions and produce natural language — they never override the diagnostic layer.
 
 ---
 
@@ -39,15 +38,15 @@ The hardest part wasn't adding AI. It was making sure the system stayed discipli
 
 ## 🛠 Tech Stack
 
-| Layer                 | Technology                                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Frontend**          | React 19, Vite, Tailwind CSS 4, Monaco Editor, Framer Motion, Spline 3D                                 |
-| **Backend**           | Node.js, Express, MongoDB (Mongoose), ioredis                                                           |
-| **Real-time / Cache** | WebSockets (ws), Redis                                                                                  |
-| **AI Service**        | FastAPI, LangChain, LangGraph, LightGBM (Deterministic Decision Engine + Structured Feedback Workflows) |
-| **Vector Database**   | Pinecone Serverless (384-dim embeddings, cosine similarity)                                             |
-| **Code Execution**    | Piston API (Docker-sandboxed, 8 languages)                                                              |
-| **LLM Providers**     | Groq (llama-3.3-70b) with Google Gemini (2.5-flash) fallback                                            |
+| Layer                 | Technology                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| **Frontend**          | React 19, Vite, Tailwind CSS 4, Monaco Editor, Framer Motion, Spline 3D                       |
+| **Backend**           | Node.js, Express, MongoDB (Mongoose), ioredis                                                 |
+| **Real-time / Cache** | WebSockets (ws), Redis                                                                        |
+| **AI Service**        | FastAPI, LangChain, LangGraph (Deterministic Decision Engine + Structured Feedback Workflows) |
+| **Vector Database**   | Pinecone Serverless (384-dim embeddings, cosine similarity)                                   |
+| **Code Execution**    | Piston API (Docker-sandboxed, 8 languages)                                                    |
+| **LLM Providers**     | Groq (llama-3.3-70b) with Google Gemini (2.5-flash) fallback                                  |
 
 ---
 
@@ -93,7 +92,7 @@ Three independently deployed services communicating over HTTP and WebSocket, bac
   │  Atlas  │   │ (leaderb │  │  (code   │  │  FastAPI · LangChain ·    │
   │         │   │  + cache)│  │  sandbox)│  │  LangGraph ·   │
   └─────────┘   └──────────┘  └──────────┘  │                           │
-                                            │  MIM Engine   
+                                            │  MIM Engine
                                             │  LLM Agents (Groq/Gemini) │
                                             │  RAG Memory (Pinecone)    │
                                             └───────────────────────────┘
@@ -111,7 +110,7 @@ Express.js server (ES Modules) handling authentication, problem management, code
 
 ### AI Service
 
-FastAPI server with a strict two-layer architecture. The Machine Intelligence Model (MIM) is the analytical core — trained LightGBM classifiers plus deterministic rule engines make all diagnostic decisions. LLM-powered agents (orchestrated via LangChain and LangGraph) receive those decisions as structured instructions and produce natural-language feedback. This separation is enforced at the code level: agents cannot access or modify MIM outputs.
+FastAPI server with a strict two-layer architecture. The Machine Intelligence Model (MIM) is the analytical core — deterministic heuristic classifiers plus rule engines make all diagnostic decisions. LLM-powered agents (orchestrated via LangChain and LangGraph) receive those decisions as structured instructions and produce natural-language feedback. This separation is enforced at the code level: agents cannot access or modify MIM outputs.
 
 ### Databases and External Services
 
@@ -132,10 +131,10 @@ The AI service processes every submission through a pipeline that separates anal
 
 ### Decision Layer (MIM)
 
-MIM is the diagnostic core. It operates without LLM calls — all decisions are made by trained ML models and deterministic rule engines.
+MIM is the diagnostic core. It operates without LLM calls — all decisions are made by deterministic heuristic classifiers and rule engines.
 
-**Root Cause Classification (Model A)**
-LightGBM multiclass classifier (300 trees, depth 10) predicting one of five root causes:
+**Root Cause Classification**
+Multi-stage heuristic classifier using code signal analysis, verdict mapping, and structural pattern matching to predict one of five root causes:
 
 | Root Cause                  | When Assigned                                                     |
 | --------------------------- | ----------------------------------------------------------------- |
@@ -147,17 +146,17 @@ LightGBM multiclass classifier (300 trees, depth 10) predicting one of five root
 
 Each root cause maps to a constrained set of valid subtypes. This mapping is enforced at runtime — any prediction outside the mask raises `SubtypeValidationError`.
 
-**Subtype Classification (Model B)**
-Separate LightGBM classifiers per root cause. Invalid subtypes get probability zeroed via masking. The taxonomy includes subtypes like `wrong_invariant`, `incorrect_boundary`, `brute_force_under_constraints`, `state_loss`, `misread_constraint`, and others.
+**Subtype Classification**
+Per-root-cause heuristic classifiers with subtype masking. Invalid subtypes get probability zeroed via masking. The taxonomy includes subtypes like `wrong_invariant`, `incorrect_boundary`, `brute_force_under_constraints`, `state_loss`, `misread_constraint`, and others.
 
 **Failure Mechanism Derivation**
 Pure function (no ML) that maps `(subtype, code_signals)` to a specific failure mechanism from 30+ defined mechanisms — for example, `off_by_one`, `invariant_drift`, `exponential_path_explosion`, `missing_state_dimension`. Never returns "unknown" or "generic".
 
 **Feature Extraction**
-60-dimension feature vector covering submission structure (loops, recursion, data structures), error semantics, problem metadata, temporal signals (session velocity, retries), and historical performance. Additionally, 33 code structure features are extracted via AST analysis (Python) or regex fallback (C++, Java, JavaScript) — loop depth, boundary check patterns, off-by-one risk scores, cyclomatic complexity estimates.
+Structured feature vector covering submission structure (loops, recursion, data structures), error semantics, problem metadata, temporal signals (session velocity, retries), and historical performance. Code structure features are extracted via AST analysis (Python) or regex fallback (C++, Java, JavaScript) — loop depth, boundary check patterns, off-by-one risk scores, cyclomatic complexity estimates.
 
 **Confidence Calibration (Phase 2.1)**
-Post-hoc isotonic regression on Model A outputs. Conservative cap at 0.90. Three tiers gate downstream behavior:
+Post-hoc calibration on classifier outputs. Conservative cap at 0.90. Three tiers gate downstream behavior:
 
 | Tier   | Threshold | Effect                                                                                          |
 | ------ | --------- | ----------------------------------------------------------------------------------------------- |
@@ -227,7 +226,7 @@ Orchestrated via LangGraph `StateGraph`:
 
 1. Retrieve user memory from Pinecone (8s)
 2. Retrieve problem context from backend API (8s)
-3. MIM prediction — feature extraction, ML inference, taxonomy validation, pattern engine, difficulty engine (3s)
+3. MIM prediction — feature extraction, heuristic inference, taxonomy validation, pattern engine, difficulty engine (3s)
 4. Feedback agent — LLM call (20s)
 5. Hint agent — LLM call (8s)
 
@@ -552,7 +551,7 @@ Three services deployed independently on Render:
 On Render's free tier, services spin down after 15 minutes idle:
 
 - **Backend** restarts in ~10-15 seconds
-- **AI Service** restarts in ~45-90 seconds (ML embedding model loads at startup)
+- **AI Service** restarts in ~45-90 seconds (embedding model loads at startup)
 - External ping services (e.g., cron-job.org, UptimeRobot) hitting health endpoints every 14 minutes can prevent spin-down
 
 ### Environment Variables
@@ -641,7 +640,6 @@ FRONTEND_URL=http://localhost:5173
 PISTON_URL=https://emkc.org/api/v2/piston
 ```
 
-
 ### AI Service
 
 ```bash
@@ -666,7 +664,7 @@ The embedding model downloads automatically on first startup (~90MB).
 
 ## 10. Engineering Principles
 
-**Determinism over hallucination.** Every diagnostic decision — root cause, subtype, failure mechanism, pattern state, difficulty adjustment — is made by trained ML models or deterministic rule engines. LLMs generate natural language from structured instructions. They cannot override, modify, or bypass MIM decisions. This makes the diagnostic layer testable, reproducible, and auditable.
+**Determinism over hallucination.** Every diagnostic decision — root cause, subtype, failure mechanism, pattern state, difficulty adjustment — is made by deterministic heuristic classifiers or rule engines. LLMs generate natural language from structured instructions. They cannot override, modify, or bypass MIM decisions. This makes the diagnostic layer testable, reproducible, and auditable.
 
 **Strict taxonomy enforcement.** The root cause → subtype mapping is a runtime constraint, not documentation. Any prediction outside the mask raises a `SubtypeValidationError`. Pydantic schemas use `extra="forbid"` — unknown fields fail validation at the boundary. Training data is validated against canonical schemas before use.
 
@@ -678,7 +676,7 @@ The embedding model downloads automatically on first startup (~90MB).
 
 **Async orchestration.** The sync workflow has a 45-second budget and returns feedback to the user. Profile updates, memory storage, difficulty adjustments, and learning recommendations run asynchronously after the response is sent. This keeps response times bounded while ensuring the user's cognitive profile stays current.
 
-**Graceful degradation at every layer.** LLM providers fail over (Groq → Gemini with cooldowns). ML models fall back to sklearn if LightGBM is unavailable. MIM preserves partial results on error. RAG returns empty memory and the pipeline still generates feedback. Redis operations return fallback data when unavailable. The system produces useful output even when individual components fail.
+**Graceful degradation at every layer.** LLM providers fail over (Groq → Gemini with cooldowns). Heuristic classifiers fall back to simpler verdict-based rules when needed. MIM preserves partial results on error. RAG returns empty memory and the pipeline still generates feedback. Redis operations return fallback data when unavailable. The system produces useful output even when individual components fail.
 
 ---
 
@@ -710,11 +708,11 @@ arrakis-labs/
 │       │   ├── taxonomy/      # Root causes, subtypes, failure mechanisms
 │       │   ├── features/      # Delta features, state snapshots, signal extraction
 │       │   ├── code_signals/  # AST analysis, pattern detection
-│       │   ├── calibration/   # Isotonic regression, threshold validation
+│       │   ├── calibration/   # Confidence calibration, threshold validation
 │       │   ├── signals/       # Regression detection, confidence adjustment
-│       │   ├── training/      # Dataset builder, model training
+│       │   ├── training/      # Dataset builder, taxonomy validation
 │       │   ├── production/    # Model registry, shadow mode, drift detection
-│       │   └── models/        # Serialized LightGBM models
+│       │   └── models/        # Serialized classifier models
 │       ├── agents/            # LLM agents (feedback, hint, learning, report)
 │       ├── rag/               # Vector retrieval, quality gates, context builder
 │       ├── graph/             # LangGraph orchestration (sync/async workflows)

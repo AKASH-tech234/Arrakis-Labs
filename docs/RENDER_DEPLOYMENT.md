@@ -43,17 +43,18 @@
 
 ### Service 1: AI Service (Python/FastAPI)
 
-| Setting | Value |
-|---------|-------|
-| **Name** | `arrakis-ai-service` |
-| **Type** | Web Service |
-| **Runtime** | Python 3 |
-| **Root Directory** | `ai-services` |
-| **Build Command** | `pip install -r requirement.txt` |
-| **Start Command** | `uvicorn main:app --host 0.0.0.0 --port 10000` |
-| **Health Check Path** | `/health` |
+| Setting               | Value                                          |
+| --------------------- | ---------------------------------------------- |
+| **Name**              | `arrakis-ai-service`                           |
+| **Type**              | Web Service                                    |
+| **Runtime**           | Python 3                                       |
+| **Root Directory**    | `ai-services`                                  |
+| **Build Command**     | `pip install -r requirement.txt`               |
+| **Start Command**     | `uvicorn main:app --host 0.0.0.0 --port 10000` |
+| **Health Check Path** | `/health`                                      |
 
 **Environment Variables:**
+
 ```bash
 PORT=10000
 PYTHONUNBUFFERED=1
@@ -69,17 +70,18 @@ BACKEND_URL=https://arrakis-backend.onrender.com
 
 ### Service 2: Backend (Node.js/Express)
 
-| Setting | Value |
-|---------|-------|
-| **Name** | `arrakis-backend` |
-| **Type** | Web Service |
-| **Runtime** | Node |
-| **Root Directory** | `backend` |
-| **Build Command** | `npm install` |
-| **Start Command** | `npm start` |
-| **Health Check Path** | `/api/health` |
+| Setting               | Value             |
+| --------------------- | ----------------- |
+| **Name**              | `arrakis-backend` |
+| **Type**              | Web Service       |
+| **Runtime**           | Node              |
+| **Root Directory**    | `backend`         |
+| **Build Command**     | `npm install`     |
+| **Start Command**     | `npm start`       |
+| **Health Check Path** | `/api/health`     |
 
 **Environment Variables:**
+
 ```bash
 PORT=10000
 NODE_ENV=production
@@ -96,15 +98,16 @@ GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 
 ### Service 3: Frontend (React/Vite Static Site)
 
-| Setting | Value |
-|---------|-------|
-| **Name** | `arrakis-frontend` |
-| **Type** | Static Site |
-| **Root Directory** | `frontend` |
-| **Build Command** | `npm install && npm run build` |
-| **Publish Directory** | `dist` |
+| Setting               | Value                          |
+| --------------------- | ------------------------------ |
+| **Name**              | `arrakis-frontend`             |
+| **Type**              | Static Site                    |
+| **Root Directory**    | `frontend`                     |
+| **Build Command**     | `npm install && npm run build` |
+| **Publish Directory** | `dist`                         |
 
 **Environment Variables (Build Time):**
+
 ```bash
 VITE_API_URL=https://arrakis-backend.onrender.com/api
 VITE_AI_SERVICE_URL=https://arrakis-ai-service.onrender.com
@@ -113,6 +116,7 @@ VITE_GOOGLE_CLIENT_ID=<your-google-client-id>
 ```
 
 **Rewrite Rule (for SPA routing):**
+
 ```
 Source: /*
 Destination: /index.html
@@ -128,6 +132,7 @@ Action: Rewrite
 Render free tier services spin down after 15 minutes of inactivity.
 
 **Impact:**
+
 - First request after sleep: 30-60 seconds delay
 - AI Service (Python): Slowest to start (~45-90 seconds)
 - Backend (Node.js): Medium (~15-30 seconds)
@@ -135,6 +140,7 @@ Render free tier services spin down after 15 minutes of inactivity.
 **Mitigations:**
 
 1. **Use Health Check Pings** (external cron service):
+
 ```bash
 # Use cron-job.org or UptimeRobot to ping every 14 minutes:
 https://arrakis-ai-service.onrender.com/health
@@ -147,6 +153,7 @@ https://arrakis-backend.onrender.com/api/health
    - Better for production
 
 3. **Frontend Loading State:**
+
 ```javascript
 // Show loading indicator while backend wakes up
 const [isLoading, setIsLoading] = useState(true);
@@ -171,7 +178,7 @@ useEffect(() => {
 
 ## Model Loading at Startup
 
-The AI service loads ML models at startup (not per-request):
+The AI service loads diagnostic models at startup (not per-request):
 
 ```python
 # ai-services/main.py - Already configured
@@ -187,7 +194,7 @@ except Exception as e:
     print(f"⚠️  Embedding model pre-load failed: {e}")
 ```
 
-For custom ML models (joblib/pickle):
+For custom classifier models (joblib/pickle):
 
 ```python
 # Example: Add to ai-services/app/mim/model_loader.py
@@ -210,23 +217,27 @@ print("✅ MIM model loaded")
 ## CORS Configuration
 
 ### AI Service (Python)
+
 Already configured in `main.py`:
+
 ```python
 def get_allowed_origins():
     origins = ["http://localhost:5173", "http://localhost:5174"]
-    
+
     frontend_url = os.getenv("FRONTEND_URL")
     if frontend_url:
         if not frontend_url.startswith("http"):
             origins.append(f"https://{frontend_url}")
         else:
             origins.append(frontend_url)
-    
+
     return list(set(origins))
 ```
 
 ### Backend (Node.js)
+
 Already configured in `app.js`:
+
 ```javascript
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -248,8 +259,8 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 export const api = {
   async get(endpoint) {
     const response = await fetch(`${API_BASE}${endpoint}`, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) throw new Error(await response.text());
     return response.json();
@@ -257,33 +268,34 @@ export const api = {
 
   async post(endpoint, data) {
     const response = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error(await response.text());
     return response.json();
-  }
+  },
 };
 
 // Usage:
-const questions = await api.get('/questions');
-const result = await api.post('/submit', { code, language, questionId });
+const questions = await api.get("/questions");
+const result = await api.post("/submit", { code, language, questionId });
 ```
 
 ### Calling AI Service (for MIM predictions)
 
 ```javascript
 // src/services/ai/aiApi.js
-const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
+const AI_SERVICE_URL =
+  import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8000";
 
 export const aiApi = {
   async predict(data) {
     const response = await fetch(`${AI_SERVICE_URL}/predict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error(await response.text());
     return response.json();
@@ -291,12 +303,12 @@ export const aiApi = {
 
   async getFeedback(submissionId) {
     const response = await fetch(`${AI_SERVICE_URL}/ai/feedback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ submission_id: submissionId })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ submission_id: submissionId }),
     });
     return response.json();
-  }
+  },
 };
 ```
 
@@ -340,24 +352,29 @@ curl -X POST https://arrakis-ai-service.onrender.com/predict \
 ## Troubleshooting
 
 ### "CORS blocked" errors
+
 - Verify `FRONTEND_URL` env var is set correctly (include `https://`)
 - Check browser Network tab for actual origin being blocked
 - Ensure no trailing slash in URLs
 
 ### Cold start timeout
+
 - First request may timeout - client should retry
 - Consider upgrading from free tier for production
 
 ### "Module not found" in AI Service
+
 - Check `requirement.txt` spelling (`requirement.txt` not `requirements.txt`)
 - Ensure all dependencies are listed
 
 ### Build fails on Render
+
 - Check build logs in Render dashboard
 - Verify root directory is correct
 - Test build locally first: `npm run build` or `pip install -r requirement.txt`
 
 ### MongoDB connection fails
+
 - Whitelist `0.0.0.0/0` in MongoDB Atlas Network Access
 - Verify connection string format
 - Check if password has special characters (URL encode them)
@@ -384,6 +401,7 @@ npm run dev
 ```
 
 Access at:
+
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5001
 - AI Service: http://localhost:8000

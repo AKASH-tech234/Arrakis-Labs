@@ -42,7 +42,7 @@ frontend/src/
 │   │   ├── AIFeedbackPanel.jsx     # Main feedback component
 │   │   ├── AIFeedbackPanelV2.jsx   # Enhanced version
 │   │   ├── AILoadingScreen.jsx     # Loading states
-│   │   ├── ConfidenceBadge.jsx     # ML confidence display
+│   │   ├── ConfidenceBadge.jsx     # Diagnostic confidence display
 │   │   ├── LearningTimeline.jsx    # Progress timeline
 │   │   └── WeeklyReportUI.jsx      # Weekly summaries
 │   │
@@ -158,19 +158,82 @@ frontend/src/
 <Routes>
   {/* Public Routes */}
   <Route path="/" element={<Landing />} />
-  <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-  <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
+  <Route
+    path="/login"
+    element={
+      <GuestRoute>
+        <Login />
+      </GuestRoute>
+    }
+  />
+  <Route
+    path="/signup"
+    element={
+      <GuestRoute>
+        <Signup />
+      </GuestRoute>
+    }
+  />
   <Route path="/u/:username" element={<PublicProfile />} />
   <Route path="/contests" element={<ContestList />} />
 
   {/* Protected Routes (Authenticated Users) */}
-  <Route path="/problems" element={<ProtectedRoute><ProblemLibrary /></ProtectedRoute>} />
-  <Route path="/problems/:id" element={<ProtectedRoute><ProblemDetail /></ProtectedRoute>} />
-  <Route path="/submissions/:id" element={<ProtectedRoute><SubmissionResult /></ProtectedRoute>} />
-  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-  <Route path="/coding-profile" element={<ProtectedRoute><CodingProfile /></ProtectedRoute>} />
-  <Route path="/potd" element={<ProtectedRoute><POTDHome /></ProtectedRoute>} />
-  <Route path="/contests/:contestId" element={<ProtectedRoute><ContestDetail /></ProtectedRoute>} />
+  <Route
+    path="/problems"
+    element={
+      <ProtectedRoute>
+        <ProblemLibrary />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/problems/:id"
+    element={
+      <ProtectedRoute>
+        <ProblemDetail />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/submissions/:id"
+    element={
+      <ProtectedRoute>
+        <SubmissionResult />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/profile"
+    element={
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/coding-profile"
+    element={
+      <ProtectedRoute>
+        <CodingProfile />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/potd"
+    element={
+      <ProtectedRoute>
+        <POTDHome />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/contests/:contestId"
+    element={
+      <ProtectedRoute>
+        <ContestDetail />
+      </ProtectedRoute>
+    }
+  />
 
   {/* Admin Routes */}
   <Route path="/admin/login" element={<AdminLogin />} />
@@ -191,9 +254,15 @@ frontend/src/
 ### Context Providers Hierarchy
 
 ```jsx
-<AuthProvider>              {/* User authentication */}
-  <AdminAuthProvider>       {/* Admin authentication */}
-    <SubmissionProvider>    {/* Submissions & AI feedback */}
+<AuthProvider>
+  {" "}
+  {/* User authentication */}
+  <AdminAuthProvider>
+    {" "}
+    {/* Admin authentication */}
+    <SubmissionProvider>
+      {" "}
+      {/* Submissions & AI feedback */}
       <Router>
         <App />
       </Router>
@@ -221,27 +290,27 @@ The `SubmissionContext` manages the entire submission and AI feedback lifecycle:
     passedCount: 8,
     totalCount: 10
   },
-  
+
   // Submission history (last 10)
   submissionHistory: [...],
-  
+
   // Code execution state
   executionStatus: "idle" | "running" | "success" | "error",
   executionOutput: {...},
   executionError: null,
-  
+
   // AI Feedback state
   aiStatus: "idle" | "loading" | "success" | "error",
   aiFeedback: {
     hints: [...],           // Progressive hints
     explanation: "...",     // Full explanation
     detectedPattern: "...", // Pattern name
-    mimInsights: {...},     // MIM ML predictions
+    mimInsights: {...},     // MIM diagnostic predictions
     optimizationTips: [...],
     complexityAnalysis: {...}
   },
   aiError: null,
-  
+
   // UI state
   revealedHintLevel: 1,     // How many hints revealed
   showFullExplanation: false,
@@ -256,18 +325,18 @@ The `SubmissionContext` manages the entire submission and AI feedback lifecycle:
 const actions = {
   // Code execution
   runCode(code, language, testCases),
-  
+
   // Full submission
   submitCode(questionId, code, language),
-  
+
   // AI feedback
   requestAIFeedback(),
   retryAIFeedback(),
-  
+
   // Progressive hints
   revealNextHint(),
   toggleExplanation(),
-  
+
   // State management
   clearSubmission(),
   resetAIFeedback()
@@ -297,21 +366,21 @@ const actions = {
 
 ```javascript
 // 1. Submission completes
-dispatch({ type: 'SUBMISSION_COMPLETE', payload: { submission } });
+dispatch({ type: "SUBMISSION_COMPLETE", payload: { submission } });
 
 // 2. Auto-trigger AI feedback request
 useEffect(() => {
-  if (hasSubmission && aiStatus === 'idle' && !hasAIFeedback) {
+  if (hasSubmission && aiStatus === "idle" && !hasAIFeedback) {
     requestAIFeedback();
   }
 }, [hasSubmission, aiStatus, hasAIFeedback]);
 
 // 3. Request AI feedback from backend
 const requestAIFeedback = async () => {
-  dispatch({ type: 'AI_REQUEST_START' });
-  
-  const response = await fetch('/api/ai/feedback', {
-    method: 'POST',
+  dispatch({ type: "AI_REQUEST_START" });
+
+  const response = await fetch("/api/ai/feedback", {
+    method: "POST",
     body: JSON.stringify({
       submission_id: currentSubmission.id,
       user_id: user.id,
@@ -319,11 +388,11 @@ const requestAIFeedback = async () => {
       code: currentSubmission.code,
       verdict: currentSubmission.verdict,
       // ... more context
-    })
+    }),
   });
-  
+
   const feedback = await response.json();
-  dispatch({ type: 'AI_REQUEST_SUCCESS', payload: { feedback } });
+  dispatch({ type: "AI_REQUEST_SUCCESS", payload: { feedback } });
 };
 
 // 4. Display in SubmissionResult.jsx
@@ -346,8 +415,8 @@ Monaco-based code editor with syntax highlighting:
   options={{
     minimap: { enabled: false },
     fontSize: 14,
-    lineNumbers: 'on',
-    automaticLayout: true
+    lineNumbers: "on",
+    automaticLayout: true,
   }}
 />
 ```
@@ -359,10 +428,10 @@ Displays MIM V3.0 polymorphic feedback:
 ```jsx
 // Handles three feedback types:
 // 1. correctness_feedback - For WA/RE verdicts
-// 2. performance_feedback - For TLE/MLE verdicts  
+// 2. performance_feedback - For TLE/MLE verdicts
 // 3. reinforcement_feedback - For accepted solutions
 
-<MIMInsightsV3 
+<MIMInsightsV3
   insights={{
     feedbackType: "correctness",
     correctnessFeedback: {
@@ -371,8 +440,8 @@ Displays MIM V3.0 polymorphic feedback:
       failureMechanism: "Loop bounds incorrect",
       confidence: 0.85,
       isRecurring: true,
-      recurrenceCount: 3
-    }
+      recurrenceCount: 3,
+    },
   }}
   expanded={true}
 />
@@ -381,6 +450,7 @@ Displays MIM V3.0 polymorphic feedback:
 ### 3. SubmissionResult (`pages/common/SubmissionResult.jsx`)
 
 Main feedback display page with:
+
 - Verdict badge and stats
 - Progressive hints (HintsView)
 - Full analysis (SummaryView)
@@ -402,6 +472,7 @@ useEffect(() => {
 ### 4. CognitiveProfile (`components/mim/CognitiveProfile.jsx`)
 
 Displays user's learning profile:
+
 - Skill radar chart
 - Strength/weakness topics
 - Dominant mistake patterns
@@ -410,6 +481,7 @@ Displays user's learning profile:
 ### 5. ProblemRecommendations (`components/mim/ProblemRecommendations.jsx`)
 
 Smart problem suggestions based on:
+
 - Current skill gaps
 - Difficulty readiness scores
 - Recent mistake patterns
@@ -429,16 +501,16 @@ const {
   error,
   requestFeedback,
   retryFeedback,
-  
+
   // Progressive hints
   revealedLevel,
   revealNextHint,
   hasMoreHints,
-  
+
   // MIM insights
   mimInsights,
   rootCause,
-  confidence
+  confidence,
 } = useAIFeedbackEnhanced(submissionId);
 ```
 
@@ -447,13 +519,8 @@ const {
 Real-time contest updates:
 
 ```javascript
-const {
-  isConnected,
-  leaderboard,
-  submissions,
-  announcements,
-  timeRemaining
-} = useContestWebSocket(contestId);
+const { isConnected, leaderboard, submissions, announcements, timeRemaining } =
+  useContestWebSocket(contestId);
 ```
 
 ### useProfileAnalytics
@@ -466,7 +533,7 @@ const {
   activityHeatmap,
   categoryBreakdown,
   difficultyProgress,
-  recentSubmissions
+  recentSubmissions,
 } = useProfileAnalytics(userId);
 ```
 
@@ -479,7 +546,7 @@ const {
 ```javascript
 // Request AI feedback for submission
 export const getAIFeedback = async (submissionData) => {
-  return api.post('/ai/feedback', submissionData);
+  return api.post("/ai/feedback", submissionData);
 };
 
 // Get user's cognitive profile
@@ -503,13 +570,13 @@ export const getWeeklyReport = async (userId) => {
 ```javascript
 // Axios instance with auth interceptor
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  withCredentials: true
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  withCredentials: true,
 });
 
 // Auto-attach auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -527,11 +594,11 @@ The frontend now receives calibrated confidence levels from MIM and must adjust 
 
 #### Confidence Level Rules
 
-| Level | Color | Badge Text | Language Style |
-|-------|-------|------------|----------------|
-| HIGH (≥0.80) | Green (#22C55E) | "High confidence diagnosis" | Direct, assertive |
-| MEDIUM (≥0.65) | Yellow (#F59E0B) | "Likely issue" | Cautious |
-| LOW (<0.65) | Grey (#78716C) | "Exploratory feedback" | Hedging ("may", "possibly") |
+| Level          | Color            | Badge Text                  | Language Style              |
+| -------------- | ---------------- | --------------------------- | --------------------------- |
+| HIGH (≥0.80)   | Green (#22C55E)  | "High confidence diagnosis" | Direct, assertive           |
+| MEDIUM (≥0.65) | Yellow (#F59E0B) | "Likely issue"              | Cautious                    |
+| LOW (<0.65)    | Grey (#78716C)   | "Exploratory feedback"      | Hedging ("may", "possibly") |
 
 ```jsx
 // Example: Adjust tone based on confidence
@@ -543,36 +610,37 @@ const message = `${prefix} an off-by-one error`;
 
 Pattern states have specific UI treatments:
 
-| State | Show UI? | Message | Show Count? |
-|-------|----------|---------|-------------|
-| `none` | ❌ No | - | No |
-| `suspected` | ✅ Yes | "This may be a recurring pattern" | No |
-| `confirmed` | ✅ Yes | "This is a confirmed recurring issue" | Yes |
-| `stable` | ✅ Yes | "You've encountered this pattern before and improved" | Optional |
+| State       | Show UI? | Message                                               | Show Count? |
+| ----------- | -------- | ----------------------------------------------------- | ----------- |
+| `none`      | ❌ No    | -                                                     | No          |
+| `suspected` | ✅ Yes   | "This may be a recurring pattern"                     | No          |
+| `confirmed` | ✅ Yes   | "This is a confirmed recurring issue"                 | Yes         |
+| `stable`    | ✅ Yes   | "You've encountered this pattern before and improved" | Optional    |
 
 **CRITICAL**: Never use word "recurring" unless state === "confirmed" or "stable"
 
 ### Phase 2.x: Difficulty Explanation Rules
 
-| Rule | Description |
-|------|-------------|
-| ❌ Never | Say "you should try harder problems" |
-| ✅ Always | Only explain system decisions |
+| Rule      | Description                                        |
+| --------- | -------------------------------------------------- |
+| ❌ Never  | Say "you should try harder problems"               |
+| ✅ Always | Only explain system decisions                      |
 | ✅ Always | Use predefined messages from `DIFFICULTY_MESSAGES` |
 
 Example messages:
+
 - `maintain + pattern_unresolved` → "Difficulty maintained to reinforce correctness"
 - `increase + consistent_success` → "Difficulty increased due to consistent success"
 - `decrease + struggling` → "Difficulty adjusted to strengthen fundamentals"
 
 ### New UI Components (Phase 2.x)
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| `DiagnosisConfidenceBadge` | Shows confidence level | `components/feedback/ConfidenceBadge.jsx` |
-| `PatternInsightPanel` | Shows pattern state | `components/feedback/PatternInsightPanel.jsx` |
-| `DifficultyStatusPanel` | Shows difficulty decision | `components/feedback/DifficultyStatusPanel.jsx` |
-| `MemoryIndicator` | Shows RAG usage | `components/feedback/MemoryIndicator.jsx` |
+| Component                  | Purpose                   | Location                                        |
+| -------------------------- | ------------------------- | ----------------------------------------------- |
+| `DiagnosisConfidenceBadge` | Shows confidence level    | `components/feedback/ConfidenceBadge.jsx`       |
+| `PatternInsightPanel`      | Shows pattern state       | `components/feedback/PatternInsightPanel.jsx`   |
+| `DifficultyStatusPanel`    | Shows difficulty decision | `components/feedback/DifficultyStatusPanel.jsx` |
+| `MemoryIndicator`          | Shows RAG usage           | `components/feedback/MemoryIndicator.jsx`       |
 
 ### Polymorphic Feedback Handling
 
@@ -580,19 +648,21 @@ Example messages:
 // MIMInsightsV3.jsx - Handles all feedback types
 function MIMInsightsV3({ insights }) {
   const { feedbackType } = insights;
-  
+
   switch (feedbackType) {
-    case 'correctness':
-    case 'implementation':
-    case 'understanding_gap':
+    case "correctness":
+    case "implementation":
+    case "understanding_gap":
       return <CorrectnessFeedbackPanel data={insights.correctnessFeedback} />;
-      
-    case 'efficiency':
+
+    case "efficiency":
       return <PerformanceFeedbackPanel data={insights.performanceFeedback} />;
-      
-    case 'reinforcement':
-      return <ReinforcementFeedbackPanel data={insights.reinforcementFeedback} />;
-      
+
+    case "reinforcement":
+      return (
+        <ReinforcementFeedbackPanel data={insights.reinforcementFeedback} />
+      );
+
     default:
       return <LegacyMIMPanel data={insights} />;
   }
@@ -604,9 +674,10 @@ function MIMInsightsV3({ insights }) {
 ```javascript
 // Properly extract root cause from object or string
 const rootCauseRaw = mimInsights.root_cause || mimInsights.rootCause;
-const rootCause = typeof rootCauseRaw === "object" && rootCauseRaw !== null
-  ? (rootCauseRaw.failure_cause || rootCauseRaw.failureCause)
-  : rootCauseRaw;
+const rootCause =
+  typeof rootCauseRaw === "object" && rootCauseRaw !== null
+    ? rootCauseRaw.failure_cause || rootCauseRaw.failureCause
+    : rootCauseRaw;
 
 // Format for display
 const displayRootCause = rootCause
@@ -625,30 +696,30 @@ const displayRootCause = rootCause
 ```javascript
 // tailwind.config.js
 module.exports = {
-  content: ['./src/**/*.{js,jsx}'],
+  content: ["./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
         // Arrakis theme colors
-        bg: '#0A0A08',
-        bgCard: '#0F0F0D',
-        border: '#1A1814',
-        borderLight: '#2A2A24',
-        textPrimary: '#E8E4D9',
-        textSecondary: '#A29A8C',
-        textMuted: '#78716C',
-        accent: '#D97706',      // Orange
-        accentHover: '#F59E0B',
-        success: '#22C55E',     // Green
-        error: '#EF4444',       // Red
-        warning: '#F59E0B',     // Yellow
-        info: '#3B82F6',        // Blue
+        bg: "#0A0A08",
+        bgCard: "#0F0F0D",
+        border: "#1A1814",
+        borderLight: "#2A2A24",
+        textPrimary: "#E8E4D9",
+        textSecondary: "#A29A8C",
+        textMuted: "#78716C",
+        accent: "#D97706", // Orange
+        accentHover: "#F59E0B",
+        success: "#22C55E", // Green
+        error: "#EF4444", // Red
+        warning: "#F59E0B", // Yellow
+        info: "#3B82F6", // Blue
       },
       fontFamily: {
-        display: ['Rajdhani', 'Orbitron', 'system-ui', 'sans-serif'],
-      }
-    }
-  }
+        display: ["Rajdhani", "Orbitron", "system-ui", "sans-serif"],
+      },
+    },
+  },
 };
 ```
 

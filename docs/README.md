@@ -44,7 +44,7 @@ The decision layer produces authoritative diagnoses. The agents explain them in 
 
 ## The Decision Engine: MIM (Mistake Inference Model)
 
-At the heart of our system is what we call MIM—the Machine Intelligence Model. But don't let the name fool you; while it uses some statistical classification, the core philosophy is **deterministic reasoning**.
+At the heart of our system is what we call MIM—the Machine Intelligence Model. The core philosophy is **deterministic reasoning** — structured heuristic classifiers and rule engines make every diagnostic decision.
 
 ### Root Cause Taxonomy
 
@@ -53,7 +53,7 @@ Every submission failure gets classified into one of four root causes:
 ```python
 ROOT_CAUSES = {
     "correctness",        # Logic produces wrong outputs
-    "efficiency",         # Too slow or memory-heavy  
+    "efficiency",         # Too slow or memory-heavy
     "implementation",     # Correct approach, buggy code
     "understanding_gap",  # Misunderstood the problem
 }
@@ -90,7 +90,7 @@ Based on the diagnosis and pattern state, the system decides what to do with pro
 ```python
 DIFFICULTY_ACTIONS = {
     "increase": "User is ready for harder problems",
-    "maintain": "Keep current difficulty level", 
+    "maintain": "Keep current difficulty level",
     "decrease": "Need to solidify fundamentals"
 }
 ```
@@ -109,10 +109,11 @@ Once the decision layer has made its authoritative diagnosis, four specialized a
 **Output**: Structured explanation with failure mechanism and fix direction
 
 The agent receives pre-computed facts like:
+
 ```json
 {
   "root_cause": "correctness",
-  "subtype": "incorrect_boundary", 
+  "subtype": "incorrect_boundary",
   "failure_mechanism": "Array index or loop bound at line 15 is off by one",
   "confidence": 0.87,
   "focus_areas": ["Boundary condition handling", "Index arithmetic precision"]
@@ -120,6 +121,7 @@ The agent receives pre-computed facts like:
 ```
 
 And transforms it into readable feedback:
+
 > "Your loop boundary condition is causing an off-by-one error. When iterating through the array, you're using `i < n` but accessing `arr[i+1]`, which goes beyond the array bounds on the final iteration. Consider what happens when `i` reaches `n-1`..."
 
 ### 2. Hint Agent
@@ -127,8 +129,9 @@ And transforms it into readable feedback:
 **Purpose**: Generate progressive hints that guide without spoiling.
 
 **Strategy**: Three-tier progressive disclosure:
+
 - **Conceptual**: "Think about what happens at the boundaries"
-- **Specific**: "Check the first and last iterations of your loop"  
+- **Specific**: "Check the first and last iterations of your loop"
 - **Approach**: "Consider using `i <= n-2` or restructuring the access pattern"
 
 The agent has instructions to avoid giving away the exact fix:
@@ -146,17 +149,22 @@ HINT_DIRECTIONS = {
 
 **Purpose**: Recommend focused practice based on detected weaknesses.
 
-**Modes**: 
+**Modes**:
+
 - **Diagnosis mode** (for failed submissions): Identifies skill gaps and suggests targeted exercises
 - **Reinforcement mode** (for accepted submissions): Acknowledges success and recommends next challenges
 
 The agent builds personalized learning paths:
+
 ```json
 {
   "focus_areas": ["Boundary condition handling", "Edge case enumeration"],
   "rationale": "Pattern shows recurring off-by-one errors in array traversal problems",
-  "skill_gap": "Array indexing precision", 
-  "exercises": ["Practice problems with inclusive/exclusive bounds", "Implement safe array utilities"],
+  "skill_gap": "Array indexing precision",
+  "exercises": [
+    "Practice problems with inclusive/exclusive bounds",
+    "Implement safe array utilities"
+  ],
   "summary": "Focus on systematic boundary checking before coding"
 }
 ```
@@ -166,8 +174,9 @@ The agent builds personalized learning paths:
 **Purpose**: Generate weekly progress summaries on-demand.
 
 Synthesizes a week's worth of submissions into:
+
 - **Strengths**: Concepts you've mastered
-- **Improvement Areas**: Patterns needing attention  
+- **Improvement Areas**: Patterns needing attention
 - **Recurring Patterns**: Specific mistakes to watch for
 - **Progress Trends**: Are you improving in targeted areas?
 
@@ -182,7 +191,7 @@ When a submission receives AI feedback, the system decides whether to store it i
 ```python
 class MemoryQualityScorer:
     STORAGE_THRESHOLD = 0.6  # Minimum quality to store
-    
+
     WEIGHTS = {
         "mim_confidence": 0.35,      # How confident was the diagnosis?
         "pattern_recurrence": 0.25,   # Is this a validated pattern?
@@ -223,6 +232,7 @@ class PineconeVectorStore:
 ```
 
 Each memory document includes:
+
 - **Content**: The explanation or insight
 - **Metadata**: Root cause, subtype, problem category, timestamp
 - **Quality Score**: Computed relevance and usefulness metrics
@@ -237,8 +247,9 @@ The AI system runs two parallel workflows to balance responsiveness with thoroug
 **Purpose**: Provide immediate feedback that doesn't block the user.
 
 **Pipeline**:
+
 1. **Memory Retrieval**: Fetch relevant past mistakes (8s budget)
-2. **MIM Decision**: Run diagnosis engine (3s budget)  
+2. **MIM Decision**: Run diagnosis engine (3s budget)
 3. **Feedback Agent**: Generate explanation (20s budget)
 4. **Hint Agent**: Create progressive hints (8s budget)
 
@@ -249,6 +260,7 @@ The AI system runs two parallel workflows to balance responsiveness with thoroug
 **Purpose**: Handle expensive operations that improve future interactions.
 
 **Pipeline**:
+
 1. **Learning Agent**: Generate personalized recommendations (45s budget)
 2. **Memory Storage**: Persist high-quality feedback to RAG store (15s budget)
 3. **Profile Updates**: Update user skill assessments and patterns (background)
@@ -261,15 +273,15 @@ The async workflow never affects response latency—it runs after the user recei
 ```python
 def orchestrator_node(state: Dict) -> Dict:
     verdict = state.get("verdict", "").lower()
-    
+
     # Sync agents (user-facing)
     run_feedback = True  # Always run primary agent
     run_hint = not (verdict == "accepted")  # Skip hints for successful submissions
-    
+
     # Async agents (background)
     run_learning = True  # Always run, but mode differs by verdict
     run_memory_storage = True  # Always persist quality feedback
-    
+
     return {
         "sync_plan": {"feedback": run_feedback, "hint": run_hint},
         "async_plan": {"learning": run_learning, "storage": run_memory_storage}
@@ -298,12 +310,12 @@ Different submission outcomes trigger different processing strategies:
 
 ```python
 class VerdictGuard:
-    @staticmethod 
+    @staticmethod
     def get_guardrails(verdict: str) -> Dict[str, bool]:
         if verdict == "accepted":
             return {
                 "skip_mim": False,      # Still analyze for reinforcement
-                "skip_rag": True,       # No need for failure history  
+                "skip_rag": True,       # No need for failure history
                 "skip_hint": True,      # No hints needed for success
                 "skip_learning_diagnosis": True  # Use reinforcement mode
             }
@@ -319,18 +331,18 @@ All agents receive the same structured input to ensure consistency:
 class AgentInput:
     # MIM decisions (authoritative)
     root_cause: Optional[str]
-    subtype: Optional[str] 
+    subtype: Optional[str]
     failure_mechanism: Optional[str]
     confidence: float
-    
+
     # Pattern context
     pattern_state: Optional[str]  # none, suspected, confirmed, stable
     recurrence_count: int
-    
-    # RAG context  
+
+    # RAG context
     relevant_memories: List[str]
     memory_query: str
-    
+
     # Code context (truncated for efficiency)
     code_snippet: str  # First 500 chars
     problem_description: str  # First 500 chars
@@ -347,7 +359,7 @@ The main AI feedback endpoint follows a clean request/response pattern:
 def request_feedback(payload: SubmissionContext) -> AIFeedbackDTO:
     """
     Generate AI feedback for a code submission.
-    
+
     Returns structured feedback with:
     - Progressive hints (ordered from vague to specific)
     - Full explanation (expandable)
@@ -357,19 +369,28 @@ def request_feedback(payload: SubmissionContext) -> AIFeedbackDTO:
 ```
 
 **Response Structure**:
+
 ```json
 {
   "success": true,
   "verdict": "wrong_answer",
   "submission_id": "sub_123",
   "hints": [
-    {"level": 1, "content": "Consider edge cases...", "hint_type": "conceptual"},
-    {"level": 2, "content": "What happens with empty input?", "hint_type": "specific"}
+    {
+      "level": 1,
+      "content": "Consider edge cases...",
+      "hint_type": "conceptual"
+    },
+    {
+      "level": 2,
+      "content": "What happens with empty input?",
+      "hint_type": "specific"
+    }
   ],
   "explanation": "Your algorithm fails when the input array is empty...",
-  "detected_pattern": "boundary_condition_oversight", 
+  "detected_pattern": "boundary_condition_oversight",
   "mim_insights": {
-    "root_cause": {"failure_cause": "incorrect_boundary", "confidence": 0.85},
+    "root_cause": { "failure_cause": "incorrect_boundary", "confidence": 0.85 },
     "pattern_state": "suspected",
     "focus_areas": ["Boundary handling", "Edge case enumeration"]
   }
@@ -379,14 +400,14 @@ def request_feedback(payload: SubmissionContext) -> AIFeedbackDTO:
 ### Weekly Report Endpoint
 
 ```python
-@router.post("/ai/weekly-report")  
+@router.post("/ai/weekly-report")
 def generate_weekly_report(payload: SubmissionContext) -> Dict[str, Any]:
     """
     On-demand weekly progress report generation.
-    
+
     Analyzes recent submissions and generates:
     - Strength areas and improvement opportunities
-    - Recurring mistake patterns  
+    - Recurring mistake patterns
     - Learning recommendations
     - Progress trends
     """
@@ -399,12 +420,12 @@ def generate_weekly_report(payload: SubmissionContext) -> Dict[str, Any]:
 def health_check():
     return {
         "status": "ok",
-        "service": "Mentat Trials AI Service", 
+        "service": "Mentat Trials AI Service",
         "timestamp": "2024-01-15T10:30:00Z",
         "version": "3.0.0"
     }
 
-@router.get("/health/llm") 
+@router.get("/health/llm")
 def llm_health_check():
     """Check LLM provider rate limits and availability."""
     return get_rate_limit_status()
@@ -423,7 +444,7 @@ def _run_with_timeout(func, args, timeout_seconds: float, fallback, agent_name: 
         future = executor.submit(func, *args)
         return future.result(timeout=timeout_seconds)
     except TimeoutError:
-        logger.warning(f"{agent_name} TIMEOUT - returning fallback") 
+        logger.warning(f"{agent_name} TIMEOUT - returning fallback")
         return fallback
     except Exception as e:
         logger.error(f"{agent_name} ERROR: {e} - returning fallback")
@@ -440,7 +461,7 @@ class StructuredLogger:
         log_entry = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "trace_id": trace_id_var.get(),
-            "service": "ai-services", 
+            "service": "ai-services",
             "level": "INFO",
             "event": event,
             **kwargs
@@ -457,15 +478,15 @@ This enables debugging across the distributed system and monitoring of agent per
 ```python
 class AgentCache:
     def get_cached_response(
-        self, 
-        cache_key: str, 
+        self,
+        cache_key: str,
         ttl_seconds: int = 3600
     ) -> Optional[Dict]:
         """Retrieve cached agent response if still valid."""
-        
+
     def cache_response(
         self,
-        cache_key: str, 
+        cache_key: str,
         response: Dict,
         ttl_seconds: int = 3600
     ) -> None:
@@ -498,15 +519,15 @@ The embedding model loads once at startup rather than per request to eliminate c
 # Production-ready CORS setup
 def get_allowed_origins():
     origins = ["http://localhost:5173"]  # Dev defaults
-    
+
     # Add production URLs
     if frontend_url := os.getenv("FRONTEND_URL"):
         origins.append(frontend_url)
-    
+
     # Parse additional origins
     if extra_origins := os.getenv("ALLOWED_ORIGINS"):
         origins.extend(o.strip() for o in extra_origins.split(","))
-    
+
     return list(set(origins))
 ```
 
@@ -517,12 +538,12 @@ def get_allowed_origins():
 async def tracing_middleware(request: Request, call_next):
     trace_id = request.headers.get("X-Trace-ID", str(uuid.uuid4())[:8])
     trace_id_var.set(trace_id)
-    
+
     # Log and time all requests
     start_time = time.time()
     response = await call_next(request)
     elapsed = time.time() - start_time
-    
+
     response.headers["X-Trace-ID"] = trace_id
     return response
 ```
@@ -550,7 +571,7 @@ Every request gets a trace ID for debugging across the distributed system.
 The system evolved from a monolithic "ask LLM everything" approach to the current layered architecture through several iterations:
 
 1. **v1.0**: Direct LLM prompting (inconsistent, expensive)
-2. **v2.0**: Rule-based classification + LLM explanation (better, but limited taxonomy)  
+2. **v2.0**: Rule-based classification + LLM explanation (better, but limited taxonomy)
 3. **v3.0**: MIM decision engine + specialized agents + RAG memory (current)
 
 Each iteration maintained backward compatibility while improving consistency and reducing hallucination.
@@ -565,4 +586,4 @@ The result is an AI service that turns every failed submission into a structured
 
 ---
 
-*The complete Arrakis Lab codebase is available at [https://github.com/AKASH-tech234/Arrakis-Labs](https://lnkd.in/eBrk3CVS), with the AI services implementation in the `/ai-services` directory.*
+_The complete Arrakis Lab codebase is available at [https://github.com/AKASH-tech234/Arrakis-Labs](https://lnkd.in/eBrk3CVS), with the AI services implementation in the `/ai-services` directory._
