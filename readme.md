@@ -1,12 +1,11 @@
 # Arrakis Lab 🪐
 
-> _"Failures shouldn't just return a verdict. They should return direction."_ 🎯
+> _"Failures shouldn't just return a verdict. They should return direction."_ 
 
 Arrakis Lab is a next-generation **full-stack competitive programming ecosystem** designed to transform the traditional "Submit and Fail" cycle into a **continuous learning loop**. While traditional judges stop at a "Wrong Answer" verdict, Arrakis Lab utilizes a deterministic AI engine to provide context-aware guidance, mistake-pattern tracking, and structured improvement paths.
 
 The platform pairs a sandboxed code execution pipeline with a machine learning diagnostic layer (MIM) and LLM-powered explanation agents. Every analytical decision (root cause, pattern, difficulty) is made deterministically by trained ML models. LLM agents receive those decisions as structured instructions and produce natural language — they never override the diagnostic layer.
 
-🏅 **Runner-Up** at **WebSprint** (Quantacon, organized by the ES Society).
 
 ---
 
@@ -82,10 +81,10 @@ Three independently deployed services communicating over HTTP and WebSocket, bac
                          ▼                       ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                           BACKEND                                        │
-│            Node.js · Express · Mongoose · ioredis · ws                  │
+│            Node.js · Express · Mongoose · ioredis · ws                   │
 │                                                                          │
-│  Auth · Problems · Judge · Contests · OA · POTD · Profiles · Admin      │
-│  Schedulers: Contest (30s poll) · POTD (cron 00:00 UTC) · OA (10s poll) │
+│  Auth · Problems · Judge · Contests · OA · POTD · Profiles · Admin       │
+│  Schedulers: Contest (30s poll) · POTD (cron 00:00 UTC) · OA (10s poll)  │
 └──────┬──────────────┬──────────────┬──────────────┬──────────────────────┘
        │              │              │              │
        ▼              ▼              ▼              ▼
@@ -94,10 +93,10 @@ Three independently deployed services communicating over HTTP and WebSocket, bac
   │  Atlas  │   │ (leaderb │  │  (code   │  │  FastAPI · LangChain ·    │
   │         │   │  + cache)│  │  sandbox)│  │  LangGraph ·   │
   └─────────┘   └──────────┘  └──────────┘  │                           │
-                                             │  MIM Engine   │
-                                             │  LLM Agents (Groq/Gemini) │
-                                             │  RAG Memory (Pinecone)    │
-                                             └───────────────────────────┘
+                                            │  MIM Engine   
+                                            │  LLM Agents (Groq/Gemini) │
+                                            │  RAG Memory (Pinecone)    │
+                                            └───────────────────────────┘
 ```
 
 ### Frontend
@@ -513,25 +512,25 @@ Problem-level discussions with solution posts, threaded comments, and voting. Us
 Three services deployed independently on Render:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         Render Cloud                         │
-│                                                              │
+┌────────────────────────────────────────────────────────────┐
+│                         Render Cloud                       │
+│                                                            │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
 │  │   Frontend   │  │   Backend    │  │   AI Service     │  │
 │  │  Static Site │  │ Web Service  │  │  Web Service     │  │
-│  │              │  │              │  │                   │  │
+│  │              │  │              │  │                  │  │
 │  │  Vite build  │  │  Node.js     │  │  Python 3 +      │  │
 │  │  → dist/     │  │  Express     │  │  Uvicorn         │  │
 │  │  SPA rewrite │  │  Port 10000  │  │  Port 10000      │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬────────────┘  │
-│         │                 │                  │               │
-└─────────┼─────────────────┼──────────────────┼───────────────┘
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────────┘  │
+│         │                 │                  │             │
+└─────────┼─────────────────┼──────────────────┼─────────────┘
           │                 │                  │
           │         ┌───────┴───────┐          │
           │         │               │          │
           │    ┌────▼────┐   ┌──────▼──────┐   │
-          │    │ MongoDB │   │    Redis     │   │
-          │    │  Atlas  │   │  (optional)  │   │
+          │    │ MongoDB │   │    Redis    │   │
+          │    │  Atlas  │   │             │   │
           │    └─────────┘   └─────────────┘   │
           │                                    │
           │              ┌─────────────┐       │
@@ -642,11 +641,6 @@ FRONTEND_URL=http://localhost:5173
 PISTON_URL=https://emkc.org/api/v2/piston
 ```
 
-Seed an admin account:
-
-```bash
-npm run seed:admin
-```
 
 ### AI Service
 
@@ -666,7 +660,7 @@ BACKEND_URL=http://localhost:5001
 FRONTEND_URL=http://localhost:5173
 ```
 
-The embedding model (`all-MiniLM-L6-v2`) downloads automatically on first startup (~90MB).
+The embedding model downloads automatically on first startup (~90MB).
 
 ---
 
@@ -729,15 +723,3 @@ arrakis-labs/
 │       └── db/                # MongoDB client, cognitive profile store
 └── docs/                      # Architecture documentation
 ```
-
----
-
-## 11. Recognition
-
-🏅 **Runner-Up** — WebSprint (Quantacon), organized by the ES Society.
-
----
-
-## License
-
-MIT
