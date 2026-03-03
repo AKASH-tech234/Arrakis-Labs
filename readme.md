@@ -1,10 +1,54 @@
-# Arrakis Labs
+# Arrakis Lab 🪐
 
-**Competitive programming platform with a deterministic AI learning engine.**
+> _"Failures shouldn't just return a verdict. They should return direction."_ 🎯
 
-Built for structured practice — not just problem solving. The platform pairs a sandboxed code execution pipeline with a machine learning diagnostic layer (MIM) and LLM-powered explanation agents. Every analytical decision (root cause, pattern, difficulty) is made deterministically by trained ML models. LLM agents receive those decisions as structured instructions and produce natural language — they never override the diagnostic layer.
+Arrakis Lab is a next-generation **full-stack competitive programming ecosystem** designed to transform the traditional "Submit and Fail" cycle into a **continuous learning loop**. While traditional judges stop at a "Wrong Answer" verdict, Arrakis Lab utilizes a deterministic AI engine to provide context-aware guidance, mistake-pattern tracking, and structured improvement paths.
 
-Runner-up at **WebSprint** (Quantacon, organized by ES Society).
+The platform pairs a sandboxed code execution pipeline with a machine learning diagnostic layer (MIM) and LLM-powered explanation agents. Every analytical decision (root cause, pattern, difficulty) is made deterministically by trained ML models. LLM agents receive those decisions as structured instructions and produce natural language — they never override the diagnostic layer.
+
+🏅 **Runner-Up** at **WebSprint** (Quantacon, organized by the ES Society).
+
+---
+
+## 🚀 The Philosophy: The Learning Loop
+
+Arrakis Lab moves beyond the isolated submission model. Every interaction is part of a structured developer workflow:
+
+**Discover → Solve → Run → Hidden Submit → Analyze → Improve**
+
+Instead of treating each submission as an isolated event, the platform treats it as part of a continuous learning loop — where every attempt feeds into structured improvement. Instead of treating AI as a "magic box" that guesses solutions, we built a **Deterministic Learning Engine** that ensures feedback is grounded, consistent, and data-driven.
+
+The hardest part wasn't adding AI. It was making sure the system stayed disciplined — deterministic logic, clean memory, and feedback that doesn't contradict itself over time.
+
+---
+
+## 🔎 Key Features at a Glance
+
+| Feature                              | Highlights                                                                                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **💻 Robust Execution & Sandbox**    | Piston API for isolated, language-agnostic sandboxed execution. Dynamic stress test generation beyond static test cases to catch edge cases.                                                |
+| **🧠 AI Learning Engine**            | Deterministic decision layer → Pinecone-backed RAG pipeline → Structured feedback workflows. Progressive hints, focused learning guidance, and memory closure for compounding intelligence. |
+| **🏆 Real-Time Contests**            | WebSocket-powered live updates, Redis-backed sub-millisecond leaderboards, automated start/end scheduling, and safe fallback handling.                                                      |
+| **📝 Online Assessment Mode**        | Timed sessions, adaptive difficulty strategies, integrity checks (tab-switch, fullscreen exit, devtools detection), and automated report generation.                                        |
+| **📅 POTD + Streak Tracking**        | Daily curated problems with attempt tracking and calendar-style consistency tracking.                                                                                                       |
+| **📊 Comprehensive User Profile**    | Unified dashboard with submission stats, AI feedback history, detected mistake patterns, difficulty progression, and learning insights over time.                                           |
+| **🔗 External Platform Integration** | Bind LeetCode, Codeforces, and CodeChef accounts to view consolidated stats inside Arrakis Lab.                                                                                             |
+| **🛡️ RBAC-Based Admin Panel**        | Question/testcase CRUD, CSV uploads, contest lifecycle management, disqualification controls, announcements, and audit logging.                                                             |
+| **💬 Community Layer**               | Discussion threads, solution sharing, and public profile visibility.                                                                                                                        |
+
+---
+
+## 🛠 Tech Stack
+
+| Layer                 | Technology                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Frontend**          | React 19, Vite, Tailwind CSS 4, Monaco Editor, Framer Motion, Spline 3D                                 |
+| **Backend**           | Node.js, Express, MongoDB (Mongoose), ioredis                                                           |
+| **Real-time / Cache** | WebSockets (ws), Redis                                                                                  |
+| **AI Service**        | FastAPI, LangChain, LangGraph, LightGBM (Deterministic Decision Engine + Structured Feedback Workflows) |
+| **Vector Database**   | Pinecone Serverless (384-dim embeddings, cosine similarity)                                             |
+| **Code Execution**    | Piston API (Docker-sandboxed, 8 languages)                                                              |
+| **LLM Providers**     | Groq (llama-3.3-70b) with Google Gemini (2.5-flash) fallback                                            |
 
 ---
 
@@ -20,6 +64,7 @@ Runner-up at **WebSprint** (Quantacon, organized by ES Society).
 8. [Deployment Architecture](#8-deployment-architecture)
 9. [Setup Instructions](#9-setup-instructions)
 10. [Engineering Principles](#10-engineering-principles)
+11. [Recognition](#11-recognition)
 
 ---
 
@@ -47,9 +92,9 @@ Three independently deployed services communicating over HTTP and WebSocket, bac
   ┌─────────┐   ┌──────────┐  ┌──────────┐  ┌───────────────────────────┐
   │ MongoDB │   │  Redis   │  │  Piston  │  │       AI SERVICE          │
   │  Atlas  │   │ (leaderb │  │  (code   │  │  FastAPI · LangChain ·    │
-  │         │   │  + cache)│  │  sandbox)│  │  LangGraph · LightGBM    │
+  │         │   │  + cache)│  │  sandbox)│  │  LangGraph ·   │
   └─────────┘   └──────────┘  └──────────┘  │                           │
-                                             │  MIM Engine (ML models)   │
+                                             │  MIM Engine   │
                                              │  LLM Agents (Groq/Gemini) │
                                              │  RAG Memory (Pinecone)    │
                                              └───────────────────────────┘
@@ -64,7 +109,6 @@ Vendor and editor code are split into separate chunks via Vite's manual chunking
 ### Backend
 
 Express.js server (ES Modules) handling authentication, problem management, code execution, contests, online assessments, POTD, profiles, and admin operations. Three timer-based schedulers run in-process — contest lifecycle (30s polling + setTimeout for upcoming starts), POTD publishing (node-cron at midnight UTC), and OA session management (10s polling).
-
 
 ### AI Service
 
@@ -685,6 +729,12 @@ arrakis-labs/
 │       └── db/                # MongoDB client, cognitive profile store
 └── docs/                      # Architecture documentation
 ```
+
+---
+
+## 11. Recognition
+
+🏅 **Runner-Up** — WebSprint (Quantacon), organized by the ES Society.
 
 ---
 

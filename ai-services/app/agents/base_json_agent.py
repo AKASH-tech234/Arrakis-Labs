@@ -9,7 +9,7 @@ from langchain_core.exceptions import OutputParserException
 from app.cache.redis_cache import redis_cache
 
 from app.services.llm import get_llm, AllProvidersRateLimitedError, are_all_rate_limited
-from app.metrics.agent_metries import record_metric
+from app.metrics.agent_metrics import record_metric
 
 logger = logging.getLogger("base_json_agent")
 

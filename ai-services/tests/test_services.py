@@ -56,7 +56,7 @@ class TestMetrics:
 
     def test_record_metric(self, tmp_path):
         """Test recording a metric."""
-        from app.metrics.agent_metries import record_metric, METRICS_FILE
+        from app.metrics.agent_metrics import record_metric, METRICS_FILE
         import json
         
         # Note: This test may modify the actual metrics file

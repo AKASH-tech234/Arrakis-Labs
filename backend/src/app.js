@@ -116,17 +116,6 @@ const codeLimiter = rateLimit({
   keyGenerator: (req) => req.user?._id?.toString() || req.ip,
 });
 
-const oaCodeLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  skip: () => process.env.NODE_ENV !== "production",
-  keyGenerator: (req) => req.user?._id?.toString() || req.ip,
-  message: {
-    success: false,
-    error: "Too many code execution requests. Please slow down.",
-  },
-});
-
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI missing");

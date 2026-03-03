@@ -575,7 +575,6 @@ function MIMInsightsPanel({ mimInsights }) {
     mimInsights.reinforcement_feedback;
 
   if (hasV3Data) {
-
     const normalizedInsights = {
       feedbackType: mimInsights.feedbackType || mimInsights.feedback_type,
       correctnessFeedback:
@@ -594,12 +593,19 @@ function MIMInsightsPanel({ mimInsights }) {
 
   const rootCauseRaw = mimInsights.root_cause || mimInsights.rootCause;
 
-  const rootCause = typeof rootCauseRaw === "object" && rootCauseRaw !== null
-    ? (rootCauseRaw.failure_cause || rootCauseRaw.failureCause || JSON.stringify(rootCauseRaw))
-    : rootCauseRaw;
+  const rootCause =
+    typeof rootCauseRaw === "object" && rootCauseRaw !== null
+      ? rootCauseRaw.failure_cause ||
+        rootCauseRaw.failureCause ||
+        JSON.stringify(rootCauseRaw)
+      : rootCauseRaw;
   const confidence =
-    (typeof rootCauseRaw === "object" && rootCauseRaw !== null ? rootCauseRaw.confidence : null) ||
-    mimInsights.root_cause_confidence || mimInsights.confidence || 0;
+    (typeof rootCauseRaw === "object" && rootCauseRaw !== null
+      ? rootCauseRaw.confidence
+      : null) ||
+    mimInsights.root_cause_confidence ||
+    mimInsights.confidence ||
+    0;
   const pattern = mimInsights.pattern || {};
   const difficultyAction =
     mimInsights.difficulty_action || mimInsights.difficultyAction || {};
@@ -847,19 +853,7 @@ export default function SubmissionResult() {
   const isAccepted = submission?.verdict === "accepted";
 
   useEffect(() => {
-    submission,
-    aiFeedback,
-    aiStatus,
-    aiError,
-    isAILoading,
-    hasAIFeedback,
-    currentView,
-    isAccepted,
-  ]);
-
-  useEffect(() => {
     if (hasSubmission && aiStatus === "idle" && !hasAIFeedback) {
-
       logger.log(
         "[SubmissionResult] No aiFeedback from backend, requesting...",
       );
@@ -876,7 +870,6 @@ export default function SubmissionResult() {
       `[SubmissionResult] View transition check: hasAIFeedback=${hasAIFeedback}, currentView=${currentView}, isAccepted=${isAccepted}`,
     );
     if (hasAIFeedback && currentView === "initial") {
-
       const newView = isAccepted ? "summary" : "hints";
       logger.log(
         `[SubmissionResult] 🔀 Transitioning view: ${currentView} → ${newView}`,
