@@ -11,6 +11,7 @@ import {
   evaluationEngine,
   reportGenerator,
 } from "../../services/oa/index.js";
+import { OAPayment } from "../../models/payment/index.js";
 
 const generateRequestId = () => `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -55,6 +56,9 @@ export const createSession = async (req, res) => {
   const requestId = generateRequestId();
   const userId = req.user._id;
   const config = req.body;
+
+  const paymentRequired = process.env.OA_PAYMENT_REQUIRED !== "false" && req.user?.role !== "admin";
+  const paymentReservationMs = 5 * 60 * 1000;
 
   console.log(`[OA Session] [${requestId}] Creating session for user: ${userId}`);
   console.log(`[OA Session] [${requestId}] Config:`, JSON.stringify(config, null, 2));
@@ -136,9 +140,35 @@ export const createSession = async (req, res) => {
     try {
       let createdSession;
       let createdAnswers;
+      let reservedPayment;
 
       await mongoSession.withTransaction(async () => {
         const now = new Date();
+
+        if (paymentRequired) {
+          reservedPayment = await OAPayment.findOneAndUpdate(
+            {
+              userId,
+              purpose: "oa_session",
+              status: "paid",
+              usedAt: null,
+              $or: [{ reservedUntil: null }, { reservedUntil: { $lt: now } }],
+            },
+            {
+              reservedAt: now,
+              reservedUntil: new Date(now.getTime() + paymentReservationMs),
+              reservedRequestId: requestId,
+            },
+            { new: true, session: mongoSession },
+          );
+
+          if (!reservedPayment) {
+            const err = new Error("Payment required to start an OA session");
+            err.statusCode = 402;
+            err.code = "OA_PAYMENT_REQUIRED";
+            throw err;
+          }
+        }
 
         const mappedConfig = {
           userId,
@@ -219,6 +249,27 @@ export const createSession = async (req, res) => {
         }));
 
         createdAnswers = await OAAnswer.create(answerDocs, { session: mongoSession });
+
+        if (reservedPayment) {
+          const usedPayment = await OAPayment.findOneAndUpdate(
+            { _id: reservedPayment._id, userId, usedAt: null },
+            {
+              usedAt: now,
+              usedForSessionId: session._id,
+              reservedAt: null,
+              reservedUntil: null,
+              reservedRequestId: null,
+            },
+            { new: true, session: mongoSession },
+          );
+
+          if (!usedPayment) {
+            const err = new Error("Payment reservation could not be finalized");
+            err.statusCode = 409;
+            err.code = "PAYMENT_RESERVATION_LOST";
+            throw err;
+          }
+        }
       });
 
       await mongoSession.endSession();
@@ -560,6 +611,16 @@ export const submitSession = async (req, res) => {
             userId
           );
         } catch (err) {
+
+          if (error?.statusCode === 402 || error?.status === 402) {
+            return res.status(402).json({
+              success: false,
+              error: error.message || "Payment required",
+              code: error.code || "PAYMENT_REQUIRED",
+              requestId,
+            });
+          }
+
           console.error(`[Submit] Error evaluating ${answer.refId}:`, err.message);
         }
       }

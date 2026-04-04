@@ -15,6 +15,88 @@ export default function OADashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const getErrorMessage = (err) =>
+    err?.response?.data?.error ||
+    err?.response?.data?.message ||
+    err?.message ||
+    "Something went wrong";
+
+  const ensureRazorpayLoaded = () => {
+    if (window.Razorpay) return Promise.resolve(true);
+
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve(true));
+        existing.addEventListener("error", () => reject(new Error("Failed to load Razorpay")));
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(new Error("Failed to load Razorpay"));
+      document.body.appendChild(script);
+    });
+  };
+
+  const payForOA = async () => {
+    let orderRes;
+    try {
+      orderRes = await oaService.createOAPaymentOrder();
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+
+    if (!orderRes?.success) {
+      throw new Error(orderRes?.error || "Failed to start payment");
+    }
+
+    if (orderRes?.data?.paymentRequired === false) {
+      return;
+    }
+
+    const order = orderRes.data;
+
+    await ensureRazorpayLoaded();
+
+    await new Promise((resolve, reject) => {
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: String(order.amountPaise),
+        currency: order.currency,
+        name: order.name,
+        description: order.description,
+        order_id: order.orderId,
+        prefill: order.prefill,
+        handler: async (response) => {
+          try {
+            const verifyRes = await oaService.verifyOAPayment({
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            });
+
+            if (!verifyRes?.success) {
+              reject(new Error(verifyRes?.error || "Payment verification failed"));
+              return;
+            }
+
+            resolve(true);
+          } catch (err) {
+            reject(new Error(getErrorMessage(err)));
+          }
+        },
+        modal: {
+          ondismiss: () => reject(new Error("Payment cancelled")),
+        },
+      });
+
+      rzp.open();
+    });
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -46,6 +128,8 @@ export default function OADashboard() {
 
   const handleStartOA = async (config) => {
     try {
+      await payForOA();
+
       const response = await oaService.createSession({
         ...config,
         startImmediately: true,
@@ -54,23 +138,27 @@ export default function OADashboard() {
       if (response.success) {
         navigate(`/oa/session/${response.data.sessionId}`);
       } else {
-        setError(response.error);
+        throw new Error(response.error);
       }
     } catch (err) {
-      setError(err.message);
+      const message = getErrorMessage(err);
+      setError(message);
+      throw new Error(message);
     }
   };
 
   const handleQuickFight = async () => {
     try {
+      await payForOA();
+
       const response = await oaService.quickFight();
       if (response.success) {
         navigate(`/oa/session/${response.data.sessionId}`);
       } else {
-        setError(response.error);
+        throw new Error(response.error);
       }
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err));
     }
   };
 
