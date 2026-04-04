@@ -92,6 +92,11 @@ AI_SERVICE_URL=https://arrakis-ai-service.onrender.com
 FRONTEND_URL=https://arrakis-frontend.onrender.com
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+
+# OA payments (Razorpay)
+OA_PAYMENT_REQUIRED=true
+RAZORPAY_KEY_ID=<your-razorpay-key-id>
+RAZORPAY_KEY_SECRET=<your-razorpay-key-secret>
 ```
 
 ---

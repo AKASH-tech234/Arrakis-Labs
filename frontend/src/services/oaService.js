@@ -17,6 +17,20 @@ const oaService = {
     return response.data;
   },
 
+  async createOAPaymentOrder() {
+    const response = await api.post("/payments/oa/order");
+    return response.data;
+  },
+
+  async verifyOAPayment({ orderId, paymentId, signature }) {
+    const response = await api.post("/payments/oa/verify", {
+      orderId,
+      paymentId,
+      signature,
+    });
+    return response.data;
+  },
+
   async getActiveSession() {
     const response = await api.get("/oa/sessions/active");
     return response.data;

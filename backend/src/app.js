@@ -23,6 +23,7 @@ import mimRoutes from "./routes/mimRoutes.js";
 import aiProfileRoutes from "./routes/aiProfileRoutes.js";
 import discussionRoutes from "./routes/discussion/discussionRoutes.js";
 import oaRoutes from "./routes/oaRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 import {
   runCode,
@@ -168,6 +169,8 @@ app.post("/api/ai/summary", protect, getAILearningSummary);
 app.use("/api/mim", mimRoutes);
 
 app.use("/api/oa", oaRoutes);
+
+app.use("/api/payments", paymentRoutes);
 
 app.use((req, res) =>
   res.status(404).json({ status: "error", message: "Route not found" }),
