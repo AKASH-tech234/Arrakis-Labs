@@ -3,11 +3,77 @@ import logger from "../../utils/logger";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const clearToken = () => {
+  window.dispatchEvent(new CustomEvent("auth:logout"));
+};
+
 const apiClient = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
+
+// ─── Silent Refresh on 401 ──────────────────────────────────────────────────
+
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const onRefreshed = () => {
+  refreshSubscribers.forEach((cb) => cb());
+  refreshSubscribers = [];
+};
+
+const addRefreshSubscriber = (cb) => {
+  refreshSubscribers.push(cb);
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error?.response?.status === 401 &&
+      !originalRequest._retry
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber(() => {
+            resolve(apiClient(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await axios.post(
+          `${API_BASE}/auth/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+
+        isRefreshing = false;
+        onRefreshed();
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshSubscribers = [];
+        clearToken();
+        return Promise.reject(refreshError);
+      }
+    }
+
+    if (error?.response?.status === 401) {
+      clearToken();
+    }
+
+    return Promise.reject(error);
+  },
+);
+
+// ─── POTD API Functions ─────────────────────────────────────────────────────
 
 export const getTodaysPOTD = async () => {
   try {

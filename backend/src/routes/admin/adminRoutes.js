@@ -5,6 +5,7 @@ import {
   adminLogout,
   getAdminProfile,
   getDashboardStats,
+  adminRefreshToken,
 } from "../../controllers/admin/adminController.js";
 import {
   getAllQuestions,
@@ -36,7 +37,9 @@ import {
 
 const router = express.Router();
 
+// Public routes (before verifyAdmin middleware)
 router.post("/login", adminLogin);
+router.post("/refresh-token", adminRefreshToken);
 
 router.use(verifyAdmin);
 

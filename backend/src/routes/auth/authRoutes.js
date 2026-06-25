@@ -8,6 +8,7 @@ import {
   getMe,
   updateProfile,
   changePassword,
+  refreshToken,
 } from "../../controllers/auth/authController.js";
 import { protect } from "../../middleware/auth/authMiddleware.js";
 
@@ -17,6 +18,9 @@ router.post("/signup", signup);
 router.post("/signin", signin);
 router.post("/google", googleAuth);
 router.post("/github", githubAuth);
+
+// Refresh token endpoint (public — uses refresh token cookie for auth)
+router.post("/refresh-token", refreshToken);
 
 router.post("/logout", protect, logout);
 router.get("/me", protect, getMe);

@@ -4,39 +4,82 @@ import crypto from "crypto";
 import axios from "axios";
 import { OAuth2Client } from "google-auth-library";
 
-const generateToken = (id) => {
+// ─── Token Helpers ───────────────────────────────────────────────────────────
+
+const generateAccessToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRY || "7d",
+    expiresIn: process.env.JWT_EXPIRY || "15m",
   });
 };
 
-const sendTokenResponse = (user, statusCode, res, message = "Success") => {
-  const token = generateToken(user._id);
+const generateRefreshToken = (id) => {
+  return jwt.sign({ id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
+  });
+};
 
+const hashToken = (token) => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+// ─── Cookie Options ──────────────────────────────────────────────────────────
+
+const getAccessCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
-  const cookieOptions = {
+  return {
     expires: new Date(
-      Date.now() + (process.env.JWT_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
+      Date.now() + (process.env.JWT_COOKIE_EXPIRE || 1) * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "strict" : "lax",
     path: "/",
   };
-
-  res.status(statusCode).cookie("userToken", token, cookieOptions).json({
-    success: true,
-    message,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      profileImage: user.profileImage,
-      stats: user.stats,
-    },
-  });
 };
+
+const getRefreshCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    expires: new Date(
+      Date.now() +
+        (process.env.REFRESH_TOKEN_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
+    path: "/",
+  };
+};
+
+// ─── Send Dual Token Response ────────────────────────────────────────────────
+
+const sendTokenResponse = async (user, statusCode, res, message = "Success") => {
+  const accessToken = generateAccessToken(user._id);
+  const refreshTokenValue = generateRefreshToken(user._id);
+
+  // Store hashed refresh token in DB (token rotation)
+  user.refreshToken = hashToken(refreshTokenValue);
+  await user.save({ validateBeforeSave: false });
+
+  res
+    .status(statusCode)
+    .cookie("userToken", accessToken, getAccessCookieOptions())
+    .cookie("userRefreshToken", refreshTokenValue, getRefreshCookieOptions())
+    .json({
+      success: true,
+      message,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        stats: user.stats,
+      },
+    });
+};
+
+// ─── Signup ──────────────────────────────────────────────────────────────────
 
 export const signup = async (req, res) => {
   try {
@@ -71,7 +114,7 @@ export const signup = async (req, res) => {
       isEmailVerified: false,
     });
 
-    sendTokenResponse(user, 201, res, "User registered successfully");
+    await sendTokenResponse(user, 201, res, "User registered successfully");
   } catch (error) {
     console.error(`[Auth Error] Signup: ${error.message}`);
     res.status(500).json({
@@ -80,6 +123,8 @@ export const signup = async (req, res) => {
     });
   }
 };
+
+// ─── Signin ──────────────────────────────────────────────────────────────────
 
 export const signin = async (req, res) => {
   try {
@@ -120,7 +165,7 @@ export const signin = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    sendTokenResponse(user, 200, res, "Logged in successfully");
+    await sendTokenResponse(user, 200, res, "Logged in successfully");
   } catch (error) {
     console.error(`[Auth Error] Signin: ${error.message}`);
     res.status(500).json({
@@ -129,6 +174,94 @@ export const signin = async (req, res) => {
     });
   }
 };
+
+// ─── Refresh Token (Token Rotation) ─────────────────────────────────────────
+
+export const refreshToken = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies.userRefreshToken;
+
+    if (!incomingRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token not found",
+      });
+    }
+
+    // Verify the refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired refresh token",
+      });
+    }
+
+    // Find user and include the refreshToken field
+    const user = await User.findById(decoded.id).select("+refreshToken");
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      // Clear cookies for deactivated user
+      res.clearCookie("userToken", getAccessCookieOptions());
+      res.clearCookie("userRefreshToken", getRefreshCookieOptions());
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated",
+      });
+    }
+
+    // Verify stored hash matches incoming token (token rotation check)
+    const hashedIncoming = hashToken(incomingRefreshToken);
+    if (user.refreshToken !== hashedIncoming) {
+      // Possible token reuse attack — invalidate all tokens
+      user.refreshToken = null;
+      await user.save({ validateBeforeSave: false });
+
+      res.clearCookie("userToken", getAccessCookieOptions());
+      res.clearCookie("userRefreshToken", getRefreshCookieOptions());
+
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token has been revoked. Please login again.",
+      });
+    }
+
+    // Issue new access token + new refresh token (rotation)
+    const newAccessToken = generateAccessToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    // Store the new hashed refresh token
+    user.refreshToken = hashToken(newRefreshToken);
+    await user.save({ validateBeforeSave: false });
+
+    res
+      .status(200)
+      .cookie("userToken", newAccessToken, getAccessCookieOptions())
+      .cookie("userRefreshToken", newRefreshToken, getRefreshCookieOptions())
+      .json({
+        success: true,
+        message: "Token refreshed successfully",
+      });
+  } catch (error) {
+    console.error(`[Auth Error] RefreshToken: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: "Error refreshing token",
+    });
+  }
+};
+
+// ─── Google Auth ─────────────────────────────────────────────────────────────
 
 export const googleAuth = async (req, res) => {
   try {
@@ -170,21 +303,19 @@ export const googleAuth = async (req, res) => {
     let user = await User.findOne({ googleId: id });
 
     if (user) {
-
       user.lastLogin = new Date();
       await user.save();
-      return sendTokenResponse(user, 200, res, "Logged in with Google");
+      return await sendTokenResponse(user, 200, res, "Logged in with Google");
     }
 
     user = await User.findOne({ email });
 
     if (user) {
-
       user.googleId = id;
       user.profileImage = picture || user.profileImage;
       user.lastLogin = new Date();
       await user.save();
-      return sendTokenResponse(user, 200, res, "Google account linked");
+      return await sendTokenResponse(user, 200, res, "Google account linked");
     }
 
     user = await User.create({
@@ -196,7 +327,7 @@ export const googleAuth = async (req, res) => {
       isEmailVerified: true,
     });
 
-    sendTokenResponse(user, 201, res, "Account created with Google");
+    await sendTokenResponse(user, 201, res, "Account created with Google");
   } catch (error) {
     console.error(`[Auth Error] Google Auth: ${error.message}`);
     res.status(500).json({
@@ -205,6 +336,8 @@ export const googleAuth = async (req, res) => {
     });
   }
 };
+
+// ─── GitHub Auth ─────────────────────────────────────────────────────────────
 
 export const githubAuth = async (req, res) => {
   try {
@@ -245,7 +378,7 @@ export const githubAuth = async (req, res) => {
     if (user) {
       user.lastLogin = new Date();
       await user.save();
-      return sendTokenResponse(user, 200, res, "Logged in with GitHub");
+      return await sendTokenResponse(user, 200, res, "Logged in with GitHub");
     }
 
     user = await User.findOne({ email: primaryEmail });
@@ -255,7 +388,7 @@ export const githubAuth = async (req, res) => {
       user.profileImage = avatar_url || user.profileImage;
       user.lastLogin = new Date();
       await user.save();
-      return sendTokenResponse(user, 200, res, "GitHub account linked");
+      return await sendTokenResponse(user, 200, res, "GitHub account linked");
     }
 
     user = await User.create({
@@ -267,7 +400,7 @@ export const githubAuth = async (req, res) => {
       isEmailVerified: true,
     });
 
-    sendTokenResponse(user, 201, res, "Account created with GitHub");
+    await sendTokenResponse(user, 201, res, "Account created with GitHub");
   } catch (error) {
     console.error(`[Auth Error] GitHub Auth: ${error.message}`);
     res.status(500).json({
@@ -277,14 +410,27 @@ export const githubAuth = async (req, res) => {
   }
 };
 
+// ─── Logout ──────────────────────────────────────────────────────────────────
+
 export const logout = async (req, res) => {
   try {
+    // Clear refresh token from DB
+    if (req.user) {
+      await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
+    }
 
-    const isProduction = process.env.NODE_ENV === "production";
+    // Clear both cookies
     res.clearCookie("userToken", {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
+    });
+
+    res.clearCookie("userRefreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       path: "/",
     });
 
@@ -300,6 +446,8 @@ export const logout = async (req, res) => {
     });
   }
 };
+
+// ─── Get Me ──────────────────────────────────────────────────────────────────
 
 export const getMe = async (req, res) => {
   try {
@@ -332,6 +480,8 @@ export const getMe = async (req, res) => {
     });
   }
 };
+
+// ─── Update Profile ──────────────────────────────────────────────────────────
 
 export const updateProfile = async (req, res) => {
   try {
@@ -373,6 +523,8 @@ export const updateProfile = async (req, res) => {
     });
   }
 };
+
+// ─── Change Password ─────────────────────────────────────────────────────────
 
 export const changePassword = async (req, res) => {
   try {

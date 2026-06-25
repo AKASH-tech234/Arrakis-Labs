@@ -246,6 +246,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    refreshToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -270,7 +275,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 userSchema.methods.getJWTToken = function () {
   return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRY || "7d",
+    expiresIn: process.env.JWT_EXPIRY || "15m",
+  });
+};
+
+userSchema.methods.getRefreshToken = function () {
+  return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
   });
 };
 

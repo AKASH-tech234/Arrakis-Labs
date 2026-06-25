@@ -33,9 +33,69 @@ adminApi.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+// ─── Silent Refresh on 401 ──────────────────────────────────────────────────
+
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const onRefreshed = () => {
+  refreshSubscribers.forEach((cb) => cb());
+  refreshSubscribers = [];
+};
+
+const addRefreshSubscriber = (cb) => {
+  refreshSubscribers.push(cb);
+};
+
 adminApi.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401 and not already retrying, attempt silent refresh
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/login") &&
+      !originalRequest.url?.includes("/refresh-token")
+    ) {
+      if (isRefreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve) => {
+          addRefreshSubscriber(() => {
+            resolve(adminApi(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await axios.post(
+          `${API_BASE_URL}/admin/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+
+        isRefreshing = false;
+        onRefreshed();
+
+        // Retry the original request
+        return adminApi(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshSubscribers = [];
+
+        const isAdminRoute = window.location.pathname.startsWith("/admin");
+        if (isAdminRoute) {
+          logger.warn("[AdminAPI] Session expired - refresh failed");
+        }
+
+        return Promise.reject(refreshError);
+      }
+    }
+
     if (error.response?.status === 401) {
       const isAdminRoute = window.location.pathname.startsWith("/admin");
       if (isAdminRoute) {
@@ -45,6 +105,8 @@ adminApi.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// ─── API Functions ──────────────────────────────────────────────────────────
 
 export const adminLogin = async (email, password) => {
   const response = await adminApi.post("/login", { email, password });

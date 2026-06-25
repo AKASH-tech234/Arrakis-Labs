@@ -10,7 +10,6 @@ export const protect = async (req, res, next) => {
     } else if (req.cookies.userToken) {
       token = req.cookies.userToken;
     } else if (req.cookies.token) {
-
       token = req.cookies.token;
     }
 
@@ -29,6 +28,14 @@ export const protect = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: "User not found",
+      });
+    }
+
+    // Check if user account is active
+    if (!req.user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated",
       });
     }
 
@@ -69,18 +76,21 @@ export const optionalAuth = async (req, res, next) => {
     } else if (req.cookies.userToken) {
       token = req.cookies.userToken;
     } else if (req.cookies.token) {
-
       token = req.cookies.token;
     }
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id);
+      const user = await User.findById(decoded.id);
+
+      // Only set req.user if the user exists and is active
+      if (user && user.isActive) {
+        req.user = user;
+      }
     }
 
     next();
   } catch (error) {
-
     next();
   }
 };

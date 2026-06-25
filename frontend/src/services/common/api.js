@@ -25,15 +25,102 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// ─── Silent Refresh on 401 ──────────────────────────────────────────────────
+
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const onRefreshed = () => {
+  refreshSubscribers.forEach((cb) => cb());
+  refreshSubscribers = [];
+};
+
+const addRefreshSubscriber = (cb) => {
+  refreshSubscribers.push(cb);
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401 and not already retrying, attempt silent refresh
+    if (
+      error?.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh-token") &&
+      !originalRequest.url?.includes("/auth/signin") &&
+      !originalRequest.url?.includes("/auth/signup")
+    ) {
+      if (isRefreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve) => {
+          addRefreshSubscriber(() => {
+            resolve(apiClient(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await axios.post(
+          `${API_BASE}/auth/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+
+        isRefreshing = false;
+        onRefreshed();
+
+        // Retry the original request
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshSubscribers = [];
+        clearToken();
+        return Promise.reject(refreshError);
+      }
+    }
+
     if (error?.response?.status === 401) {
       clearToken();
     }
+
     return Promise.reject(error);
   },
 );
+
+// ─── Fetch-based request helper with silent refresh ─────────────────────────
+
+let isFetchRefreshing = false;
+let fetchRefreshPromise = null;
+
+async function attemptFetchRefresh() {
+  if (isFetchRefreshing && fetchRefreshPromise) {
+    return fetchRefreshPromise;
+  }
+
+  isFetchRefreshing = true;
+  fetchRefreshPromise = fetch(`${API_BASE}/auth/refresh-token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  })
+    .then((res) => {
+      isFetchRefreshing = false;
+      fetchRefreshPromise = null;
+      return res.ok;
+    })
+    .catch(() => {
+      isFetchRefreshing = false;
+      fetchRefreshPromise = null;
+      return false;
+    });
+
+  return fetchRefreshPromise;
+}
 
 async function request(path, { method = "GET", body, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
@@ -43,13 +130,33 @@ async function request(path, { method = "GET", body, signal } = {}) {
     normalizedPath = normalizedPath.slice(4);
   }
 
-  const response = await fetch(`${API_BASE}${normalizedPath}`, {
-    method,
-    headers,
-    credentials: "include",
-    body: body ? JSON.stringify(body) : undefined,
-    signal,
-  });
+  const makeRequest = () =>
+    fetch(`${API_BASE}${normalizedPath}`, {
+      method,
+      headers,
+      credentials: "include",
+      body: body ? JSON.stringify(body) : undefined,
+      signal,
+    });
+
+  let response = await makeRequest();
+
+  // Silent refresh on 401 (skip for auth endpoints)
+  if (
+    response.status === 401 &&
+    !normalizedPath.includes("/auth/refresh-token") &&
+    !normalizedPath.includes("/auth/signin") &&
+    !normalizedPath.includes("/auth/signup")
+  ) {
+    const refreshed = await attemptFetchRefresh();
+
+    if (refreshed) {
+      // Retry original request with new tokens
+      response = await makeRequest();
+    } else {
+      clearToken();
+    }
+  }
 
   if (response.status === 401) {
     clearToken();
@@ -62,6 +169,8 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
   return response.json().catch(() => ({}));
 }
+
+// ─── API Functions ──────────────────────────────────────────────────────────
 
 export async function getPublicQuestions({
   page = 1,

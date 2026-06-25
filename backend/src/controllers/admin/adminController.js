@@ -1,8 +1,11 @@
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import Admin from "../../models/admin/Admin.js";
 import AuditLog from "../../models/admin/AuditLog.js";
 
-const generateAdminToken = (admin) => {
+// ─── Token Helpers ───────────────────────────────────────────────────────────
+
+const generateAdminAccessToken = (admin) => {
   return jwt.sign(
     {
       id: admin._id,
@@ -10,10 +13,49 @@ const generateAdminToken = (admin) => {
       role: admin.role,
       isAdmin: true,
     },
-    process.env.JWT_SECRET,
+    process.env.ADMIN_JWT_SECRET,
     { expiresIn: process.env.ADMIN_JWT_EXPIRY || "8h" },
   );
 };
+
+const generateAdminRefreshToken = (id) => {
+  return jwt.sign({ id, isAdmin: true }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
+  });
+};
+
+const hashToken = (token) => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+// ─── Cookie Options ──────────────────────────────────────────────────────────
+
+const getAdminAccessCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    expires: new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 hours
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
+    path: "/",
+  };
+};
+
+const getAdminRefreshCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    expires: new Date(
+      Date.now() +
+        (process.env.REFRESH_TOKEN_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
+    path: "/",
+  };
+};
+
+// ─── Admin Login ─────────────────────────────────────────────────────────────
 
 export const adminLogin = async (req, res) => {
   try {
@@ -44,18 +86,14 @@ export const adminLogin = async (req, res) => {
     }
 
     admin.lastLogin = new Date();
+
+    // Generate tokens
+    const accessToken = generateAdminAccessToken(admin);
+    const refreshTokenValue = generateAdminRefreshToken(admin._id);
+
+    // Store hashed refresh token (token rotation)
+    admin.refreshToken = hashToken(refreshTokenValue);
     await admin.save();
-
-    const token = generateAdminToken(admin);
-
-    const isProduction = process.env.NODE_ENV === "production";
-    const cookieOptions = {
-      expires: new Date(Date.now() + 8 * 60 * 60 * 1000),
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      path: "/",
-    };
 
     await AuditLog.log({
       adminId: admin._id,
@@ -68,7 +106,8 @@ export const adminLogin = async (req, res) => {
 
     res
       .status(200)
-      .cookie("adminToken", token, cookieOptions)
+      .cookie("adminToken", accessToken, getAdminAccessCookieOptions())
+      .cookie("adminRefreshToken", refreshTokenValue, getAdminRefreshCookieOptions())
       .json({
         success: true,
         message: "Login successful",
@@ -88,13 +127,112 @@ export const adminLogin = async (req, res) => {
   }
 };
 
+// ─── Admin Refresh Token (Token Rotation) ────────────────────────────────────
+
+export const adminRefreshToken = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies.adminRefreshToken;
+
+    if (!incomingRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token not found",
+      });
+    }
+
+    // Verify the refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired refresh token",
+      });
+    }
+
+    // Find admin and include the refreshToken field
+    const admin = await Admin.findById(decoded.id).select("+refreshToken");
+
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin account not found",
+      });
+    }
+
+    // Check if admin is active
+    if (!admin.isActive) {
+      res.clearCookie("adminToken", getAdminAccessCookieOptions());
+      res.clearCookie("adminRefreshToken", getAdminRefreshCookieOptions());
+      return res.status(403).json({
+        success: false,
+        message: "Admin account has been deactivated",
+      });
+    }
+
+    // Verify stored hash matches incoming token (token rotation check)
+    const hashedIncoming = hashToken(incomingRefreshToken);
+    if (admin.refreshToken !== hashedIncoming) {
+      // Possible token reuse attack — invalidate all tokens
+      admin.refreshToken = null;
+      await admin.save({ validateBeforeSave: false });
+
+      res.clearCookie("adminToken", getAdminAccessCookieOptions());
+      res.clearCookie("adminRefreshToken", getAdminRefreshCookieOptions());
+
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token has been revoked. Please login again.",
+      });
+    }
+
+    // Issue new tokens (rotation)
+    const newAccessToken = generateAdminAccessToken(admin);
+    const newRefreshToken = generateAdminRefreshToken(admin._id);
+
+    // Store the new hashed refresh token
+    admin.refreshToken = hashToken(newRefreshToken);
+    await admin.save({ validateBeforeSave: false });
+
+    res
+      .status(200)
+      .cookie("adminToken", newAccessToken, getAdminAccessCookieOptions())
+      .cookie("adminRefreshToken", newRefreshToken, getAdminRefreshCookieOptions())
+      .json({
+        success: true,
+        message: "Token refreshed successfully",
+      });
+  } catch (error) {
+    console.error("[Admin RefreshToken Error]:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error refreshing token",
+    });
+  }
+};
+
+// ─── Admin Logout ────────────────────────────────────────────────────────────
+
 export const adminLogout = async (req, res) => {
   try {
-    const isProduction = process.env.NODE_ENV === "production";
+    // Clear refresh token from DB
+    if (req.admin) {
+      await Admin.findByIdAndUpdate(req.admin._id, { refreshToken: null });
+    }
+
+    // Clear both cookies
     res.clearCookie("adminToken", {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
+    });
+
+    res.clearCookie("adminRefreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       path: "/",
     });
 
@@ -119,6 +257,8 @@ export const adminLogout = async (req, res) => {
   }
 };
 
+// ─── Get Admin Profile ───────────────────────────────────────────────────────
+
 export const getAdminProfile = async (req, res) => {
   try {
     res.status(200).json({
@@ -139,6 +279,8 @@ export const getAdminProfile = async (req, res) => {
     });
   }
 };
+
+// ─── Dashboard Stats ─────────────────────────────────────────────────────────
 
 export const getDashboardStats = async (req, res) => {
   try {
